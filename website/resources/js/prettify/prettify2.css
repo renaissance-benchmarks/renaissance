@@ -1,0 +1,69 @@
+
+pre.prettyprint {
+  display: block;
+  background: #2f2f2f;
+  color: #a0a0a0;
+  border: 1px solid #7a7a7a;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  border-radius: 4px;
+  box-shadow: 0px 1px 5px #6a6a6a;
+}
+
+pre code {
+  padding: 0.5em;
+  background: #2f2f2f;
+  background-color: transparent;
+  border: hidden;
+}
+
+code {
+  font-family: Andale Mono, Courier New;
+  font-size: 13px;
+  background: #eee;
+  color: #4c4c4c;
+  border: 1px solid #bbb;
+  margin: 0px;
+  padding: 0px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+}
+
+pre .nocode { background-color: none; color: #000 }
+pre .str { color: #ffa0a0 }
+pre .kwd { color: #4d96ff }
+pre .com { color: #afafaf }
+pre .typ { color: #78ee78 }
+pre .lit { color: #cd5c5c }
+pre .pun { color: #efefef }    /* punctuation */
+pre .pln { color: #efefef }    /* plaintext */
+pre .tag { color: #f0e68c; }
+pre .atn { color: #bdb76b; }
+pre .atv { color: #ffa0a0 } 
+pre .dec { color: #98fb98 }
+
+/* Specify class=linenums on a pre to get line numbering */
+ol.linenums { margin-top: 0; margin-bottom: 0; color: #6a6a6a } /* IE indents via margin-left */
+li.L0,li.L1,li.L2,li.L3,li.L5,li.L6,li.L7,li.L8 { list-style-type: none; }
+/* Alternate shading for lines */
+li.L1,li.L3,li.L5,li.L7,li.L9 { }
+
+.prettyprint ol.linenums > li {
+  list-style-type: decimal;
+  background: #2f2f2f;
+}
+
+@media print {
+  pre.prettyprint { background-color: none }
+  pre .str, code .str { color: #060 }
+  pre .kwd, code .kwd { color: #006 }
+  pre .com, code .com { color: #600 }
+  pre .typ, code .typ { color: #404 }
+  pre .lit, code .lit { color: #044 }
+  pre .pun, code .pun { color: #440 }
+  pre .pln, code .pln { color: #000 }
+  pre .tag, code .tag { color: #006 }
+  pre .atn, code .atn { color: #404 }
+  pre .atv, code .atv { color: #060 }
+}

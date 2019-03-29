@@ -1,0 +1,6 @@
+title: "Renaissance"
+name: Renaissance Benchmark Suite
+description: Docs and resources for the Renaissance Benchmark Suite
+url: http://renaissance-benchmarks.github.io
+baseUrl: http://renaissance-benchmarks.github.io
+relative_permalinks: false

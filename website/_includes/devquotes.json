@@ -1,0 +1,18 @@
+[
+  {
+    "text": "To build Renaissance, just run `tools/sbt/bin/sbt bundleRenaissance`.",
+    "author": "",
+    "description": ""
+  },
+  {
+    "text": "Renaissance benchmarks run in a single JVM process, which makes them convenient to use with profilers, instrumenters and other analysis tools.",
+    "author": "",
+    "description": ""
+  },
+  {
+    "text": "Renaissance has a comprehensive set of command-line options -- type `-h` to see them.",
+    "author": "",
+    "description": ""
+  }
+]
+
