@@ -1,0 +1,145 @@
+import java.net.URLClassLoader
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.jar.JarFile
+import java.util.regex.Pattern
+import scala.collection._
+import scala.sys.process._
+
+
+
+val renaissanceVersion = "0.1"
+
+val renaissanceScalaVersion = "2.12.8"
+
+val benchmarkProjects = for {
+  dir <- file("benchmarks").list()
+} yield {
+  RootProject(uri("benchmarks/" + dir))
+}
+
+lazy val renaissanceCore = RootProject(uri("renaissance-core"))
+
+val renaissanceBundle = taskKey[Unit](
+  "Create a single bundle of Renaissance."
+)
+
+val renaissanceBundleTask = renaissanceBundle := {
+  val log = streams.value.log
+  log.info("Creating a bundle JAR...")
+  val mainJar = packageBin.in(Runtime).value
+  val depJars = dependencyClasspath.in(Runtime).value.map(_.data).filter(_.isFile)
+  val coreJar = (packageBin in (renaissanceCore, Runtime)).value
+  val allJars = mainJar +: coreJar +: depJars
+  val renaissanceDir = target(_ / "renaissance").value
+  val renaissanceJarDir = renaissanceDir / "jars"
+  renaissanceJarDir.mkdirs()
+  for (jar <- allJars) Files.copy(
+    jar.toPath,
+    (renaissanceJarDir / jar.getName).toPath,
+    StandardCopyOption.REPLACE_EXISTING)
+  val targetDir = target(_ / ".").value
+  val tarName = s"renaissance-${version.value}.tar.gz"
+  val status = s"tar czf ${targetDir}/$tarName -C ${targetDir} renaissance".!
+  if (status != 0) {
+    log.error(s"Failed to produce the archive $tarName, exit code: $status")
+  }
+}
+
+def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
+  tasks.toList match {
+    case Nil => Def.task { Nil }
+    case x :: xs => Def.taskDyn {
+      flattenTasks(xs) map (x.value +: _)
+    }
+  }
+
+def kebabCase(s: String) = {
+  val camelCaseName = if (s.last == '$') s.init else s
+  val pattern = Pattern.compile("([A-Za-z])([A-Z])")
+  pattern.matcher(camelCaseName).replaceAll("$1-$2").toLowerCase
+}
+
+def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
+  val urls = (coreJar +: classpath).map(_.toURI.toURL)
+  val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
+  val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
+  val benches = new mutable.ArrayBuffer[String]
+  for (jar <- classpath) {
+    val jarFile = new JarFile(jar)
+    val enumeration = jarFile.entries()
+    while (enumeration.hasMoreElements) {
+      val entry = enumeration.nextElement()
+      if (entry.getName.endsWith(".class")) {
+        val name = entry.getName.substring(0, entry.getName.length - 6)
+          .replace("/", ".")
+        val clazz = loader.loadClass(name)
+        if (benchBase.isAssignableFrom(clazz)) {
+          benches += kebabCase(clazz.getSimpleName)
+        }
+      }
+    }
+  }
+  benches
+}
+
+def jarsAndListGenerator = Def.taskDyn {
+  val jarTasks = for {
+    p <- benchmarkProjects
+  } yield Def.task {
+    val mainJar = (packageBin in(p, Compile)).value
+    val depJars = (dependencyClasspath in(p, Compile)).value.map(_.data).filter(_.isFile)
+    val allJars = mainJar +: depJars
+    val project = p.asInstanceOf[RootProject].build.getPath
+    val jarFiles = for (jar <- allJars) yield {
+      val dest = (resourceManaged in Compile).value / project / jar.getName
+      dest.getParentFile.mkdirs()
+      Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
+      dest
+    }
+    (project, jarFiles)
+  }
+  // Flatten list, create a groups-jars file, and a benchmark-group file.
+  val coreJar = (packageBin in(renaissanceCore, Compile)).value
+  flattenTasks(jarTasks).map { groupJars =>
+    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
+    val jarListContent = new StringBuilder
+    val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
+    val benchGroupContent = new StringBuilder
+    for ((project, jars) <- groupJars) {
+      val jarLine = jars.map(
+        jar => project + "/" + jar.getName
+      ).mkString(",")
+      val projectShort = project.stripPrefix("benchmarks/")
+      jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
+      for (bench <- listBenchmarks(coreJar, jars)) {
+        benchGroupContent.append(bench).append("=").append(projectShort).append("\n")
+      }
+    }
+    IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
+    IO.write(benchGroupFile, benchGroupContent.toString, StandardCharsets.UTF_8)
+    benchGroupFile +: jarListFile +: groupJars.flatMap {
+      case (_, jars) => jars
+    }
+  }
+}
+
+lazy val renaissance: Project = {
+  val p = Project("renaissance", file("."))
+    .settings(
+      name := "renaissance",
+      version := renaissanceVersion,
+      organization := "org.renaissance",
+      scalaVersion := renaissanceScalaVersion,
+      libraryDependencies ++= Seq(
+        "commons-io" % "commons-io" % "2.6",
+        "com.github.scopt" %% "scopt" % "4.0.0-RC2"
+      ),
+      resourceGenerators in Compile += jarsAndListGenerator.taskValue,
+      renaissanceBundleTask
+    ).dependsOn(
+      renaissanceCore
+    )
+  benchmarkProjects.foldLeft(p)(_ aggregate _)
+}
