@@ -40,8 +40,8 @@ object RenaissanceSuite {
     map
   }
 
-  private val parser: OptionParser[Config] = new OptionParser[Config]("scopt") {
-    head("renaissance", "0.1")
+  private val parser: OptionParser[Config] = new OptionParser[Config]("renaissance") {
+    head("Renaissance Benchmark Suite", "0.1")
 
     help("help")
       .text("Prints this usage text.")
@@ -56,9 +56,10 @@ object RenaissanceSuite {
       .action((v, c) => c.withPlugins(v))
     opt[Unit]("readme")
       .text("Regenerates the README file, and does not run anything.")
-      .action((v, c) => c.copy(readme = true))
+      .action((_, c) => c.copy(readme = true))
     arg[String]("benchmark-specification")
       .text("Comma-separated list of benchmarks (or groups) that must be executed.")
+      .optional()
       .action((v, c) => c.withBenchmarkSpecification(v))
   }
 
@@ -83,21 +84,33 @@ object RenaissanceSuite {
       case Some(c) => c
       case None => sys.exit(1)
     }
+
     if (config.readme) {
       FileUtils.write(new File("README.md"), readme,
         java.nio.charset.StandardCharsets.UTF_8, false)
       FileUtils.write(new File("CONTRIBUTION.md"), contribution,
         java.nio.charset.StandardCharsets.UTF_8, false)
+      println("README.md and CONTRIBUTION.md updated.")
       return
-    }
-    for (plugin <- config.plugins) plugin.onCreation()
-    try {
+    } else {
+      // Check that all the benchmarks on the list really exist.
       for (benchName <- config.benchmarkList) {
-        val bench = loadBenchmark(benchName)
-        bench.runBenchmark(config)
+        if (!(benchmarkGroups.contains(benchName))) {
+          println(s"Benchmark `${benchName}` does not exist.")
+          sys.exit(1)
+        }
       }
-    } finally {
-      for (plugin <- config.plugins) plugin.onExit()
+
+      // Run the main benchmark loop.
+      for (plugin <- config.plugins) plugin.onCreation()
+      try {
+        for (benchName <- config.benchmarkList) {
+          val bench = loadBenchmark(benchName)
+          bench.runBenchmark(config)
+        }
+      } finally {
+        for (plugin <- config.plugins) plugin.onExit()
+      }
     }
   }
 
@@ -370,6 +383,8 @@ The current members of the committee are:
 - David Leopoldseder, Johannes Kepler University Linz
 - Andrea Rosà, Università della Svizzera italiana
 - Gilles Duboscq, Oracle Labs
+- Alex Villazon, Universidad Privada Boliviana
+- Francois Farquet, Oracle Labs
 - Aleksandar Prokopec, Oracle Labs
 """
 

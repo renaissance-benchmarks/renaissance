@@ -1,3 +1,5 @@
+
+
 ## Contribution Guide
 
 ### Code organization and internals
@@ -126,7 +128,7 @@ The current members of the committee are:
 - Lubomir Bulej, Charles University in Prague
 - David Leopoldseder, Johannes Kepler University Linz
 - Andrea Rosà, Università della Svizzera italiana
+- Gilles Duboscq, Oracle Labs
 - Alex Villazon, Universidad Privada Boliviana
 - Francois Farquet, Oracle Labs
-- Gilles Duboscq, Oracle Labs
 - Aleksandar Prokopec, Oracle Labs

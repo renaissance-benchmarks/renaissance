@@ -52,8 +52,8 @@ For example, you can specify `k-means-scala` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-renaissance 0.1
-Usage: scopt [options] benchmark-specification
+Renaissance Benchmark Suite 0.1
+Usage: renaissance [options] [benchmark-specification]
 
   --help                   Prints this usage text.
   -r, --repetitions <value>
@@ -108,4 +108,10 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Here, the interface org.renaissance.Policy argument describes the current state of the benchmark.
+Here, the Policy argument describes
+the current state of the benchmark.
+
+
+### Contributing
+
+Please see CONTRIBUTION.md for a description of the contributing process.
