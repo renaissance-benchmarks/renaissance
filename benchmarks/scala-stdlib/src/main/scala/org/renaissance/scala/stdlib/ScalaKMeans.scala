@@ -9,7 +9,7 @@ import scala.util.Random
 
 
 
-trait BaseKMeansScala {
+trait KMeansUtilities {
   class Point(val x: Double, val y: Double, val z: Double) {
     private def square(v: Double): Double = v * v
     private def round(v: Double): Double = (v * 100).toInt / 100.0
@@ -103,7 +103,7 @@ trait BaseKMeansScala {
 }
 
 
-class KMeansScala extends RenaissanceBenchmark with BaseKMeansScala {
+class ScalaKMeans extends RenaissanceBenchmark with KMeansUtilities {
   def description = "Runs the K-Means algorithm using Scala collections."
 
   override def defaultRepetitions = 50

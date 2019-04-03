@@ -1,6 +1,5 @@
 package org.renaissance
 
-
 import java.io.File
 import java.net.URLClassLoader
 import java.nio.charset.StandardCharsets
@@ -9,13 +8,13 @@ import org.apache.commons.io.IOUtils
 import scala.collection._
 import scopt._
 
-
-
 object RenaissanceSuite {
+
   val benchmarkGroups = {
     val map = new mutable.HashMap[String, String]
     val lines = IOUtils.lineIterator(
-      getClass.getResourceAsStream("/benchmark-group.txt"), StandardCharsets.UTF_8)
+      getClass.getResourceAsStream("/benchmark-group.txt"),
+      StandardCharsets.UTF_8)
     while (lines.hasNext) {
       val line = lines.next()
       val parts = line.split("=")
@@ -29,7 +28,8 @@ object RenaissanceSuite {
   val groupJars = {
     val map = new mutable.HashMap[String, List[String]]
     val lines = IOUtils.lineIterator(
-      getClass.getResourceAsStream("/groups-jars.txt"), StandardCharsets.UTF_8)
+      getClass.getResourceAsStream("/groups-jars.txt"),
+      StandardCharsets.UTF_8)
     while (lines.hasNext) {
       val line = lines.next()
       val parts = line.split("=")
@@ -86,10 +86,16 @@ object RenaissanceSuite {
     }
 
     if (config.readme) {
-      FileUtils.write(new File("README.md"), readme,
-        java.nio.charset.StandardCharsets.UTF_8, false)
-      FileUtils.write(new File("CONTRIBUTION.md"), contribution,
-        java.nio.charset.StandardCharsets.UTF_8, false)
+      FileUtils.write(
+        new File("README.md"),
+        readme,
+        java.nio.charset.StandardCharsets.UTF_8,
+        false)
+      FileUtils.write(
+        new File("CONTRIBUTION.md"),
+        contribution,
+        java.nio.charset.StandardCharsets.UTF_8,
+        false)
       println("README.md and CONTRIBUTION.md updated.")
       return
     } else {
@@ -133,19 +139,22 @@ object RenaissanceSuite {
   private def generateBenchmarkDescription(name: String): String = {
     val bench = loadBenchmark(name)
     s"- `${bench.name}` - " +
-    s"${bench.description} (default repetitions: ${bench.defaultRepetitions})"
+      s"${bench.description} (default repetitions: ${bench.defaultRepetitions})"
   }
 
-  private def generateBenchmarkList = benchmarkGroups.groupBy(_._2)
-    .toSeq.sortBy(_._1)
-    .map {
-      case (group, benchmarkName) => s"""
+  private def generateBenchmarkList =
+    benchmarkGroups
+      .groupBy(_._2)
+      .toSeq
+      .sortBy(_._1)
+      .map {
+        case (group, benchmarkName) => s"""
 ##### $group
 
 ${benchmarkName.map(_._1).toSeq.sorted.map(generateBenchmarkDescription).mkString("\n\n")}
 """
-    }
-    .mkString("\n")
+      }
+      .mkString("\n")
 
   val readme = s"""
 
@@ -218,7 +227,7 @@ The suite is designed to support multiple ways of executing a benchmark --
 for example, a fixed number of iterations, or a fixed amount of time.
 This logic is encapsulated in run policies. Current policies include:
 
-${Policy.descriptions.map { case (k, v) => s"- `$k` -- $v\n"}.mkString("\n")}
+${Policy.descriptions.map { case (k, v) => s"- `$k` -- $v\n" }.mkString("\n")}
 
 
 ### Plugins and interfacing with external tools
@@ -252,7 +261,7 @@ the current state of the benchmark.
 Please see CONTRIBUTION.md for a description of the contributing process.
 """
 
-val contribution = s"""
+  val contribution = s"""
 
 ## Contribution Guide
 
