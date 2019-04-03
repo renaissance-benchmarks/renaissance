@@ -40,28 +40,29 @@ object RenaissanceSuite {
     map
   }
 
-  private val parser: OptionParser[Config] = new OptionParser[Config]("renaissance") {
-    head("Renaissance Benchmark Suite", "0.1")
+  private val parser: OptionParser[Config] =
+    new OptionParser[Config]("renaissance") {
+      head("Renaissance Benchmark Suite", "0.1")
 
-    help("help")
-      .text("Prints this usage text.")
-    opt[Int]('r', "repetitions")
-      .text("Number of repetitions of each benchmark")
-      .action((v, c) => c.copy(repetitions = v))
-    opt[String]("policy")
-      .text("Execution policy, one of: " + Policy.descriptions.keys.mkString(", "))
-      .action((v, c) => c.copy(policy = v))
-    opt[String]("plugins")
-      .text("Comma-separated list of class names of plugin implementations.")
-      .action((v, c) => c.withPlugins(v))
-    opt[Unit]("readme")
-      .text("Regenerates the README file, and does not run anything.")
-      .action((_, c) => c.copy(readme = true))
-    arg[String]("benchmark-specification")
-      .text("Comma-separated list of benchmarks (or groups) that must be executed.")
-      .optional()
-      .action((v, c) => c.withBenchmarkSpecification(v))
-  }
+      help("help")
+        .text("Prints this usage text.")
+      opt[Int]('r', "repetitions")
+        .text("Number of repetitions of each benchmark")
+        .action((v, c) => c.copy(repetitions = v))
+      opt[String]("policy")
+        .text("Execution policy, one of: " + Policy.descriptions.keys.mkString(", "))
+        .action((v, c) => c.copy(policy = v))
+      opt[String]("plugins")
+        .text("Comma-separated list of class names of plugin implementations.")
+        .action((v, c) => c.withPlugins(v))
+      opt[Unit]("readme")
+        .text("Regenerates the README file, and does not run anything.")
+        .action((_, c) => c.copy(readme = true))
+      arg[String]("benchmark-specification")
+        .text("Comma-separated list of benchmarks (or groups) that must be executed.")
+        .optional()
+        .action((v, c) => c.withBenchmarkSpecification(v))
+    }
 
   private def parse(args: Array[String]): Option[Config] = {
     parser.parse(args, new Config)
@@ -82,7 +83,7 @@ object RenaissanceSuite {
   def main(args: Array[String]): Unit = {
     val config = parse(args) match {
       case Some(c) => c
-      case None => sys.exit(1)
+      case None    => sys.exit(1)
     }
 
     if (config.readme) {
@@ -132,7 +133,8 @@ object RenaissanceSuite {
     val loader = new URLClassLoader(urls, this.getClass.getClassLoader)
     val benchClassName = camelCase(name)
     val packageName = mainGroup.replace("-", ".")
-    val benchClass = loader.loadClass("org.renaissance." + packageName + "." + benchClassName)
+    val benchClass =
+      loader.loadClass("org.renaissance." + packageName + "." + benchClassName)
     benchClass.newInstance.asInstanceOf[RenaissanceBenchmark]
   }
 
@@ -148,10 +150,16 @@ object RenaissanceSuite {
       .toSeq
       .sortBy(_._1)
       .map {
-        case (group, benchmarkName) => s"""
+        case (group, benchmarkName) =>
+          s"""
 ##### $group
 
-${benchmarkName.map(_._1).toSeq.sorted.map(generateBenchmarkDescription).mkString("\n\n")}
+${benchmarkName
+            .map(_._1)
+            .toSeq
+            .sorted
+            .map(generateBenchmarkDescription)
+            .mkString("\n\n")}
 """
       }
       .mkString("\n")
@@ -285,7 +293,7 @@ The code is organized into three main parts:
 
 To add a new benchmark to an existing group, identify the respective project
 in the `benchmarks` directory, and add a new top-level Scala class
-that extends the `RenaissanceBenchmark` interface.
+that extends the `${classOf[RenaissanceBenchmark].getSimpleName}` interface.
 
 Here is an example:
 

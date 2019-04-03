@@ -142,6 +142,11 @@ def createRenaissanceFormatTask = Def.taskDyn {
 
 val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
 
+lazy val remoteDebug = SettingKey[Boolean](
+  "remoteDebug",
+  "Whether or not to enter a remote debugging session when running Renaissance."
+)
+
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -155,7 +160,17 @@ lazy val renaissance: Project = {
       ),
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceBundleTask,
-      renaissanceFormatTask
+      renaissanceFormatTask,
+      fork in run := true,
+      cancelable in Global := true,
+      remoteDebug := false,
+      javaOptions in Compile ++= {
+        if (remoteDebug.value) {
+          Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
+        } else {
+          Seq()
+        }
+      },
     )
     .dependsOn(
       renaissanceCore

@@ -1,9 +1,11 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-// Note: this version should not be changed here.
+// Note: these versions should not be changed here.
 // If we want to target a different Spark version, we should instead clone this subproject.
 // That way, we make it convenient to run the old versions,
 // and avoid the benchmarking of a moving target.
+//scalaVersion := "2.11.8"
+
 val sparkVersion = "2.0.0"
 
 lazy val apacheSpark = (project in file("."))

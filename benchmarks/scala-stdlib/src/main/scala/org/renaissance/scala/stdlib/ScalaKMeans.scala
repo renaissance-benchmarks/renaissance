@@ -6,9 +6,11 @@ import scala.collection._
 import scala.util.Random
 
 trait KMeansUtilities {
+
   class Point(val x: Double, val y: Double, val z: Double) {
     private def square(v: Double): Double = v * v
     private def round(v: Double): Double = (v * 100).toInt / 100.0
+
     def squareDistance(that: Point): Double = {
       square(that.x - x) + square(that.y - y) + square(that.z - z)
     }
@@ -51,8 +53,8 @@ trait KMeansUtilities {
   }
 
   def classify(
-      points: GenSeq[Point],
-      means: GenSeq[Point]
+    points: GenSeq[Point],
+    means: GenSeq[Point]
   ): GenMap[Point, GenSeq[Point]] = {
     val grouped = points.groupBy(p => findClosest(p, means))
     means.foldLeft(grouped) { (map, mean) =>
@@ -75,15 +77,15 @@ trait KMeansUtilities {
     }
 
   def update(
-      classified: GenMap[Point, GenSeq[Point]],
-      oldMeans: GenSeq[Point]
+    classified: GenMap[Point, GenSeq[Point]],
+    oldMeans: GenSeq[Point]
   ): GenSeq[Point] = {
     oldMeans.map(mean => findAverage(mean, classified(mean)))
   }
 
   def converged(eta: Double)(
-      oldMeans: GenSeq[Point],
-      newMeans: GenSeq[Point]
+    oldMeans: GenSeq[Point],
+    newMeans: GenSeq[Point]
   ): Boolean = {
     (oldMeans zip newMeans)
       .map({
@@ -94,9 +96,9 @@ trait KMeansUtilities {
   }
 
   final def kMeans(
-      points: GenSeq[Point],
-      means: GenSeq[Point],
-      eta: Double
+    points: GenSeq[Point],
+    means: GenSeq[Point],
+    eta: Double
   ): GenSeq[Point] = {
     val classifiedPoints = classify(points, means)
 
