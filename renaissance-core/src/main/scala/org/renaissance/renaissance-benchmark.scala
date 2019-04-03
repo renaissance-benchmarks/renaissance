@@ -53,6 +53,8 @@ trait RenaissanceBenchmark {
     }
   }
 
+  /** This method runs the functionality of the benchmark.
+   */
   protected def runIteration(config: Config): Unit
 
   def runIterationWithBeforeAndAfter(policy: Policy, config: Config): Long = {
