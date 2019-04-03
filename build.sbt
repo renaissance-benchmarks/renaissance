@@ -55,10 +55,18 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def kebabCase(s: String) = {
+def kebabCase(s: String): String = {
   val camelCaseName = if (s.last == '$') s.init else s
   val pattern = Pattern.compile("([A-Za-z])([A-Z])")
-  pattern.matcher(camelCaseName).replaceAll("$1-$2").toLowerCase
+  var result = camelCaseName
+  do {
+    val last = result
+    result = pattern.matcher(result).replaceFirst("$1-$2")
+    if (last == result) {
+      return result.toLowerCase()
+    }
+  } while (true)
+  sys.error("unreachable")
 }
 
 def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {

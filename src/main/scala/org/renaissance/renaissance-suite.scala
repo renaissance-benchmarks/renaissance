@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import scala.collection._
+import scala.collection.JavaConverters._
 import scopt._
 
 object RenaissanceSuite {
@@ -48,16 +49,17 @@ object RenaissanceSuite {
         .text("Prints this usage text.")
       opt[Int]('r', "repetitions")
         .text("Number of repetitions of each benchmark")
-        .action((v, c) => c.copy(repetitions = v))
+        .action((v, c) => c.withRepetitions(v))
       opt[String]("policy")
-        .text("Execution policy, one of: " + Policy.descriptions.keys.mkString(", "))
-        .action((v, c) => c.copy(policy = v))
+        .text("Execution policy, one of: " +
+          Policy.descriptions.asScala.keys.mkString(", "))
+        .action((v, c) => c.withPolicy(v))
       opt[String]("plugins")
         .text("Comma-separated list of class names of plugin implementations.")
         .action((v, c) => c.withPlugins(v))
       opt[Unit]("readme")
         .text("Regenerates the README file, and does not run anything.")
-        .action((_, c) => c.copy(readme = true))
+        .action((_, c) => c.withReadme(true))
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed.")
         .optional()
@@ -101,7 +103,7 @@ object RenaissanceSuite {
       return
     } else {
       // Check that all the benchmarks on the list really exist.
-      for (benchName <- config.benchmarkList) {
+      for (benchName <- config.benchmarkList.asScala) {
         if (!(benchmarkGroups.contains(benchName))) {
           println(s"Benchmark `${benchName}` does not exist.")
           sys.exit(1)
@@ -109,14 +111,14 @@ object RenaissanceSuite {
       }
 
       // Run the main benchmark loop.
-      for (plugin <- config.plugins) plugin.onCreation()
+      for (plugin <- config.plugins.asScala) plugin.onCreation()
       try {
-        for (benchName <- config.benchmarkList) {
+        for (benchName <- config.benchmarkList.asScala) {
           val bench = loadBenchmark(benchName)
           bench.runBenchmark(config)
         }
       } finally {
-        for (plugin <- config.plugins) plugin.onExit()
+        for (plugin <- config.plugins.asScala) plugin.onExit()
       }
     }
   }
@@ -235,7 +237,7 @@ The suite is designed to support multiple ways of executing a benchmark --
 for example, a fixed number of iterations, or a fixed amount of time.
 This logic is encapsulated in run policies. Current policies include:
 
-${Policy.descriptions.map { case (k, v) => s"- `$k` -- $v\n" }.mkString("\n")}
+${Policy.descriptions.asScala.map { case (k, v) => s"- `$k` -- $v\n" }.mkString("\n")}
 
 
 ### Plugins and interfacing with external tools
