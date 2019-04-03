@@ -59,26 +59,3 @@ public class FixedIterationsPolicy extends Policy {
     return Optional.empty();
   }
 }
-
-// private[renaissance] def execute(): Try[Unit] = {
-//   while (iteration < totalIterations) {
-//   val name = currentBenchmark.name
-//   val g = currentBenchmark.mainGroup
-//   if (iteration == totalIterations - 1) {
-//   println(s"====== $name ($g), final iteration started ======")
-//   } else {
-//   println(s"====== $name ($g), iteration $iteration started ======")
-//   }
-//   val nanos = currentBenchmark.runIterationWithBeforeAndAfter(this, config)
-//   val millis = (nanos / 1000).toInt / 1000.0
-//   if (iteration == totalIterations - 1) {
-//   println(s"====== $name ($g), final iteration completed ($millis ms) ======")
-//   } else {
-//   println(s"====== $name ($g), iteration $iteration completed ($millis ms) ======")
-//   }
-//   iteration += 1
-//   }
-//   Success(())
-//   }
-//   }
-
