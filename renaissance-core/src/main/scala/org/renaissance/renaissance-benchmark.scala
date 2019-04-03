@@ -1,13 +1,9 @@
 package org.renaissance
 
-
-
 import java.util.regex.Pattern
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
-
 
 trait RenaissanceBenchmark {
   final def name: String = {
@@ -79,7 +75,6 @@ trait RenaissanceBenchmark {
   }
 }
 
-
 case class Config(
   val benchmarkList: Seq[String] = Seq(),
   val repetitions: Int = -1,
@@ -87,6 +82,7 @@ case class Config(
   val policy: String = "fixed",
   val readme: Boolean = false
 ) {
+
   def withBenchmarkSpecification(v: String): Config =
     this.copy(benchmarkList = v.split(",").toSeq)
 
@@ -99,12 +95,12 @@ case class Config(
   }
 }
 
-
 /** Base class for plugins that gather other metrics.
  *
  *  Subclasses must have a zero arguments constructor.
  */
 trait Plugin {
+
   /** Called once after the plugin is created.
    */
   def onCreation(): Unit
@@ -126,7 +122,6 @@ trait Plugin {
   def onExit(): Unit = {}
 }
 
-
 /** The policy that executes the benchmark
  */
 sealed trait Policy {
@@ -145,10 +140,12 @@ sealed trait Policy {
   private[renaissance] def execute(): Try[Unit]
 }
 
-
 object Policy {
+
   val factories = Map[String, (RenaissanceBenchmark, Config) => Policy](
-    "fixed" -> { (benchmark, config) => new FixedIterationsPolicy(benchmark, config) }
+    "fixed" -> { (benchmark, config) =>
+      new FixedIterationsPolicy(benchmark, config)
+    }
   )
 
   def descriptions: Map[String, String] = factories.map {
@@ -157,7 +154,6 @@ object Policy {
       (name, policy.description)
   }
 }
-
 
 /** Represents a run in which a fixed number of iterations are sequentially executed.
  */
@@ -198,9 +194,8 @@ final class FixedIterationsPolicy(
   }
 }
 
-
 final class Dummy extends RenaissanceBenchmark {
   override def description: String = "A dummy benchmark, which does no work."
 
-  override protected def runIteration(config: Config): Unit = {}
+  protected override def runIteration(config: Config): Unit = {}
 }

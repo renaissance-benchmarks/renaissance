@@ -11,6 +11,6 @@ lazy val renaissanceCore = (project in file("."))
     scalaVersion := renaissanceScalaVersion,
     libraryDependencies ++= Seq(
     ),
-    scalafmtConfig := Some(file("../.scalafmt.conf"))
+    scalafmtConfig := Some(file(".scalafmt.conf"))
   )
 
