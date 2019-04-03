@@ -129,6 +129,19 @@ def jarsAndListGenerator = Def.taskDyn {
   }
 }
 
+val renaissanceFormat = taskKey[Unit](
+  "Create a single bundle of Renaissance."
+)
+
+def createRenaissanceFormatTask = Def.taskDyn {
+  val formatTasks = for (p <- benchmarkProjects) yield scalafmt in (p, Compile)
+  val testFormatTasks = for (p <- benchmarkProjects) yield scalafmt in (p, Test)
+  val buildFormatTasks = for (p <- benchmarkProjects) yield scalafmtSbt in (p, Compile)
+  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
+}
+
+val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
+
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -141,7 +154,8 @@ lazy val renaissance: Project = {
         "com.github.scopt" %% "scopt" % "4.0.0-RC2"
       ),
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      renaissanceBundleTask
+      renaissanceBundleTask,
+      renaissanceFormatTask
     )
     .dependsOn(
       renaissanceCore

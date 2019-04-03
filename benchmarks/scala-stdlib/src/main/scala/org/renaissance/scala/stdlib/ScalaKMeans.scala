@@ -1,20 +1,16 @@
 package org.renaissance.scala.stdlib
 
-
-
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Config
 import scala.collection._
 import scala.util.Random
-
-
 
 trait KMeansUtilities {
   class Point(val x: Double, val y: Double, val z: Double) {
     private def square(v: Double): Double = v * v
     private def round(v: Double): Double = (v * 100).toInt / 100.0
     def squareDistance(that: Point): Double = {
-      square(that.x - x)  + square(that.y - y) + square(that.z - z)
+      square(that.x - x) + square(that.y - y) + square(that.z - z)
     }
     override def toString = s"(${round(x)}, ${round(y)}, ${round(z)})"
   }
@@ -29,12 +25,15 @@ trait KMeansUtilities {
         val y = ((i + 5) % k) * 1.0 / k + randy.nextDouble() * 0.5
         val z = ((i + 7) % k) * 1.0 / k + randz.nextDouble() * 0.5
         new Point(x, y, z)
-      }).to[mutable.ArrayBuffer]
+      })
+      .to[mutable.ArrayBuffer]
   }
 
   def initializeMeans(k: Int, points: Seq[Point]): Seq[Point] = {
     val rand = new Random(7)
-    (0 until k).map(_ => points(rand.nextInt(points.length))).to[mutable.ArrayBuffer]
+    (0 until k)
+      .map(_ => points(rand.nextInt(points.length)))
+      .to[mutable.ArrayBuffer]
   }
 
   def findClosest(p: Point, means: GenSeq[Point]): Point = {
@@ -52,16 +51,18 @@ trait KMeansUtilities {
   }
 
   def classify(
-    points: GenSeq[Point], means: GenSeq[Point]
+      points: GenSeq[Point],
+      means: GenSeq[Point]
   ): GenMap[Point, GenSeq[Point]] = {
     val grouped = points.groupBy(p => findClosest(p, means))
-    means.foldLeft(grouped) {
-      (map, mean) => if (map.contains(mean)) map else map.updated(mean, Seq())
+    means.foldLeft(grouped) { (map, mean) =>
+      if (map.contains(mean)) map else map.updated(mean, Seq())
     }
   }
 
   def findAverage(oldMean: Point, points: GenSeq[Point]): Point =
-    if (points.length == 0) oldMean else {
+    if (points.length == 0) oldMean
+    else {
       var x = 0.0
       var y = 0.0
       var z = 0.0
@@ -74,21 +75,28 @@ trait KMeansUtilities {
     }
 
   def update(
-    classified: GenMap[Point, GenSeq[Point]], oldMeans: GenSeq[Point]
+      classified: GenMap[Point, GenSeq[Point]],
+      oldMeans: GenSeq[Point]
   ): GenSeq[Point] = {
     oldMeans.map(mean => findAverage(mean, classified(mean)))
   }
 
   def converged(eta: Double)(
-    oldMeans: GenSeq[Point], newMeans: GenSeq[Point]
+      oldMeans: GenSeq[Point],
+      newMeans: GenSeq[Point]
   ): Boolean = {
-    (oldMeans zip newMeans).map({ case (oldMean, newMean) =>
-      oldMean squareDistance newMean
-    }).forall(_ <= eta)
+    (oldMeans zip newMeans)
+      .map({
+        case (oldMean, newMean) =>
+          oldMean squareDistance newMean
+      })
+      .forall(_ <= eta)
   }
 
   final def kMeans(
-    points: GenSeq[Point], means: GenSeq[Point], eta: Double
+      points: GenSeq[Point],
+      means: GenSeq[Point],
+      eta: Double
   ): GenSeq[Point] = {
     val classifiedPoints = classify(points, means)
 
@@ -101,7 +109,6 @@ trait KMeansUtilities {
     }
   }
 }
-
 
 class ScalaKMeans extends RenaissanceBenchmark with KMeansUtilities {
   def description = "Runs the K-Means algorithm using Scala collections."
@@ -127,4 +134,3 @@ class ScalaKMeans extends RenaissanceBenchmark with KMeansUtilities {
     centers = kMeans(points, means, eta)
   }
 }
-
