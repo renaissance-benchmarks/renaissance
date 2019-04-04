@@ -7,8 +7,6 @@ import java.util.regex.Pattern
 import scala.collection._
 import scala.sys.process._
 
-
-
 val renaissanceVersion = "0.1"
 
 val renaissanceScalaVersion = "2.12.8"
@@ -35,10 +33,11 @@ val renaissanceBundleTask = renaissanceBundle := {
   val renaissanceDir = target(_ / "renaissance").value
   val renaissanceJarDir = renaissanceDir / "jars"
   renaissanceJarDir.mkdirs()
-  for (jar <- allJars) Files.copy(
-    jar.toPath,
-    (renaissanceJarDir / jar.getName).toPath,
-    StandardCopyOption.REPLACE_EXISTING)
+  for (jar <- allJars)
+    Files.copy(
+      jar.toPath,
+      (renaissanceJarDir / jar.getName).toPath,
+      StandardCopyOption.REPLACE_EXISTING)
   val targetDir = target(_ / ".").value
   val tarName = s"renaissance-${version.value}.tar.gz"
   val status = s"tar czf ${targetDir}/$tarName -C ${targetDir} renaissance".!
@@ -50,9 +49,10 @@ val renaissanceBundleTask = renaissanceBundle := {
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
   tasks.toList match {
     case Nil => Def.task { Nil }
-    case x :: xs => Def.taskDyn {
-      flattenTasks(xs) map (x.value +: _)
-    }
+    case x :: xs =>
+      Def.taskDyn {
+        flattenTasks(xs) map (x.value +: _)
+      }
   }
 
 def kebabCase(s: String) = {
@@ -72,7 +72,8 @@ def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
     while (enumeration.hasMoreElements) {
       val entry = enumeration.nextElement()
       if (entry.getName.endsWith(".class")) {
-        val name = entry.getName.substring(0, entry.getName.length - 6)
+        val name = entry.getName
+          .substring(0, entry.getName.length - 6)
           .replace("/", ".")
         val clazz = loader.loadClass(name)
         if (benchBase.isAssignableFrom(clazz)) {
@@ -87,30 +88,33 @@ def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
 def jarsAndListGenerator = Def.taskDyn {
   val jarTasks = for {
     p <- benchmarkProjects
-  } yield Def.task {
-    val mainJar = (packageBin in(p, Compile)).value
-    val depJars = (dependencyClasspath in(p, Compile)).value.map(_.data).filter(_.isFile)
-    val allJars = mainJar +: depJars
-    val project = p.asInstanceOf[RootProject].build.getPath
-    val jarFiles = for (jar <- allJars) yield {
-      val dest = (resourceManaged in Compile).value / project / jar.getName
-      dest.getParentFile.mkdirs()
-      Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
-      dest
+  } yield
+    Def.task {
+      val mainJar = (packageBin in (p, Compile)).value
+      val depJars = (dependencyClasspath in (p, Compile)).value.map(_.data).filter(_.isFile)
+      val allJars = mainJar +: depJars
+      val project = p.asInstanceOf[RootProject].build.getPath
+      val jarFiles = for (jar <- allJars) yield {
+        val dest = (resourceManaged in Compile).value / project / jar.getName
+        dest.getParentFile.mkdirs()
+        Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
+        dest
+      }
+      (project, jarFiles)
     }
-    (project, jarFiles)
-  }
   // Flatten list, create a groups-jars file, and a benchmark-group file.
-  val coreJar = (packageBin in(renaissanceCore, Compile)).value
+  val coreJar = (packageBin in (renaissanceCore, Compile)).value
   flattenTasks(jarTasks).map { groupJars =>
     val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
     val jarListContent = new StringBuilder
     val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
     val benchGroupContent = new StringBuilder
     for ((project, jars) <- groupJars) {
-      val jarLine = jars.map(
-        jar => project + "/" + jar.getName
-      ).mkString(",")
+      val jarLine = jars
+        .map(
+          jar => project + "/" + jar.getName
+        )
+        .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
       for (bench <- listBenchmarks(coreJar, jars)) {
@@ -125,6 +129,19 @@ def jarsAndListGenerator = Def.taskDyn {
   }
 }
 
+val renaissanceFormat = taskKey[Unit](
+  "Create a single bundle of Renaissance."
+)
+
+def createRenaissanceFormatTask = Def.taskDyn {
+  val formatTasks = for (p <- benchmarkProjects) yield scalafmt in (p, Compile)
+  val testFormatTasks = for (p <- benchmarkProjects) yield scalafmt in (p, Test)
+  val buildFormatTasks = for (p <- benchmarkProjects) yield scalafmtSbt in (p, Compile)
+  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
+}
+
+val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
+
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -137,8 +154,10 @@ lazy val renaissance: Project = {
         "com.github.scopt" %% "scopt" % "4.0.0-RC2"
       ),
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      renaissanceBundleTask
-    ).dependsOn(
+      renaissanceBundleTask,
+      renaissanceFormatTask
+    )
+    .dependsOn(
       renaissanceCore
     )
   benchmarkProjects.foldLeft(p)(_ aggregate _)

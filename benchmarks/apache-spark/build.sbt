@@ -1,4 +1,3 @@
-
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
 // Note: this version should not be changed here.
@@ -15,7 +14,9 @@ lazy val apacheSpark = (project in file("."))
       //"org.apache.spark" %% "spark-core" % sparkVersion,
       //"org.apache.spark" %% "spark-sql" % sparkVersion,
       //"org.apache.spark" %% "spark-mllib" % sparkVersion
-    )
-  ).dependsOn(
+    ),
+    scalafmtConfig := Some(file(".scalafmt.conf"))
+  )
+  .dependsOn(
     renaissanceCore
   )
