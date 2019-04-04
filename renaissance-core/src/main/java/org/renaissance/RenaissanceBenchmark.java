@@ -10,6 +10,7 @@ public abstract class RenaissanceBenchmark {
     String camelCaseName =
       (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
     Pattern pattern = Pattern.compile("([A-Za-z])([A-Z])");
+    // This functionality is duplicated in the kebabCase function of the build file.
     String result = camelCaseName;
     do {
       String last = result;

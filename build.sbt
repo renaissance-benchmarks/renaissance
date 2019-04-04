@@ -56,6 +56,7 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
   }
 
 def kebabCase(s: String): String = {
+  // This functionality is duplicated in the RenaissanceBenchmark class.
   val camelCaseName = if (s.last == '$') s.init else s
   val pattern = Pattern.compile("([A-Za-z])([A-Z])")
   var result = camelCaseName
@@ -79,7 +80,7 @@ def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
     val enumeration = jarFile.entries()
     while (enumeration.hasMoreElements) {
       val entry = enumeration.nextElement()
-      if (entry.getName.endsWith(".class")) {
+      if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
         val name = entry.getName
           .substring(0, entry.getName.length - 6)
           .replace("/", ".")
