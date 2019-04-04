@@ -55,10 +55,19 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def kebabCase(s: String) = {
+def kebabCase(s: String): String = {
+  // This functionality is duplicated in the RenaissanceBenchmark class.
   val camelCaseName = if (s.last == '$') s.init else s
   val pattern = Pattern.compile("([A-Za-z])([A-Z])")
-  pattern.matcher(camelCaseName).replaceAll("$1-$2").toLowerCase
+  var result = camelCaseName
+  do {
+    val last = result
+    result = pattern.matcher(result).replaceFirst("$1-$2")
+    if (last == result) {
+      return result.toLowerCase()
+    }
+  } while (true)
+  sys.error("unreachable")
 }
 
 def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
@@ -71,7 +80,7 @@ def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
     val enumeration = jarFile.entries()
     while (enumeration.hasMoreElements) {
       val entry = enumeration.nextElement()
-      if (entry.getName.endsWith(".class")) {
+      if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
         val name = entry.getName
           .substring(0, entry.getName.length - 6)
           .replace("/", ".")
@@ -142,6 +151,11 @@ def createRenaissanceFormatTask = Def.taskDyn {
 
 val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
 
+lazy val remoteDebug = SettingKey[Boolean](
+  "remoteDebug",
+  "Whether or not to enter a remote debugging session when running Renaissance."
+)
+
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -155,7 +169,17 @@ lazy val renaissance: Project = {
       ),
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceBundleTask,
-      renaissanceFormatTask
+      renaissanceFormatTask,
+      fork in run := true,
+      cancelable in Global := true,
+      remoteDebug := false,
+      javaOptions in Compile ++= {
+        if (remoteDebug.value) {
+          Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
+        } else {
+          Seq()
+        }
+      },
     )
     .dependsOn(
       renaissanceCore
