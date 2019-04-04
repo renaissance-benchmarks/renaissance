@@ -78,7 +78,12 @@ public abstract class RenaissanceBenchmark {
     } catch (Throwable t) {
       return Optional.of(t);
     } finally {
-      tearDownAfterAll(config);
+      try {
+        tearDownAfterAll(config);
+      } catch (Throwable t) {
+        System.err.println("Error during tear-down: " + t.getMessage());
+        t.printStackTrace();
+      }
     }
   }
 

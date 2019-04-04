@@ -115,7 +115,11 @@ object RenaissanceSuite {
       try {
         for (benchName <- config.benchmarkList.asScala) {
           val bench = loadBenchmark(benchName)
-          bench.runBenchmark(config)
+          val exception = bench.runBenchmark(config)
+          if (exception.isPresent) {
+            Console.err.println(s"Exception occurred in ${bench}: ${exception.get.getMessage}")
+            exception.get.printStackTrace()
+          }
         }
       } finally {
         for (plugin <- config.plugins.asScala) plugin.onExit()
@@ -132,7 +136,7 @@ object RenaissanceSuite {
       file <- new File(dir).listFiles()
       if file.getName.endsWith(".jar")
     } yield file.toURI.toURL
-    val loader = new URLClassLoader(urls, this.getClass.getClassLoader)
+    val loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader)
     val benchClassName = camelCase(name)
     val packageName = mainGroup.replace("-", ".")
     val benchClass =
