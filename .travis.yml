@@ -16,6 +16,8 @@ matrix:
 
 before_install:
   - java -version
+  - cat /etc/sbt/jvmopts
+  - cat /etc/sbt/sbtopts
 
 script:
   - ./tools/sbt/bin/sbt renaissanceBundle
