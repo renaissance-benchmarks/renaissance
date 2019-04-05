@@ -1,6 +1,7 @@
 sudo: false
 dist: trusty
 language: scala
+scala: 2.12.8
 
 # The matrix does not list all possible combinations
 # to shorten the time needed.
@@ -8,42 +9,19 @@ language: scala
 # Each benchmark is run with one Scala/JDK version only.
 matrix:
   include:
-    # Different Scala versions
+    # Bundle build (add more JDKs here eventually)
     - os: linux
-      scala: 2.9.3
-      jdk: oraclejdk9
-    - os: linux
-      jdk: oraclejdk9
-      scala: 2.10.6
-    - os: linux
-      jdk: oraclejdk9
-      scala: 2.11.11
-    - os: linux
-      jdk: oraclejdk9
-      scala: 2.12.2
-
-    # Different JDK versions
-    - os: linux
-      jdk: openjdk10
-      scala: 2.12.2
-    - os: linux
-      jdk: openjdk11
-      scala: 2.12.2
-    - os: linux
-      jdk: oraclejdk11
-      scala: 2.12.2
+      jdk: openjdk8
 
     # Formatting check
     - os: linux
-      jdk: oraclejdk9
-      scala: 2.12.2
+      jdk: openjdk8
       env:
         - CHECKSTYLE=yes
 
     # Each benchmark
     - os: linux
-      scala: 2.10.6
-      jdk: oraclejdk9
+      jdk: openjdk8
       env:
         - BENCHMARK=scala-k-means  
 
