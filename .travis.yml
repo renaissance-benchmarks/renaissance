@@ -2,12 +2,38 @@ sudo: false
 dist: trusty
 language: scala
 
+# The matrix does not list all possible combinations
+# to shorten the time needed.
+# We test with different Scala and JDK versions.
+# Each benchmark is run with one Scala/JDK version only.
 matrix:
   include:
-#    - os: linux
-#      scala: 2.9.3
-#    - os: linux
-#      scala: 2.10.6
+    # Different Scala versions
+    - os: linux
+      scala: 2.9.3
+      jdk: oraclejdk9
+    - os: linux
+      jdk: oraclejdk9
+      scala: 2.10.6
+    - os: linux
+      jdk: oraclejdk9
+      scala: 2.11.11
+    - os: linux
+      jdk: oraclejdk9
+      scala: 2.12.2
+
+    # Different JDK versions
+    - os: linux
+      jdk: openjdk10
+      scala: 2.12.2
+    - os: linux
+      jdk: openjdk11
+      scala: 2.12.2
+    - os: linux
+      jdk: oraclejdk11
+      scala: 2.12.2
+
+    # Each benchmark
     - os: linux
       scala: 2.10.6
       jdk: oraclejdk9
