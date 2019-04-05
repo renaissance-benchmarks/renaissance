@@ -16,8 +16,11 @@ matrix:
 
 before_install:
   - java -version
-  - cat /etc/sbt/jvmopts
-  - cat /etc/sbt/sbtopts
+
+before_script:
+  # For us, the default options are broken as they pass "-v"
+  # to the JVM instead after the sbt JAR.
+  - unset SBT_OPTS
 
 script:
   - ./tools/sbt/bin/sbt renaissanceBundle
