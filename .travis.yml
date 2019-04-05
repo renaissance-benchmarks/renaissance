@@ -4,12 +4,13 @@ language: scala
 
 matrix:
   include:
-    - os: linux
-      scala: 2.9.3
+#    - os: linux
+#      scala: 2.9.3
+#    - os: linux
+#      scala: 2.10.6
     - os: linux
       scala: 2.10.6
-    - os: linux
-      scala: 2.10.6
+      jdk: oraclejdk9
       env:
         - BENCHMARK=scala-k-means  
 
@@ -18,4 +19,4 @@ before_install:
 
 script:
   - ./tools/sbt/bin/sbt renaissanceBundle
-  - '[ -n "$BENCHMARK" ] && java -cp `ls target/renaissance/jars/*.jar | paste -sd:` org.renaissance.RenaissanceSuite -r 1 $BENCHMARK'
+  - 'if [ -n "$BENCHMARK" ]; then java -cp `ls target/renaissance/jars/*.jar | paste -sd:` org.renaissance.RenaissanceSuite -r 1 $BENCHMARK; fi'
