@@ -139,7 +139,7 @@ def jarsAndListGenerator = Def.taskDyn {
 }
 
 val renaissanceFormat = taskKey[Unit](
-  "Create a single bundle of Renaissance."
+  "Reformat source code with scalafmt."
 )
 
 def createRenaissanceFormatTask = Def.taskDyn {
