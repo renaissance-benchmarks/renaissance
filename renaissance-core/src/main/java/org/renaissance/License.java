@@ -24,7 +24,7 @@ public enum License {
     return licenses;
   }
 
-  public static License superset(License[] licenses) {
+  public static License distro(License[] licenses) {
     for (License license : licenses) {
       switch(license) {
         case GPL2:

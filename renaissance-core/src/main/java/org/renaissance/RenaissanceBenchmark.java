@@ -41,7 +41,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   public abstract License[] licenses();
 
   public License distro() {
-    return License.superset(licenses());
+    return License.distro(licenses());
   }
 
   public Optional<String> initialRelease() {
