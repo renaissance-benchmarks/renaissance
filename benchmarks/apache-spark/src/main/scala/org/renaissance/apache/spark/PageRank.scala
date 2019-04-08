@@ -9,12 +9,15 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.renaissance.Config
+import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
 class PageRank extends RenaissanceBenchmark {
   def description = "Runs a number of PageRank iterations, using RDDs."
 
   override def defaultRepetitions = 20
+
+  override def licenses = License.create(License.APL2)
 
   val ITERATIONS = 2
 

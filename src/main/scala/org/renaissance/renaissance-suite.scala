@@ -173,7 +173,7 @@ ${benchmarkName
   val logoUrl = "https://github.com/D-iii-S/renaissance-benchmarks/" +
     "raw/master/website/resources/images/mona-lisa-round.png"
 
-  val readme = s"""
+  lazy val readme = s"""
 
 # Renaissance Benchmark Suite
 
@@ -281,9 +281,30 @@ the current state of the benchmark.
 ### Contributing
 
 Please see CONTRIBUTION.md for a description of the contributing process.
+
+
+### Licensing
+
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
+
+Depending on your needs, you can use either of the two distributions.
+The following table contains the licensing information of all the benchmarks:
+
+| Benchmark     | Licenses      | Renaissance Distro |
+| ------------- | ------------- |:------------------:|
+${benchmarkGroups.keys
+    .map { name =>
+      val b = loadBenchmark(name)
+      s"| ${b.name()} | ${b.licenses().mkString(", ")} | ${b.distro()} |"
+    }
+    .mkString("\n")}
 """
 
-  val contribution = s"""
+  lazy val contribution = s"""
 
 ## Contribution Guide
 

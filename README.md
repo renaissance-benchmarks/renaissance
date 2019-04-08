@@ -135,3 +135,22 @@ the current state of the benchmark.
 ### Contributing
 
 Please see CONTRIBUTION.md for a description of the contributing process.
+
+
+### Licensing
+
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
+
+Depending on your needs, you can use either of the two distributions.
+The following table contains the licensing information of all the benchmarks:
+
+| Benchmark     | Licenses      | Renaissance Distro |
+| ------------- | ------------- |:------------------:|
+| scala-k-means | MIT | MIT |
+| scrabble | GPL2 | GPL3 |
+| page-rank | APL2 | MIT |
+| dummy | MIT | MIT |
