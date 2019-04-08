@@ -1,0 +1,38 @@
+sudo: false
+dist: trusty
+
+# The version is actually determined by SBT but we want the
+# latest image anyway
+language: scala
+scala: 2.12.8
+
+matrix:
+  include:
+    # Bundle build (add more JDKs here eventually)
+    - os: linux
+      jdk: openjdk8
+
+    # Formatting check
+    - os: linux
+      jdk: openjdk8
+      env:
+        - CHECKSTYLE=yes
+
+    # Each benchmark
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=scala-k-means  
+
+before_install:
+  - java -version
+
+before_script:
+  # For us, the default options are broken as they pass "-v"
+  # to the JVM instead after the sbt JAR.
+  - unset SBT_OPTS
+
+script:
+  - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck && travis_terminate 0; fi'
+  - ./tools/sbt/bin/sbt renaissanceBundle
+  - 'if [ -n "$BENCHMARK" ]; then java -cp `ls target/renaissance/jars/*.jar | paste -sd:` org.renaissance.RenaissanceSuite -r 1 $BENCHMARK; fi'
