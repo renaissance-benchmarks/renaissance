@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
-public abstract class RenaissanceBenchmark {
+public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   public final String name() {
     String cn = this.getClass().getSimpleName();
     String camelCaseName =
@@ -42,16 +42,16 @@ public abstract class RenaissanceBenchmark {
     return Optional.empty();
   }
 
-  protected void setUpBeforeAll(Config c) {
+  public void setUpBeforeAll(Config c) {
   }
 
-  protected void tearDownAfterAll(Config c) {
+  public void tearDownAfterAll(Config c) {
   }
 
-  protected void beforeIteration(Config c) {
+  public void beforeIteration(Config c) {
   }
 
-  protected void afterIteration(Config c) {
+  public void afterIteration(Config c) {
   }
 
   public final Optional<Throwable> runBenchmark(Config config) {
@@ -87,8 +87,7 @@ public abstract class RenaissanceBenchmark {
     }
   }
 
-  /**
-   * This method runs the functionality of the benchmark.
+  /** This method runs the functionality of the benchmark.
    */
   protected abstract void runIteration(Config config);
 
@@ -115,15 +114,5 @@ public abstract class RenaissanceBenchmark {
     return duration;
   }
 
-  public static class Dummy extends RenaissanceBenchmark {
-    @Override
-    public String description() {
-      return "A dummy benchmark, which does no work.";
-    }
-
-    @Override
-    protected void runIteration(Config config) {
-    }
-  }
 }
 

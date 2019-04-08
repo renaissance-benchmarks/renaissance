@@ -71,6 +71,7 @@ object RenaissanceSuite {
   }
 
   private def copyJars(mainGroup: String): Unit = {
+    // Copy all the JAR files for this group of benchmarks.
     val jars = groupJars(mainGroup)
     for (jar <- jars) {
       val is = getClass.getResourceAsStream("/" + jar)
@@ -127,7 +128,7 @@ object RenaissanceSuite {
     }
   }
 
-  private def loadBenchmark(name: String): RenaissanceBenchmark = {
+  private def loadBenchmark(name: String): RenaissanceBenchmarkApi = {
     val mainGroup = benchmarkGroups(name)
     copyJars(mainGroup)
 
@@ -136,12 +137,11 @@ object RenaissanceSuite {
       file <- new File(dir).listFiles()
       if file.getName.endsWith(".jar")
     } yield file.toURI.toURL
-    val loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader)
+    val loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader.getParent)
     val benchClassName = camelCase(name)
     val packageName = mainGroup.replace("-", ".")
-    val benchClass =
-      loader.loadClass("org.renaissance." + packageName + "." + benchClassName)
-    benchClass.newInstance.asInstanceOf[RenaissanceBenchmark]
+    val fullBenchClassName = "org.renaissance." + packageName + "." + benchClassName
+    new ProxyRenaissanceBenchmark(loader, fullBenchClassName)
   }
 
   private def generateBenchmarkDescription(name: String): String = {

@@ -37,7 +37,8 @@ val renaissanceBundleTask = renaissanceBundle := {
     Files.copy(
       jar.toPath,
       (renaissanceJarDir / jar.getName).toPath,
-      StandardCopyOption.REPLACE_EXISTING)
+      StandardCopyOption.REPLACE_EXISTING
+    )
   val targetDir = target(_ / ".").value
   val tarName = s"renaissance-${version.value}.tar.gz"
   val status = s"tar czf ${targetDir}/$tarName -C ${targetDir} renaissance".!
@@ -70,10 +71,12 @@ def kebabCase(s: String): String = {
   sys.error("unreachable")
 }
 
-def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
-  val urls = (coreJar +: classpath).map(_.toURI.toURL)
+def listBenchmarks(project: String, classpath: Seq[File]): Seq[String] = {
+  val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
-  val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
+  val baseName = "org.renaissance.RenaissanceBenchmark"
+  val dummyName = "org.renaissance.core.Dummy"
+  val benchBase = loader.loadClass(baseName)
   val benches = new mutable.ArrayBuffer[String]
   for (jar <- classpath) {
     val jarFile = new JarFile(jar)
@@ -85,7 +88,10 @@ def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
           .substring(0, entry.getName.length - 6)
           .replace("/", ".")
         val clazz = loader.loadClass(name)
-        if (benchBase.isAssignableFrom(clazz)) {
+        val isEligible =
+          benchBase.isAssignableFrom(clazz) && clazz.getName != baseName &&
+            (clazz.getName != dummyName || project == "benchmarks/core")
+        if (isEligible) {
           benches += kebabCase(clazz.getSimpleName)
         }
       }
@@ -95,13 +101,14 @@ def listBenchmarks(coreJar: File, classpath: Seq[File]): Seq[String] = {
 }
 
 def jarsAndListGenerator = Def.taskDyn {
-  val jarTasks = for {
+  val projectJarTasks = for {
     p <- benchmarkProjects
   } yield
     Def.task {
       val mainJar = (packageBin in (p, Compile)).value
+      val coreJar = (packageBin in (renaissanceCore, Runtime)).value
       val depJars = (dependencyClasspath in (p, Compile)).value.map(_.data).filter(_.isFile)
-      val allJars = mainJar +: depJars
+      val allJars = mainJar +: coreJar +: depJars
       val project = p.asInstanceOf[RootProject].build.getPath
       val jarFiles = for (jar <- allJars) yield {
         val dest = (resourceManaged in Compile).value / project / jar.getName
@@ -111,13 +118,26 @@ def jarsAndListGenerator = Def.taskDyn {
       }
       (project, jarFiles)
     }
+
+  // Add the built-in benchmarks.
+  val coreTask = Def.task {
+    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
+    val coreJarDest =
+      (resourceManaged in Compile).value / "benchmarks" / "core" / coreJar.getName
+    coreJarDest.getParentFile.mkdirs()
+    Files.copy(coreJar.toPath, coreJarDest.toPath, StandardCopyOption.REPLACE_EXISTING)
+    ("benchmarks/core", Seq(coreJarDest))
+  }
+  val jarTasks = coreTask +: projectJarTasks
+
   // Flatten list, create a groups-jars file, and a benchmark-group file.
-  val coreJar = (packageBin in (renaissanceCore, Compile)).value
   flattenTasks(jarTasks).map { groupJars =>
     val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
     val jarListContent = new StringBuilder
     val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
     val benchGroupContent = new StringBuilder
+
+    // Add the benchmarks from the different project groups.
     for ((project, jars) <- groupJars) {
       val jarLine = jars
         .map(
@@ -126,7 +146,7 @@ def jarsAndListGenerator = Def.taskDyn {
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for (bench <- listBenchmarks(coreJar, jars)) {
+      for (bench <- listBenchmarks(project, jars)) {
         benchGroupContent.append(bench).append("=").append(projectShort).append("\n")
       }
     }
@@ -179,7 +199,7 @@ lazy val renaissance: Project = {
         } else {
           Seq()
         }
-      },
+      }
     )
     .dependsOn(
       renaissanceCore
