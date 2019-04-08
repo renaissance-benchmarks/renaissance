@@ -48,5 +48,15 @@ class ProxyRenaissanceBenchmark(
 
   override def afterIteration(c: Config): Unit = call("afterIteration", Seq(dup(c)))
 
-  override def runBenchmark(c: Config): Optional[Throwable] = call("runBenchmark", Seq(dup(c)))
+  override def runBenchmark(c: Config): Optional[Throwable] = {
+    // Some benchmarks, such as Apache Spark benchmarks, tend to assume that their classes
+    // are loaded through the context class loader.
+    val previousLoader = Thread.currentThread().getContextClassLoader()
+    try {
+      Thread.currentThread().setContextClassLoader(groupClassLoader)
+      call("runBenchmark", Seq(dup(c)))
+    } finally {
+      Thread.currentThread().setContextClassLoader(previousLoader)
+    }
+  }
 }

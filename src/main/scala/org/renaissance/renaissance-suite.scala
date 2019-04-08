@@ -128,7 +128,7 @@ object RenaissanceSuite {
     }
   }
 
-  private def loadBenchmark(name: String): RenaissanceBenchmarkApi = {
+  private def loadBenchmark(name: String): ProxyRenaissanceBenchmark = {
     val mainGroup = benchmarkGroups(name)
     copyJars(mainGroup)
 
