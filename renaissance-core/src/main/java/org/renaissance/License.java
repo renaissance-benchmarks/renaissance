@@ -1,7 +1,7 @@
 package org.renaissance;
 
 public enum License {
-  APL2("Apache Public License 2.0"),
+  APACHE2("Apache Public License 2.0"),
   MIT("MIT License"),
   BSD3("BSD 3-Clause License"),
   PUBLIC("Public Domain"),

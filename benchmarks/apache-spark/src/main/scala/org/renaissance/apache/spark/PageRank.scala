@@ -17,7 +17,7 @@ class PageRank extends RenaissanceBenchmark {
 
   override def defaultRepetitions = 20
 
-  override def licenses = License.create(License.APL2)
+  override def licenses = License.create(License.APACHE2)
 
   val ITERATIONS = 2
 
