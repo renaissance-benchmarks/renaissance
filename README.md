@@ -95,6 +95,11 @@ The following is the complete list of benchmarks, separated into groups.
 - `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 
+##### twitter-finagle
+
+- `finagle-http` - Sends many small Finagle HTTP requests and awaits the response. (default repetitions: 12)
+
+
 
 ### Run policies
 
@@ -150,7 +155,8 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
-| scala-k-means | MIT | MIT |
+| page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
-| page-rank | APL2 | MIT |
 | dummy | MIT | MIT |
+| scala-k-means | MIT | MIT |
+| finagle-http | APACHE2 | MIT |
