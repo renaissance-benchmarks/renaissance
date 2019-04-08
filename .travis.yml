@@ -1,12 +1,11 @@
 sudo: false
 dist: trusty
+
+# The version is actually determined by SBT but we want the
+# latest image anyway
 language: scala
 scala: 2.12.8
 
-# The matrix does not list all possible combinations
-# to shorten the time needed.
-# We test with different Scala and JDK versions.
-# Each benchmark is run with one Scala/JDK version only.
 matrix:
   include:
     # Bundle build (add more JDKs here eventually)
