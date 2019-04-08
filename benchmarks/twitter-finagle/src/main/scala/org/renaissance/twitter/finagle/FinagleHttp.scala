@@ -9,7 +9,7 @@ class FinagleHttp extends RenaissanceBenchmark {
 
   override def defaultRepetitions = 12
 
-  def licenses = License.create(License.APL2)
+  def licenses = License.create(License.APACHE2)
 
   override def runIteration(c: Config): Unit = {}
 }
