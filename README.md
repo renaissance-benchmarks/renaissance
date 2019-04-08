@@ -2,6 +2,10 @@
 
 # Renaissance Benchmark Suite
 
+<p align="center">
+  <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
+</p>
+
 The Renaissance Benchmark Suite aggregates common modern JVM workloads,
 including, but not limited to, Big Data, machine-learning, and functional programming.
 The suite is intended to be used to optimize just-in-time compilers, interpreters, GCs,
