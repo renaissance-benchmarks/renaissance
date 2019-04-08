@@ -39,6 +39,9 @@ final class MyJavaBenchmark extends RenaissanceBenchmark {
 }
 ```
 
+Above, the name of the benchmark will be automatically generated from the class name.
+In this case, the name will be `my-java-benchmark`.
+
 To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
 create an additional `sbt` project in the `benchmarks` directory,
 using an existing project, such as `scala-stdlib`, as an example.

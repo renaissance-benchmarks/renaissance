@@ -2,6 +2,11 @@
 
 # Renaissance Benchmark Suite
 
+<p align="center">
+  <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
+</p>
+
+
 The Renaissance Benchmark Suite aggregates common modern JVM workloads,
 including, but not limited to, Big Data, machine-learning, and functional programming.
 The suite is intended to be used to optimize just-in-time compilers, interpreters, GCs,
@@ -70,9 +75,24 @@ Usage: renaissance [options] [benchmark-specification]
 The following is the complete list of benchmarks, separated into groups.
 
 
+##### apache-spark
+
+- `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
+
+
+##### core
+
+- `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
+
+
+##### jdk-streams
+
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+
+
 ##### scala-stdlib
 
-- `k-means-scala` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+- `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 
 

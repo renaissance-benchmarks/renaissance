@@ -140,9 +140,7 @@ def jarsAndListGenerator = Def.taskDyn {
     // Add the benchmarks from the different project groups.
     for ((project, jars) <- groupJars) {
       val jarLine = jars
-        .map(
-          jar => project + "/" + jar.getName
-        )
+        .map(jar => project + "/" + jar.getName)
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
