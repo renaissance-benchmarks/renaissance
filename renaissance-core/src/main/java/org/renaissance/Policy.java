@@ -1,5 +1,7 @@
 package org.renaissance;
 
+import org.renaissance.core.Dummy;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -30,8 +32,7 @@ public abstract class Policy {
   public static Map<String, String> descriptions() {
     return factories.entrySet().stream()
       .map(entry -> {
-        String description = entry.getValue().apply(
-          new RenaissanceBenchmark.Dummy(), new Config()).description();
+        String description = entry.getValue().apply(new Dummy(), new Config()).description();
         return new Pair<>(entry.getKey(), description);
       })
       .collect(Collectors.toMap(Pair::first, Pair::second));

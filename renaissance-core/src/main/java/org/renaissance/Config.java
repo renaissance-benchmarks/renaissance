@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Config {
-  private List<String> benchmarkList;
-  private int repetitions;
-  private List<Plugin> plugins;
-  private String policy;
-  private boolean readme;
+  public List<String> benchmarkList;
+  public int repetitions;
+  public List<Plugin> plugins;
+  public String policy;
+  public boolean readme;
 
   public Config() {
     this.benchmarkList = new ArrayList<>();
