@@ -17,6 +17,9 @@ val benchmarkProjects = for {
   RootProject(uri("benchmarks/" + dir))
 }
 
+// Do not assemble fat JARs in subprojects
+aggregate in assembly := false
+
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 val renaissanceBundle = taskKey[Unit](
@@ -207,6 +210,17 @@ lazy val renaissance: Project = {
       fork in run := true,
       cancelable in Global := true,
       remoteDebug := false,
+
+      // Configure fat JAR: specify its name, main(), do not run tests when
+      // building it and raise error on file conflicts.
+      assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
+      mainClass in assembly := Some("org.renaissance.RenaissanceSuite"),
+      test in assembly := {},
+      assemblyMergeStrategy in assembly := {
+        case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+        case x => MergeStrategy.singleOrError
+      },
+
       javaOptions in Compile ++= {
         if (remoteDebug.value) {
           Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
