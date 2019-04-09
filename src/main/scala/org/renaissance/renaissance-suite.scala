@@ -170,9 +170,17 @@ ${benchmarkName
       }
       .mkString("\n")
 
+  val logoUrl = "https://github.com/D-iii-S/renaissance-benchmarks/" +
+    "raw/master/website/resources/images/mona-lisa-round.png"
+
   val readme = s"""
 
 # Renaissance Benchmark Suite
+
+<p align="center">
+  <img height="180px" src="${logoUrl}"/>
+</p>
+
 
 The Renaissance Benchmark Suite aggregates common modern JVM workloads,
 including, but not limited to, Big Data, machine-learning, and functional programming.
@@ -315,6 +323,9 @@ final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleNam
   }
 }
 ```
+
+Above, the name of the benchmark will be automatically generated from the class name.
+In this case, the name will be `${RenaissanceBenchmark.kebabCase("MyJavaBenchmark")}`.
 
 To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
 create an additional `sbt` project in the `benchmarks` directory,
