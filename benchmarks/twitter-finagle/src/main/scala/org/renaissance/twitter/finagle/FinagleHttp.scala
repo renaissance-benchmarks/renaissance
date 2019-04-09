@@ -17,14 +17,20 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
 class FinagleHttp extends RenaissanceBenchmark {
-  def description = "Sends many small Finagle HTTP requests and awaits the response."
+
+  def description =
+    "Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response."
 
   override def defaultRepetitions = 12
 
   def licenses = License.create(License.APACHE2)
 
+  /** Number of requests sent during the execution of the benchmark.
+   */
   val NUM_REQUESTS = 2000000
 
+  /** Number of clients that are simultaneously sending the requests.
+   */
   val NUM_CLIENTS = 20
 
   var server: ListeningServer = null
