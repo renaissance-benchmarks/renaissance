@@ -9,6 +9,10 @@ public interface RenaissanceBenchmarkApi {
 
   String description();
 
+  License[] licenses();
+
+  License distro();
+
   int defaultRepetitions();
 
   Optional<String> initialRelease();

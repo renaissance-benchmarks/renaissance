@@ -2,6 +2,7 @@ package org.renaissance.scala.stdlib
 
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Config
+import org.renaissance.License
 import scala.collection._
 import scala.util.Random
 
@@ -116,6 +117,8 @@ class ScalaKMeans extends RenaissanceBenchmark with KMeansUtilities {
   def description = "Runs the K-Means algorithm using Scala collections."
 
   override def defaultRepetitions = 50
+
+  def licenses = License.create(License.MIT)
 
   val eta = 0.01
 

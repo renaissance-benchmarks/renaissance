@@ -5,12 +5,9 @@ import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
-  public final String name() {
-    String cn = this.getClass().getSimpleName();
-    String camelCaseName =
-      (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
-    Pattern pattern = Pattern.compile("([A-Za-z])([A-Z])");
+  public static final String kebabCase(String camelCaseName) {
     // This functionality is duplicated in the kebabCase function of the build file.
+    Pattern pattern = Pattern.compile("([A-Za-z])([A-Z])");
     String result = camelCaseName;
     do {
       String last = result;
@@ -18,6 +15,13 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
       if (last == result) break;
     } while (true);
     return result.toLowerCase();
+  }
+
+  public final String name() {
+    String cn = this.getClass().getSimpleName();
+    String camelCaseName =
+      (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
+    return kebabCase(camelCaseName);
   }
 
   public final String mainGroup() {
@@ -33,6 +37,12 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   }
 
   public abstract String description();
+
+  public abstract License[] licenses();
+
+  public License distro() {
+    return License.distro(licenses());
+  }
 
   public Optional<String> initialRelease() {
     return Optional.empty();

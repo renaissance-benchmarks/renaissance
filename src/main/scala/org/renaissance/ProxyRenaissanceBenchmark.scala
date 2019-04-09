@@ -1,6 +1,7 @@
 package org.renaissance
 
 import java.net.URLClassLoader
+import java.util.Arrays
 import java.util.Optional
 
 class ProxyRenaissanceBenchmark(
@@ -33,6 +34,18 @@ class ProxyRenaissanceBenchmark(
   override def name(): String = call("name", Seq())
 
   override def mainGroup(): String = call("mainGroup", Seq())
+
+  override def licenses(): Array[License] = {
+    val licensesString =
+      Arrays.toString(call("licenses", Seq()).asInstanceOf[Array[AnyRef]]).tail.init
+    val licenseStrings = licensesString.split(",")
+    licenseStrings.map(License.valueOf)
+  }
+
+  override def distro(): License = {
+    val licenseString = call("distro", Seq()).toString
+    License.valueOf(licenseString)
+  }
 
   override def defaultRepetitions(): Int = call("defaultRepetitions", Seq())
 

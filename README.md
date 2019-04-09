@@ -6,6 +6,7 @@
   <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
 </p>
 
+
 The Renaissance Benchmark Suite aggregates common modern JVM workloads,
 including, but not limited to, Big Data, machine-learning, and functional programming.
 The suite is intended to be used to optimize just-in-time compilers, interpreters, GCs,
@@ -74,9 +75,29 @@ Usage: renaissance [options] [benchmark-specification]
 The following is the complete list of benchmarks, separated into groups.
 
 
+##### apache-spark
+
+- `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
+
+
+##### core
+
+- `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
+
+
+##### jdk-streams
+
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+
+
 ##### scala-stdlib
 
-- `k-means-scala` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+- `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+
+
+##### twitter-finagle
+
+- `finagle-http` - Sends many small Finagle HTTP requests and awaits the response. (default repetitions: 12)
 
 
 
@@ -119,3 +140,23 @@ the current state of the benchmark.
 ### Contributing
 
 Please see CONTRIBUTION.md for a description of the contributing process.
+
+
+### Licensing
+
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
+
+Depending on your needs, you can use either of the two distributions.
+The following table contains the licensing information of all the benchmarks:
+
+| Benchmark     | Licenses      | Renaissance Distro |
+| ------------- | ------------- |:------------------:|
+| page-rank | APACHE2 | MIT |
+| scrabble | GPL2 | GPL3 |
+| dummy | MIT | MIT |
+| scala-k-means | MIT | MIT |
+| finagle-http | APACHE2 | MIT |

@@ -170,9 +170,17 @@ ${benchmarkName
       }
       .mkString("\n")
 
-  val readme = s"""
+  val logoUrl = "https://github.com/D-iii-S/renaissance-benchmarks/" +
+    "raw/master/website/resources/images/mona-lisa-round.png"
+
+  lazy val readme = s"""
 
 # Renaissance Benchmark Suite
+
+<p align="center">
+  <img height="180px" src="${logoUrl}"/>
+</p>
+
 
 The Renaissance Benchmark Suite aggregates common modern JVM workloads,
 including, but not limited to, Big Data, machine-learning, and functional programming.
@@ -273,9 +281,30 @@ the current state of the benchmark.
 ### Contributing
 
 Please see CONTRIBUTION.md for a description of the contributing process.
+
+
+### Licensing
+
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
+
+Depending on your needs, you can use either of the two distributions.
+The following table contains the licensing information of all the benchmarks:
+
+| Benchmark     | Licenses      | Renaissance Distro |
+| ------------- | ------------- |:------------------:|
+${benchmarkGroups.keys
+    .map { name =>
+      val b = loadBenchmark(name)
+      s"| ${b.name()} | ${b.licenses().mkString(", ")} | ${b.distro()} |"
+    }
+    .mkString("\n")}
 """
 
-  val contribution = s"""
+  lazy val contribution = s"""
 
 ## Contribution Guide
 
@@ -315,6 +344,9 @@ final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleNam
   }
 }
 ```
+
+Above, the name of the benchmark will be automatically generated from the class name.
+In this case, the name will be `${RenaissanceBenchmark.kebabCase("MyJavaBenchmark")}`.
 
 To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
 create an additional `sbt` project in the `benchmarks` directory,
