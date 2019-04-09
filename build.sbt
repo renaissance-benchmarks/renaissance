@@ -71,7 +71,7 @@ def kebabCase(s: String): String = {
   sys.error("unreachable")
 }
 
-def listBenchmarks(project: String, classpath: Seq[File]): Seq[String] = {
+def listBenchmarks(nonGpl: Boolean, project: String, classpath: Seq[File]): Seq[String] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
   val baseName = "org.renaissance.RenaissanceBenchmark"
@@ -92,7 +92,11 @@ def listBenchmarks(project: String, classpath: Seq[File]): Seq[String] = {
           benchBase.isAssignableFrom(clazz) && clazz.getName != baseName &&
             (clazz.getName != dummyName || project == "benchmarks/core")
         if (isEligible) {
-          benches += kebabCase(clazz.getSimpleName)
+          val isMit = clazz.getMethod("distro").invoke(clazz.newInstance).toString == "MIT"
+          println(clazz, isMit)
+          if (!nonGpl || isMit) {
+            benches += kebabCase(clazz.getSimpleName)
+          }
         }
       }
     }
@@ -129,6 +133,7 @@ def jarsAndListGenerator = Def.taskDyn {
     ("benchmarks/core", Seq(coreJarDest))
   }
   val jarTasks = coreJarTask +: projectJarTasks
+  val nonGpl = nonGplOnly.value
 
   // Flatten list, create a groups-jars file, and a benchmark-group file.
   flattenTasks(jarTasks).map { groupJars =>
@@ -144,7 +149,7 @@ def jarsAndListGenerator = Def.taskDyn {
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for (bench <- listBenchmarks(project, jars)) {
+      for (bench <- listBenchmarks(nonGpl, project, jars)) {
         benchGroupContent.append(bench).append("=").append(projectShort).append("\n")
       }
     }
@@ -187,6 +192,11 @@ lazy val remoteDebug = SettingKey[Boolean](
   "Whether or not to enter a remote debugging session when running Renaissance."
 )
 
+lazy val nonGplOnly = SettingKey[Boolean](
+  "nonGplOnly",
+  "If set to true, then the distribution will not include GPL, EPL and MPL-licensed benchmarks."
+)
+
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -205,6 +215,7 @@ lazy val renaissance: Project = {
       fork in run := true,
       cancelable in Global := true,
       remoteDebug := false,
+      nonGplOnly := false,
       javaOptions in Compile ++= {
         if (remoteDebug.value) {
           Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
