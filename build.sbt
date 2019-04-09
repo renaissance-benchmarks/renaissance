@@ -169,6 +169,19 @@ def createRenaissanceFormatTask = Def.taskDyn {
 
 val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
 
+val renaissanceFormatCheck = taskKey[Unit](
+  "Check formatting via scalafmt."
+)
+
+def createRenaissanceFormatCheckTask = Def.taskDyn {
+  val formatTasks = for (p <- benchmarkProjects) yield scalafmtCheck in (p, Compile)
+  val testFormatTasks = for (p <- benchmarkProjects) yield scalafmtCheck in (p, Test)
+  val buildFormatTasks = for (p <- benchmarkProjects) yield scalafmtSbtCheck in (p, Compile)
+  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
+}
+
+val renaissanceFormatCheckTask = renaissanceFormatCheck := createRenaissanceFormatCheckTask.value
+
 lazy val remoteDebug = SettingKey[Boolean](
   "remoteDebug",
   "Whether or not to enter a remote debugging session when running Renaissance."
@@ -188,6 +201,7 @@ lazy val renaissance: Project = {
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceBundleTask,
       renaissanceFormatTask,
+      renaissanceFormatCheckTask,
       fork in run := true,
       cancelable in Global := true,
       remoteDebug := false,
