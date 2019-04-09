@@ -93,7 +93,6 @@ def listBenchmarks(nonGpl: Boolean, project: String, classpath: Seq[File]): Seq[
             (clazz.getName != dummyName || project == "benchmarks/core")
         if (isEligible) {
           val isMit = clazz.getMethod("distro").invoke(clazz.newInstance).toString == "MIT"
-          println(clazz, isMit)
           if (!nonGpl || isMit) {
             benches += kebabCase(clazz.getSimpleName)
           }

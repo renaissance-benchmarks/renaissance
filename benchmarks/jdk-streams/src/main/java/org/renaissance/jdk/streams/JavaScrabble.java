@@ -93,7 +93,6 @@ public class JavaScrabble {
     // number of blanks for a given letter
     ToLongFunction<Entry<Integer, Long>> blank =
       entry -> {
-        // System.out.println(entry);
         return Long.max(
           0L,
           entry.getValue() -
@@ -160,7 +159,6 @@ public class JavaScrabble {
         .limit(3)
         .collect(Collectors.toList());
 
-    // System.out.println(finalList);
     return finalList.size();
   }
 
