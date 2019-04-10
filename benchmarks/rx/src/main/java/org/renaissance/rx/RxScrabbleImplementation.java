@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2014 José Paumard
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 package org.renaissance.rx;
 
 
@@ -41,14 +58,7 @@ public class RxScrabbleImplementation extends Scrabble {
         .collect(
           () -> new HashMap<>(),
           (HashMap<Integer, LongWrapper> map, Integer value) ->
-          {
-            LongWrapper newValue = map.get(value);
-            if (newValue == null) {
-              newValue = () -> 0L;
-            }
-            map.put(value, newValue.incAndSet());
-          }
-
+            map.merge(value, () -> 0L, (prev, cur) -> prev.incAndSet())
         );
 
     // number of blanks for a given letter
