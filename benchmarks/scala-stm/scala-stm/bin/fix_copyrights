@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd `dirname $0`/..
+for f in `grep -l -r '(c) 2009' src`; do
+  d=`git log -1 --date=short --no-notes -- $f | awk 'NR==3 {print $2}'`
+  y=`echo $d | sed 's/-.*//'`
+  sed -i "s/(c) 2009-201./(c) 2009-$y/" $f
+done

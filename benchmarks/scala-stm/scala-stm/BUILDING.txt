@@ -1,0 +1,15 @@
+BUILDING FROM SOURCE
+
+scala-stm is built using sbt: http://code.google.com/p/simple-build-tool/
+Once you've installed sbt you can download scala-stm's compile dependency
+(ScalaTest), build, and run the unit tests with
+
+  sbt update test
+
+You can get a list of sbt build targets with "sbt actions".  If you
+compile, generate documentation or build a JAR, look in target/scala_* for
+the results.  The Scala version is configured in project/build.properties.
+The left-most value for "build.scala.versions" is the default.  To run
+a build target for all of the versions prefix the action with a "+",
+for example "sbt +test".
+

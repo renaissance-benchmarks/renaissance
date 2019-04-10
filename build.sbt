@@ -5,7 +5,6 @@ import java.nio.file.StandardCopyOption
 import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
-import scala.sys.process._
 
 val renaissanceVersion = "0.1"
 
