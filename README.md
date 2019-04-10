@@ -85,7 +85,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### rx
 
-- `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 50)
+- `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
 
 
 ##### scala-stdlib
@@ -196,9 +196,9 @@ renaissance-core
   |              ---- subproject X
   |                      .
   |                      .
-  | (classpath dep)      .
+  | (classpath dep.)     .
   |                      .
-renaissance harness  <.... (JARs copied over)
+renaissance harness  <.... (JARs copied as resources)
 ```
 
 When the harness is started, it uses the input arguments to select the benchmark,
