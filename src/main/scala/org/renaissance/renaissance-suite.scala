@@ -503,7 +503,7 @@ The current members of the committee are:
 - Andrea Rosà, Università della Svizzera italiana
 - Gilles Duboscq, Oracle Labs
 - Alex Villazon, Universidad Privada Boliviana
-- Francois Farquet, Oracle Labs
+- François Farquet, Oracle Labs
 - Aleksandar Prokopec, Oracle Labs
 """
 
