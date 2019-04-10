@@ -53,6 +53,7 @@ class LogRegression extends RenaissanceBenchmark {
     val conf = new SparkConf().setAppName("logistic-regression")
       .setMaster(s"local[$THREAD_COUNT]")
       .set("spark.local.dir", tempDir)
+      .set("spark.sql.warehouse.dir", tempDir + "/warehouse")
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
