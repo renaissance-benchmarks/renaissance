@@ -1,6 +1,6 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-//lazy val scalaStmLibrary = RootProject(uri("scala-stm"))
+lazy val scalaStmLibrary = RootProject(uri("scala-stm-library"))
 
 lazy val scalaStm = (project in file("."))
   .settings(
@@ -13,5 +13,9 @@ lazy val scalaStm = (project in file("."))
     scalafmtConfig := Some(file(".scalafmt.conf"))
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore,
+    scalaStmLibrary % "compile->compile;compile->test"
+  )
+  .aggregate(
+    scalaStmLibrary
   )
