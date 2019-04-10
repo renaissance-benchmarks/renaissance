@@ -71,7 +71,7 @@ The following is the complete list of benchmarks, separated into groups.
 ##### apache-spark
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
-
+- `log-regression` - Runs the logistic regression workload from mllib. (default repetitions: 20)
 
 ##### core
 
@@ -162,6 +162,7 @@ The following table contains the licensing information of all the benchmarks:
 | ------------- | ------------- |:------------------:|
 | rx-scrabble | GPL2 | GPL3 |
 | page-rank | APACHE2 | MIT |
+| log-regression | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | streams-mnemonics | MIT | MIT |
 | parallel-streams-mnemonics | MIT | MIT |
