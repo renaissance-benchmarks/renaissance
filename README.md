@@ -20,22 +20,15 @@ and can be refreshed with the `--readme` command-line flag.
 
 ### Building the suite
 
-To build the suite and bundle it, you need to first start the included `sbt` build tool:
+To build the suite and create the so-called fat JAR (or super JAR), you only
+need to run `sbt` built tool:
 
 ```
-$ tools/sbt/bin/sbt
-```
-
-This will open the `sbt` shell, from which you can issue various build commands.
-To bundle the suite, run:
-
-```
-> renaissanceBundle
+$ tools/sbt/bin/sbt assembly
 ```
 
 This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs of the subprojects into the JAR of the suite, copy all the dependencies
-to the `target/renaissance` directory, and produce a `tar` file in the `target` directory.
+bundle the JARs and create the final JAR under `target/scala-2.12`.
 
 
 ### Running the benchmarks
@@ -44,12 +37,12 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -cp '<renaissance-home>/jars/*' org.renaissance.RenaissanceSuite <benchmarks>
+java -jar '<renaissance-home>/target/scala-2.12/renaissance-0.1.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
 and `<benchmarks>` is the list of benchmarks that you wish to run.
-For example, you can specify `k-means-scala` as the benchmark.
+For example, you can specify `scala-k-means` as the benchmark.
 
 
 #### Complete list of command-line options
@@ -97,7 +90,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### twitter-finagle
 
-- `finagle-http` - Sends many small Finagle HTTP requests and awaits the response. (default repetitions: 12)
+- `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
 
 

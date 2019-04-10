@@ -22,34 +22,6 @@ aggregate in assembly := false
 
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
-val renaissanceBundle = taskKey[Unit](
-  "Create a single bundle of Renaissance."
-)
-
-val renaissanceBundleTask = renaissanceBundle := {
-  val log = streams.value.log
-  log.info("Creating a bundle JAR...")
-  val mainJar = packageBin.in(Runtime).value
-  val depJars = dependencyClasspath.in(Runtime).value.map(_.data).filter(_.isFile)
-  val coreJar = (packageBin in (renaissanceCore, Runtime)).value
-  val allJars = mainJar +: coreJar +: depJars
-  val renaissanceDir = target(_ / "renaissance").value
-  val renaissanceJarDir = renaissanceDir / "jars"
-  renaissanceJarDir.mkdirs()
-  for (jar <- allJars)
-    Files.copy(
-      jar.toPath,
-      (renaissanceJarDir / jar.getName).toPath,
-      StandardCopyOption.REPLACE_EXISTING
-    )
-  val targetDir = target(_ / ".").value
-  val tarName = s"renaissance-${version.value}.tar.gz"
-  val status = s"tar czf ${targetDir}/$tarName -C ${targetDir} renaissance".!
-  if (status != 0) {
-    log.error(s"Failed to produce the archive $tarName, exit code: $status")
-  }
-}
-
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
   tasks.toList match {
     case Nil => Def.task { Nil }
@@ -211,7 +183,6 @@ lazy val renaissance: Project = {
         "com.github.scopt" %% "scopt" % "4.0.0-RC2"
       ),
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      renaissanceBundleTask,
       renaissanceFormatTask,
       renaissanceFormatCheckTask,
       fork in run := true,
