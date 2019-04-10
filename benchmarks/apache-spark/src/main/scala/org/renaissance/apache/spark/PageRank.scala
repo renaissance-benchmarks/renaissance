@@ -37,11 +37,13 @@ class PageRank extends RenaissanceBenchmark {
 
   var ranks: RDD[(String, Double)] = null
 
+  val tempDir: String = RenaissanceBenchmark.generateTempDir("page_rank")
+
   override def setUpBeforeAll(c: Config): Unit = {
     val conf = new SparkConf()
       .setAppName("page-rank")
       .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", "_tmp")
+      .set("spark.local.dir", tempDir)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
@@ -86,5 +88,6 @@ class PageRank extends RenaissanceBenchmark {
       .mkString("\n")
     FileUtils.write(new File(outputPath), output, StandardCharsets.UTF_8, true)
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDir)
   }
 }

@@ -45,12 +45,14 @@ class LogRegression extends RenaissanceBenchmark {
 
   var rdd: RDD[(Double, org.apache.spark.ml.linalg.Vector)] = null
 
+  val tempDir: String = RenaissanceBenchmark.generateTempDir("log_regression")
+
 
   override def setUpBeforeAll(c: Config): Unit = {
 
     val conf = new SparkConf().setAppName("logistic-regression")
       .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", "_tmp")
+      .set("spark.local.dir", tempDir)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
@@ -83,12 +85,7 @@ class LogRegression extends RenaissanceBenchmark {
     FileUtils.write(new File(outputPath), mlModel.coefficients.toString + "\n", true)
     FileUtils.write(new File(outputPath), mlModel.intercept.toString, true)
     sc.stop()
-    try {
-      FileUtils.deleteDirectory(new java.io.File("_tmp"))
-    } catch {
-      case t: Throwable =>
-        println("Error removing temp directory ! " + t.getMessage)
-    }
+    RenaissanceBenchmark.deleteTempDir(tempDir)
   }
 
   override protected def runIteration(config: Config): Unit = {
