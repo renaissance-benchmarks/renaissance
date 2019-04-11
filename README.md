@@ -70,6 +70,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+- `chi-square` - Runs the chi-square test from mllib. (default repetitions: 60)
+
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
 
@@ -157,6 +159,7 @@ The following table contains the licensing information of all the benchmarks:
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
+| chi-square | APACHE2 | MIT |
 | scala-k-means | MIT | MIT |
 | finagle-http | APACHE2 | MIT |
 
