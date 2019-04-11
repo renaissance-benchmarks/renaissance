@@ -12,7 +12,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-
 class LogRegression extends RenaissanceBenchmark {
 
   def description = "Runs the logistic regression workload from mllib."
@@ -47,10 +46,10 @@ class LogRegression extends RenaissanceBenchmark {
 
   val tempDir: String = RenaissanceBenchmark.generateTempDir("log_regression")
 
-
   override def setUpBeforeAll(c: Config): Unit = {
 
-    val conf = new SparkConf().setAppName("logistic-regression")
+    val conf = new SparkConf()
+      .setAppName("logistic-regression")
       .setMaster(s"local[$THREAD_COUNT]")
       .set("spark.local.dir", tempDir)
       .set("spark.sql.warehouse.dir", tempDir + "/warehouse")
@@ -67,7 +66,8 @@ class LogRegression extends RenaissanceBenchmark {
     }
 
     // Load data.
-    rdd = sc.textFile(bigInputFile)
+    rdd = sc
+      .textFile(bigInputFile)
       .map { line =>
         val parts = line.split(" ")
         val features = new Array[Double](692)
@@ -89,7 +89,7 @@ class LogRegression extends RenaissanceBenchmark {
     RenaissanceBenchmark.deleteTempDir(tempDir)
   }
 
-  override protected def runIteration(config: Config): Unit = {
+  protected override def runIteration(config: Config): Unit = {
     val lor = new LogisticRegression()
       .setElasticNetParam(ELASTIC_NET_PARAM)
       .setRegParam(REGULARIZATION_PARAM)
