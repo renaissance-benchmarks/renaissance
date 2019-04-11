@@ -2,7 +2,9 @@ package org.renaissance.apache.spark
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 import java.util.zip.ZipInputStream
+
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkConf
@@ -37,13 +39,14 @@ class PageRank extends RenaissanceBenchmark {
 
   var ranks: RDD[(String, Double)] = null
 
-  val tempDir: String = RenaissanceBenchmark.generateTempDir("page_rank")
+  var tempDirPath: Path = null
 
   override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
     val conf = new SparkConf()
       .setAppName("page-rank")
       .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDir)
+      .set("spark.local.dir", tempDirPath.toString)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
@@ -88,6 +91,6 @@ class PageRank extends RenaissanceBenchmark {
       .mkString("\n")
     FileUtils.write(new File(outputPath), output, StandardCharsets.UTF_8, true)
     sc.stop()
-    RenaissanceBenchmark.deleteTempDir(tempDir)
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 }

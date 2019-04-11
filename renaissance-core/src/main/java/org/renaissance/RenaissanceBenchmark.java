@@ -2,6 +2,9 @@ package org.renaissance;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Calendar;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -134,9 +137,9 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     return duration;
   }
 
-  public static void deleteTempDir(String dirPath) {
+  public static void deleteTempDir(Path dirPath) {
     try {
-      delete(new File(dirPath));
+      delete(dirPath.toFile());
     } catch (Throwable t) {
       System.err.println("Error removing temp directory ! " + t.getMessage());
     }
@@ -155,12 +158,14 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     f.delete();
   }
 
-  public static String generateTempDir(String name) {
-    String dirName = null;
-    do {
-      dirName = String.format("tmp_%2$tY%2$tm%2$td-%2$tH%2$tM%2$tS%2$tN_%s", name, Calendar.getInstance());
-    } while (new File(dirName).exists());
-    return dirName;
+  public static Path generateTempDir(String name) {
+    Path p = null;
+    try {
+      p = Files.createTempDirectory(Paths.get("."), name);
+    } catch (IOException e) {
+      System.err.println("Error creating temp directory ! " + e.getMessage());
+    }
+    return p;
   }
 }
 
