@@ -1,6 +1,7 @@
 package org.renaissance.neo4j
 
 import java.io.File
+import java.nio.file.Paths
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
@@ -13,15 +14,13 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
 
   var benchmark: AnalyticsBenchmark = null
 
-  // TODO: Unify how the scratch directories are handled, throughout the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
-  val scratchPath = "target/modules/neo4j"
-
   override def defaultRepetitions = 10
 
   override def setUpBeforeAll(c: Config): Unit = {
-    val dbFileName = "neo4j-analytics.db"
-    benchmark = new AnalyticsBenchmark(new File(s"$scratchPath/$dbFileName"))
+    // TODO: Unify how the scratch directories are handled, throughout the suite.
+    //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
+    val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
+    benchmark = new AnalyticsBenchmark(scratchPath.toFile)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

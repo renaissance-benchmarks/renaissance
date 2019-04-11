@@ -33,6 +33,8 @@ class AnalyticsBenchmark(val graphDir: File) {
   )
 
   {
+    // TODO: Unify how the scratch directories are handled throughout the suite.
+    //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
     println("Checking previous DB remnants in " + graphDir.getAbsoluteFile)
     if (graphDir.exists) {
       println("DB remnants detected, deleting ...")
