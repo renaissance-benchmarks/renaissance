@@ -32,7 +32,9 @@ class AnalyticsBenchmark(val graphDir: File) {
     "FILMS" -> FILMS
   )
 
-  {
+  /** Must be called before calling `run`.
+   */
+  def setupAll(): Unit = {
     // TODO: Unify how the scratch directories are handled throughout the suite.
     //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
     println("Checking previous DB remnants in " + graphDir.getAbsoluteFile)
@@ -54,6 +56,8 @@ class AnalyticsBenchmark(val graphDir: File) {
     println("Graph database created.")
   }
 
+  /** Runs the benchmark.
+   */
   def run(): Unit = {
     val longThreads = startLongQueryThreads(db)
     val shortThreads = startShortQueryThreads(db)
@@ -63,6 +67,8 @@ class AnalyticsBenchmark(val graphDir: File) {
     mutatorThreads.foreach(_.join())
   }
 
+  /** Must be called after calling `run`.
+   */
   def tearAll(): Unit = {
     db.shutdown()
   }

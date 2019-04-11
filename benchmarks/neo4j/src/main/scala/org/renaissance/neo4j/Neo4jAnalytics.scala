@@ -12,15 +12,16 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
 
   def licenses = License.create(License.GPL3)
 
-  var benchmark: AnalyticsBenchmark = null
+  // TODO: Unify how the scratch directories are handled, throughout the suite.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
+  val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
+
+  var benchmark: AnalyticsBenchmark = new AnalyticsBenchmark(scratchPath.toFile)
 
   override def defaultRepetitions = 10
 
   override def setUpBeforeAll(c: Config): Unit = {
-    // TODO: Unify how the scratch directories are handled, throughout the suite.
-    //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
-    val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
-    benchmark = new AnalyticsBenchmark(scratchPath.toFile)
+    benchmark.setupAll()
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
