@@ -83,6 +83,11 @@ The following is the complete list of benchmarks, separated into groups.
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
 
 
+##### neo4j
+
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 10)
+
+
 ##### rx
 
 - `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
@@ -158,6 +163,7 @@ The following table contains the licensing information of all the benchmarks:
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
 | scala-k-means | MIT | MIT |
+| neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 
 
