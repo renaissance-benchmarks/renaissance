@@ -104,6 +104,9 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
+##### scala-dotty
+
+- `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
 
 ### Run policies
@@ -170,7 +173,7 @@ The following table contains the licensing information of all the benchmarks:
 | scala-k-means | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
-
+| dotty | BSD3 | MIT |
 
 ### Design overview
 
