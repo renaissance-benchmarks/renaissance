@@ -421,7 +421,7 @@ and included into the Renaissance distribution.
 
 ### Benchmark evaluation and release process
 
-In the open-source spirit, anyone can propose an additional benchmark by creating pull request.
+In the open-source spirit, anyone can propose an additional benchmark by opening a pull request.
 The code is then inspected by the community -- typically, the suite maintainers are involved
 in the review, but anybody else is free join the discussion.
 During the discussion, the reviewers suggest the ways in which
