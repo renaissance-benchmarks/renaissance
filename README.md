@@ -83,6 +83,11 @@ The following is the complete list of benchmarks, separated into groups.
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
 
 
+##### rx
+
+- `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
+
+
 ##### scala-stdlib
 
 - `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
@@ -148,6 +153,7 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
+| rx-scrabble | GPL2 | GPL3 |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
@@ -190,9 +196,9 @@ renaissance-core
   |              ---- subproject X
   |                      .
   |                      .
-  | (classpath dep)      .
+  | (classpath dep.)     .
   |                      .
-renaissance harness  <.... (JARs copied over)
+renaissance harness  <.... (JARs copied as resources)
 ```
 
 When the harness is started, it uses the input arguments to select the benchmark,
