@@ -134,7 +134,6 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     return duration;
   }
 
-
   public static void deleteTempDir(String dirPath) {
     try {
       delete(new File(dirPath));
