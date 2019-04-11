@@ -106,7 +106,8 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     blackHoleField = value;
   }
 
-  /** This method runs the functionality of the benchmark.
+  /**
+   * This method runs the functionality of the benchmark.
    */
   protected abstract void runIteration(Config config);
 
@@ -134,33 +135,33 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   }
 
 
-    public static void deleteTempDir(String dirPath) {
-        try {
-            delete(new File(dirPath));
-        } catch (Throwable t) {
-            System.err.println("Error removing temp directory ! " + t.getMessage());
-        }
+  public static void deleteTempDir(String dirPath) {
+    try {
+      delete(new File(dirPath));
+    } catch (Throwable t) {
+      System.err.println("Error removing temp directory ! " + t.getMessage());
     }
+  }
 
-    private static void delete(File f) throws IOException {
-        for (File ff : f.listFiles()) {
-            if (ff.isDirectory()) {
-                delete(ff);
-            } else {
-                if (!ff.delete()) {
-                    throw new IOException();
-                }
-            }
+  private static void delete(File f) throws IOException {
+    for (File ff : f.listFiles()) {
+      if (ff.isDirectory()) {
+        delete(ff);
+      } else {
+        if (!ff.delete()) {
+          throw new IOException();
         }
-        f.delete();
+      }
     }
+    f.delete();
+  }
 
-    public static String generateTempDir(String name) {
-        String dirName = null;
-        do {
-            dirName = String.format("tmp_%2$tY%2$tm%2$td-%2$tH%2$tM%2$tS%2$tN_%s", name, Calendar.getInstance());
-        } while (new File(dirName).exists());
-        return dirName;
-    }
+  public static String generateTempDir(String name) {
+    String dirName = null;
+    do {
+      dirName = String.format("tmp_%2$tY%2$tm%2$td-%2$tH%2$tM%2$tS%2$tN_%s", name, Calendar.getInstance());
+    } while (new File(dirName).exists());
+    return dirName;
+  }
 }
 
