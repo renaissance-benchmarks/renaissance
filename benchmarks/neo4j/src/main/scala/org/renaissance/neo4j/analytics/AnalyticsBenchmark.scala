@@ -14,16 +14,21 @@ import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import scala.collection._
 
-class AnalyticsBenchmark(val graphDir: File) {
+class AnalyticsBenchmark(
+  val graphDir: File,
+  val longQueryCount: Option[Int],
+  val shortQueryCount: Option[Int],
+  val mutatorQueryCount: Option[Int]
+) {
   private var db: GraphDatabaseService = null
 
   private val CPU_COUNT = Runtime.getRuntime.availableProcessors
 
-  private val LONG_QUERY_NUM = CPU_COUNT / 2 + 1
+  private val LONG_QUERY_NUM = longQueryCount.getOrElse(CPU_COUNT / 2 + 1)
 
-  private val SHORT_QUERY_NUM = CPU_COUNT - CPU_COUNT / 2 + 1
+  private val SHORT_QUERY_NUM = shortQueryCount.getOrElse(CPU_COUNT - CPU_COUNT / 2 + 1)
 
-  private val MUTATOR_QUERY_NUM = 1
+  private val MUTATOR_QUERY_NUM = mutatorQueryCount.getOrElse(1)
 
   private val GENRE = new RelationshipType {
     override def name(): String = "GENRE"
