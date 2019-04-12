@@ -103,5 +103,6 @@ class FinagleHttp extends RenaissanceBenchmark {
       clientThread.start()
       clientThread.join()
     }
+    blackHole(totalLength)
   }
 }

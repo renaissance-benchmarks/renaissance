@@ -6,56 +6,47 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class MnemonicsCoderWithStream {
-  List<String> words; // Input dict words
+public final class MnemonicsCoderWithStream {
+  private List<String> words; // Input dict words
 
-  public void setDictWords(List<String> aWords) {
+  public MnemonicsCoderWithStream(List<String> aWords) {
     words = aWords;
   }
 
-  private Map<Character,String> mnemonics = new HashMap<>();
-
-  {
-    mnemonics.put('2',"ABC");
-    mnemonics.put('3',"DEF");
-    mnemonics.put('4',"GHI");
-    mnemonics.put('5',"JKL");
-    mnemonics.put('6',"MNO");
-    mnemonics.put('7',"PQRS");
-    mnemonics.put('8',"TUV");
-    mnemonics.put('9',"WXYZ");
-  }
+  private final Map<Character, String> mnemonics = new HashMap<Character, String>() {{
+    put('2',"ABC");
+    put('3',"DEF");
+    put('4',"GHI");
+    put('5',"JKL");
+    put('6',"MNO");
+    put('7',"PQRS");
+    put('8',"TUV");
+    put('9',"WXYZ");
+  }};
 
   /** Invert the mnemonics map to give a map from chars 'A' ... 'Z' to '2' ... '9'
    * e.g. Map(E -> 3, X -> 9, N -> 6, T -> 8, Y -> 9,...)  */
-  private Map<Character,Character> charCode = new HashMap<>(); {
-    for(char ch = 'A'; ch <= 'Z'; ch++) {
-      for(char getKey: mnemonics.keySet()) {
-        if (mnemonics.get(getKey).contains(String.valueOf(ch))) {
-          charCode.put(ch,getKey);
-        }
-      }
-    }
-  }
+  private Map<Character, String> charCode = mnemonics.entrySet().stream()
+          .flatMap(e -> e.getValue().chars().mapToObj(c -> (char) c)
+                  .collect(Collectors.toMap(c -> c, c -> String.valueOf (e.getKey()))).entrySet().stream()
+          ).collect (Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
   /** Maps a word to the digit string it can represent, e.g. "Java" -> "5282" */
   private String wordCode(String word) {
-    word = word.toUpperCase();
-    String digit_str = "";
-    for(int i = 0; i < word.length(); i++) {
-      digit_str+=charCode.get(word.charAt(i));
-    }
-    return digit_str;
+    return word.chars()
+            .mapToObj(c -> charCode.get (Character.toUpperCase((char) c)))
+            .collect (Collectors.joining());
   }
 
   /** A map from digit strings to the words that represent them,
    *  e.g. "5282" -> Set("Java", "Kata", "Lava", ...) */
-  private Map<String, List<String>> wordsForNum(List<String> dict_input, boolean parallel) {
-    if (parallel) {
-      return dict_input.stream().parallel().collect(Collectors.groupingBy(e -> wordCode(e)));
-    } else {
-      return dict_input.stream().collect(Collectors.groupingBy(e -> wordCode(e)));
-    }
+  private Map<String, List<String>> wordsForNum(List<String> words) {
+    return words.stream().collect(Collectors.groupingBy(this::wordCode));
+  }
+
+  /** Same as above but in parallel */
+  private Map<String, List<String>> wordsForNumParallel(List<String> words) {
+    return words.stream().parallel().collect(Collectors.groupingByConcurrent(this::wordCode));
   }
 
   /** Return all ways to encode a number as a list of words
@@ -68,7 +59,7 @@ public class MnemonicsCoderWithStream {
     /** If a digit string maps to two dict words, should return all possible words,
      *  e.g. ['222':['abc','adc'] ]
      */
-    return wordsForNum(words, false).entrySet().stream().filter(y -> number.endsWith(y.getKey()))
+    return wordsForNum(words).entrySet().stream().filter(y -> number.endsWith(y.getKey()))
         .flatMap(x -> x.getValue().stream())
         .map(x -> {
           /** Calls the encode() function recursively to encode the rest part of stream */
@@ -95,7 +86,7 @@ public class MnemonicsCoderWithStream {
      *  e.g. ['222':['abc','adc'] ]
      */
     Stream<Map.Entry<String, List<String>>> baseWordStream =
-        wordsForNum(words, true).entrySet().stream();
+            wordsForNumParallel(words).entrySet().stream();
     Stream<Map.Entry<String, List<String>>> wordStream =
         number.length() >= 3 ? baseWordStream.parallel() : baseWordStream;
     return wordStream

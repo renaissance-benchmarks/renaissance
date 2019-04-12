@@ -332,9 +332,9 @@ renaissance-core
   |              ---- subproject X
   |                      .
   |                      .
-  | (classpath dep)      .
+  | (classpath dep.)     .
   |                      .
-renaissance harness  <.... (JARs copied over)
+renaissance harness  <.... (JARs copied as resources)
 ```
 
 When the harness is started, it uses the input arguments to select the benchmark,
