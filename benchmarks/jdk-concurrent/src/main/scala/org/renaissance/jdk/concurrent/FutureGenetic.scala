@@ -24,7 +24,7 @@ class FutureGenetic extends RenaissanceBenchmark {
   }
 
   override def runIteration(c: Config): Unit = {
-    blackHole (benchmark.runIteration())
+    blackHole(benchmark.runIteration())
   }
 }
 
