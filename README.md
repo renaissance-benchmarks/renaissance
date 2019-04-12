@@ -78,11 +78,18 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
 
 
+##### jdk-concurrent
+
+- `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
+
+
 ##### jdk-streams
 
-- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
-- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 - `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
+
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+
+- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 
 
 ##### neo4j
@@ -163,10 +170,11 @@ The following table contains the licensing information of all the benchmarks:
 | rx-scrabble | GPL2 | GPL3 |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
-| streams-mnemonics | MIT | MIT |
-| parallel-streams-mnemonics | MIT | MIT |
 | dummy | MIT | MIT |
+| future-genetic | APACHE2 | MIT |
+| streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
+| parallel-streams-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 
