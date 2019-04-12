@@ -83,6 +83,13 @@ The following is the complete list of benchmarks, separated into groups.
 ##### jdk-streams
 
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
+- `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
+
+
+##### neo4j
+
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 10)
 
 
 ##### rx
@@ -158,9 +165,12 @@ The following table contains the licensing information of all the benchmarks:
 | rx-scrabble | GPL2 | GPL3 |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
+| streams-mnemonics | MIT | MIT |
+| parallel-streams-mnemonics | MIT | MIT |
 | dummy | MIT | MIT |
 | chi-square | APACHE2 | MIT |
 | scala-k-means | MIT | MIT |
+| neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 
 

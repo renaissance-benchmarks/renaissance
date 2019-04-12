@@ -137,5 +137,6 @@ class ScalaKMeans extends RenaissanceBenchmark with KMeansUtilities {
 
   override def runIteration(c: Config): Unit = {
     centers = kMeans(points, means, eta)
+    blackHole(centers)
   }
 }
