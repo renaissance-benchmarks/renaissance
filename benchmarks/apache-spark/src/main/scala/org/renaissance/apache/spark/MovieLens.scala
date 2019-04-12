@@ -19,7 +19,6 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
-
 class MovieLens extends RenaissanceBenchmark {
 
   def description = "Recommends movies using the ALS algorithm."
@@ -70,8 +69,6 @@ class MovieLens extends RenaissanceBenchmark {
     sc.stop()
   }
 
-
-
   def run(sc: SparkContext): Unit = {
 
     // Load personal ratings.
@@ -82,43 +79,63 @@ class MovieLens extends RenaissanceBenchmark {
 
     FileUtils.deleteDirectory(new File(bigFilePath))
 
-    val ratingsText = IOUtils.toString(this.getClass.getResourceAsStream(ratingsInputFile), StandardCharsets.UTF_8)
+    val ratingsText = IOUtils.toString(
+      this.getClass.getResourceAsStream(ratingsInputFile),
+      StandardCharsets.UTF_8
+    )
     FileUtils.write(new File(ratingsBigFile), ratingsText, StandardCharsets.UTF_8, true)
     val ratingsFile = sc.textFile(ratingsBigFile)
     val ratingsFileHeader = ratingsFile.first
-    val ratings = ratingsFile.filter{ line => line != ratingsFileHeader }.map { line =>
-      val fields = line.split(",")
-      // Format: (timestamp % 10, Rating(userId, movieId, rating))
-      (fields(3).toLong % 10, Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble))
-    }
+    val ratings = ratingsFile
+      .filter { line =>
+        line != ratingsFileHeader
+      }
+      .map { line =>
+        val fields = line.split(",")
+        // Format: (timestamp % 10, Rating(userId, movieId, rating))
+        (fields(3).toLong % 10, Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble))
+      }
 
-    val moviesText = IOUtils.toString(this.getClass.getResourceAsStream(moviesInputFile), StandardCharsets.UTF_8)
+    val moviesText = IOUtils.toString(
+      this.getClass.getResourceAsStream(moviesInputFile),
+      StandardCharsets.UTF_8
+    )
     FileUtils.write(new File(moviesBigFile), moviesText, StandardCharsets.UTF_8, true)
     val moviesFile = sc.textFile(moviesBigFile)
     val moviesFileHeader = moviesFile.first
-    val movies = moviesFile.filter{ line => line != moviesFileHeader }.map { line =>
-      val fields = line.split(",")
-      // Format: (movieId, movieName)
-      (fields(0).toInt, fields(1))
-    }.collect().toMap
+    val movies = moviesFile
+      .filter { line =>
+        line != moviesFileHeader
+      }
+      .map { line =>
+        val fields = line.split(",")
+        // Format: (movieId, movieName)
+        (fields(0).toInt, fields(1))
+      }
+      .collect()
+      .toMap
 
     val numRatings = ratings.count()
     val numUsers = ratings.map(_._2.user).distinct().count()
     val numMovies = ratings.map(_._2.product).distinct().count()
 
-    println("Got " + numRatings + " ratings from "
-      + numUsers + " users on " + numMovies + " movies.")
+    println(
+      "Got " + numRatings + " ratings from "
+        + numUsers + " users on " + numMovies + " movies."
+    )
 
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
     // last digit of the timestamp, add myRatings to train, and cache them.
 
     val numPartitions = 4
-    val training = ratings.filter(x => x._1 < 6)
+    val training = ratings
+      .filter(x => x._1 < 6)
       .values
       .union(myRatingsRDD)
       .repartition(numPartitions)
       .cache()
-    val validation = ratings.filter(x => x._1 >= 6 && x._1 < 8)
+    val validation = ratings
+      .filter(x => x._1 >= 6 && x._1 < 8)
       .values
       .repartition(numPartitions)
       .cache()
@@ -128,7 +145,9 @@ class MovieLens extends RenaissanceBenchmark {
     val numValidation = validation.count()
     val numTest = test.count()
 
-    println("Training: " + numTraining + ", validation: " + numValidation + ", test: " + numTest)
+    println(
+      "Training: " + numTraining + ", validation: " + numValidation + ", test: " + numTest
+    )
 
     // Train models and evaluate them on the validation set.
 
@@ -143,8 +162,10 @@ class MovieLens extends RenaissanceBenchmark {
     for (rank <- ranks; lambda <- lambdas; numIter <- numIters) {
       val model = ALS.train(training, rank, numIter, lambda)
       val validationRmse = computeRmse(model, validation, numValidation)
-      println("RMSE (validation) = " + validationRmse + " for the model trained with rank = "
-        + rank + ", lambda = " + lambda + ", and numIter = " + numIter + ".")
+      println(
+        "RMSE (validation) = " + validationRmse + " for the model trained with rank = "
+          + rank + ", lambda = " + lambda + ", and numIter = " + numIter + "."
+      )
       if (validationRmse < bestValidationRmse) {
         bestModel = Some(model)
         bestValidationRmse = validationRmse
@@ -158,8 +179,10 @@ class MovieLens extends RenaissanceBenchmark {
 
     val testRmse = computeRmse(bestModel.get, test, numTest)
 
-    println("The best model was trained with rank = " + bestRank + " and lambda = " + bestLambda
-      + ", and numIter = " + bestNumIter + ", and its RMSE on the test set is " + testRmse + ".")
+    println(
+      "The best model was trained with rank = " + bestRank + " and lambda = " + bestLambda
+        + ", and numIter = " + bestNumIter + ", and its RMSE on the test set is " + testRmse + "."
+    )
 
     // Create a naive baseline and compare it with the best model.
 
@@ -176,7 +199,7 @@ class MovieLens extends RenaissanceBenchmark {
     val recommendations = bestModel.get
       .predict(candidates.map((0, _)))
       .collect()
-      .sortBy(- _.rating)
+      .sortBy(-_.rating)
       .take(50)
 
     var i = 1
@@ -190,7 +213,8 @@ class MovieLens extends RenaissanceBenchmark {
   /** Compute RMSE (Root Mean Squared Error). */
   def computeRmse(model: MatrixFactorizationModel, data: RDD[Rating], n: Long): Double = {
     val predictions: RDD[Rating] = model.predict(data.map(x => (x.user, x.product)))
-    val predictionsAndRatings = predictions.map(x => ((x.user, x.product), x.rating))
+    val predictionsAndRatings = predictions
+      .map(x => ((x.user, x.product), x.rating))
       .join(data.map(x => ((x.user, x.product), x.rating)))
       .values
     math.sqrt(predictionsAndRatings.map(x => (x._1 - x._2) * (x._1 - x._2)).reduce(_ + _) / n)
@@ -200,10 +224,12 @@ class MovieLens extends RenaissanceBenchmark {
   def loadRatings(path: URL): Seq[Rating] = {
     //val lines = Source.fromURL(path, StandardCharsets.UTF_8).getLines()
     val lines = Source.fromURL(path).getLines()
-    val ratings = lines.map { line =>
-      val fields = line.split(",")
-      Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
-    }.filter(_.rating > 0.0)
+    val ratings = lines
+      .map { line =>
+        val fields = line.split(",")
+        Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
+      }
+      .filter(_.rating > 0.0)
     if (ratings.isEmpty) {
       sys.error("No ratings provided.")
     } else {
