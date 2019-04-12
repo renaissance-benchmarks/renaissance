@@ -213,7 +213,7 @@ class AnalyticsBenchmark(
     (
       "match (d: Director { name: 'Jim Steel' })" +
         "set d.directorId = 'm.03d5q13'",
-      (r: Result) => silentPrintln("Done.")
+      (r: Result) => threadPrintln("Done.")
     ),
     (
       "match (d: Director) where d.name starts with 'Don' " +
@@ -224,7 +224,7 @@ class AnalyticsBenchmark(
       "match (f: Film) " +
         "where f.release_date >= '2014' and f.release_date < '2015' " +
         "set f.name = reverse(f.name)",
-      (r: Result) => silentPrintln("Done.")
+      (r: Result) => threadPrintln("Done.")
     )
   )
 
