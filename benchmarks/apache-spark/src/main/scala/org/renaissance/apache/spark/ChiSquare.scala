@@ -19,7 +19,7 @@ import scala.util.Random
 
 class ChiSquare extends RenaissanceBenchmark {
 
-  def description = "Runs the chi-square test from mllib."
+  def description = "Runs the chi-square test from Spark MLlib."
 
   override def defaultRepetitions = 60
 
