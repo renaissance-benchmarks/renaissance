@@ -26,8 +26,6 @@ import org.renaissance.RenaissanceBenchmark
 
 import scala.util.Random
 
-
-
 class DecTree extends RenaissanceBenchmark {
 
   def description = "Runs the Random Forest algorithm from Spark MLlib."
@@ -64,7 +62,8 @@ class DecTree extends RenaissanceBenchmark {
 
     // Prepare input.
     FileUtils.deleteDirectory(new File(decisionTreePath))
-    val text = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
+    val text =
+      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 100) {
       FileUtils.write(new File(bigInputFile), text, StandardCharsets.UTF_8, true)
     }
@@ -90,13 +89,14 @@ class DecTree extends RenaissanceBenchmark {
       .setMinInfoGain(0.0)
       .setCacheNodeIds(false)
       .setCheckpointInterval(10)
-    pipeline = new Pipeline().setStages(Array[PipelineStage](
-      labelIndexer,
-      featureIndexer,
-      dtc
-    ))
+    pipeline = new Pipeline().setStages(
+      Array[PipelineStage](
+        labelIndexer,
+        featureIndexer,
+        dtc
+      )
+    )
   }
-
 
   override def runIteration(c: Config): Unit = {
     pipelineModel = pipeline.fit(training)
@@ -110,6 +110,5 @@ class DecTree extends RenaissanceBenchmark {
 
     sc.stop()
   }
-
 
 }
