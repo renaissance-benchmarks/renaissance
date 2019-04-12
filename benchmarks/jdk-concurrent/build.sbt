@@ -8,7 +8,7 @@ lazy val jdkConcurrent = (project in file("."))
     scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := "2.12.8",
     libraryDependencies ++= Seq(
-      "io.jenetics" % "jenetics" % "4.4.0",
+      "io.jenetics" % "jenetics" % "4.4.0"
     )
   )
   .dependsOn(
