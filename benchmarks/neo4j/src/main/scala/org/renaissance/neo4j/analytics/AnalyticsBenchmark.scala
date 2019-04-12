@@ -19,6 +19,12 @@ class AnalyticsBenchmark(val graphDir: File) {
 
   private val CPU_COUNT = Runtime.getRuntime.availableProcessors
 
+  private val LONG_QUERY_NUM = CPU_COUNT / 2 + 1
+
+  private val SHORT_QUERY_NUM = CPU_COUNT - CPU_COUNT / 2 + 1
+
+  private val MUTATOR_QUERY_NUM = 1
+
   private val GENRE = new RelationshipType {
     override def name(): String = "GENRE"
   }
@@ -325,7 +331,7 @@ class AnalyticsBenchmark(val graphDir: File) {
     s.drop(n % s.length) ++ s.take(n % s.length)
 
   private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
-    val mutatorCount = math.max(1, 1)
+    val mutatorCount = math.max(1, MUTATOR_QUERY_NUM)
     val threads = for (p <- 0 until mutatorCount)
       yield
         new Thread {
@@ -338,7 +344,7 @@ class AnalyticsBenchmark(val graphDir: File) {
   }
 
   private def startShortQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
-    val shortCount = math.max(1, CPU_COUNT - CPU_COUNT / 2 + 1)
+    val shortCount = math.max(1, SHORT_QUERY_NUM)
     val threads = for (p <- 0 until shortCount)
       yield
         new Thread {
@@ -351,7 +357,7 @@ class AnalyticsBenchmark(val graphDir: File) {
   }
 
   private def startLongQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
-    val longCount = math.max(1, CPU_COUNT / 2 + 1)
+    val longCount = math.max(1, LONG_QUERY_NUM)
     val threads = for (p <- 0 until longCount)
       yield
         new Thread {
