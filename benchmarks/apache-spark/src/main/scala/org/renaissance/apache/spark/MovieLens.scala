@@ -42,7 +42,11 @@ class MovieLens extends RenaissanceBenchmark {
 
   val checkpointPath = movieLensPath + "/checkpoint/"
 
-  val tmpFile = movieLensPath + "/tmp.txt"
+  val bigFilePath = movieLensPath + "/bigfiles"
+
+  val moviesBigFile = bigFilePath + "/movies.txt"
+
+  val ratingsBigFile = bigFilePath + "/ratings.txt"
 
   override def setUpBeforeAll(c: Config): Unit = {
 
@@ -76,9 +80,11 @@ class MovieLens extends RenaissanceBenchmark {
 
     // Load ratings and movie titles.
 
+    FileUtils.deleteDirectory(new File(bigFilePath))
+
     val ratingsText = IOUtils.toString(this.getClass.getResourceAsStream(ratingsInputFile), StandardCharsets.UTF_8)
-    FileUtils.write(new File(tmpFile), ratingsText, StandardCharsets.UTF_8, true)
-    val ratingsFile = sc.textFile(tmpFile)
+    FileUtils.write(new File(ratingsBigFile), ratingsText, StandardCharsets.UTF_8, true)
+    val ratingsFile = sc.textFile(ratingsBigFile)
     val ratingsFileHeader = ratingsFile.first
     val ratings = ratingsFile.filter{ line => line != ratingsFileHeader }.map { line =>
       val fields = line.split(",")
@@ -87,8 +93,8 @@ class MovieLens extends RenaissanceBenchmark {
     }
 
     val moviesText = IOUtils.toString(this.getClass.getResourceAsStream(moviesInputFile), StandardCharsets.UTF_8)
-    FileUtils.write(new File(tmpFile), moviesText, StandardCharsets.UTF_8, true)
-    val moviesFile = sc.textFile(tmpFile)
+    FileUtils.write(new File(moviesBigFile), moviesText, StandardCharsets.UTF_8, true)
+    val moviesFile = sc.textFile(moviesBigFile)
     val moviesFileHeader = moviesFile.first
     val movies = moviesFile.filter{ line => line != moviesFileHeader }.map { line =>
       val fields = line.split(",")
