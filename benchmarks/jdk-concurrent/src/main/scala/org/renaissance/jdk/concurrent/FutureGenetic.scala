@@ -1,10 +1,8 @@
 package org.renaissance.jdk.concurrent
 
-
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-
 
 class FutureGenetic extends RenaissanceBenchmark {
   def description = "Runs a genetic algorithm using the Jenetics library and futures."
@@ -27,6 +25,3 @@ class FutureGenetic extends RenaissanceBenchmark {
     blackHole(benchmark.runIteration())
   }
 }
-
-
-
