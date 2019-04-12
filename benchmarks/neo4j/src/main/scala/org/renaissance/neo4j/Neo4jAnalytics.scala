@@ -16,7 +16,14 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
   //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
   val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
 
-  var benchmark: AnalyticsBenchmark = new AnalyticsBenchmark(scratchPath.toFile)
+  // TODO: Unify how custom parameters are passed to the benchmarks.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  var benchmark: AnalyticsBenchmark = new AnalyticsBenchmark(
+    scratchPath.toFile,
+    sys.props.get("renaissance.neo4j.long-query-count").map(_.toInt),
+    sys.props.get("renaissance.neo4j.short-query-count").map(_.toInt),
+    sys.props.get("renaissance.neo4j.mutator-query-count").map(_.toInt)
+  )
 
   override def defaultRepetitions = 10
 
