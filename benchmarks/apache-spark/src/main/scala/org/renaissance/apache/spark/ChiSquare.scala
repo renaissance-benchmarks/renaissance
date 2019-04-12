@@ -76,7 +76,7 @@ class ChiSquare extends RenaissanceBenchmark {
   }
 
   override def runIteration(c: Config): Unit = {
-    results = Statistics.chiSqTest(input)
+    blackHole(Statistics.chiSqTest(input))
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
