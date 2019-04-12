@@ -82,6 +82,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
 - `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
+- `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
 
 
 ##### scala-stdlib
@@ -152,6 +153,7 @@ The following table contains the licensing information of all the benchmarks:
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | streams-mnemonics | MIT | MIT |
+| parallel-streams-mnemonics | MIT | MIT |
 | dummy | MIT | MIT |
 | scala-k-means | MIT | MIT |
 | finagle-http | APACHE2 | MIT |
