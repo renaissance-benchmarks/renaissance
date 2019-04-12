@@ -74,7 +74,7 @@ class PageRank extends RenaissanceBenchmark {
       }
       ranks = contributions.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
     }
-    ranks.count()
+    blackHole(ranks.count())
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

@@ -11,9 +11,7 @@ class Scrabble extends RenaissanceBenchmark {
 
   def licenses = License.create(License.GPL2)
 
-  @volatile var lastResult = 0
-
   override def runIteration(c: Config): Unit = {
-    lastResult = JavaScrabble.run()
+    blackHole(JavaScrabble.run())
   }
 }

@@ -15,7 +15,8 @@ class StreamsMnemonics extends RenaissanceBenchmark {
 
   override def setUpBeforeAll(c: Config): Unit = {
     testInput = "72252762577225276257528249849874238824"
-    coder = new MnemonicsCoderWithStream(java.util.Arrays.asList(
+    coder = new MnemonicsCoderWithStream(
+      java.util.Arrays.asList(
         "Scala",
         "rocks",
         "Pack",
@@ -57,6 +58,6 @@ class StreamsMnemonics extends RenaissanceBenchmark {
   }
 
   override def runIteration(c: Config): Unit = {
-    coder.translate(testInput)
+    blackHole(coder.translate(testInput))
   }
 }

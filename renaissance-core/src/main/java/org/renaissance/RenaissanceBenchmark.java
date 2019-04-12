@@ -97,6 +97,12 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     }
   }
 
+  private volatile Object blackHoleField;
+
+  protected <T> void blackHole(T value) {
+    blackHoleField = value;
+  }
+
   /** This method runs the functionality of the benchmark.
    */
   protected abstract void runIteration(Config config);
