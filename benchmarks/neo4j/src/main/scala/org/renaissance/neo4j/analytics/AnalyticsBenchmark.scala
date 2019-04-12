@@ -24,9 +24,9 @@ class AnalyticsBenchmark(
 
   private val CPU_COUNT = Runtime.getRuntime.availableProcessors
 
-  private val LONG_QUERY_NUM = longQueryCount.getOrElse(CPU_COUNT / 2 + 1)
+  private val LONG_QUERY_NUM = longQueryCount.getOrElse(2)
 
-  private val SHORT_QUERY_NUM = shortQueryCount.getOrElse(CPU_COUNT - CPU_COUNT / 2 + 1)
+  private val SHORT_QUERY_NUM = shortQueryCount.getOrElse(1)
 
   private val MUTATOR_QUERY_NUM = mutatorQueryCount.getOrElse(1)
 
