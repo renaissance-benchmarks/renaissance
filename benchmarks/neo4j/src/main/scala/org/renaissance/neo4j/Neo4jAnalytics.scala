@@ -25,7 +25,7 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
     sys.props.get("renaissance.neo4j.mutator-query-count").map(_.toInt)
   )
 
-  override def defaultRepetitions = 10
+  override def defaultRepetitions = 20
 
   override def setUpBeforeAll(c: Config): Unit = {
     benchmark.setupAll()
