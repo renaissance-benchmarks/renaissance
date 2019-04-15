@@ -2,11 +2,10 @@ package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
-import java.util.zip.ZipInputStream
 
-import org.apache.commons.io.{FileUtils, IOUtils}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.commons.io.FileUtils
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class PageRank extends RenaissanceBenchmark {
@@ -36,23 +35,13 @@ class PageRank extends RenaissanceBenchmark {
 
   var tempDirPath: Path = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
-    val conf = new SparkConf()
-      .setAppName("page-rank")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-
-    // Prepare input.
+  def prepareInput() = {
     FileUtils.deleteDirectory(pageRankPath.toFile)
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + inputFile))
-    zis.getNextEntry()
-    val text = IOUtils.toString(zis, StandardCharsets.UTF_8)
+    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
     FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
+  }
 
-    // Load data.
+  def loadData() = {
     val lines = sc.textFile(bigInputFile.toString)
     links = lines
       .map { line =>
@@ -63,6 +52,22 @@ class PageRank extends RenaissanceBenchmark {
       .groupByKey()
       .cache()
     ranks = links.mapValues(v => 1.0)
+  }
+
+  def setUpSpark() = {
+    val conf = new SparkConf()
+      .setAppName("page-rank")
+      .setMaster(s"local[$THREAD_COUNT]")
+      .set("spark.local.dir", tempDirPath.toString)
+    sc = new SparkContext(conf)
+    sc.setLogLevel("ERROR")
+  }
+
+  override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
+    setUpSpark()
+    prepareInput()
+    loadData()
   }
 
   override def runIteration(c: Config): Unit = {
@@ -88,4 +93,5 @@ class PageRank extends RenaissanceBenchmark {
     sc.stop()
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
+
 }

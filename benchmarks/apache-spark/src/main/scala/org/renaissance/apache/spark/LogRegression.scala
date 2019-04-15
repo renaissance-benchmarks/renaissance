@@ -2,9 +2,8 @@ package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
-import java.util.zip.ZipInputStream
 
-import org.apache.commons.io.{FileUtils, IOUtils}
+import org.apache.commons.io.FileUtils
 import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
@@ -14,7 +13,7 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class LogRegression extends RenaissanceBenchmark {
 
-  def description = "Runs the logistic regression workload from mllib."
+  def description = "Runs the logistic regression workload from the Spark MLlib."
 
   override def defaultRepetitions = 20
 
@@ -46,26 +45,15 @@ class LogRegression extends RenaissanceBenchmark {
 
   var tempDirPath: Path = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("log_regression")
-    val conf = new SparkConf()
-      .setAppName("logistic-regression")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-
-    // Prepare input.
+  def prepareInput() = {
     FileUtils.deleteDirectory(logisticRegressionPath.toFile)
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + inputFile))
-    zis.getNextEntry()
-    val text = IOUtils.toString(zis, StandardCharsets.UTF_8)
+    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
     for (i <- 0 until 400) {
-      FileUtils.write(bigInputFile.toFile, text, true)
+      FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
+  }
 
-    // Load data.
+  def loadData() = {
     rdd = sc
       .textFile(bigInputFile.toString)
       .map { line =>
@@ -81,12 +69,21 @@ class LogRegression extends RenaissanceBenchmark {
       }
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
-    // Dump output.
-    FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", true)
-    FileUtils.write(outputPath.toFile, mlModel.intercept.toString, true)
-    sc.stop()
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+  def setUpSpark() = {
+    val conf = new SparkConf()
+      .setAppName("logistic-regression")
+      .setMaster(s"local[$THREAD_COUNT]")
+      .set("spark.local.dir", tempDirPath.toString)
+      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
+    sc = new SparkContext(conf)
+    sc.setLogLevel("ERROR")
+  }
+
+  override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("log_regression")
+    setUpSpark()
+    prepareInput()
+    loadData()
   }
 
   protected override def runIteration(config: Config): Unit = {
@@ -98,5 +95,12 @@ class LogRegression extends RenaissanceBenchmark {
     val sqlContext = new SQLContext(rdd.context)
     import sqlContext.implicits._
     mlModel = lor.fit(rdd.toDF("label", "features"))
+  }
+
+  override def tearDownAfterAll(c: Config): Unit = {
+    FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", true)
+    FileUtils.write(outputPath.toFile, mlModel.intercept.toString, true)
+    sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 }
