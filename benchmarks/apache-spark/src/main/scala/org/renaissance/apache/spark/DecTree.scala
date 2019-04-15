@@ -121,5 +121,4 @@ class DecTree extends RenaissanceBenchmark {
     sc.stop()
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
-
 }
