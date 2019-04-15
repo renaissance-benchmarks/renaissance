@@ -69,6 +69,7 @@ class ChiSquare extends RenaissanceBenchmark {
         val raw = line.split(" ").map(_.toDouble)
         new LabeledPoint(raw.head, Vectors.dense(raw.tail))
       }
+        .cache()
   }
 
   def setUpSpark() = {
