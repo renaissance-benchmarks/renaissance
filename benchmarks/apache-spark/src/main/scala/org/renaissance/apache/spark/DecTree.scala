@@ -40,7 +40,7 @@ class DecTree extends RenaissanceBenchmark {
 
   val outputPath = decisionTreePath.resolve("output")
 
-  val inputFile = "sample_libsvm_data.txt"
+  val inputFile = "sample_libsvm_data.txt.zip"
 
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 
@@ -65,8 +65,7 @@ class DecTree extends RenaissanceBenchmark {
 
   def prepareInput() = {
     FileUtils.deleteDirectory(decisionTreePath.toFile)
-    val text =
-      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
+    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
     for (i <- 0 until 100) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
