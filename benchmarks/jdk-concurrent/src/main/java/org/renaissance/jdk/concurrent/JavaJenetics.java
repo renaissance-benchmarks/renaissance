@@ -27,11 +27,9 @@ public final class JavaJenetics {
 
   private static final int GENE_COUNT = 200;
 
-  private static final int CHROMOZOME_COUNT = 50;
+  private static final int CHROMOSOME_COUNT = 50;
 
   private static final int GENERATION_COUNT = 5000;
-
-  //
 
   private static final int RANDOM_SEED = 7;
 
@@ -39,12 +37,10 @@ public final class JavaJenetics {
 
   private final ExecutorService executor = Executors.newWorkStealingPool();
 
-  //
-
   public JavaJenetics() {}
 
 
-  public void setupBeforeAll () {
+  public void setupBeforeAll() {
     RandomRegistry.setRandom(new Random(RANDOM_SEED));
   }
 
@@ -53,7 +49,7 @@ public final class JavaJenetics {
     executor.shutdown();
 
     try {
-      executor.awaitTermination(1,  TimeUnit.SECONDS);
+      executor.awaitTermination(1, TimeUnit.SECONDS);
 
     } catch (final InterruptedException e) {
       throw new RuntimeException(e);
@@ -64,7 +60,7 @@ public final class JavaJenetics {
   public Object runIteration() {
     final CompletableFuture<Chromosome<DoubleGene>> future =
       IntStream.range(0, THREAD_COUNT).mapToObj(
-        i -> CompletableFuture.supplyAsync(this::evolveChromozome, executor)
+        i -> CompletableFuture.supplyAsync(this::evolveChromosome, executor)
       ).reduce((f, g) -> f.thenCombine(g, this::average)).get();
 
     final Chromosome<DoubleGene> result = future.join();
@@ -73,13 +69,13 @@ public final class JavaJenetics {
   }
 
 
-  private Chromosome<DoubleGene> evolveChromozome() {
+  private Chromosome<DoubleGene> evolveChromosome() {
     final Factory<Genotype<DoubleGene>> factory = Genotype.of(
       DoubleChromosome.of(GENE_MIN_VALUE, GENE_MAX_VALUE, GENE_COUNT)
     );
 
     final Engine<DoubleGene, Double> engine = Engine.builder(this::fitness, factory)
-      .selector(new MonteCarloSelector<>()).populationSize(CHROMOZOME_COUNT).build();
+      .selector(new MonteCarloSelector<>()).populationSize(CHROMOSOME_COUNT).build();
 
     final Genotype<DoubleGene> result = engine.stream()
       .limit(GENERATION_COUNT).collect(EvolutionResult.toBestGenotype());
@@ -102,7 +98,7 @@ public final class JavaJenetics {
     return DoubleChromosome.of(
       IntStream.range(0, ca.length())
         .mapToObj(i -> ca.getGene(i).mean(cb.getGene(i)))
-        .collect(MSeq.toMSeq ())
+        .collect(MSeq.toMSeq())
     );
   }
 
