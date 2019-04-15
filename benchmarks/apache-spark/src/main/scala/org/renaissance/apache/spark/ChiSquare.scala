@@ -2,6 +2,8 @@ package org.renaissance.apache.spark
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
+
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
@@ -31,11 +33,11 @@ class ChiSquare extends RenaissanceBenchmark {
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  val chiSquarePath = "target/chi-square"
+  val chiSquarePath = Paths.get("target", "chi-square")
 
-  val outputPath = chiSquarePath + "/output"
+  val outputPath = chiSquarePath.resolve("output")
 
-  val bigInputFile = chiSquarePath + "/measurements.txt"
+  val measurementsFile = chiSquarePath.resolve("measurements.txt")
 
   var sc: SparkContext = null
 
@@ -43,16 +45,9 @@ class ChiSquare extends RenaissanceBenchmark {
 
   var results: Array[ChiSqTestResult] = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    val conf = new SparkConf()
-      .setAppName("chi-square")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", "_tmp")
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
 
-    // Prepare input.
-    FileUtils.deleteDirectory(new File(chiSquarePath))
+  def prepareInput() = {
+    FileUtils.deleteDirectory(chiSquarePath.toFile)
     val rand = new Random(0L)
     val content = new StringBuilder
     for (i <- 0 until SIZE) {
@@ -63,16 +58,32 @@ class ChiSquare extends RenaissanceBenchmark {
       content.append((0 until COMPONENTS).map(_ => randDouble()).mkString(" "))
       content.append("\n")
     }
+    FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
+  }
 
-    FileUtils.write(new File(bigInputFile), content, StandardCharsets.UTF_8, true)
-
-    // Load data.
+  def loadData() = {
     input = sc
-      .textFile(bigInputFile)
+      .textFile(measurementsFile.toString)
       .map { line =>
         val raw = line.split(" ").map(_.toDouble)
         new LabeledPoint(raw.head, Vectors.dense(raw.tail))
       }
+  }
+
+  def setUpSpark() = {
+    val conf = new SparkConf()
+      .setAppName("chi-square")
+      .setMaster(s"local[$THREAD_COUNT]")
+      .set("spark.local.dir", "_tmp")
+    sc = new SparkContext(conf)
+    sc.setLogLevel("ERROR")
+
+  }
+
+  override def setUpBeforeAll(c: Config): Unit = {
+    setUpSpark()
+    prepareInput()
+    loadData()
   }
 
   override def runIteration(c: Config): Unit = {
@@ -80,14 +91,12 @@ class ChiSquare extends RenaissanceBenchmark {
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-
     FileUtils.write(
-      new File(outputPath),
+      outputPath.toFile,
       results.map(_.statistic).mkString(", "),
       StandardCharsets.UTF_8,
       true
     )
-
     sc.stop()
   }
 
