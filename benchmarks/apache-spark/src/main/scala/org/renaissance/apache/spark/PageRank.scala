@@ -1,18 +1,13 @@
 package org.renaissance.apache.spark
 
-import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import java.util.zip.ZipInputStream
 
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
+import org.apache.commons.io.{FileUtils, IOUtils}
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class PageRank extends RenaissanceBenchmark {
   def description = "Runs a number of PageRank iterations, using RDDs."
@@ -25,13 +20,13 @@ class PageRank extends RenaissanceBenchmark {
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  val pageRankPath = "target/page-rank"
+  val pageRankPath = Paths.get("target", "page-rank")
 
-  val outputPath = pageRankPath + "/output"
+  val outputPath = pageRankPath.resolve("output")
 
-  val inputFile = "/web-berkstan.txt.zip"
+  val inputFile = "web-berkstan.txt.zip"
 
-  val bigInputFile = pageRankPath + "/bigfile.txt"
+  val bigInputFile = pageRankPath.resolve("bigfile.txt")
 
   var sc: SparkContext = null
 
@@ -51,14 +46,14 @@ class PageRank extends RenaissanceBenchmark {
     sc.setLogLevel("ERROR")
 
     // Prepare input.
-    FileUtils.deleteDirectory(new File(pageRankPath))
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream(inputFile))
+    FileUtils.deleteDirectory(pageRankPath.toFile)
+    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + inputFile))
     zis.getNextEntry()
     val text = IOUtils.toString(zis, StandardCharsets.UTF_8)
-    FileUtils.write(new File(bigInputFile), text, StandardCharsets.UTF_8, true)
+    FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
 
     // Load data.
-    val lines = sc.textFile(bigInputFile)
+    val lines = sc.textFile(bigInputFile.toString)
     links = lines
       .map { line =>
         val parts = line.split("\\s+")
@@ -89,7 +84,7 @@ class PageRank extends RenaissanceBenchmark {
         case (url, rank) => s"$url $rank"
       }
       .mkString("\n")
-    FileUtils.write(new File(outputPath), output, StandardCharsets.UTF_8, true)
+    FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     sc.stop()
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }

@@ -1,16 +1,15 @@
 package org.renaissance.apache.spark
 
-import java.io._
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.{FileUtils, IOUtils}
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.{SparkConf, SparkContext}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class LogRegression extends RenaissanceBenchmark {
@@ -31,13 +30,13 @@ class LogRegression extends RenaissanceBenchmark {
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  val logisticRegressionPath = "target/logistic-regression"
+  val logisticRegressionPath = Paths.get("target", "logistic-regression");
 
-  val outputPath = logisticRegressionPath + "/output"
+  val outputPath = logisticRegressionPath.resolve("output")
 
-  val inputFile = "/sample_libsvm_data.txt.zip"
+  val inputFile = "sample_libsvm_data.txt.zip"
 
-  val bigInputFile = logisticRegressionPath + "/bigfile.txt"
+  val bigInputFile = logisticRegressionPath.resolve("bigfile.txt")
 
   var mlModel: LogisticRegressionModel = null
 
@@ -53,22 +52,22 @@ class LogRegression extends RenaissanceBenchmark {
       .setAppName("logistic-regression")
       .setMaster(s"local[$THREAD_COUNT]")
       .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.toString + "/warehouse")
+      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
     // Prepare input.
-    FileUtils.deleteDirectory(new File(logisticRegressionPath))
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream(inputFile))
+    FileUtils.deleteDirectory(logisticRegressionPath.toFile)
+    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + inputFile))
     zis.getNextEntry()
     val text = IOUtils.toString(zis, StandardCharsets.UTF_8)
     for (i <- 0 until 400) {
-      FileUtils.write(new File(bigInputFile), text, true)
+      FileUtils.write(bigInputFile.toFile, text, true)
     }
 
     // Load data.
     rdd = sc
-      .textFile(bigInputFile)
+      .textFile(bigInputFile.toString)
       .map { line =>
         val parts = line.split(" ")
         val features = new Array[Double](692)
@@ -84,8 +83,8 @@ class LogRegression extends RenaissanceBenchmark {
 
   override def tearDownAfterAll(c: Config): Unit = {
     // Dump output.
-    FileUtils.write(new File(outputPath), mlModel.coefficients.toString + "\n", true)
-    FileUtils.write(new File(outputPath), mlModel.intercept.toString, true)
+    FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", true)
+    FileUtils.write(outputPath.toFile, mlModel.intercept.toString, true)
     sc.stop()
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
