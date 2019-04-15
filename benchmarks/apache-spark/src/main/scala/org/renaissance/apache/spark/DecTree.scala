@@ -2,6 +2,7 @@ package org.renaissance.apache.spark
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Path, Paths}
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.FileUtils
@@ -19,7 +20,6 @@ import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
-
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
@@ -30,19 +30,21 @@ class DecTree extends RenaissanceBenchmark {
 
   def description = "Runs the Random Forest algorithm from Spark MLlib."
 
-  //override def defaultRepetitions = ?? //Currently not set. Shall we keep the default value?
+  override def defaultRepetitions = 20
 
   override def licenses = License.create(License.APACHE2)
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  val decisionTreePath = "target/dec-tree"
+  val decisionTreePath = Paths.get("target", "dec-tree")
 
-  val outputPath = decisionTreePath + "/output"
+  val outputPath = decisionTreePath.resolve("output")
 
-  val inputFile = "/sample_libsvm_data.txt"
+  val inputFile = "sample_libsvm_data.txt"
 
-  val bigInputFile = decisionTreePath + "/bigfile.txt"
+  val bigInputFile = decisionTreePath.resolve("bigfile.txt")
+
+  var tempDirPath: Path = null
 
   var sc: SparkContext = null
 
@@ -52,27 +54,30 @@ class DecTree extends RenaissanceBenchmark {
 
   var pipelineModel: PipelineModel = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  def setUpSpark() = {
     val conf = new SparkConf()
       .setAppName("decision-tree")
       .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", "_tmp")
+      .set("spark.local.dir", tempDirPath.toString)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
+  }
 
-    // Prepare input.
-    FileUtils.deleteDirectory(new File(decisionTreePath))
+  def prepareInput() = {
+    FileUtils.deleteDirectory(decisionTreePath.toFile)
     val text =
       IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 100) {
-      FileUtils.write(new File(bigInputFile), text, StandardCharsets.UTF_8, true)
+      FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
+  }
 
-    // Load data.
+  def loadData() = {
     val sqlContext = new SQLContext(sc)
-    training = sqlContext.read.format("libsvm").load(bigInputFile)
+    training = sqlContext.read.format("libsvm").load(bigInputFile.toString)
+  }
 
-    // Run decision tree algorithm.
+  def setUpDecisionTreeAlgorithm() = {
     val labelIndexer = new StringIndexer()
       .setInputCol("label")
       .setOutputCol("indexedLabel")
@@ -98,17 +103,24 @@ class DecTree extends RenaissanceBenchmark {
     )
   }
 
+  override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("dec_tree")
+    setUpSpark()
+    prepareInput()
+    loadData()
+    setUpDecisionTreeAlgorithm()
+  }
+
   override def runIteration(c: Config): Unit = {
     pipelineModel = pipeline.fit(training)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    // Dump output.
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
-    FileUtils.write(new File(outputPath), treeModel.toDebugString, StandardCharsets.UTF_8, true)
-
+    FileUtils.write(outputPath.toFile, treeModel.toDebugString, StandardCharsets.UTF_8, true)
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
 }
