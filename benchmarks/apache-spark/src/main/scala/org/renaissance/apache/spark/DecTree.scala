@@ -77,7 +77,7 @@ class DecTree extends RenaissanceBenchmark {
     training = sqlContext.read.format("libsvm").load(bigInputFile.toString)
   }
 
-  def setUpDecisionTreeAlgorithm() = {
+  def constructPipeline() = {
     val labelIndexer = new StringIndexer()
       .setInputCol("label")
       .setOutputCol("indexedLabel")
@@ -108,7 +108,7 @@ class DecTree extends RenaissanceBenchmark {
     setUpSpark()
     prepareInput()
     loadData()
-    setUpDecisionTreeAlgorithm()
+    constructPipeline()
   }
 
   override def runIteration(c: Config): Unit = {
