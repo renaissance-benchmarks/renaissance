@@ -2,6 +2,7 @@ package org.renaissance.scala.dotty
 
 import java.io.{FileOutputStream, _}
 import java.net.URLClassLoader
+import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.IOUtils
@@ -16,28 +17,27 @@ class Dotty extends RenaissanceBenchmark {
 
   def licenses = License.create(License.BSD3)
 
-  private val zipPath = "/sources.zip"
+  private val zipPath = "sources.zip"
 
-  private val dottyPath = "target/dotty"
+  private val dottyPath = Paths.get("target", "dotty")
 
-  private val sourceCodePath = dottyPath + "/src"
+  private val sourceCodePath = dottyPath.resolve("src")
 
-  private val outputPath = dottyPath + "/output"
+  private val outputPath = dottyPath.resolve("output")
 
-  private var sources: mutable.Buffer[String] = null
+  private val sources: mutable.Buffer[String] = mutable.Buffer[String]()
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    new File(outputPath).mkdirs()
-    // Unzip sources.
-    sources = mutable.Buffer[String]()
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream(zipPath))
-    val target = new File(sourceCodePath)
+  private var sourcePaths: mutable.Buffer[String] = null
+
+  private def unzipSources() = {
+    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + zipPath))
+    val target = sourceCodePath.toFile
     var nextEntry = zis.getNextEntry
     while (nextEntry != null) {
       val name = nextEntry.getName
-      if (!name.endsWith("/")) {
-        val f = new File(target, name)
-        // create directories
+      val f = new File(target, name)
+      if (!f.isDirectory) {
+        // Create directories.
         val parent = f.getParentFile
         if (parent != null) parent.mkdirs
         val targetStream = new FileOutputStream(f)
@@ -47,11 +47,20 @@ class Dotty extends RenaissanceBenchmark {
         nextEntry = zis.getNextEntry
       }
     }
+    zis.close()
+  }
+
+  private def setUpSourcePaths() = {
+    sourcePaths = sources.map(f => sourceCodePath.resolve(f).toString)
+  }
+
+  override def setUpBeforeAll(c: Config): Unit = {
+    outputPath.toFile.mkdirs()
+    unzipSources()
+    setUpSourcePaths()
   }
 
   override def runIteration(c: Config): Unit = {
-    val paths: mutable.Seq[String] = sources
-      .map(f => sourceCodePath + "/" + f)
     val args = Seq[String](
       "-bootclasspath",
       Thread.currentThread.getContextClassLoader
@@ -60,8 +69,8 @@ class Dotty extends RenaissanceBenchmark {
         .mkString(":"),
       "-language:implicitConversions",
       "-d",
-      outputPath
+      outputPath.toString
     )
-    paths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
+    sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
   }
 }
