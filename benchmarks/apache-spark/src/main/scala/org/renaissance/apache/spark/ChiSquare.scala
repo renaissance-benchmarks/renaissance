@@ -2,7 +2,7 @@ package org.renaissance.apache.spark
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
@@ -39,12 +39,13 @@ class ChiSquare extends RenaissanceBenchmark {
 
   val measurementsFile = chiSquarePath.resolve("measurements.txt")
 
+  var tempDirPath: Path = null
+
   var sc: SparkContext = null
 
   var input: RDD[LabeledPoint] = null
 
   var results: Array[ChiSqTestResult] = null
-
 
   def prepareInput() = {
     FileUtils.deleteDirectory(chiSquarePath.toFile)
@@ -74,30 +75,29 @@ class ChiSquare extends RenaissanceBenchmark {
     val conf = new SparkConf()
       .setAppName("chi-square")
       .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", "_tmp")
+      .set("spark.local.dir", tempDirPath.toString)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
   }
 
   override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("chi_square")
     setUpSpark()
     prepareInput()
     loadData()
   }
 
   override def runIteration(c: Config): Unit = {
-    blackHole(Statistics.chiSqTest(input))
+    results = Statistics.chiSqTest(input)
+    blackHole(results)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    FileUtils.write(
-      outputPath.toFile,
-      results.map(_.statistic).mkString(", "),
-      StandardCharsets.UTF_8,
-      true
-    )
+    val output = results.map(_.statistic).mkString(", ")
+    FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
 }
