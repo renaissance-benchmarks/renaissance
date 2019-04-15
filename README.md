@@ -70,8 +70,12 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+- `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 20)
+
+- `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
+
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
-- `log-regression` - Runs the logistic regression workload from mllib. (default repetitions: 20)
+
 
 ##### core
 
@@ -80,14 +84,16 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### jdk-streams
 
-- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
-- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 - `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
+
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+
+- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 
 
 ##### neo4j
 
-- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 10)
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
 
 
 ##### rx
@@ -161,13 +167,14 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | rx-scrabble | GPL2 | GPL3 |
+| dec-tree | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
-| log-regression | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
-| streams-mnemonics | MIT | MIT |
-| parallel-streams-mnemonics | MIT | MIT |
 | dummy | MIT | MIT |
+| log-regression | APACHE2 | MIT |
+| streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
+| parallel-streams-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 
