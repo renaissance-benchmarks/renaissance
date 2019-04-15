@@ -14,10 +14,21 @@ import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import scala.collection._
 
-class AnalyticsBenchmark(val graphDir: File) {
+class AnalyticsBenchmark(
+  val graphDir: File,
+  val longQueryCount: Option[Int],
+  val shortQueryCount: Option[Int],
+  val mutatorQueryCount: Option[Int]
+) {
   private var db: GraphDatabaseService = null
 
   private val CPU_COUNT = Runtime.getRuntime.availableProcessors
+
+  private val LONG_QUERY_NUM = longQueryCount.getOrElse(2)
+
+  private val SHORT_QUERY_NUM = shortQueryCount.getOrElse(1)
+
+  private val MUTATOR_QUERY_NUM = mutatorQueryCount.getOrElse(1)
 
   private val GENRE = new RelationshipType {
     override def name(): String = "GENRE"
@@ -202,7 +213,7 @@ class AnalyticsBenchmark(val graphDir: File) {
     (
       "match (d: Director { name: 'Jim Steel' })" +
         "set d.directorId = 'm.03d5q13'",
-      (r: Result) => silentPrintln("Done.")
+      (r: Result) => threadPrintln("Done.")
     ),
     (
       "match (d: Director) where d.name starts with 'Don' " +
@@ -213,7 +224,7 @@ class AnalyticsBenchmark(val graphDir: File) {
       "match (f: Film) " +
         "where f.release_date >= '2014' and f.release_date < '2015' " +
         "set f.name = reverse(f.name)",
-      (r: Result) => silentPrintln("Done.")
+      (r: Result) => threadPrintln("Done.")
     )
   )
 
@@ -325,7 +336,7 @@ class AnalyticsBenchmark(val graphDir: File) {
     s.drop(n % s.length) ++ s.take(n % s.length)
 
   private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
-    val mutatorCount = math.max(1, 1)
+    val mutatorCount = math.max(1, MUTATOR_QUERY_NUM)
     val threads = for (p <- 0 until mutatorCount)
       yield
         new Thread {
@@ -338,7 +349,7 @@ class AnalyticsBenchmark(val graphDir: File) {
   }
 
   private def startShortQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
-    val shortCount = math.max(1, CPU_COUNT - CPU_COUNT / 2 + 1)
+    val shortCount = math.max(1, SHORT_QUERY_NUM)
     val threads = for (p <- 0 until shortCount)
       yield
         new Thread {
@@ -351,7 +362,7 @@ class AnalyticsBenchmark(val graphDir: File) {
   }
 
   private def startLongQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
-    val longCount = math.max(1, CPU_COUNT / 2 + 1)
+    val longCount = math.max(1, LONG_QUERY_NUM)
     val threads = for (p <- 0 until longCount)
       yield
         new Thread {
