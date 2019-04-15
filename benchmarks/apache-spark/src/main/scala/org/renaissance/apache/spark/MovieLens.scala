@@ -1,8 +1,10 @@
 package org.renaissance.apache.spark
 
 import java.io.File
+import java.io.InputStream
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Path, Paths}
 
 import scala.io.Source
 import org.apache.commons.io.FileUtils
@@ -14,7 +16,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd._
 import org.apache.spark.mllib.recommendation.{ALS, MatrixFactorizationModel, Rating}
-
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
@@ -23,7 +24,7 @@ class MovieLens extends RenaissanceBenchmark {
 
   def description = "Recommends movies using the ALS algorithm."
 
-  override def defaultRepetitions: Int = 5
+  override def defaultRepetitions = 5
 
   override def licenses = License.create(License.APACHE2)
 
@@ -31,33 +32,42 @@ class MovieLens extends RenaissanceBenchmark {
 
   var sc: SparkContext = null
 
-  val myRatingsInputFile = "/movie-lens-my-ratings.csv"
+  val movieLensPath = Paths.get("target", "movie-lens")
 
-  val moviesInputFile = "/movies.csv"
+  val checkpointPath = movieLensPath.resolve("checkpoint")
 
-  val ratingsInputFile = "/ratings.csv"
+  val myRatingsInputFile = File.separator + "movie-lens-my-ratings.csv"
 
-  val movieLensPath = "target/movie-lens"
+  val moviesInputFile = File.separator +"movies.csv"
 
-  val checkpointPath = movieLensPath + "/checkpoint/"
+  val ratingsInputFile = File.separator +"ratings.csv"
 
-  val bigFilePath = movieLensPath + "/bigfiles"
+  val bigFilesPath = movieLensPath.resolve("bigfiles")
 
-  val moviesBigFile = bigFilePath + "/movies.txt"
+  val moviesBigFile = bigFilesPath.resolve("movies.txt")
 
-  val ratingsBigFile = bigFilePath + "/ratings.txt"
+  val ratingsBigFile = bigFilesPath.resolve("ratings.txt")
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  var tempDirPath: Path = null
 
+  def setUpLogger() = {
     Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
     Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
+  }
 
+  def setUpSpark() = {
     val conf = new SparkConf()
       .setAppName("movie-lens")
       .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", "_tmp")
+      .set("spark.local.dir", tempDirPath.toString)
     sc = new SparkContext(conf)
-    sc.setCheckpointDir(checkpointPath)
+    sc.setCheckpointDir(checkpointPath.toString)
+  }
+
+  override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("movie_lens")
+    setUpLogger()
+    setUpSpark()
   }
 
   override def runIteration(c: Config): Unit = {
@@ -65,8 +75,8 @@ class MovieLens extends RenaissanceBenchmark {
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    // Clean up.
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
   def run(sc: SparkContext): Unit = {
@@ -77,14 +87,14 @@ class MovieLens extends RenaissanceBenchmark {
 
     // Load ratings and movie titles.
 
-    FileUtils.deleteDirectory(new File(bigFilePath))
+    FileUtils.deleteDirectory(bigFilesPath.toFile)
 
     val ratingsText = IOUtils.toString(
       this.getClass.getResourceAsStream(ratingsInputFile),
       StandardCharsets.UTF_8
     )
-    FileUtils.write(new File(ratingsBigFile), ratingsText, StandardCharsets.UTF_8, true)
-    val ratingsFile = sc.textFile(ratingsBigFile)
+    FileUtils.write(ratingsBigFile.toFile, ratingsText, StandardCharsets.UTF_8, true)
+    val ratingsFile = sc.textFile(ratingsBigFile.toString)
     val ratingsFileHeader = ratingsFile.first
     val ratings = ratingsFile
       .filter { line =>
@@ -100,8 +110,8 @@ class MovieLens extends RenaissanceBenchmark {
       this.getClass.getResourceAsStream(moviesInputFile),
       StandardCharsets.UTF_8
     )
-    FileUtils.write(new File(moviesBigFile), moviesText, StandardCharsets.UTF_8, true)
-    val moviesFile = sc.textFile(moviesBigFile)
+    FileUtils.write(moviesBigFile.toFile, moviesText, StandardCharsets.UTF_8, true)
+    val moviesFile = sc.textFile(moviesBigFile.toString)
     val moviesFileHeader = moviesFile.first
     val movies = moviesFile
       .filter { line =>
@@ -224,6 +234,10 @@ class MovieLens extends RenaissanceBenchmark {
   def loadRatings(path: URL): Seq[Rating] = {
     //val lines = Source.fromURL(path, StandardCharsets.UTF_8).getLines()
     val lines = Source.fromURL(path).getLines()
+    //System.out.println(path)
+    //val lines = Source.fromInputStream(path).getLines()
+    //val lines = Source.fromFile(path).getLines()
+
     val ratings = lines
       .map { line =>
         val fields = line.split(",")
