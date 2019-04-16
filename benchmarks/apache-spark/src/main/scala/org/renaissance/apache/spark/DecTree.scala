@@ -66,16 +66,17 @@ class DecTree extends RenaissanceBenchmark {
   def prepareAndLoadInput(decisionTreePath: Path, inputFile: String): DataFrame = {
     FileUtils.deleteDirectory(decisionTreePath.toFile)
 
-    val text = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
+    val text =
+      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 100) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
 
     val sqlContext = new SQLContext(sc)
-    return  sqlContext.read.format("libsvm").load(bigInputFile.toString)
+    return sqlContext.read.format("libsvm").load(bigInputFile.toString)
   }
 
-  def constructPipeline() : Pipeline = {
+  def constructPipeline(): Pipeline = {
     val labelIndexer = new StringIndexer()
       .setInputCol("label")
       .setOutputCol("indexedLabel")
