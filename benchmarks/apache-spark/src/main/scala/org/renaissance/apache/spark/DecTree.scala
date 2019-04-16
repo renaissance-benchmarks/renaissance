@@ -116,8 +116,13 @@ class DecTree extends RenaissanceBenchmark {
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
     val thisIterOutputPath = outputPath.resolve(iteration.toString)
-    FileUtils.write(thisIterOutputPath.toFile, treeModel.toDebugString, StandardCharsets.UTF_8, true)
-    iteration+=1
+    FileUtils.write(
+      thisIterOutputPath.toFile,
+      treeModel.toDebugString,
+      StandardCharsets.UTF_8,
+      true
+    )
+    iteration += 1
 
   }
 
