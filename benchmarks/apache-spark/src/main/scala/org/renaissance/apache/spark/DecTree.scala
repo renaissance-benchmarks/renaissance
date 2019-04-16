@@ -54,6 +54,8 @@ class DecTree extends RenaissanceBenchmark {
 
   var pipelineModel: PipelineModel = null
 
+  var iteration: Int = 0
+
   def setUpSpark() = {
     val conf = new SparkConf()
       .setAppName("decision-tree")
@@ -111,12 +113,15 @@ class DecTree extends RenaissanceBenchmark {
 
   override def runIteration(c: Config): Unit = {
     pipelineModel = pipeline.fit(training)
+    val treeModel =
+      pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
+    val thisIterOutputPath = outputPath.resolve(iteration.toString)
+    FileUtils.write(thisIterOutputPath.toFile, treeModel.toDebugString, StandardCharsets.UTF_8, true)
+    iteration+=1
+
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    val treeModel =
-      pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
-    FileUtils.write(outputPath.toFile, treeModel.toDebugString, StandardCharsets.UTF_8, true)
     sc.stop()
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
