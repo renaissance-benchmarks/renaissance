@@ -70,8 +70,10 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+- `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
+
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
-- `log-regression` - Runs the logistic regression workload from mllib. (default repetitions: 20)
+
 
 ##### core
 
@@ -80,14 +82,16 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### jdk-streams
 
-- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
-- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 - `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
+
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+
+- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 
 
 ##### neo4j
 
-- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 10)
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
 
 
 ##### rx
@@ -101,6 +105,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 
 ##### twitter-finagle
+
+- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 40)
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
@@ -160,14 +166,15 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
+| finagle-chirper | APACHE2 | MIT |
 | rx-scrabble | GPL2 | GPL3 |
 | page-rank | APACHE2 | MIT |
-| log-regression | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
-| streams-mnemonics | MIT | MIT |
-| parallel-streams-mnemonics | MIT | MIT |
 | dummy | MIT | MIT |
+| log-regression | APACHE2 | MIT |
+| streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
+| parallel-streams-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 
