@@ -7,7 +7,6 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
-
 import scala.io.Source
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
@@ -40,9 +39,9 @@ class MovieLens extends RenaissanceBenchmark {
 
   val personalRatingsInputFile = File.separator + "movie-lens-my-ratings.csv"
 
-  val moviesInputFile = File.separator +"movies.csv"
+  val moviesInputFile = File.separator + "movies.csv"
 
-  val ratingsInputFile = File.separator +"ratings.csv"
+  val ratingsInputFile = File.separator + "ratings.csv"
 
   val bigFilesPath = movieLensPath.resolve("bigfiles")
 
@@ -72,7 +71,6 @@ class MovieLens extends RenaissanceBenchmark {
     var numUsers: Long = 0
     var numMovies: Long = 0
 
-
     def loadPersonalRatings(inputFileURL: URL) = {
       val lines = Source.fromURL(inputFileURL).getLines()
 
@@ -91,17 +89,16 @@ class MovieLens extends RenaissanceBenchmark {
       personalRatingsRDD = sc.parallelize(personalRatings, 1)
     }
 
-
-    def getFilteredRDDFromPath(inputPath: Path) : RDD[String] = {
+    def getFilteredRDDFromPath(inputPath: Path): RDD[String] = {
       val rdd = sc.textFile(inputPath.toString)
       val header = rdd.first
       return rdd
-      .filter { line =>
-      line != header
-      }
+        .filter { line =>
+          line != header
+        }
     }
 
-    def loadRatings(inputPath: Path) ={
+    def loadRatings(inputPath: Path) = {
 
       ratings = getFilteredRDDFromPath(inputPath)
         .map { line =>
@@ -128,9 +125,7 @@ class MovieLens extends RenaissanceBenchmark {
         .toMap
     }
 
-    def splitRatings(numPartitions: Int,
-                     trainingThreshold: Int,
-                     validationThreshold: Int ) = {
+    def splitRatings(numPartitions: Int, trainingThreshold: Int, validationThreshold: Int) = {
 
       training = ratings
         .filter(x => x._1 < trainingThreshold)
@@ -147,7 +142,8 @@ class MovieLens extends RenaissanceBenchmark {
         .cache()
       numValidation = validation.count()
 
-      test = ratings.filter(x => x._1 >= validationThreshold)
+      test = ratings
+        .filter(x => x._1 >= validationThreshold)
         .values
         .cache()
       numTest = test.count()
@@ -229,7 +225,6 @@ class MovieLens extends RenaissanceBenchmark {
       math.sqrt(predictionsAndRatings.map(x => (x._1 - x._2) * (x._1 - x._2)).reduce(_ + _) / n)
     }
 
-
   }
 
   def setUpLogger() = {
@@ -252,11 +247,10 @@ class MovieLens extends RenaissanceBenchmark {
     setUpSpark()
   }
 
-  def writeResourceToFile(resourceStream: InputStream, outputPath: Path) ={
+  def writeResourceToFile(resourceStream: InputStream, outputPath: Path) = {
     val content = IOUtils.toString(resourceStream, StandardCharsets.UTF_8)
     FileUtils.write(outputPath.toFile, content, StandardCharsets.UTF_8, true)
   }
-
 
   def loadData(helper: MovieLensHelper) = {
     FileUtils.deleteDirectory(bigFilesPath.toFile)
@@ -291,8 +285,5 @@ class MovieLens extends RenaissanceBenchmark {
     sc.stop()
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
-
-
-
 
 }
