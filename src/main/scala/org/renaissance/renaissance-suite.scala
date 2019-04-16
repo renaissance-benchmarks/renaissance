@@ -60,6 +60,9 @@ object RenaissanceSuite {
       opt[Unit]("readme")
         .text("Regenerates the README file, and does not run anything.")
         .action((_, c) => c.withReadme(true))
+      opt[Unit]("list")
+        .text("Print list of benchmarks.")
+        .action((_, c) => c.withList())
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed.")
         .optional()
@@ -102,6 +105,8 @@ object RenaissanceSuite {
         false)
       println("README.md and CONTRIBUTION.md updated.")
       return
+    } else if (config.printList) {
+      print(formatBenchmarkList)
     } else {
       // Check that all the benchmarks on the list really exist.
       for (benchName <- config.benchmarkList.asScala) {
@@ -142,6 +147,25 @@ object RenaissanceSuite {
     val packageName = mainGroup.replace("-", ".")
     val fullBenchClassName = "org.renaissance." + packageName + "." + benchClassName
     new ProxyRenaissanceBenchmark(loader, fullBenchClassName)
+  }
+
+  private def formatBenchmarkList(): String = {
+    val descriptions = new mutable.HashMap[String, String]
+    for (benchName <- benchmarks.toSeq.sorted) {
+      val bench = loadBenchmark(benchName)
+      descriptions(benchName) = bench.description
+    }
+    val longestNameWidth = benchmarks.maxBy(_.length).length
+    val longestDescriptionWidth = descriptions.values.maxBy(_.length).length
+    val formatter = s"%-${longestNameWidth}s | %-${longestDescriptionWidth}s\n"
+
+    val result = new StringBuffer
+    result.append(String.format(formatter, "Benchmark", "Description"))
+    result.append(("=" * longestNameWidth) + " | " + ("=" * longestDescriptionWidth) + "\n")
+    for (benchName <- benchmarks.toSeq.sorted) {
+      result.append(String.format(formatter, benchName, descriptions(benchName)))
+    }
+    return result.toString
   }
 
   private def generateBenchmarkDescription(name: String): String = {

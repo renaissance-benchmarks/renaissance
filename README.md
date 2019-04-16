@@ -59,6 +59,7 @@ Usage: renaissance [options] [benchmark-specification]
   --policy <value>         Execution policy, one of: fixed
   --plugins <value>        Comma-separated list of class names of plugin implementations.
   --readme                 Regenerates the README file, and does not run anything.
+  --list                   Print list of benchmarks.
   benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed.
 ```
 

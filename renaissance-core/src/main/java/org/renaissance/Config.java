@@ -11,6 +11,7 @@ public class Config {
   public List<Plugin> plugins;
   public String policy;
   public boolean readme;
+  public boolean printList;
 
   public Config() {
     this.benchmarkList = new ArrayList<>();
@@ -85,6 +86,12 @@ public class Config {
   public Config withReadme(boolean readme) {
     Config c = copy();
     c.readme = readme;
+    return c;
+  }
+
+  public Config withList() {
+    Config c = copy();
+    c.printList = true;
     return c;
   }
 }
