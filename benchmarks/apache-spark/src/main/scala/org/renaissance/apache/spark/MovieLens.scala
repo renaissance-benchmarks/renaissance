@@ -73,8 +73,8 @@ class MovieLens extends RenaissanceBenchmark {
     var numMovies: Long = 0
 
 
-    def loadPersonalRatings(inputURL: URL) = {
-      val lines = Source.fromURL(inputURL).getLines()
+    def loadPersonalRatings(inputFileURL: URL) = {
+      val lines = Source.fromURL(inputFileURL).getLines()
 
       val personalRatingsIter = lines
         .map { line =>
@@ -89,17 +89,21 @@ class MovieLens extends RenaissanceBenchmark {
       }
 
       personalRatingsRDD = sc.parallelize(personalRatings, 1)
+    }
 
+
+    def getFilteredRDDFromPath(inputPath: Path) : RDD[String] = {
+      val rdd = sc.textFile(inputPath.toString)
+      val header = rdd.first
+      return rdd
+      .filter { line =>
+      line != header
+      }
     }
 
     def loadRatings(inputPath: Path) ={
 
-      val ratingsFile = sc.textFile(inputPath.toString)
-      val ratingsFileHeader = ratingsFile.first
-      ratings = ratingsFile
-        .filter { line =>
-          line != ratingsFileHeader
-        }
+      ratings = getFilteredRDDFromPath(inputPath)
         .map { line =>
           val fields = line.split(",")
           // Format: (timestamp % 10, Rating(userId, movieId, rating))
@@ -114,12 +118,7 @@ class MovieLens extends RenaissanceBenchmark {
 
     def loadMovies(inputPath: Path) = {
 
-      val moviesFile = sc.textFile(inputPath.toString)
-      val moviesFileHeader = moviesFile.first
-      movies = moviesFile
-        .filter { line =>
-          line != moviesFileHeader
-        }
+      movies = getFilteredRDDFromPath(inputPath)
         .map { line =>
           val fields = line.split(",")
           // Format: (movieId, movieName)
@@ -149,8 +148,8 @@ class MovieLens extends RenaissanceBenchmark {
       numValidation = validation.count()
 
       test = ratings.filter(x => x._1 >= validationThreshold)
-        .values.
-        cache()
+        .values
+        .cache()
       numTest = test.count()
 
       println(
