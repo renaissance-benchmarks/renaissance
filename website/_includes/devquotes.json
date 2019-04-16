@@ -1,6 +1,6 @@
 [
   {
-    "text": "To build Renaissance, just run `tools/sbt/bin/sbt bundleRenaissance`.",
+    "text": "To build Renaissance, just run `tools/sbt/bin/sbt assembly`.",
     "author": "",
     "description": ""
   },
@@ -11,6 +11,21 @@
   },
   {
     "text": "Renaissance has a comprehensive set of command-line options -- type `-h` to see them.",
+    "author": "",
+    "description": ""
+  },
+  {
+    "text": "To see all the available benchmarks, use the `--list` flag.",
+    "author": "",
+    "description": ""
+  },
+  {
+    "text": "You can inject custom measurements to Renaissance benchmarks by implementing your own `Plugin` class.",
+    "author": "",
+    "description": ""
+  },
+  {
+    "text": "You can select different ways of running the benchmarks using the `--policy` flag.",
     "author": "",
     "description": ""
   }

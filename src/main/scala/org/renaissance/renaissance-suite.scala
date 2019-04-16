@@ -175,7 +175,7 @@ ${benchmarkName
 
   lazy val readme = s"""
 
-# Renaissance Benchmark Suite
+## Renaissance Benchmark Suite
 
 <p align="center">
   <img height="180px" src="${logoUrl}"/>

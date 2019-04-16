@@ -1,6 +1,6 @@
 
 
-# Renaissance Benchmark Suite
+## Renaissance Benchmark Suite
 
 <p align="center">
   <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
