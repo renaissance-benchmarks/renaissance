@@ -40,7 +40,7 @@ class DecTree extends RenaissanceBenchmark {
 
   val outputPath = decisionTreePath.resolve("output")
 
-  val inputFile = "sample_libsvm_data.txt.zip"
+  val inputFile = File.separator + "sample_libsvm_data.txt"
 
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 
@@ -63,20 +63,19 @@ class DecTree extends RenaissanceBenchmark {
     sc.setLogLevel("ERROR")
   }
 
-  def prepareInput() = {
+  def prepareAndLoadInput(decisionTreePath: Path, inputFile: String): DataFrame = {
     FileUtils.deleteDirectory(decisionTreePath.toFile)
-    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+
+    val text = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 100) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
-  }
 
-  def loadData() = {
     val sqlContext = new SQLContext(sc)
-    training = sqlContext.read.format("libsvm").load(bigInputFile.toString)
+    return  sqlContext.read.format("libsvm").load(bigInputFile.toString)
   }
 
-  def constructPipeline() = {
+  def constructPipeline() : Pipeline = {
     val labelIndexer = new StringIndexer()
       .setInputCol("label")
       .setOutputCol("indexedLabel")
@@ -93,7 +92,7 @@ class DecTree extends RenaissanceBenchmark {
       .setMinInfoGain(0.0)
       .setCacheNodeIds(false)
       .setCheckpointInterval(10)
-    pipeline = new Pipeline().setStages(
+    return new Pipeline().setStages(
       Array[PipelineStage](
         labelIndexer,
         featureIndexer,
@@ -105,9 +104,8 @@ class DecTree extends RenaissanceBenchmark {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("dec_tree")
     setUpSpark()
-    prepareInput()
-    loadData()
-    constructPipeline()
+    training = prepareAndLoadInput(decisionTreePath, inputFile)
+    pipeline = constructPipeline()
   }
 
   override def runIteration(c: Config): Unit = {
