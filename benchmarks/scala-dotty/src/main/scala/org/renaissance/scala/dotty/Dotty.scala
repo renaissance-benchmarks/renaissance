@@ -60,15 +60,25 @@ class Dotty extends RenaissanceBenchmark {
     setUpSourcePaths()
   }
 
+  private val DOTTY_ARG_CLASS_PATH = "-classpath"
+
+  private val DOTTY_ARG_CLASS_FILE_DESTINATION = "-d"
+
+  /**
+   * Enable implicit conversions in dotty during compilation which
+   * allows the compiler to automatically perform implicit type conversions.
+   */
+  private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
+
   override def runIteration(c: Config): Unit = {
     val args = Seq[String](
-      "-bootclasspath",
+      DOTTY_ARG_CLASS_PATH,
       Thread.currentThread.getContextClassLoader
         .asInstanceOf[URLClassLoader]
         .getURLs
         .mkString(":"),
-      "-language:implicitConversions",
-      "-d",
+      DOTTY_ARG_TYPE_CONVERSION,
+      DOTTY_ARG_CLASS_FILE_DESTINATION,
       outputPath.toString
     )
     sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
