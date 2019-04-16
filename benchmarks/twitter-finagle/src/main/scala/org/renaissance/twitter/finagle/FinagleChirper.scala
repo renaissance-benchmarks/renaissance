@@ -29,8 +29,6 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
-
-
 class FinagleChirper extends RenaissanceBenchmark {
 
   def description = "Simulates a microblogging service using Twitter Finagle."
@@ -38,7 +36,6 @@ class FinagleChirper extends RenaissanceBenchmark {
   def licenses = License.create(License.APACHE2)
 
   override def defaultRepetitions = 40
-
 
   class Master extends Service[Request, Response] {
     val lock = new AnyRef
@@ -90,17 +87,24 @@ class FinagleChirper extends RenaissanceBenchmark {
 
     def mostRechirpsInAllFeeds(allFeeds: Seq[(String, Seq[String])]): Long = {
       val counts = ConcurrentHashMultiset.create[String]()
-      allFeeds.par.foreach { case (username, feed) =>
-        for (s <- feed) {
-          if (s.length >= 2 && s.charAt(0) == 'R' && s.charAt(1) == 'T')
-            counts.add(username)
-        }
+      allFeeds.par.foreach {
+        case (username, feed) =>
+          for (s <- feed) {
+            if (s.length >= 2 && s.charAt(0) == 'R' && s.charAt(1) == 'T')
+              counts.add(username)
+          }
       }
-      counts.entrySet().parallelStream().map[Integer](
-        new java.util.function.Function[Entry[String], Integer] {
-          override def apply(t: Entry[String]): Integer = t.getCount
-        }
-      ).max(Comparator.naturalOrder[Integer]).get.toLong
+      counts
+        .entrySet()
+        .parallelStream()
+        .map[Integer](
+          new java.util.function.Function[Entry[String], Integer] {
+            override def apply(t: Entry[String]): Integer = t.getCount
+          }
+        )
+        .max(Comparator.naturalOrder[Integer])
+        .get
+        .toLong
     }
 
     override def apply(req: Request): Future[Response] = lock.synchronized {
@@ -232,6 +236,7 @@ class FinagleChirper extends RenaissanceBenchmark {
   class Client(val username: String) extends Thread {
     var digest = 0
     var postCount = 0
+
     val statVariants = Seq[(Int, Service[Request, Response] => Unit)](
       (20, master => {
         val query = "/api/stats/longest"
@@ -258,6 +263,7 @@ class FinagleChirper extends RenaissanceBenchmark {
         digest += Await.result(master.apply(request)).content.length
       })
     )
+
     val statMultiplicities: Seq[Service[Request, Response] => Unit] = for {
       (m, s) <- statVariants
       v <- Seq.fill(m)(s)
@@ -284,8 +290,10 @@ class FinagleChirper extends RenaissanceBenchmark {
             "&ord=" + postCount
           val request = Request(Method.Get, postQuery)
           val response = Await.result(master.apply(request))
-          require(response.status == Status.Ok,
-            s"The response status is ${response.status}, message: $message")
+          require(
+            response.status == Status.Ok,
+            s"The response status is ${response.status}, message: $message"
+          )
           // println("post " + postCount +
           //   " response: " + Buf.Utf8.unapply(response.content).get +
           //   ", message was: " + message)
@@ -323,11 +331,11 @@ class FinagleChirper extends RenaissanceBenchmark {
     }
   }
 
-
-
   val inputFile = File.separator + "new-years-resolution.csv"
 
-  lazy val messages = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8).split("\\n")
+  lazy val messages = IOUtils
+    .toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
+    .split("\\n")
 
   val postPeriodicity: Int = 57
   val invalidationPeriodicity: Int = 256
@@ -342,6 +350,7 @@ class FinagleChirper extends RenaissanceBenchmark {
   val startingFeedSize = 80
   val requestCount: Int = 1250
   val userCount: Int = 5000
+
   val usernameBases = Seq(
     "johnny",
     "shaokahn",
