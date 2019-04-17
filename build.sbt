@@ -46,13 +46,14 @@ def kebabCase(s: String): String = {
   sys.error("unreachable")
 }
 
-def listBenchmarks(nonGpl: Boolean, project: String, classpath: Seq[File]): Seq[String] = {
+// Return tuples with ( name, distro license, description and default repetitions)
+def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
   val baseName = "org.renaissance.RenaissanceBenchmark"
   val dummyName = "org.renaissance.core.Dummy"
   val benchBase = loader.loadClass(baseName)
-  val benches = new mutable.ArrayBuffer[String]
+  val result = new mutable.ArrayBuffer[(String, String, String, Int)]
   for (jar <- classpath) {
     val jarFile = new JarFile(jar)
     val enumeration = jarFile.entries()
@@ -67,15 +68,16 @@ def listBenchmarks(nonGpl: Boolean, project: String, classpath: Seq[File]): Seq[
           benchBase.isAssignableFrom(clazz) && clazz.getName != baseName &&
             (clazz.getName != dummyName || project == "benchmarks/core")
         if (isEligible) {
-          val isMit = clazz.getMethod("distro").invoke(clazz.newInstance).toString == "MIT"
-          if (!nonGpl || isMit) {
-            benches += kebabCase(clazz.getSimpleName)
-          }
+          val instance = clazz.newInstance
+          val distro = clazz.getMethod("distro").invoke(instance).toString
+          val description = clazz.getMethod("description").invoke(instance).toString
+          val reps = Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
+          result += new Tuple4(kebabCase(clazz.getSimpleName), distro, description, reps)
         }
       }
     }
   }
-  benches
+  result
 }
 
 def jarsAndListGenerator = Def.taskDyn {
@@ -115,6 +117,9 @@ def jarsAndListGenerator = Def.taskDyn {
     val jarListContent = new StringBuilder
     val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
     val benchGroupContent = new StringBuilder
+    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
+    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
+    val benchDetails = new java.util.Properties
 
     // Add the benchmarks from the different project groups.
     for ((project, jars) <- groupJars) {
@@ -123,13 +128,18 @@ def jarsAndListGenerator = Def.taskDyn {
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for (bench <- listBenchmarks(nonGpl, project, jars)) {
-        benchGroupContent.append(bench).append("=").append(projectShort).append("\n")
+      for ( (name, license, description, repetitions ) <- listBenchmarks(project, jars)) {
+        if (!nonGpl || license == "MIT") {
+          benchGroupContent.append(name).append("=").append(projectShort).append("\n")
+          benchDetails.setProperty("benchmark." + name + ".description", description)
+          benchDetails.setProperty("benchmark." + name + ".repetitions", repetitions.toString)
+        }
       }
     }
     IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
     IO.write(benchGroupFile, benchGroupContent.toString, StandardCharsets.UTF_8)
-    benchGroupFile +: jarListFile +: groupJars.flatMap {
+    benchDetails.store(benchDetailsStream, "Benchmark details")
+    benchGroupFile +: benchDetailsFile +: jarListFile +: groupJars.flatMap {
       case (_, jars) => jars
     }
   }

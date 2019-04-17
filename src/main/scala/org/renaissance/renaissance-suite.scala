@@ -150,10 +150,14 @@ object RenaissanceSuite {
   }
 
   private def formatBenchmarkList(): String = {
+    val details = new java.util.Properties
+    details.load(getClass.getResourceAsStream("/benchmark-details.properties"))
     val descriptions = new mutable.HashMap[String, String]
     for (benchName <- benchmarks.toSeq.sorted) {
-      val bench = loadBenchmark(benchName)
-      descriptions(benchName) = bench.description
+      descriptions(benchName) = details.getProperty(
+        "benchmark." + benchName + ".description",
+        "Description not provided"
+      )
     }
     val longestNameWidth = benchmarks.maxBy(_.length).length
     val longestDescriptionWidth = descriptions.values.maxBy(_.length).length

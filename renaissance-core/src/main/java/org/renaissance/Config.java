@@ -19,6 +19,7 @@ public class Config {
     this.plugins = new ArrayList<>();
     this.policy = "fixed";
     this.readme = false;
+    this.printList = false;
   }
 
   public List<String> benchmarkList() {
@@ -39,6 +40,10 @@ public class Config {
 
   public boolean readme() {
     return readme;
+  }
+
+  public boolean printList() {
+    return printList;
   }
 
   public Config copy() {
