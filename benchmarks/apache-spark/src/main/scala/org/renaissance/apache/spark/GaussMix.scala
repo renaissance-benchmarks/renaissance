@@ -55,7 +55,8 @@ class GaussMix extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
-    val conf = new SparkConf().setAppName("gauss-mix")
+    val conf = new SparkConf()
+      .setAppName("gauss-mix")
       .setMaster(s"local[$THREAD_COUNT]")
       .set("spark.local.dir", tempDirPath.toString)
     sc = new SparkContext(conf)
@@ -78,7 +79,8 @@ class GaussMix extends RenaissanceBenchmark {
   }
 
   def loadData() = {
-    input = sc.textFile(measurementsFile.toString)
+    input = sc
+      .textFile(measurementsFile.toString)
       .map { line =>
         val raw = line.split(" ").map(_.toDouble)
         Vectors.dense(raw)
