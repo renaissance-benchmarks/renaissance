@@ -80,10 +80,9 @@ class GaussMix extends RenaissanceBenchmark {
       content.append("\n")
     }
     FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
-
   }
 
-  def loadData() = {
+  def loadData() : Unit = {
     input = sc
       .textFile(measurementsFile.toString)
       .map { line =>
@@ -91,7 +90,6 @@ class GaussMix extends RenaissanceBenchmark {
         Vectors.dense(raw)
       }
       .cache()
-
   }
 
   override def tearDownAfterAll(c: Config) = {
