@@ -276,7 +276,6 @@ class FinagleChirper extends RenaissanceBenchmark {
         val uid = math.abs(byteswap32(offset * i))
         if (uid % postPeriodicity == 0) {
           postCount += 1
-
           //   Post a new message.
           val message = messages(uid % messages.length)
           val postQuery = "/api/post?username=" + username +
@@ -387,6 +386,10 @@ class FinagleChirper extends RenaissanceBenchmark {
 
   override def setUpBeforeAll(c: Config): Unit = {
     master = Http.serve(":0", new Master)
+    /* TODO
+    Implement an unified mechanism of assigning ports to benchmarks.
+    Related to https://github.com/D-iii-S/renaissance-benchmarks/issues/13
+     */
     masterPort = master.boundAddress.asInstanceOf[InetSocketAddress].getPort
     for (i <- 0 until cacheCount) {
       caches += Http.serve(":0", new Cache(i, Http.newService(":" + masterPort)))
@@ -415,6 +418,5 @@ class FinagleChirper extends RenaissanceBenchmark {
       yield new Client(usernames(i % usernames.length) + i)
     clients.foreach(_.start())
     clients.foreach(_.join())
-
   }
 }
