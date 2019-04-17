@@ -31,11 +31,15 @@ public final class JavaJenetics {
 
   private static final int GENERATION_COUNT = 5000;
 
+  //
+
   private static final int RANDOM_SEED = 7;
 
   private static final int THREAD_COUNT = 2;
 
   private final ExecutorService executor = Executors.newWorkStealingPool();
+
+  //
 
   public JavaJenetics() {}
 
