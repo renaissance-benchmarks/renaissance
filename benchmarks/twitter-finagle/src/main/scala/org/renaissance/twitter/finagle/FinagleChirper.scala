@@ -145,7 +145,6 @@ class FinagleChirper extends RenaissanceBenchmark {
           feeds.putIfAbsent(username, new mutable.ArrayBuffer[String])
           val feed = feeds(username)
           feed += content
-          // println("post " + postCount + ": " + ord + ", " + username + ": " + feed.length)
           val responseBuf = Buf.ByteArray.Owned(Array[Byte]('o', 'k'))
           val response = Response(req.version, Status.Ok, BufReader(responseBuf))
           Future.value(response)
@@ -240,25 +239,21 @@ class FinagleChirper extends RenaissanceBenchmark {
     val statVariants = Seq[(Int, Service[Request, Response] => Unit)](
       (20, master => {
         val query = "/api/stats/longest"
-        //println(query)
         val request = Request(Method.Get, query)
         digest += Await.result(master.apply(request)).content.length
       }),
       (20, master => {
         val query = "/api/stats/hash-tag-count"
-        //println(query)
         val request = Request(Method.Get, query)
         digest += Await.result(master.apply(request)).content.length
       }),
       (20, master => {
         val query = "/api/stats/longest-rechirp"
-        //println(query)
         val request = Request(Method.Get, query)
         digest += Await.result(master.apply(request)).content.length
       }),
       (50, master => {
         val query = "/api/stats/most-rechirps"
-        //println(query)
         val request = Request(Method.Get, query)
         digest += Await.result(master.apply(request)).content.length
       })
@@ -281,7 +276,6 @@ class FinagleChirper extends RenaissanceBenchmark {
         val uid = math.abs(byteswap32(offset * i))
         if (uid % postPeriodicity == 0) {
           postCount += 1
-          // println("post " + postCount + ", uid: " + uid)
 
           //   Post a new message.
           val message = messages(uid % messages.length)
@@ -294,9 +288,6 @@ class FinagleChirper extends RenaissanceBenchmark {
             response.status == Status.Ok,
             s"The response status is ${response.status}, message: $message"
           )
-          // println("post " + postCount +
-          //   " response: " + Buf.Utf8.unapply(response.content).get +
-          //   ", message was: " + message)
         } else if (uid % statisticsPeriodicity == 0) {
           // Get some feed statistics.
           statMultiplicities(uid % statMultiplicities.length).apply(master)
