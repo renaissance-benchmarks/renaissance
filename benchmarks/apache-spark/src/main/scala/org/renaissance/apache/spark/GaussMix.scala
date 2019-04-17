@@ -85,6 +85,8 @@ class GaussMix extends RenaissanceBenchmark {
         val raw = line.split(" ").map(_.toDouble)
         Vectors.dense(raw)
       }
+      .cache()
+
   }
 
   override def tearDownAfterAll(c: Config) = {
