@@ -133,6 +133,28 @@ object RenaissanceSuite {
     }
   }
 
+  def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
+    var column = 0
+    val line = new StringBuffer
+    val result = new scala.collection.mutable.ArrayBuffer[String]
+    for (word <- words) {
+      if ((column + word.length + 1 >= width) && (column > 0)) {
+        result += line.toString
+        line.setLength(0)
+        column = 0
+      }
+      if (column > 0) {
+        line.append(" ")
+      } else {
+        line.append(indent)
+      }
+      line.append(word)
+      column += word.length
+    }
+    result += line.toString
+    return result
+  }
+
   private def loadBenchmark(name: String): ProxyRenaissanceBenchmark = {
     val mainGroup = benchmarkGroups(name)
     copyJars(mainGroup)
@@ -150,25 +172,26 @@ object RenaissanceSuite {
   }
 
   private def formatBenchmarkList(): String = {
+    val indent = "    "
     val details = new java.util.Properties
     details.load(getClass.getResourceAsStream("/benchmark-details.properties"))
-    val descriptions = new mutable.HashMap[String, String]
-    for (benchName <- benchmarks.toSeq.sorted) {
-      descriptions(benchName) = details.getProperty(
-        "benchmark." + benchName + ".description",
-        "Description not provided"
-      )
-    }
-    val longestNameWidth = benchmarks.maxBy(_.length).length
-    val longestDescriptionWidth = descriptions.values.maxBy(_.length).length
-    val formatter = s"%-${longestNameWidth}s | %-${longestDescriptionWidth}s\n"
 
     val result = new StringBuffer
-    result.append(String.format(formatter, "Benchmark", "Description"))
-    result.append(("=" * longestNameWidth) + " | " + ("=" * longestDescriptionWidth) + "\n")
-    for (benchName <- benchmarks.toSeq.sorted) {
-      result.append(String.format(formatter, benchName, descriptions(benchName)))
+    for (name <- benchmarks.toSeq.sorted) {
+      val description = details.getProperty(
+        "benchmark." + name + ".description",
+        "Description not provided"
+      )
+      val descriptionWords = description.split("\\s+")
+      val repetitions = details.getProperty(
+        "benchmark." + name + ".repetitions",
+        "Not specified"
+      )
+      result.append(name + "\n")
+      result.append(foldText(descriptionWords, 65, indent).mkString("\n"))
+      result.append(s"\n${indent}Default repetions: ${repetitions}\n\n")
     }
+
     return result.toString
   }
 
