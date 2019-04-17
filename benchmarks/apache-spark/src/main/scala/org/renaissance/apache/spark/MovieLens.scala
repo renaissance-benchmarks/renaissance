@@ -23,6 +23,11 @@ import org.renaissance.RenaissanceBenchmark
 
 class MovieLens extends RenaissanceBenchmark {
 
+  /* TODO Implement changes regarding how to declare and pass
+  benchmark-specific parameters
+  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
+   */
+
   def description = "Recommends movies using the ALS algorithm."
 
   override def defaultRepetitions = 5
