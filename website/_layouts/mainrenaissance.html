@@ -12,8 +12,8 @@ layout: base
       </span>
       <img src="/resources/images/banner.png"/>
       <div class="bannerlinks">
-        <a href="https://github.com/renaissance-benchmarks/renaissance"><img class="bannerlink" id="link-github" src="/resources/images/icons/github7-gray.png"/></a>
-        <a href="https://gitter.im/renaissance-benchmarks/renaissance"><img class="bannerlink" id="link-groups" src="/resources/images/icons/mail8-gray.png"/></a>
+        <a href="https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}"><img class="bannerlink" id="link-github" src="/resources/images/icons/github7-gray.png"/></a>
+        <a href="https://gitter.im/{{ site.githubOrg }}/{{ site.githubRepo }}"><img class="bannerlink" id="link-groups" src="/resources/images/icons/mail8-gray.png"/></a>
         <a href="https://twitter.com/renaissancejvm"><img class="bannerlink" id="link-twitter" src="/resources/images/icons/twitter4-gray.png"/></a>
       </div>
     </div>
@@ -34,23 +34,23 @@ layout: base
       </a>
     </div>
     <div class="bl bl-build-status">
-      <a href="https://travis-ci.org/renaissance-benchmarks/renaissance">
+      <a href="https://travis-ci.org/{{ site.githubOrg }}/{{ site.githubRepo }}">
         <img src="/resources/images/icons/cogs3-gray.png" height="14px"/>
         <img class="buildstatus"
-          src="https://travis-ci.org/renaissance-benchmarks/renaissance.svg?branch=master"
+          src="https://travis-ci.org/{{ site.githubOrg }}/{{ site.githubRepo }}.svg?branch=master"
           onError="this.src='/resources/images/passing.svg';" />
       </a>
     </div>
     <div class="bl bl-tutorial">
-      <a href="http://github.com/renaissance-benchmarks/renaissance/">
-        Getting started
-        <img src="/resources/images/icons/graduation20-gray.png" height="14px"/>
+      <a href="/documentation">
+        Documentation
+        <img src="/resources/images/icons/open161-gray.png" height="14px"/>
       </a>
     </div>
-    <div class="bl bl-docs">
-      <a href="https://www.javadoc.io/doc/org.renaissance/renaissance_2.12/">
-        API docs
-        <img src="/resources/images/icons/open161-gray.png" height="14px"/>
+    <div class="bl bl-source">
+      <a href="https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}/">
+        GitHub Repo
+        <img src="/resources/images/icons/github7-real-gray.png" height="16px"/>
       </a>
     </div>
   </div>
@@ -105,7 +105,7 @@ layout: base
         <p>
           Renaissance is completely open source,
           with the code available at
-          <a href="https://github.com/renaissance-benchmarks/renaissance">GitHub</a>,
+          <a href="https://github.com/{{ site.githubOrg }}/renaissance">GitHub</a>,
           and is designed as part of an ongoing, collaborative effort
           to determine a set of modern JVM benchmarks.
         </p>
