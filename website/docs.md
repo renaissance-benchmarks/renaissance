@@ -47,7 +47,7 @@ One of the aims of the Renaissance suite is to continually evolve,
 and maintain a collection of relevant and interesting benchmarks
 for VM, compiler and tool developers.
 Renaissance therefore relies on an open-source contribution process
-to derive the set of workloads that are important for the JVM ecosystem.
+to derive the set of benchmarks that are useful when optimizing or analyzing the JVM behaviour.
 The contribution guide contains detailed information about this process.
 
 <div id="contribution-holder">
