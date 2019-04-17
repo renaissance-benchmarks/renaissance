@@ -35,11 +35,11 @@ class GaussMix extends RenaissanceBenchmark {
 
   val SIZE = 15000
 
-  val gmmPath = Paths.get("target", "gauss-mix")
+  val gaussMixPath = Paths.get("target", "gauss-mix")
 
-  val outputPath = gmmPath.resolve("output")
+  val outputPath = gaussMixPath.resolve("output")
 
-  val bigInputFile = gmmPath.resolve("measurements.txt")
+  val measurementsFile = gaussMixPath.resolve("measurements.txt")
 
   var sc: SparkContext = null
 
@@ -54,7 +54,6 @@ class GaussMix extends RenaissanceBenchmark {
     loadData()
   }
 
-
   def setUpSpark() = {
     val conf = new SparkConf().setAppName("gauss-mix")
       .setMaster(s"local[$THREAD_COUNT]")
@@ -64,7 +63,7 @@ class GaussMix extends RenaissanceBenchmark {
   }
 
   def prepareInput() = {
-    FileUtils.deleteDirectory(gmmPath.toFile)
+    FileUtils.deleteDirectory(gaussMixPath.toFile)
     val rand = new Random(0L)
     val content = new StringBuilder
     for (i <- 0 until SIZE) {
@@ -74,12 +73,12 @@ class GaussMix extends RenaissanceBenchmark {
       content.append((0 until COMPONENTS).map(_ => randDouble()).mkString(" "))
       content.append("\n")
     }
-    FileUtils.write(bigInputFile.toFile, content, StandardCharsets.UTF_8, true)
+    FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
 
   }
 
   def loadData() = {
-    input = sc.textFile(bigInputFile.toString)
+    input = sc.textFile(measurementsFile.toString)
       .map { line =>
         val raw = line.split(" ").map(_.toDouble)
         Vectors.dense(raw)
