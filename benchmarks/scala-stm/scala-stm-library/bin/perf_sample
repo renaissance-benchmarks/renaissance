@@ -1,0 +1,34 @@
+#!/bin/sh
+
+set -x
+
+BASE="`dirname $0`/.."
+BRANCH="`git status | awk '/^# On branch/ {print $NF}'`"
+
+cd $BASE
+WHEN=`date '+%Y%m%d-%H%M%S'`
+DIR="perf/`hostname`/perf-$BRANCH-$WHEN"
+
+if [ "x$VERSIONS" = "x" ]; then
+  VERSIONS="`awk -F= '$1==\"build.scala.versions\" {print $2}' project/build.properties | sed 's/,/ /g'`"
+fi
+
+mkdir -p "$DIR"
+git show --quiet HEAD > "$DIR"/git.hash
+
+for v in $VERSIONS; do
+  sbt ++$v test-compile > /dev/null 2>&1
+  sbt ++$v test test > "$DIR"/.out 2>&1
+  (
+    cd "$DIR"
+    sed 's/[^m]*m//g' .out | uniq | gawk '
+        /== test-start ==/ {x=x+1;y=0}
+        /== test-finish ==/ {y=1}
+        {z=1}
+        /^.info/ {z=0}
+        x>0 && (y || z) {print >> ("." x)}'
+    rm .out
+    mv .1 test-first-$v.log
+    mv .2 test-second-$v.log
+  )
+done

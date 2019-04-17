@@ -1,6 +1,6 @@
 
 
-# Renaissance Benchmark Suite
+## Renaissance Benchmark Suite
 
 <p align="center">
   <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
@@ -82,6 +82,11 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
 
 
+##### jdk-concurrent
+
+- `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
+
+
 ##### jdk-streams
 
 - `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
@@ -110,6 +115,9 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
+##### scala-dotty
+
+- `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
 
 ### Run policies
@@ -172,12 +180,13 @@ The following table contains the licensing information of all the benchmarks:
 | dummy | MIT | MIT |
 | log-regression | APACHE2 | MIT |
 | movie-lens | APACHE2 | MIT |
+| future-genetic | APACHE2 | MIT |
 | streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
 | parallel-streams-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
-
+| dotty | BSD3 | MIT |
 
 ### Design overview
 
