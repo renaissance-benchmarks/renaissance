@@ -12,6 +12,7 @@ public class Config {
   public String policy;
   public boolean readme;
   public boolean printList;
+  public boolean printRawList;
 
   public Config() {
     this.benchmarkList = new ArrayList<>();
@@ -20,6 +21,7 @@ public class Config {
     this.policy = "fixed";
     this.readme = false;
     this.printList = false;
+    this.printRawList = false;
   }
 
   public List<String> benchmarkList() {
@@ -46,6 +48,10 @@ public class Config {
     return printList;
   }
 
+  public boolean printRawList() {
+      return printRawList;
+  }
+
   public Config copy() {
     Config c = new Config();
     c.benchmarkList = this.benchmarkList;
@@ -53,6 +59,8 @@ public class Config {
     c.plugins = this.plugins;
     c.policy = this.policy;
     c.readme = this.readme;
+    c.printList = this.printList;
+    c.printRawList = this.printRawList;
     return c;
   }
 
@@ -97,6 +105,12 @@ public class Config {
   public Config withList() {
     Config c = copy();
     c.printList = true;
+    return c;
+  }
+
+  public Config withRawList() {
+    Config c = copy();
+    c.printRawList = true;
     return c;
   }
 }

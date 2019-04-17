@@ -61,8 +61,11 @@ object RenaissanceSuite {
         .text("Regenerates the README file, and does not run anything.")
         .action((_, c) => c.withReadme(true))
       opt[Unit]("list")
-        .text("Print list of benchmarks.")
+        .text("Print list of benchmarks with their description.")
         .action((_, c) => c.withList())
+      opt[Unit]("raw-list")
+        .text("Print list of benchmarks, each benchmark name on separate line.")
+        .action((_, c) => c.withRawList())
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed.")
         .optional()
@@ -107,6 +110,8 @@ object RenaissanceSuite {
       return
     } else if (config.printList) {
       print(formatBenchmarkList)
+    } else if (config.printRawList) {
+      print(formatRawBenchmarkList)
     } else {
       // Check that all the benchmarks on the list really exist.
       for (benchName <- config.benchmarkList.asScala) {
@@ -171,6 +176,15 @@ object RenaissanceSuite {
     new ProxyRenaissanceBenchmark(loader, fullBenchClassName)
   }
 
+  private def formatRawBenchmarkList(): String = {
+    val result = new StringBuffer
+    for (name <- benchmarks.toSeq.sorted) {
+      result.append(name + "\n")
+    }
+
+    return result.toString
+  }
+
   private def formatBenchmarkList(): String = {
     val indent = "    "
     val details = new java.util.Properties
@@ -189,7 +203,7 @@ object RenaissanceSuite {
       )
       result.append(name + "\n")
       result.append(foldText(descriptionWords, 65, indent).mkString("\n"))
-      result.append(s"\n${indent}Default repetions: ${repetitions}\n\n")
+      result.append(s"\n${indent}Default repetitions: ${repetitions}\n\n")
     }
 
     return result.toString
