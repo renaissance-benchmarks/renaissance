@@ -46,7 +46,7 @@ def kebabCase(s: String): String = {
   sys.error("unreachable")
 }
 
-// Return tuples with ( name, distro license, description and default repetitions)
+// Return tuples with (name, distro license, description and default repetitions)
 def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
@@ -128,7 +128,7 @@ def jarsAndListGenerator = Def.taskDyn {
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for ( (name, license, description, repetitions ) <- listBenchmarks(project, jars)) {
+      for ( (name, license, description, repetitions) <- listBenchmarks(project, jars)) {
         if (!nonGpl || license == "MIT") {
           benchGroupContent.append(name).append("=").append(projectShort).append("\n")
           benchDetails.setProperty("benchmark." + name + ".description", description)
