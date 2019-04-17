@@ -19,6 +19,11 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class GaussMix extends RenaissanceBenchmark {
 
+  /* TODO Implement changes regarding how to declare and pass
+  benchmark-specific parameters
+  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
+   */
+
   def description = "Computes a Gaussian mixture model using expectation-maximization."
 
   override def defaultRepetitions = 40
@@ -28,8 +33,6 @@ class GaussMix extends RenaissanceBenchmark {
   val DISTRIBUTION_COUNT = 6
 
   val COMPONENTS = 10
-
-  var tempDirPath: Path = null
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -46,6 +49,8 @@ class GaussMix extends RenaissanceBenchmark {
   var gmm: GaussianMixtureModel = null
 
   var input: RDD[org.apache.spark.mllib.linalg.Vector] = null
+
+  var tempDirPath: Path = null
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("gauss_mix")
