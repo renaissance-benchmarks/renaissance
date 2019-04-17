@@ -35,7 +35,7 @@ class FinagleChirper extends RenaissanceBenchmark {
 
   def licenses = License.create(License.APACHE2)
 
-  override def defaultRepetitions = 40
+  override def defaultRepetitions = 90
 
   class Master extends Service[Request, Response] {
     val lock = new AnyRef
