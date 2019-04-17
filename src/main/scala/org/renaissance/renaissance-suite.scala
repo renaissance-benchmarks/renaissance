@@ -15,7 +15,8 @@ object RenaissanceSuite {
     val map = new mutable.HashMap[String, String]
     val lines = IOUtils.lineIterator(
       getClass.getResourceAsStream("/benchmark-group.txt"),
-      StandardCharsets.UTF_8)
+      StandardCharsets.UTF_8
+    )
     while (lines.hasNext) {
       val line = lines.next()
       val parts = line.split("=")
@@ -30,7 +31,8 @@ object RenaissanceSuite {
     val map = new mutable.HashMap[String, List[String]]
     val lines = IOUtils.lineIterator(
       getClass.getResourceAsStream("/groups-jars.txt"),
-      StandardCharsets.UTF_8)
+      StandardCharsets.UTF_8
+    )
     while (lines.hasNext) {
       val line = lines.next()
       val parts = line.split("=")
@@ -51,8 +53,10 @@ object RenaissanceSuite {
         .text("Number of repetitions of each benchmark")
         .action((v, c) => c.withRepetitions(v))
       opt[String]("policy")
-        .text("Execution policy, one of: " +
-          Policy.descriptions.asScala.keys.mkString(", "))
+        .text(
+          "Execution policy, one of: " +
+            Policy.descriptions.asScala.keys.mkString(", ")
+        )
         .action((v, c) => c.withPolicy(v))
       opt[String]("plugins")
         .text("Comma-separated list of class names of plugin implementations.")
@@ -94,12 +98,14 @@ object RenaissanceSuite {
         new File("README.md"),
         readme,
         java.nio.charset.StandardCharsets.UTF_8,
-        false)
+        false
+      )
       FileUtils.write(
         new File("CONTRIBUTION.md"),
         contribution,
         java.nio.charset.StandardCharsets.UTF_8,
-        false)
+        false
+      )
       println("README.md and CONTRIBUTION.md updated.")
       return
     } else {

@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -x
+
+COBERTURA_DIR=$HOME/cobertura/cobertura-1.9.4.1
+SCALATEST_VERSION=1.2
+
+BASE="`dirname $0`/.."
+cd $BASE
+
+WHEN=`date '+%Y%m%d-%H%M%S'`
+DIR="cover/cover-$WHEN"
+SER="$DIR/cobertura.ser"
+
+if [ "x$SCALA_VERSION" = "x" ]; then
+  SCALA_VERSION="`awk -F= '$1==\"build.scala.versions\" {print $2}' project/build.properties | sed 's/ .*//g'`"
+fi
+TARGET_BASE="target/scala_$SCALA_VERSION"
+
+SCALATEST="lib_managed/scala_$SCALA_VERSION/compile/scalatest-$SCALATEST_VERSION.jar"
+
+mkdir -p $DIR
+git show --quiet HEAD > $DIR/git.hash
+
+sbt ++$SCALA_VERSION test-compile > "$DIR"/log 2>&1
+
+rm -rf $TARGET_BASE/classes-instr
+sh $COBERTURA_DIR/cobertura-instrument.sh \
+    --basedir $TARGET_BASE/classes \
+    --datafile $SER \
+    --destination $TARGET_BASE/classes-instr \
+    scala
+
+# we have to include classes because cobertura skips those with no methods
+scala -cp ${SCALATEST}:$COBERTURA_DIR/cobertura.jar:$TARGET_BASE/classes-instr:$TARGET_BASE/classes \
+    -Dnet.sourceforge.cobertura.datafile=$SER \
+    -Dccstm.stats=1 \
+    org.scalatest.tools.Runner \
+    -oW -l slow -p $TARGET_BASE/test-classes 
+
+sh $COBERTURA_DIR/cobertura-report.sh \
+    --datafile $SER \
+    --destination $DIR \
+    $BASE/src/main/scala
