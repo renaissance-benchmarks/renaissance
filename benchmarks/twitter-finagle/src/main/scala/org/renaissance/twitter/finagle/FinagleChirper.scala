@@ -415,5 +415,6 @@ class FinagleChirper extends RenaissanceBenchmark {
       yield new Client(usernames(i % usernames.length) + i)
     clients.foreach(_.start())
     clients.foreach(_.join())
+
   }
 }
