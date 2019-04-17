@@ -8,8 +8,6 @@ lazy val scalaStm = (project in file("."))
     organization := "org.renaissance",
     version := "0.1.0",
     scalaVersion := "2.12.3",
-    libraryDependencies ++= Seq(
-    ),
     scalafmtConfig := Some(file(".scalafmt.conf"))
   )
   .dependsOn(

@@ -12,6 +12,8 @@ class ScalaStmBench7 extends RenaissanceBenchmark {
 
   def licenses = License.create(License.BSD3, License.GPL2)
 
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   override def runIteration(c: Config): Unit = {
