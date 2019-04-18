@@ -45,7 +45,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     for (int dataIndex = 0; dataIndex < data.size(); dataIndex++) {
       double min = Double.MAX_VALUE;
       for (int centroidIndex = 0; centroidIndex < centroids.size(); centroidIndex++) {
-        double distance = distance(data.elementAt(dataIndex), data.elementAt(centroidIndex));
+        double distance = distance(data.elementAt(dataIndex), centroids.elementAt(centroidIndex));
         if (distance < min) {
           min = distance;
           result[dataIndex] = centroidIndex;
