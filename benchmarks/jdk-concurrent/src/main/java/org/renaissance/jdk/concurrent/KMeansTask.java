@@ -14,7 +14,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private final int dimension;
 
-  private int group;
+  private int clusterCount;
 
   private int threadCount;
 
@@ -25,9 +25,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   private Vector<Double[]> returnvector = new Vector<Double[]>();
 
   public KMeansTask(Vector<Double[]> vec, Vector<Double[]> vector, int dimension,
-      int group, int forkThreshold, int threadCount) {
+      int clusterCount, int forkThreshold, int threadCount) {
     this.dimension = dimension;
-    this.group = group;
+    this.clusterCount = clusterCount;
     this.vec = vec;
     this.vector = vector;
     this.forkThreshold = forkThreshold;
@@ -121,9 +121,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       for (int i = middle; i < vec.size(); i++) {
         vectortwo.add((i - middle), vec.elementAt(i));
       }
-      KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, group, forkThreshold,
+      KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, clusterCount, forkThreshold,
           threadCount);
-      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, dimension, group, forkThreshold,
+      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, dimension, clusterCount, forkThreshold,
           threadCount);
       kmeansone.fork();
       kmeanstwo.fork();

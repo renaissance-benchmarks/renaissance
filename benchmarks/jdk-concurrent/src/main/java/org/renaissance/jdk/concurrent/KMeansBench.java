@@ -12,7 +12,7 @@ public final class KMeansBench {
   public static void run(int threadCount, int vectorLength)
       throws InterruptedException, ExecutionException {
     final int dimension = 5;
-    int group = 10;
+    int clusterCount = 10;
     Vector<Double[]> vec = new Vector<Double[]>(vectorLength);
     Vector<Double[]> vector = new Vector<Double[]>(dimension);
     Random random = new Random(100);
@@ -21,7 +21,7 @@ public final class KMeansBench {
           j, j + 1, j * 4, j * 2, j * 3
       });
     }
-    for (int i = 0; i < group; i++) {
+    for (int i = 0; i < clusterCount; i++) {
       vector.add(i, vec.elementAt(Math.abs(random.nextInt() % vec.size())));
     }
 
@@ -30,12 +30,12 @@ public final class KMeansBench {
     long starttime = System.currentTimeMillis();
     ForkJoinPool fjpool = new ForkJoinPool();
     for (int count = 50; count > 0; count--) {
-      KMeansTask fff = new KMeansTask(vec, vector, dimension, group, forkThreshold,
+      KMeansTask fff = new KMeansTask(vec, vector, dimension, clusterCount, forkThreshold,
           threadCount);
       fjpool.invoke(fff);
       vector.clear();
       for (int i = fff.getReturnvector().size()
-          - 1; i >= 0; i -= (fff.getReturnvector().size() / group)) {
+          - 1; i >= 0; i -= (fff.getReturnvector().size() / clusterCount)) {
         vector.addElement(fff.getReturnvector().elementAt(i));
       }
     }
