@@ -1,8 +1,6 @@
 package org.renaissance.jdk.concurrent;
 
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
@@ -29,17 +27,14 @@ public class KMeansBench {
     }
 
     int Threshold = vectorLength / (4 * numThreads) + 1;
-    List forks = new LinkedList();
 
     long starttime = System.currentTimeMillis();
     ForkJoinPool fjpool = new ForkJoinPool();
     for (int count = 50; count > 0; count--) {
       KMeansFork fff = new KMeansFork(vec, vector, demision, group, Threshold,
           numThreads);
-      //forks.add(fff);
       fjpool.invoke(fff);
       vector.clear();
-      //System.out.println("fff.size()"+fff.getReturnvector().size());
       for (int i = fff.getReturnvector().size()
           - 1; i >= 0; i -= (fff.getReturnvector().size() / group)) {
         vector.addElement(fff.getReturnvector().elementAt(i));

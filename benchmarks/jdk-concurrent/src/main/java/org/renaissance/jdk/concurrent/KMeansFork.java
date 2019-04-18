@@ -88,7 +88,6 @@ public class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>
     int count = 0;
     while (averiter.hasNext()) {
       Map.Entry entry = (Map.Entry) averiter.next();
-      Double[] key = (Double[]) entry.getKey();
       Vector<Double[]> itervec = (Vector<Double[]>) entry.getValue();
       Double[] averagemeans = new Double[demision];
       for (int i = demision - 1; i >= 0; i--) {
@@ -136,7 +135,6 @@ public class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>
         Double[] key = (Double[]) entry.getKey();
         Vector<Double[]> itervec = (Vector<Double[]>) entry.getValue();
         if (rightmap.get(key) != null) {
-          //System.out.println("hello");
           Vector<Double[]> tempvecone = rightmap.get(key);
           int num = tempvecone.size();
           for (int i = 0; i < itervec.size(); i++) {
