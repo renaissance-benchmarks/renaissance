@@ -3,7 +3,7 @@ package org.renaissance.jdk.concurrent;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Vector;
 import java.util.concurrent.RecursiveTask;
 
@@ -83,12 +83,12 @@ public class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>
   public HashMap<Double[], Vector<Double[]>> ComputerAver(
       HashMap<Double[], Vector<Double[]>> avermap) {
 
-    Iterator averiter = avermap.entrySet().iterator();
+    Iterator<Entry<Double[], Vector<Double[]>>> averiter = avermap.entrySet().iterator();
     HashMap<Double[], Vector<Double[]>> computerMap = new HashMap<Double[], Vector<Double[]>>();
     int count = 0;
     while (averiter.hasNext()) {
-      Map.Entry entry = (Map.Entry) averiter.next();
-      Vector<Double[]> itervec = (Vector<Double[]>) entry.getValue();
+      Entry<Double[], Vector<Double[]>> entry = averiter.next();
+      Vector<Double[]> itervec = entry.getValue();
       Double[] averagemeans = new Double[demision];
       for (int i = demision - 1; i >= 0; i--) {
         int aversize = itervec.size() - 1;
@@ -129,11 +129,11 @@ public class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>
       kmeanstwo.fork();
       HashMap<Double[], Vector<Double[]>> leftmap = kmeansone.join();
       HashMap<Double[], Vector<Double[]>> rightmap = kmeanstwo.join();
-      Iterator iter = leftmap.entrySet().iterator();
+      Iterator<Entry<Double[], Vector<Double[]>>> iter = leftmap.entrySet().iterator();
       while (iter.hasNext()) {
-        Map.Entry entry = (Map.Entry) iter.next();
+        Entry<Double[], Vector<Double[]>> entry = iter.next();
         Double[] key = (Double[]) entry.getKey();
-        Vector<Double[]> itervec = (Vector<Double[]>) entry.getValue();
+        Vector<Double[]> itervec = entry.getValue();
         if (rightmap.get(key) != null) {
           Vector<Double[]> tempvecone = rightmap.get(key);
           int num = tempvecone.size();
