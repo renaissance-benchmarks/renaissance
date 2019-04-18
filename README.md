@@ -72,8 +72,12 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+- `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
+
+- `naive-bayes` - Runs the multinomial naive Bayes algorithm from the Spark MLlib. (default repetitions: 20)
+
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
-- `log-regression` - Runs the logistic regression workload from mllib. (default repetitions: 20)
+
 
 ##### core
 
@@ -96,12 +100,17 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### neo4j
 
-- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 10)
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
 
 
 ##### rx
 
 - `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
+
+
+##### scala-dotty
+
+- `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
 
 ##### scala-stdlib
@@ -113,9 +122,6 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
-##### scala-dotty
-
-- `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
 
 ### Run policies
@@ -173,10 +179,11 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | rx-scrabble | GPL2 | GPL3 |
+| naive-bayes | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
-| log-regression | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
+| log-regression | APACHE2 | MIT |
 | future-genetic | APACHE2 | MIT |
 | streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
@@ -184,6 +191,7 @@ The following table contains the licensing information of all the benchmarks:
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
+
 
 ### Design overview
 
