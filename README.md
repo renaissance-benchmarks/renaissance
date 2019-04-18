@@ -128,6 +128,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### scala-stm
 
+- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
+
 - `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM. (default repetitions: 60)
 
 
@@ -135,12 +137,6 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
-
-##### scala-stm
-
-- `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM. (default repetitions: 60)
-
-- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
 
 
 ### Run policies
@@ -198,6 +194,7 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | gauss-mix | APACHE2 | MIT |
+| philosophers | BSD3 | MIT |
 | rx-scrabble | GPL2 | GPL3 |
 | dec-tree | APACHE2 | MIT |
 | naive-bayes | APACHE2 | MIT |
@@ -215,8 +212,6 @@ The following table contains the licensing information of all the benchmarks:
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
-| scala-stm-bench7 | BSD3 | MIT |
-| philosophers | BSD3 | MIT |
 
 
 ### Design overview
