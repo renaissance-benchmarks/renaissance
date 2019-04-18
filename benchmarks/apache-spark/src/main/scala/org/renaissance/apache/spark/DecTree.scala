@@ -30,7 +30,7 @@ class DecTree extends RenaissanceBenchmark {
 
   def description = "Runs the Random Forest algorithm from Spark MLlib."
 
-  override def defaultRepetitions = 20
+  override def defaultRepetitions = 40
 
   override def licenses = License.create(License.APACHE2)
 
