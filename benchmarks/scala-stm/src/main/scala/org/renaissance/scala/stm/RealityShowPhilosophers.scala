@@ -25,14 +25,14 @@ object RealityShowPhilosophers {
 
     override def run(): Unit = {
       for (_ <- 0 until meals) {
-        // thinking
+        // Thinking.
         atomic { implicit txn =>
           if (!(left.owner().isEmpty && right.owner().isEmpty))
             retry
           left.owner() = Some(name)
           right.owner() = Some(name)
         }
-        // eating
+        // Eating.
         atomic { implicit txn =>
           mealsEaten += 1
           left.owner() = None
@@ -61,6 +61,8 @@ object RealityShowPhilosophers {
       if (!done) {
         run()
       } else {
+        // TODO Consistent way of handling stdout.
+        //  See https://github.com/D-iii-S/renaissance-benchmarks/issues/20
         println(s"Camera thread performed ${outputs.length} scans.")
       }
     }

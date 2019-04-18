@@ -140,7 +140,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM. (default repetitions: 60)
 
-- `philosophers` - Runs the reality show philosophers algorithm.. (default repetitions: 30)
+- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
 
 
 ### Run policies
