@@ -121,39 +121,43 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     } else {
       int veclength = data.size();
       int middle = veclength / 2;
-      Vector<Double[]> vectorone = new Vector<Double[]>(middle);
+      
+      Vector<Double[]> leftVector = new Vector<Double[]>(middle);
       for (int i = 0; i < middle; i++) {
-        vectorone.add(i, data.elementAt(i));
+        leftVector.add(i, data.elementAt(i));
       }
-      Vector<Double[]> vectortwo = new Vector<Double[]>(veclength - middle);
+      
+      Vector<Double[]> rightVector = new Vector<Double[]>(veclength - middle);
       for (int i = middle; i < data.size(); i++) {
-        vectortwo.add((i - middle), data.elementAt(i));
+        rightVector.add((i - middle), data.elementAt(i));
       }
-      KMeansTask kmeansone = new KMeansTask(vectorone, centroids, dimension, clusterCount, forkThreshold,
+      
+      KMeansTask leftTask = new KMeansTask(leftVector, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
-      KMeansTask kmeanstwo = new KMeansTask(vectortwo, centroids, dimension, clusterCount, forkThreshold,
+      KMeansTask rightTask = new KMeansTask(rightVector, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
-      kmeansone.fork();
-      kmeanstwo.fork();
-      HashMap<Double[], Vector<Double[]>> leftmap = kmeansone.join();
-      HashMap<Double[], Vector<Double[]>> rightmap = kmeanstwo.join();
-      Iterator<Entry<Double[], Vector<Double[]>>> iter = leftmap.entrySet().iterator();
+      leftTask.fork();
+      rightTask.fork();
+      HashMap<Double[], Vector<Double[]>> leftResult = leftTask.join();
+      HashMap<Double[], Vector<Double[]>> rightResult = rightTask.join();
+      
+      Iterator<Entry<Double[], Vector<Double[]>>> iter = leftResult.entrySet().iterator();
       while (iter.hasNext()) {
         Entry<Double[], Vector<Double[]>> entry = iter.next();
         Double[] key = (Double[]) entry.getKey();
         Vector<Double[]> itervec = entry.getValue();
-        if (rightmap.get(key) != null) {
-          Vector<Double[]> tempvecone = rightmap.get(key);
+        if (rightResult.get(key) != null) {
+          Vector<Double[]> tempvecone = rightResult.get(key);
           int num = tempvecone.size();
           for (int i = 0; i < itervec.size(); i++) {
             tempvecone.addElement(itervec.elementAt(i + num));
           }
-          rightmap.put(key, tempvecone);
+          rightResult.put(key, tempvecone);
         } else {
-          rightmap.put(key, itervec);
+          rightResult.put(key, itervec);
         }
       }
-      return ComputerAver(rightmap);
+      return ComputerAver(rightResult);
     }
   }
 
