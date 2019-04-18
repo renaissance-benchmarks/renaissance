@@ -11,12 +11,12 @@ import org.apache.spark.rdd.RDD
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class NaiveBayes extends RenaissanceBenchmark {
-  override def description(): String = "Runs the multinomial naive Bayes algorithm from the Spark MLlib."
+  override def description(): String =
+    "Runs the multinomial naive Bayes algorithm from the Spark MLlib."
 
   override def defaultRepetitions = 20
 
   override def licenses(): Array[License] = License.create(License.APACHE2)
-
 
   val SMOOTHING = 1.0
 
@@ -47,7 +47,8 @@ class NaiveBayes extends RenaissanceBenchmark {
   }
 
   def loadData() = {
-    data = sc.textFile(bigInputFile.toString)
+    data = sc
+      .textFile(bigInputFile.toString)
       .map { line =>
         val parts = line.split(" ")
         val features = new Array[Double](692)
@@ -58,7 +59,8 @@ class NaiveBayes extends RenaissanceBenchmark {
           features(index) = value
         }
         new LabeledPoint(parts(0).toDouble, Vectors.dense(features))
-      }.cache()
+      }
+      .cache()
   }
 
   def setUpSpark() = {
@@ -80,14 +82,18 @@ class NaiveBayes extends RenaissanceBenchmark {
 
   override def tearDownAfterAll(c: Config): Unit = {
     // Dump output.
-    FileUtils.write(outputPath.toFile,
-      bayesModel.labels.mkString("labels: ", ", ", "\n"), true)
-    FileUtils.write(outputPath.toFile,
-      bayesModel.pi.mkString("a priori: ", ", ", "\n"), true)
-    FileUtils.write(outputPath.toFile,
-      bayesModel.theta.zipWithIndex.map { case (cls, i) =>
-        cls.mkString(s"class $i: ", ", ", "")
-      }.mkString("thetas:\n", "\n", ""), true)
+    FileUtils.write(outputPath.toFile, bayesModel.labels.mkString("labels: ", ", ", "\n"), true)
+    FileUtils.write(outputPath.toFile, bayesModel.pi.mkString("a priori: ", ", ", "\n"), true)
+    FileUtils.write(
+      outputPath.toFile,
+      bayesModel.theta.zipWithIndex
+        .map {
+          case (cls, i) =>
+            cls.mkString(s"class $i: ", ", ", "")
+        }
+        .mkString("thetas:\n", "\n", ""),
+      true
+    )
 
     sc.stop()
   }
