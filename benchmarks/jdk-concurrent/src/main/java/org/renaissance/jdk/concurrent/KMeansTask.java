@@ -54,9 +54,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     HashMap<Double[], Vector<Double[]>> map = new HashMap<Double[], Vector<Double[]>>();
     for (int i = nearestClusterIndex.length - 1; i >= 0; i--) {
       if (!map.containsKey(data.elementAt(nearestClusterIndex[i]))) {
-        Vector<Double[]> clusterVec = new Vector<Double[]>();
-        clusterVec.add(data.elementAt(i));
-        map.put(data.elementAt(nearestClusterIndex[i]), clusterVec);
+        Vector<Double[]> cluster = new Vector<Double[]>();
+        cluster.add(data.elementAt(i));
+        map.put(data.elementAt(nearestClusterIndex[i]), cluster);
       } else {
 
         map.get(data.elementAt(nearestClusterIndex[i])).add(data.elementAt(nearestClusterIndex[i]));
