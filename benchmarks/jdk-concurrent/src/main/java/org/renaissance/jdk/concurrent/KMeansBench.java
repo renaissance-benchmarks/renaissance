@@ -11,7 +11,6 @@ public class KMeansBench {
 
   public static void run(int numThreads, int vectorLength)
       throws InterruptedException, ExecutionException {
-    boolean bool = false;
     final int demision = 5;
     int group = 10;
     Vector<Double[]> vec = new Vector<Double[]>(vectorLength);
