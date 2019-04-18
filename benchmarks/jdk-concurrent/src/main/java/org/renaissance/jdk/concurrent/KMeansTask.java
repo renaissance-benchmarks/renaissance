@@ -42,13 +42,13 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   private int[] assignToNearestCentroid(Vector<Double[]> data) {
     int[] result = new int[data.size()];
 
-    for (int i = data.size() - 1; i >= 0; i--) {
+    for (int dataIndex = 0; dataIndex < data.size(); dataIndex++) {
       double min = Double.MAX_VALUE;
-      for (int j = centroids.size() - 1; j >= 0; j--) {
-        double distance = distance(data.elementAt(i), data.elementAt(j));
+      for (int centroidIndex = 0; centroidIndex < centroids.size(); centroidIndex++) {
+        double distance = distance(data.elementAt(dataIndex), data.elementAt(centroidIndex));
         if (distance < min) {
           min = distance;
-          result[i] = j;
+          result[dataIndex] = centroidIndex;
         }
       }
     }
