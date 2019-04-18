@@ -64,6 +64,12 @@ object RenaissanceSuite {
       opt[Unit]("readme")
         .text("Regenerates the README file, and does not run anything.")
         .action((_, c) => c.withReadme(true))
+      opt[Unit]("list")
+        .text("Print list of benchmarks with their description.")
+        .action((_, c) => c.withList())
+      opt[Unit]("raw-list")
+        .text("Print list of benchmarks, each benchmark name on separate line.")
+        .action((_, c) => c.withRawList())
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed.")
         .optional()
@@ -108,6 +114,10 @@ object RenaissanceSuite {
       )
       println("README.md and CONTRIBUTION.md updated.")
       return
+    } else if (config.printList) {
+      print(formatBenchmarkList)
+    } else if (config.printRawList) {
+      print(formatRawBenchmarkList)
     } else {
       // Check that all the benchmarks on the list really exist.
       for (benchName <- config.benchmarkList.asScala) {
@@ -134,6 +144,28 @@ object RenaissanceSuite {
     }
   }
 
+  def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
+    var column = 0
+    val line = new StringBuffer
+    val result = new mutable.ArrayBuffer[String]
+    for (word <- words) {
+      if ((column + word.length + 1 >= width) && (column > 0)) {
+        result += line.toString
+        line.setLength(0)
+        column = 0
+      }
+      if (column > 0) {
+        line.append(" ")
+      } else {
+        line.append(indent)
+      }
+      line.append(word)
+      column += word.length
+    }
+    result += line.toString
+    return result
+  }
+
   private def loadBenchmark(name: String): ProxyRenaissanceBenchmark = {
     val mainGroup = benchmarkGroups(name)
     copyJars(mainGroup)
@@ -148,6 +180,39 @@ object RenaissanceSuite {
     val packageName = mainGroup.replace("-", ".")
     val fullBenchClassName = "org.renaissance." + packageName + "." + benchClassName
     new ProxyRenaissanceBenchmark(loader, fullBenchClassName)
+  }
+
+  private def formatRawBenchmarkList(): String = {
+    val result = new StringBuffer
+    for (name <- benchmarks.toSeq.sorted) {
+      result.append(name + "\n")
+    }
+
+    return result.toString
+  }
+
+  private def formatBenchmarkList(): String = {
+    val indent = "    "
+    val details = new java.util.Properties
+    details.load(getClass.getResourceAsStream("/benchmark-details.properties"))
+
+    val result = new StringBuffer
+    for (name <- benchmarks.toSeq.sorted) {
+      val description = details.getProperty(
+        "benchmark." + name + ".description",
+        "Description not provided"
+      )
+      val descriptionWords = description.split("\\s+")
+      val repetitions = details.getProperty(
+        "benchmark." + name + ".repetitions",
+        "Not specified"
+      )
+      result.append(name).append("\n")
+      result.append(foldText(descriptionWords, 65, indent).mkString("\n"))
+      result.append(s"\n${indent}Default repetitions: ${repetitions}\n\n")
+    }
+
+    return result.toString
   }
 
   private def generateBenchmarkDescription(name: String): String = {
