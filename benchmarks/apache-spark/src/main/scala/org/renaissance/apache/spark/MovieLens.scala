@@ -30,7 +30,7 @@ class MovieLens extends RenaissanceBenchmark {
 
   def description = "Recommends movies using the ALS algorithm."
 
-  override def defaultRepetitions = 5
+  override def defaultRepetitions = 20
 
   override def licenses = License.create(License.APACHE2)
 
