@@ -1,6 +1,6 @@
 
 
-# Renaissance Benchmark Suite
+## Renaissance Benchmark Suite
 
 <p align="center">
   <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
@@ -59,6 +59,8 @@ Usage: renaissance [options] [benchmark-specification]
   --policy <value>         Execution policy, one of: fixed
   --plugins <value>        Comma-separated list of class names of plugin implementations.
   --readme                 Regenerates the README file, and does not run anything.
+  --list                   Print list of benchmarks with their description.
+  --raw-list               Print list of benchmarks, each benchmark name on separate line.
   benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed.
 ```
 
@@ -70,9 +72,14 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+
 - `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 20)
 
+- `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
+
 - `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
+
+- `naive-bayes` - Runs the multinomial naive Bayes algorithm from the Spark MLlib. (default repetitions: 20)
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
@@ -80,6 +87,11 @@ The following is the complete list of benchmarks, separated into groups.
 ##### core
 
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
+
+
+##### jdk-concurrent
+
+- `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
 
 
 ##### jdk-streams
@@ -99,6 +111,11 @@ The following is the complete list of benchmarks, separated into groups.
 ##### rx
 
 - `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
+
+
+##### scala-dotty
+
+- `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
 
 ##### scala-stdlib
@@ -167,16 +184,31 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | rx-scrabble | GPL2 | GPL3 |
+<<<<<<< HEAD
 | dec-tree | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
 | log-regression | APACHE2 | MIT |
+=======
+| naive-bayes | APACHE2 | MIT |
+| page-rank | APACHE2 | MIT |
+| scrabble | GPL2 | GPL3 |
+| dummy | MIT | MIT |
+<<<<<<< HEAD
+| chi-square | APACHE2 | MIT |
+| log-regression | APACHE2 | MIT |
+=======
+| log-regression | APACHE2 | MIT |
+| future-genetic | APACHE2 | MIT |
+>>>>>>> master
+>>>>>>> master
 | streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
 | parallel-streams-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
+| dotty | BSD3 | MIT |
 
 
 ### Design overview

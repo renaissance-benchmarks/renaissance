@@ -26,6 +26,8 @@ class ProxyRenaissanceBenchmark(
     cls.getDeclaredField("plugins").set(tc, c.plugins())
     cls.getDeclaredField("policy").set(tc, c.policy())
     cls.getDeclaredField("readme").set(tc, c.readme())
+    cls.getDeclaredField("printList").set(tc, c.printList())
+    cls.getDeclaredField("printRawList").set(tc, c.printRawList())
     tc
   }
 
