@@ -141,7 +141,7 @@ object RenaissanceSuite {
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
     var column = 0
     val line = new StringBuffer
-    val result = new scala.collection.mutable.ArrayBuffer[String]
+    val result = new mutable.ArrayBuffer[String]
     for (word <- words) {
       if ((column + word.length + 1 >= width) && (column > 0)) {
         result += line.toString
