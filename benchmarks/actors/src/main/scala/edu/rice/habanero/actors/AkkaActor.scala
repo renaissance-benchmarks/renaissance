@@ -129,7 +129,6 @@ object AkkaActorState {
   }
 
   def initialize(): Unit = {
-
     val corePoolSize = getNumWorkers("actors.corePoolSize", 4)
     val maxPoolSize = getNumWorkers("actors.maxPoolSize", corePoolSize)
     val priorityMailboxType =
@@ -210,7 +209,6 @@ object AkkaActorState {
         }
       case Failure(e) => e.printStackTrace
     }
-
   }
 
   def awaitTermination(system: ActorSystem) {
