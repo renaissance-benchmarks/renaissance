@@ -115,9 +115,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   @Override
   protected HashMap<Double[], Vector<Double[]>> compute() {
-    int hel = data.size();
-    if (hel < forkThreshold) {
+    if (data.size() < forkThreshold) {
       return computeDirectly(data);
+      
     } else {
       int veclength = data.size();
       int middle = veclength / 2;
