@@ -45,7 +45,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     for (int i = data.size() - 1; i >= 0; i--) {
       double min = Double.MAX_VALUE;
       for (int j = centroids.size() - 1; j >= 0; j--) {
-        double distance = sumDistance(data.elementAt(i), data.elementAt(j));
+        double distance = distance(data.elementAt(i), data.elementAt(j));
         if (distance < min) {
           min = distance;
           result[i] = j;
@@ -73,12 +73,17 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     return map;
   }
 
-  public Double sumDistance(Double[] x, Double[] y) {
-    Double sum = 0.0;
-    for (int i = dimension - 1; i >= 0; i--) {
-      sum += (x[i] - y[i]) * (x[i] - y[i]);
+  private Double distance(Double[] x, Double[] y) {
+    //
+    // Calculates Euclidean distance between the two points. Note that we
+    // don't use sqrt(), because if sqrt(a) < sqrt(b), then also a < b.
+    //
+    double result = 0.0;
+    for (int i = 0; i < dimension; i++) {
+      result += (x[i] - y[i]) * (x[i] - y[i]);
     }
-    return sum;
+    
+    return result;
   }
   public Double[] average(Double[] x, Double[] y) {
     Double[] aver = new Double[dimension];
