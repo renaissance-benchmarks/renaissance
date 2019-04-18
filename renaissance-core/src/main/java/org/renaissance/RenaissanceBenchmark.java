@@ -20,6 +20,8 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     return result.toLowerCase();
   }
 
+  private volatile Object blackHoleField;
+
   public final String name() {
     String cn = this.getClass().getSimpleName();
     String camelCaseName =
@@ -99,8 +101,6 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
       }
     }
   }
-
-  private volatile Object blackHoleField;
 
   protected <T> void blackHole(T value) {
     blackHoleField = value;
