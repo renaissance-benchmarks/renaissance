@@ -34,7 +34,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     this.threadCount = threadCount;
   }
 
-  public HashMap<Double[], Vector<Double[]>> Iteration(Vector<Double[]> data) {
+  public HashMap<Double[], Vector<Double[]>> computeDirectly(Vector<Double[]> data) {
     Double distance = 0.0;
     int[] nearestClusterIndex = new int[data.size()];
     for (int i = data.size() - 1; i >= 0; i--) {
@@ -109,7 +109,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   protected HashMap<Double[], Vector<Double[]>> compute() {
     int hel = data.size();
     if (hel < forkThreshold) {
-      return Iteration(data);
+      return computeDirectly(data);
     } else {
       int veclength = data.size();
       int middle = veclength / 2;
