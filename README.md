@@ -72,20 +72,17 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
-<<<<<<< HEAD
+- `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization. (default repetitions: 40)
+
 - `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
 
 - `movie-lens` - Recommends movies using the ALS algorithm. (default repetitions: 5)
-=======
 
 - `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 20)
 
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
-- `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
-
 - `naive-bayes` - Runs the multinomial naive Bayes algorithm from the Spark MLlib. (default repetitions: 20)
->>>>>>> master
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
@@ -189,12 +186,10 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
+| gauss-mix | APACHE2 | MIT |
 | rx-scrabble | GPL2 | GPL3 |
 | dec-tree | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
-| scrabble | GPL2 | GPL3 |
-| dummy | MIT | MIT |
-| log-regression | APACHE2 | MIT |
 | movie-lens | APACHE2 | MIT |
 | naive-bayes | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
@@ -202,6 +197,7 @@ The following table contains the licensing information of all the benchmarks:
 | dummy | MIT | MIT |
 | chi-square | APACHE2 | MIT |
 | future-genetic | APACHE2 | MIT |
+| log-regression | APACHE2 | MIT |
 | streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
 | parallel-streams-mnemonics | MIT | MIT |
