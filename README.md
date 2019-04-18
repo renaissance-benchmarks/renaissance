@@ -1,6 +1,6 @@
 
 
-# Renaissance Benchmark Suite
+## Renaissance Benchmark Suite
 
 <p align="center">
   <img height="180px" src="https://github.com/D-iii-S/renaissance-benchmarks/raw/master/website/resources/images/mona-lisa-round.png"/>
@@ -59,6 +59,8 @@ Usage: renaissance [options] [benchmark-specification]
   --policy <value>         Execution policy, one of: fixed
   --plugins <value>        Comma-separated list of class names of plugin implementations.
   --readme                 Regenerates the README file, and does not run anything.
+  --list                   Print list of benchmarks with their description.
+  --raw-list               Print list of benchmarks, each benchmark name on separate line.
   benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed.
 ```
 
@@ -80,6 +82,11 @@ The following is the complete list of benchmarks, separated into groups.
 ##### core
 
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
+
+
+##### jdk-concurrent
+
+- `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
 
 
 ##### jdk-streams
@@ -177,6 +184,7 @@ The following table contains the licensing information of all the benchmarks:
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
 | log-regression | APACHE2 | MIT |
+| future-genetic | APACHE2 | MIT |
 | streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
 | parallel-streams-mnemonics | MIT | MIT |
