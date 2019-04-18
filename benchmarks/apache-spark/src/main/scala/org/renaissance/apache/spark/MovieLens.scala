@@ -1,6 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.io.File
 import java.io.InputStream
 import java.net.URL
 import java.net.URI
@@ -42,11 +41,11 @@ class MovieLens extends RenaissanceBenchmark {
 
   val checkpointPath = movieLensPath.resolve("checkpoint")
 
-  val personalRatingsInputFile = File.separator + "movie-lens-my-ratings.csv"
+  val personalRatingsInputFile =  "/movie-lens-my-ratings.csv"
 
-  val moviesInputFile = File.separator + "movies.csv"
+  val moviesInputFile = "/movies.csv"
 
-  val ratingsInputFile = File.separator + "ratings.csv"
+  val ratingsInputFile = "/ratings.csv"
 
   val bigFilesPath = movieLensPath.resolve("bigfiles")
 
