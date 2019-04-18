@@ -1,0 +1,97 @@
+<?xml version="1.1"?>
+<project name="stmbench7" default="compile" basedir=".">
+
+    <property name="agent"
+              value="../deuceAgent-1.3.0.jar"/>
+    <property name="precompiler" value=""/>
+    <property name="javart.home" value="/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar"/>
+
+    <property name="version" value="1.2"/>
+    <property name="src.home" value="${basedir}/src"/>
+    <property name="build.home" value="${basedir}/build"/>
+    <property name="dist.home" value="${basedir}/dist"/>
+    <property name="lib.home" value="${basedir}/lib"/>
+    <property name="benchname" value="stmbench7-VELOX-${version}"/>
+
+    <target name="clean"
+            description="Delete old build and dist directories">
+        <delete dir="${build.home}"/>
+        <delete dir="${dist.home}"/>
+        <delete dir="${lib.home}"/>
+        <delete dir="generated"/>
+    </target>
+
+    <target name="init" description="Create build dir">
+        <mkdir dir="${build.home}"/>
+    </target>
+
+    <target name="init-jar" description="Create build dir">
+        <mkdir dir="${lib.home}"/>
+    </target>
+
+    <target name="compile" depends="init" description="Compile STMbench7">
+        <javac srcdir="${src.home}" destdir="${build.home}"
+               classpath="${agent}" includeantruntime="false">
+            <exclude name="stmbench7/test/**/*.java"/>
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile,init-jar" description="Java-archive STMbench7">
+        <jar basedir="${build.home}" destfile="${lib.home}/${benchname}.jar">
+            <manifest>
+                <attribute name="Main-Class" value="stmbench7.Benchmark"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="dist" depends="jar" description="Generate distribution">
+        <mkdir dir="${dist.home}/${benchname}"/>
+        <copy todir="${dist.home}/${benchname}">
+            <fileset dir="${basedir}">
+                <include name="src/**/*.java"/>
+                <include name="build.xml"/>
+                <include name="COPYING"/>
+                <include name="${benchname}.jar"/>
+            </fileset>
+        </copy>
+        <tar basedir="${dist.home}" compression="gzip" destfile="${benchname}.tgz"/>
+        <delete dir="${dist.home}"/>
+    </target>
+
+    <target name="instrument-rt" depends="init-jar"
+            description="Instrument the runtime classes">
+        <java fork="true" classpath="${agent}" classname="org.deuce.transform.asm.Agent">
+            <jvmarg value="-Dorg.deuce.exclude=java.lang.Enum,sun.*"/>
+            <arg line="${javart.home}/rt.jar ${lib.home}/rt_instrumented.jar"/>
+        </java>
+    </target>
+
+    <target name="instrument" depends="jar" description="Instrument the benchmark">
+        <java fork="true" classpath="${agent}" classname="org.deuce.transform.asm.Agent">
+            <jvmarg value="-Dorg.deuce.exclude=java.lang.Enum,sun.*"/>
+            <arg line="${lib.home}/${benchname}.jar ${lib.home}/${benchname}_instrumented.jar"/>
+        </java>
+    </target>
+
+    <target name="tmjava" depends="init">
+        <java classname="tm.TMJavaParser" fork="true" resultproperty="java.result">
+            <arg line="-sourcepath ${src.home}/stmbench7:."/>
+            <arg line="-e ${src.home}/stmbench7/test/backend/IndexTest.java"/>
+            <arg line="${src.home}/stmbench7"/>
+            <classpath>
+                <pathelement location="${precompiler}"/>
+                <pathelement location="${agent}"/>
+                <pathelement location="."/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="test" depends="instrument,instrument-rt" description="Run test">
+        <java fork="true" classname="stmbench7.Benchmark">
+            <jvmarg value="-Dorg.deuce.exclude=java.lang.Enum,sun.*"/>
+            <jvmarg value="-Dorg.deuce.transaction.contextClass=org.deuce.transaction.lsa.Context"/>
+            <jvmarg value="-Xbootclasspath/p:${lib.home}/rt_instrumented.jar:${agent}:${lib.home}/${benchname}_instrumented.jar"/>
+            <arg line="-l 1 -t 16 -w rw -g stm --no-traversals -s stmbench7.impl.deucestm.DeuceSTMInitializer"/>
+        </java>
+    </target>
+</project>

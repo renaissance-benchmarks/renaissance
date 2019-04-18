@@ -1,0 +1,20 @@
+DEPLOYING THE SCALA-STM ARTIFACT
+
+With a proper credentials file publishing a snapshot or release artifact is
+accomplished with
+
+  sbt +test (or bin/all_tests)
+  sbt +publish
+
+TESTING DEPLOYMENT AND ARTIFACT USAGE
+
+To test using published artifacts via sbt, select the desired scala-stm
+artifact in dep_tests/sbt/build.sbt .  Then
+
+  cd dep_tests/sbt
+  sbt +run
+
+To test building using maven2, edit dep_tests/maven/pom.xml, then
+
+  cd dep_tests/maven
+  mvn -U compile

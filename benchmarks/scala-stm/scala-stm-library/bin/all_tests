@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -x
+set -e
+
+BASE="`dirname $0`/.."
+cd $BASE
+
+if [ "x$SCALA_VERSIONS" = "x" ]; then
+  SCALA_VERSIONS="`awk -F= '$1==\"build.scala.versions\" {print $2}' project/build.properties`"
+fi
+
+for v in $SCALA_VERSIONS; do
+  TARGET_BASE="target/scala_$v"
+  SCALATEST=$(echo lib_managed/scala_$v/compile/scalatest*.jar)
+  sbt ++$v test-compile
+  scala -Dccstm.stats=1 -cp ${SCALATEST}:$TARGET_BASE/classes org.scalatest.tools.Runner -l slow -oW -p $TARGET_BASE/test-classes 
+  scala -cp ${SCALATEST}:$TARGET_BASE/classes org.scalatest.tools.Runner -oW -p $TARGET_BASE/test-classes 
+done
