@@ -35,31 +35,39 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   }
 
   public HashMap<Double[], Vector<Double[]>> computeDirectly(Vector<Double[]> data) {
-    Double distance = 0.0;
-    int[] nearestClusterIndex = new int[data.size()];
+    int[] nearestCentroidIndex = assignToNearestCentroid(data);
+    return collectClusters(nearestCentroidIndex, data, centroids);
+  }
+
+  private int[] assignToNearestCentroid(Vector<Double[]> data) {
+    int[] result = new int[data.size()];
+
     for (int i = data.size() - 1; i >= 0; i--) {
-      Double min = Double.MAX_VALUE;
+      double min = Double.MAX_VALUE;
       for (int j = centroids.size() - 1; j >= 0; j--) {
-        distance = sumDistance(data.elementAt(i), data.elementAt(j));
+        double distance = sumDistance(data.elementAt(i), data.elementAt(j));
         if (distance < min) {
           min = distance;
-          nearestClusterIndex[i] = j;
+          result[i] = j;
         }
       }
     }
-    return collectClusters(nearestClusterIndex, data, centroids);
+
+    return result;
   }
-  public HashMap<Double[], Vector<Double[]>> collectClusters(int[] nearestClusterIndex,
+
+
+  public HashMap<Double[], Vector<Double[]>> collectClusters(int[] nearestCentroidIndex,
       Vector<Double[]> data, Vector<Double[]> centroids) {
     HashMap<Double[], Vector<Double[]>> map = new HashMap<>();
-    for (int i = nearestClusterIndex.length - 1; i >= 0; i--) {
-      if (!map.containsKey(data.elementAt(nearestClusterIndex[i]))) {
+    for (int i = nearestCentroidIndex.length - 1; i >= 0; i--) {
+      if (!map.containsKey(data.elementAt(nearestCentroidIndex[i]))) {
         Vector<Double[]> cluster = new Vector<>();
         cluster.add(data.elementAt(i));
-        map.put(data.elementAt(nearestClusterIndex[i]), cluster);
+        map.put(data.elementAt(nearestCentroidIndex[i]), cluster);
       } else {
 
-        map.get(data.elementAt(nearestClusterIndex[i])).add(data.elementAt(nearestClusterIndex[i]));
+        map.get(data.elementAt(nearestCentroidIndex[i])).add(data.elementAt(nearestCentroidIndex[i]));
       }
     }
     return map;
