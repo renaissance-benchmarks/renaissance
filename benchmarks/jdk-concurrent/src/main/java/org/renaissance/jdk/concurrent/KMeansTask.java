@@ -18,17 +18,17 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private int threadCount;
 
-  private Vector<Double[]> vec;
+  private Vector<Double[]> data;
 
   private Vector<Double[]> vector;
 
   private Vector<Double[]> returnvector = new Vector<Double[]>();
 
-  public KMeansTask(Vector<Double[]> vec, Vector<Double[]> vector, int dimension,
+  public KMeansTask(Vector<Double[]> data, Vector<Double[]> vector, int dimension,
       int clusterCount, int forkThreshold, int threadCount) {
     this.dimension = dimension;
     this.clusterCount = clusterCount;
-    this.vec = vec;
+    this.data = data;
     this.vector = vector;
     this.forkThreshold = forkThreshold;
     this.threadCount = threadCount;
@@ -107,19 +107,19 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   @Override
   protected HashMap<Double[], Vector<Double[]>> compute() {
-    int hel = vec.size();
+    int hel = data.size();
     if (hel < forkThreshold) {
-      return Iteration(vec);
+      return Iteration(data);
     } else {
-      int veclength = vec.size();
+      int veclength = data.size();
       int middle = veclength / 2;
       Vector<Double[]> vectorone = new Vector<Double[]>(middle);
       for (int i = 0; i < middle; i++) {
-        vectorone.add(i, vec.elementAt(i));
+        vectorone.add(i, data.elementAt(i));
       }
       Vector<Double[]> vectortwo = new Vector<Double[]>(veclength - middle);
-      for (int i = middle; i < vec.size(); i++) {
-        vectortwo.add((i - middle), vec.elementAt(i));
+      for (int i = middle; i < data.size(); i++) {
+        vectortwo.add((i - middle), data.elementAt(i));
       }
       KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, clusterCount, forkThreshold,
           threadCount);
