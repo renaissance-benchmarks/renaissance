@@ -72,6 +72,9 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+
+- `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 20)
+
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
 - `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
@@ -181,6 +184,13 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | rx-scrabble | GPL2 | GPL3 |
+<<<<<<< HEAD
+| dec-tree | APACHE2 | MIT |
+| page-rank | APACHE2 | MIT |
+| scrabble | GPL2 | GPL3 |
+| dummy | MIT | MIT |
+| log-regression | APACHE2 | MIT |
+=======
 | naive-bayes | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
@@ -191,6 +201,7 @@ The following table contains the licensing information of all the benchmarks:
 =======
 | log-regression | APACHE2 | MIT |
 | future-genetic | APACHE2 | MIT |
+>>>>>>> master
 >>>>>>> master
 | streams-mnemonics | MIT | MIT |
 | scala-k-means | MIT | MIT |
