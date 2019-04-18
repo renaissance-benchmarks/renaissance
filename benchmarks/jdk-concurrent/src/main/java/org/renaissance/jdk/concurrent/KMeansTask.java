@@ -8,7 +8,7 @@ import java.util.Vector;
 import java.util.concurrent.RecursiveTask;
 
 
-public final class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
+public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
 
   private int Threshold;
 
@@ -24,7 +24,7 @@ public final class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private Vector<Double[]> returnvector = new Vector<Double[]>();
 
-  public KMeansFork(Vector<Double[]> vec, Vector<Double[]> vector, int demision,
+  public KMeansTask(Vector<Double[]> vec, Vector<Double[]> vector, int demision,
       int group, int Threshold, int numthreads) {
     this.demision = demision;
     this.group = group;
@@ -121,9 +121,9 @@ public final class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Dou
       for (int i = middle; i < vec.size(); i++) {
         vectortwo.add((i - middle), vec.elementAt(i));
       }
-      KMeansFork kmeansone = new KMeansFork(vectorone, vector, demision, group, Threshold,
+      KMeansTask kmeansone = new KMeansTask(vectorone, vector, demision, group, Threshold,
           numthreads);
-      KMeansFork kmeanstwo = new KMeansFork(vectortwo, vector, demision, group, Threshold,
+      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, demision, group, Threshold,
           numthreads);
       kmeansone.fork();
       kmeanstwo.fork();

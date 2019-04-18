@@ -30,7 +30,7 @@ public final class KMeansBench {
     long starttime = System.currentTimeMillis();
     ForkJoinPool fjpool = new ForkJoinPool();
     for (int count = 50; count > 0; count--) {
-      KMeansFork fff = new KMeansFork(vec, vector, demision, group, Threshold,
+      KMeansTask fff = new KMeansTask(vec, vector, demision, group, Threshold,
           numThreads);
       fjpool.invoke(fff);
       vector.clear();
