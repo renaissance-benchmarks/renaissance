@@ -72,7 +72,7 @@ def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, 
           val distro = clazz.getMethod("distro").invoke(instance).toString
           val description = clazz.getMethod("description").invoke(instance).toString
           val reps = Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
-          result += new Tuple4(kebabCase(clazz.getSimpleName), distro, description, reps)
+          result += ((kebabCase(clazz.getSimpleName), distro, description, reps))
         }
       }
     }
