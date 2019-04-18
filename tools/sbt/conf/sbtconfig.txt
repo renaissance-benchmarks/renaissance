@@ -6,7 +6,7 @@
 
 -XX:ReservedCodeCacheSize=128m
 
-
+-XX:MaxMetaspaceSize=384M
 
 # Set the extra SBT options
 
