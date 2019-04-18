@@ -14,7 +14,7 @@ class NaiveBayes extends RenaissanceBenchmark {
   override def description(): String =
     "Runs the multinomial naive Bayes algorithm from the Spark MLlib."
 
-  override def defaultRepetitions = 20
+  override def defaultRepetitions = 30
 
   override def licenses(): Array[License] = License.create(License.APACHE2)
 
