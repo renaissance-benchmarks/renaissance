@@ -34,32 +34,32 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     this.threadCount = threadCount;
   }
 
-  public HashMap<Double[], Vector<Double[]>> Iteration(Vector<Double[]> vec) {
+  public HashMap<Double[], Vector<Double[]>> Iteration(Vector<Double[]> data) {
     Double distance = 0.0;
-    int[] nearestClusterIndex = new int[vec.size()];
-    for (int i = vec.size() - 1; i >= 0; i--) {
+    int[] nearestClusterIndex = new int[data.size()];
+    for (int i = data.size() - 1; i >= 0; i--) {
       Double min = Double.MAX_VALUE;
       for (int j = centroids.size() - 1; j >= 0; j--) {
-        distance = sumDistance(vec.elementAt(i), vec.elementAt(j));
+        distance = sumDistance(data.elementAt(i), data.elementAt(j));
         if (distance < min) {
           min = distance;
           nearestClusterIndex[i] = j;
         }
       }
     }
-    return computerCluster(nearestClusterIndex, vec, centroids);
+    return computerCluster(nearestClusterIndex, data, centroids);
   }
   public HashMap<Double[], Vector<Double[]>> computerCluster(int[] nearestClusterIndex,
-      Vector<Double[]> temprec, Vector<Double[]> tempvector) {
+      Vector<Double[]> data, Vector<Double[]> tempvector) {
     HashMap<Double[], Vector<Double[]>> map = new HashMap<Double[], Vector<Double[]>>();
     for (int i = nearestClusterIndex.length - 1; i >= 0; i--) {
-      if (!map.containsKey(temprec.elementAt(nearestClusterIndex[i]))) {
+      if (!map.containsKey(data.elementAt(nearestClusterIndex[i]))) {
         Vector<Double[]> clusterVec = new Vector<Double[]>();
-        clusterVec.add(temprec.elementAt(i));
-        map.put(temprec.elementAt(nearestClusterIndex[i]), clusterVec);
+        clusterVec.add(data.elementAt(i));
+        map.put(data.elementAt(nearestClusterIndex[i]), clusterVec);
       } else {
 
-        map.get(temprec.elementAt(nearestClusterIndex[i])).add(temprec.elementAt(nearestClusterIndex[i]));
+        map.get(data.elementAt(nearestClusterIndex[i])).add(data.elementAt(nearestClusterIndex[i]));
       }
     }
     return map;
