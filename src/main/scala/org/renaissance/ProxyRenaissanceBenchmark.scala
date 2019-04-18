@@ -40,7 +40,7 @@ class ProxyRenaissanceBenchmark(
   override def licenses(): Array[License] = {
     val licensesString =
       Arrays.toString(call("licenses", Seq()).asInstanceOf[Array[AnyRef]]).tail.init
-    val licenseStrings = licensesString.split(",")
+    val licenseStrings = licensesString.split(",").map(_.trim)
     licenseStrings.map(License.valueOf)
   }
 
