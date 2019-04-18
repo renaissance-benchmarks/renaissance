@@ -20,6 +20,8 @@ class NaiveBayes extends RenaissanceBenchmark {
 
   val SMOOTHING = 1.0
 
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   val naiveBayesPath = Paths.get("target", "naive-bayes")
@@ -99,7 +101,7 @@ class NaiveBayes extends RenaissanceBenchmark {
   }
 
   def runIteration(c: Config): Unit = {
-    // using full package name to avoid conflicting with the renaissance benchmark class name
+    // Using full package name to avoid conflicting with the renaissance benchmark class name.
     val bayes = new org.apache.spark.mllib.classification.NaiveBayes()
       .setLambda(SMOOTHING)
       .setModelType("multinomial")
