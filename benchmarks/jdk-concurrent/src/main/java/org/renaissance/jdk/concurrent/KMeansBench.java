@@ -11,10 +11,10 @@ public final class KMeansBench {
 
   public static void run(int numThreads, int vectorLength)
       throws InterruptedException, ExecutionException {
-    final int demision = 5;
+    final int dimension = 5;
     int group = 10;
     Vector<Double[]> vec = new Vector<Double[]>(vectorLength);
-    Vector<Double[]> vector = new Vector<Double[]>(demision);
+    Vector<Double[]> vector = new Vector<Double[]>(dimension);
     Random random = new Random(100);
     for (Double j = 0.0; j < vectorLength; j++) {
       vec.add(j.intValue(), new Double[] {
@@ -30,7 +30,7 @@ public final class KMeansBench {
     long starttime = System.currentTimeMillis();
     ForkJoinPool fjpool = new ForkJoinPool();
     for (int count = 50; count > 0; count--) {
-      KMeansTask fff = new KMeansTask(vec, vector, demision, group, Threshold,
+      KMeansTask fff = new KMeansTask(vec, vector, dimension, group, Threshold,
           numThreads);
       fjpool.invoke(fff);
       vector.clear();

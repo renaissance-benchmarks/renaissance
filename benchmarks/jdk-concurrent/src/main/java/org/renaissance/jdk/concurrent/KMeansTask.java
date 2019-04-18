@@ -12,7 +12,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private int Threshold;
 
-  private final int demision;
+  private final int dimension;
 
   private int group;
 
@@ -24,9 +24,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private Vector<Double[]> returnvector = new Vector<Double[]>();
 
-  public KMeansTask(Vector<Double[]> vec, Vector<Double[]> vector, int demision,
+  public KMeansTask(Vector<Double[]> vec, Vector<Double[]> vector, int dimension,
       int group, int Threshold, int numthreads) {
-    this.demision = demision;
+    this.dimension = dimension;
     this.group = group;
     this.vec = vec;
     this.vector = vector;
@@ -67,14 +67,14 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   public Double sumDistance(Double[] x, Double[] y) {
     Double sum = 0.0;
-    for (int i = demision - 1; i >= 0; i--) {
+    for (int i = dimension - 1; i >= 0; i--) {
       sum += (x[i] - y[i]) * (x[i] - y[i]);
     }
     return sum;
   }
   public Double[] average(Double[] x, Double[] y) {
-    Double[] aver = new Double[demision];
-    for (int i = demision - 1; i >= 0; i--) {
+    Double[] aver = new Double[dimension];
+    for (int i = dimension - 1; i >= 0; i--) {
       aver[i] = (x[i] + y[i]);
     }
     return aver;
@@ -89,8 +89,8 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     while (averiter.hasNext()) {
       Entry<Double[], Vector<Double[]>> entry = averiter.next();
       Vector<Double[]> itervec = entry.getValue();
-      Double[] averagemeans = new Double[demision];
-      for (int i = demision - 1; i >= 0; i--) {
+      Double[] averagemeans = new Double[dimension];
+      for (int i = dimension - 1; i >= 0; i--) {
         int aversize = itervec.size() - 1;
         Double sum = 0.0;
         while (aversize >= 0) {
@@ -121,9 +121,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       for (int i = middle; i < vec.size(); i++) {
         vectortwo.add((i - middle), vec.elementAt(i));
       }
-      KMeansTask kmeansone = new KMeansTask(vectorone, vector, demision, group, Threshold,
+      KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, group, Threshold,
           numthreads);
-      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, demision, group, Threshold,
+      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, dimension, group, Threshold,
           numthreads);
       kmeansone.fork();
       kmeanstwo.fork();
