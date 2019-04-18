@@ -11,6 +11,8 @@ public class Config {
   public List<Plugin> plugins;
   public String policy;
   public boolean readme;
+  public boolean printList;
+  public boolean printRawList;
 
   public Config() {
     this.benchmarkList = new ArrayList<>();
@@ -18,6 +20,8 @@ public class Config {
     this.plugins = new ArrayList<>();
     this.policy = "fixed";
     this.readme = false;
+    this.printList = false;
+    this.printRawList = false;
   }
 
   public List<String> benchmarkList() {
@@ -40,6 +44,14 @@ public class Config {
     return readme;
   }
 
+  public boolean printList() {
+    return printList;
+  }
+
+  public boolean printRawList() {
+      return printRawList;
+  }
+
   public Config copy() {
     Config c = new Config();
     c.benchmarkList = this.benchmarkList;
@@ -47,6 +59,8 @@ public class Config {
     c.plugins = this.plugins;
     c.policy = this.policy;
     c.readme = this.readme;
+    c.printList = this.printList;
+    c.printRawList = this.printRawList;
     return c;
   }
 
@@ -85,6 +99,18 @@ public class Config {
   public Config withReadme(boolean readme) {
     Config c = copy();
     c.readme = readme;
+    return c;
+  }
+
+  public Config withList() {
+    Config c = copy();
+    c.printList = true;
+    return c;
+  }
+
+  public Config withRawList() {
+    Config c = copy();
+    c.printRawList = true;
     return c;
   }
 }
