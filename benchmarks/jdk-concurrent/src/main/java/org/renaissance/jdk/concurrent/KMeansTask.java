@@ -10,19 +10,19 @@ import java.util.concurrent.RecursiveTask;
 
 public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
 
-  private int forkThreshold;
+  private final int forkThreshold;
 
   private final int dimension;
 
-  private int clusterCount;
+  private final int clusterCount;
 
-  private int threadCount;
+  private final int threadCount;
 
-  private Vector<Double[]> data;
+  private final Vector<Double[]> data;
 
-  private Vector<Double[]> centroids;
+  private final Vector<Double[]> centroids;
 
-  private Vector<Double[]> returnvector = new Vector<Double[]>();
+  private final Vector<Double[]> returnvector = new Vector<Double[]>();
 
   public KMeansTask(Vector<Double[]> data, Vector<Double[]> centroids, int dimension,
       int clusterCount, int forkThreshold, int threadCount) {
