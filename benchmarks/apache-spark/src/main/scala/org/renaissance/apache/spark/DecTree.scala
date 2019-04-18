@@ -28,6 +28,11 @@ import scala.util.Random
 
 class DecTree extends RenaissanceBenchmark {
 
+  /* TODO Implement changes regarding how to declare and pass
+  benchmark-specific parameters
+  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
+   */
+
   def description = "Runs the Random Forest algorithm from Spark MLlib."
 
   override def defaultRepetitions = 40
