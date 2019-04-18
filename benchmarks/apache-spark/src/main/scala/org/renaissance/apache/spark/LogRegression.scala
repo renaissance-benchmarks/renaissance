@@ -27,6 +27,8 @@ class LogRegression extends RenaissanceBenchmark {
 
   val CONVERGENCE_TOLERANCE = 0.0
 
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   val logisticRegressionPath = Paths.get("target", "logistic-regression");
@@ -54,11 +56,12 @@ class LogRegression extends RenaissanceBenchmark {
   }
 
   def loadData() = {
+    val num_features = 692
     rdd = sc
       .textFile(bigInputFile.toString)
       .map { line =>
         val parts = line.split(" ")
-        val features = new Array[Double](692)
+        val features = new Array[Double](num_features)
         parts.tail.foreach { part =>
           val dimval = part.split(":")
           val index = dimval(0).toInt - 1
