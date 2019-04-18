@@ -201,7 +201,7 @@ object RenaissanceSuite {
         "benchmark." + name + ".repetitions",
         "Not specified"
       )
-      result.append(name + "\n")
+      result.append(name).append("\n")
       result.append(foldText(descriptionWords, 65, indent).mkString("\n"))
       result.append(s"\n${indent}Default repetitions: ${repetitions}\n\n")
     }
