@@ -51,10 +51,10 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   }
   public HashMap<Double[], Vector<Double[]>> computerCluster(int[] nearestClusterIndex,
       Vector<Double[]> data, Vector<Double[]> centroids) {
-    HashMap<Double[], Vector<Double[]>> map = new HashMap<Double[], Vector<Double[]>>();
+    HashMap<Double[], Vector<Double[]>> map = new HashMap<>();
     for (int i = nearestClusterIndex.length - 1; i >= 0; i--) {
       if (!map.containsKey(data.elementAt(nearestClusterIndex[i]))) {
-        Vector<Double[]> cluster = new Vector<Double[]>();
+        Vector<Double[]> cluster = new Vector<>();
         cluster.add(data.elementAt(i));
         map.put(data.elementAt(nearestClusterIndex[i]), cluster);
       } else {
@@ -84,7 +84,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       HashMap<Double[], Vector<Double[]>> avermap) {
 
     Iterator<Entry<Double[], Vector<Double[]>>> averiter = avermap.entrySet().iterator();
-    HashMap<Double[], Vector<Double[]>> computerMap = new HashMap<Double[], Vector<Double[]>>();
+    HashMap<Double[], Vector<Double[]>> computerMap = new HashMap<>();
     int count = 0;
     while (averiter.hasNext()) {
       Entry<Double[], Vector<Double[]>> entry = averiter.next();
