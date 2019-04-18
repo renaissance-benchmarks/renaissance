@@ -10,7 +10,7 @@ import java.util.concurrent.RecursiveTask;
 
 public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
 
-  private int Threshold;
+  private int forkThreshold;
 
   private final int dimension;
 
@@ -25,12 +25,12 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   private Vector<Double[]> returnvector = new Vector<Double[]>();
 
   public KMeansTask(Vector<Double[]> vec, Vector<Double[]> vector, int dimension,
-      int group, int Threshold, int threadCount) {
+      int group, int forkThreshold, int threadCount) {
     this.dimension = dimension;
     this.group = group;
     this.vec = vec;
     this.vector = vector;
-    this.Threshold = Threshold;
+    this.forkThreshold = forkThreshold;
     this.threadCount = threadCount;
   }
 
@@ -108,7 +108,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   @Override
   protected HashMap<Double[], Vector<Double[]>> compute() {
     int hel = vec.size();
-    if (hel < Threshold) {
+    if (hel < forkThreshold) {
       return Iteration(vec);
     } else {
       int veclength = vec.size();
@@ -121,9 +121,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       for (int i = middle; i < vec.size(); i++) {
         vectortwo.add((i - middle), vec.elementAt(i));
       }
-      KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, group, Threshold,
+      KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, group, forkThreshold,
           threadCount);
-      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, dimension, group, Threshold,
+      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, dimension, group, forkThreshold,
           threadCount);
       kmeansone.fork();
       kmeanstwo.fork();
