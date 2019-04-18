@@ -8,7 +8,7 @@ import java.util.Vector;
 import java.util.concurrent.RecursiveTask;
 
 
-public class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
+public final class KMeansFork extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
 
   private int Threshold;
 

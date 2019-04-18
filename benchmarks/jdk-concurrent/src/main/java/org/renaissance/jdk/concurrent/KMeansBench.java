@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
 
-public class KMeansBench {
+public final class KMeansBench {
 
   public static void run(int numThreads, int vectorLength)
       throws InterruptedException, ExecutionException {
