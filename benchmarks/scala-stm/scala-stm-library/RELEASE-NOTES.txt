@@ -1,0 +1,94 @@
+ScalaSTM - 0.8-SNAPSHOT RELEASE NOTES
+
+Changes between 0.7 and 0.8-SNAPSHOT:
+
+* correctness fix for TArray[Long] and AtomicArray.ofLong.
+
+* small improvement to TxnLocal interface.
+
+* add 2.12 build and remove 2.10 build.
+
+* add deprecated message about incomplete deadlock detection for
+  CommitBarrier.
+
+Snapshot releases deployed to the oss.sonatype.org repository are tested
+and functional, but may have changing APIs.
+
+----
+
+Changes between 0.6 and 0.7:
+
+* better support for interactive debuggers, via TxnDebuggable and
+  atomic.unrecorded.  IntelliJ IDEA and Eclipse can now watch Ref
+  values inside a transaction without affecting the read or write sets.
+
+* ScalaSTM cooperates with 2.10's scala.concurrent.BlockingContext.
+
+* added transformAndExtract, which allows an arbitrary value to be
+  returned from the transformation function.
+
+* added transformAndGet and getAndTransform to Ref and TxnLocal,
+  previously these were only defined for Ref.View.
+
+----
+
+Changes between 0.5 and 0.6:
+
+* retry and retryFor added to the Java compatibility interface.
+
+* uses of scala.actor.threadpool.TimeUnit in the interface replaced with
+  java.util.concurrent.TimeUnit, to avoid making ScalaSTM depend on the
+  separate scala-actors jar in Scala 2.10.
+
+----
+
+Changes between 0.4 and 0.5:
+
+* Added scala.concurrent.stm.japi.STM, which makes it much cleaner to
+  access ScalaSTM functionality from Java.
+
+----
+
+Changes between 0.3 and 0.4:
+
+* CommitBarrier added, which allows multiple atomic blocks (each on its
+  own thread) to commit together.
+
+* Small performance improvements.
+
+* STMBench7 benchmark support added.
+
+* Automatic selection of STMImpl in most cases.
+
+----
+
+Changes between 0.2 and 0.3:
+
+* Support for Scala 2.9.0.RC1.
+
+* Bug fixes (see https://github.com/nbronson/scala-stm/issues/closed ).
+
+* Timeouts for modular blocking.  Set timeouts at the atomic block using
+  atomic.withRetryTimeout, or at the retry site using retryFor.
+
+----
+
+Changes between 0.1 and 0.2:
+
+* Substantial performance improvements, especially for nested atomic
+  blocks.
+
+* TSet.View and TMap.View are integrated into the Scala collection
+  class hierarchy, with factory companion objects and Builder and
+  CanBuildFrom instances.
+
+* A fix for whileCommitting handlers (issue #3).
+
+* TxnLocal can now be read and written from while-preparing and while-
+  committing handlers.  Combining TxnLocal and life-cycle handlers is
+  now more concise.
+
+* Transaction statistics can be enabled for the default algorithm
+  with the VM argument -Dccstm.stats=1 (details in the ScalaDoc for
+  scala.concurrent.stm.ccstm.CCSTM).
+

@@ -26,6 +26,8 @@ class ProxyRenaissanceBenchmark(
     cls.getDeclaredField("plugins").set(tc, c.plugins())
     cls.getDeclaredField("policy").set(tc, c.policy())
     cls.getDeclaredField("readme").set(tc, c.readme())
+    cls.getDeclaredField("printList").set(tc, c.printList())
+    cls.getDeclaredField("printRawList").set(tc, c.printRawList())
     tc
   }
 
@@ -38,7 +40,7 @@ class ProxyRenaissanceBenchmark(
   override def licenses(): Array[License] = {
     val licensesString =
       Arrays.toString(call("licenses", Seq()).asInstanceOf[Array[AnyRef]]).tail.init
-    val licenseStrings = licensesString.split(",")
+    val licenseStrings = licensesString.split(",").map(_.trim)
     licenseStrings.map(License.valueOf)
   }
 

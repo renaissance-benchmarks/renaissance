@@ -1,8 +1,7 @@
 ---
 layout: mainrenaissance
 projectname: Renaissance Suite
-projectpath: 
 logoname: mona-lisa-flat-logo.png
-title: Renaissnace
+title: Renaissance
 permalink: /index.html
 ---
