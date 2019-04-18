@@ -20,16 +20,16 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private Vector<Double[]> data;
 
-  private Vector<Double[]> vector;
+  private Vector<Double[]> centroids;
 
   private Vector<Double[]> returnvector = new Vector<Double[]>();
 
-  public KMeansTask(Vector<Double[]> data, Vector<Double[]> vector, int dimension,
+  public KMeansTask(Vector<Double[]> data, Vector<Double[]> centroids, int dimension,
       int clusterCount, int forkThreshold, int threadCount) {
     this.dimension = dimension;
     this.clusterCount = clusterCount;
     this.data = data;
-    this.vector = vector;
+    this.centroids = centroids;
     this.forkThreshold = forkThreshold;
     this.threadCount = threadCount;
   }
@@ -39,7 +39,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     int[] ClusterNumber = new int[vec.size()];
     for (int i = vec.size() - 1; i >= 0; i--) {
       Double min = Double.MAX_VALUE;
-      for (int j = vector.size() - 1; j >= 0; j--) {
+      for (int j = centroids.size() - 1; j >= 0; j--) {
         distance = sumDistance(vec.elementAt(i), vec.elementAt(j));
         if (distance < min) {
           min = distance;
@@ -47,7 +47,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
         }
       }
     }
-    return computerCluster(ClusterNumber, vec, vector);
+    return computerCluster(ClusterNumber, vec, centroids);
   }
   public HashMap<Double[], Vector<Double[]>> computerCluster(int[] clu,
       Vector<Double[]> temprec, Vector<Double[]> tempvector) {
@@ -121,9 +121,9 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       for (int i = middle; i < data.size(); i++) {
         vectortwo.add((i - middle), data.elementAt(i));
       }
-      KMeansTask kmeansone = new KMeansTask(vectorone, vector, dimension, clusterCount, forkThreshold,
+      KMeansTask kmeansone = new KMeansTask(vectorone, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
-      KMeansTask kmeanstwo = new KMeansTask(vectortwo, vector, dimension, clusterCount, forkThreshold,
+      KMeansTask kmeanstwo = new KMeansTask(vectortwo, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
       kmeansone.fork();
       kmeanstwo.fork();
