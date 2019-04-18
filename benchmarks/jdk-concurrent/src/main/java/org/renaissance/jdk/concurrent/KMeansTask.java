@@ -50,7 +50,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     return computerCluster(nearestClusterIndex, data, centroids);
   }
   public HashMap<Double[], Vector<Double[]>> computerCluster(int[] nearestClusterIndex,
-      Vector<Double[]> data, Vector<Double[]> tempvector) {
+      Vector<Double[]> data, Vector<Double[]> centroids) {
     HashMap<Double[], Vector<Double[]>> map = new HashMap<Double[], Vector<Double[]>>();
     for (int i = nearestClusterIndex.length - 1; i >= 0; i--) {
       if (!map.containsKey(data.elementAt(nearestClusterIndex[i]))) {
