@@ -3,6 +3,7 @@ package org.renaissance.jdk.concurrent;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Vector;
 import java.util.concurrent.RecursiveTask;
@@ -59,20 +60,18 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
   }
 
 
-  public HashMap<Double[], Vector<Double[]>> collectClusters(int[] nearestCentroidIndex,
-      Vector<Double[]> data, Vector<Double[]> centroids) {
-    HashMap<Double[], Vector<Double[]>> map = new HashMap<>();
-    for (int i = nearestCentroidIndex.length - 1; i >= 0; i--) {
-      if (!map.containsKey(data.elementAt(nearestCentroidIndex[i]))) {
-        Vector<Double[]> cluster = new Vector<>();
-        cluster.add(data.elementAt(i));
-        map.put(data.elementAt(nearestCentroidIndex[i]), cluster);
-      } else {
-
-        map.get(data.elementAt(nearestCentroidIndex[i])).add(data.elementAt(nearestCentroidIndex[i]));
-      }
+  public HashMap<Double[], Vector<Double[]>> collectClusters(
+    int[] nearestCentroidIndex, Vector<Double[]> data, Vector<Double[]> centroids
+  ) {
+    final HashMap<Double[], Vector<Double[]>> result = new HashMap<>();
+    for (int dataIndex = 0; dataIndex < nearestCentroidIndex.length; dataIndex++) {
+      final int centroidIndex = nearestCentroidIndex[dataIndex];
+      final Double[] centroid = centroids.elementAt(centroidIndex);
+      final Vector<Double[]> cluster = result.computeIfAbsent(centroid, k -> new Vector<>());
+      cluster.add(data.elementAt(dataIndex));
     }
-    return map;
+    
+    return result;
   }
 
   private Double distance(Double[] x, Double[] y) {
@@ -145,27 +144,22 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
           threadCount);
       leftTask.fork();
       rightTask.fork();
-      HashMap<Double[], Vector<Double[]>> leftResult = leftTask.join();
-      HashMap<Double[], Vector<Double[]>> rightResult = rightTask.join();
       
-      Iterator<Entry<Double[], Vector<Double[]>>> iter = leftResult.entrySet().iterator();
-      while (iter.hasNext()) {
-        Entry<Double[], Vector<Double[]>> entry = iter.next();
-        Double[] key = (Double[]) entry.getKey();
-        Vector<Double[]> itervec = entry.getValue();
-        if (rightResult.get(key) != null) {
-          Vector<Double[]> tempvecone = rightResult.get(key);
-          int num = tempvecone.size();
-          for (int i = 0; i < itervec.size(); i++) {
-            tempvecone.addElement(itervec.elementAt(i + num));
-          }
-          rightResult.put(key, tempvecone);
-        } else {
-          rightResult.put(key, itervec);
-        }
-      }
-      return ComputerAver(rightResult);
+      HashMap <Double[], Vector <Double []>> result = merge(leftTask.join(), rightTask.join());
+      return ComputerAver(result);
     }
+  }
+
+  private <T> HashMap<T, Vector<T>> merge(
+    final Map<T, Vector<T>> left, final Map<T, Vector<T>> right
+  ) {
+    final HashMap<T, Vector<T>> result = new HashMap<>(left);
+    
+    right.forEach((k, v) -> result.merge(
+      k, v, (l, r) -> { l.addAll (r); return l; }
+    ));
+
+    return result;
   }
 
   public Vector<Double[]> getReturnvector() {
