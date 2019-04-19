@@ -13,9 +13,7 @@ import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 
 public final class KMeansBench {
@@ -51,18 +49,10 @@ public final class KMeansBench {
 
  
   public Vector<Double[]> run() throws InterruptedException, ExecutionException {
-    Vector<Double[]> data = new Vector<Double[]>(vectorLength);
-    Vector<Double[]> centroids = new Vector<Double[]>(dimension);
-    Random random = new Random(100);
-    for (Double j = 0.0; j < vectorLength; j++) {
-      data.add(j.intValue(), new Double[] {
-          j, j + 1, j * 4, j * 2, j * 3
-      });
-    }
-    for (int i = 0; i < clusterCount; i++) {
-      centroids.add(i, data.elementAt(Math.abs(random.nextInt() % data.size())));
-    }
+    final Vector<Double[]> data = generateData(vectorLength);
 
+    final Random random = new Random(100);
+    final Vector<Double[]> centroids = randomSample(clusterCount, data, random);
 
     for (int count = iterationCount; count > 0; count--) {
       KMeansTask assignmentTask = new KMeansTask(
@@ -78,6 +68,29 @@ public final class KMeansBench {
     
     forkJoin.awaitQuiescence(1, TimeUnit.SECONDS);
     return centroids;
+  }
+
+
+  private Vector<Double[]> randomSample(
+    final int sampleCount, final Vector<Double[]> data, final Random random
+  ) {
+    return random.ints(sampleCount, 0, data.size()).mapToObj(data::elementAt).collect(
+        Vector::new, Vector::add, Vector::addAll
+    );
+  }
+
+
+  private Vector<Double[]> generateData(final int count) {
+    return IntStream.range(0, count).mapToObj(i -> makeTuple((double) i)).collect(
+      Vector::new, Vector::add, Vector::addAll
+    );
+  }
+
+
+  private Double[] makeTuple(double base) {
+    return new Double[] {
+        base, base + 1, base * 4, base * 2, base * 3,
+    };
   }
   
 
