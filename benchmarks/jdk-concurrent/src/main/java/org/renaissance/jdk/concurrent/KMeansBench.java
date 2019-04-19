@@ -248,10 +248,10 @@ public final class KMeansBench {
     }
 
     
-    private double[] div(double[] vectorSum, int size) {
-      final double[] result = new double[vectorSum.length];
-      for (int i = 0; i < vectorSum.length; i++) {
-        result[i] = vectorSum[i] / size;
+    private double[] div(double[] values, int divisor) {
+      final double[] result = new double[values.length];
+      for (int i = 0; i < values.length; i++) {
+        result[i] = values[i] / divisor;
       }
 
       return result;
