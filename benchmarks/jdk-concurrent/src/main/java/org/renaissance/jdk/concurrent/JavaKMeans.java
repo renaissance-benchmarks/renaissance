@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
-public final class KMeansBench {
+public final class JavaKMeans {
 
   private final int dimension;
 
@@ -33,7 +33,7 @@ public final class KMeansBench {
   private final ForkJoinPool forkJoin = new ForkJoinPool();
 
   
-  public KMeansBench(
+  public JavaKMeans(
     int dimension, int vectorLength, int clusterCount,
     int iterationCount, int threadCount
   ) {

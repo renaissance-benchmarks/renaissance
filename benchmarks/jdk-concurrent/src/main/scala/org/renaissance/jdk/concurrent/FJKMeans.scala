@@ -21,10 +21,10 @@ class FJKMeans extends RenaissanceBenchmark {
 
   private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  private var benchmark: KMeansBench = null
+  private var benchmark: JavaKMeans = null
 
   override def setUpBeforeAll(c: Config): Unit = {
-    benchmark = new KMeansBench(
+    benchmark = new JavaKMeans(
       DIMENSION,
       VECTOR_LENGTH,
       CLUSTER_COUNT,
