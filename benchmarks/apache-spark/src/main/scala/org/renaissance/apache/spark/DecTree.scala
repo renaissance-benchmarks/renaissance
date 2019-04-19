@@ -1,6 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 import java.util.zip.ZipInputStream
@@ -45,7 +44,7 @@ class DecTree extends RenaissanceBenchmark {
 
   val outputPath = decisionTreePath.resolve("output")
 
-  val inputFile = File.separator + "sample_libsvm_data.txt"
+  val inputFile = "/sample_libsvm_data.txt"
 
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 
