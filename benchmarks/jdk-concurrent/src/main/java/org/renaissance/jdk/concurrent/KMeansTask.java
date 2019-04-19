@@ -94,7 +94,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     return aver;
   }
 
-  public HashMap<Double[], Vector<Double[]>> ComputerAver(
+  public HashMap<Double[], Vector<Double[]>> computeClusterAverages(
       HashMap<Double[], Vector<Double[]>> avermap) {
 
     Iterator<Entry<Double[], Vector<Double[]>>> averiter = avermap.entrySet().iterator();
@@ -146,7 +146,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       rightTask.fork();
       
       HashMap <Double[], Vector <Double []>> result = merge(leftTask.join(), rightTask.join());
-      return ComputerAver(result);
+      return computeClusterAverages(result);
     }
   }
 
