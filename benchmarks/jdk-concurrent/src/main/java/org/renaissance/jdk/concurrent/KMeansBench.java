@@ -82,6 +82,7 @@ public final class KMeansBench {
 
 
   private Double[] makeTuple(double base) {
+    // TODO This needs to take dimension into account!
     return new Double[] {
         base, base + 1, base * 4, base * 2, base * 3,
     };
