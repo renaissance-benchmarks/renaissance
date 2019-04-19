@@ -1,10 +1,12 @@
 package org.renaissance.jdk.concurrent;
 
 
+import java.util.HashMap;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveTask;
 
 
 public final class KMeansBench {
@@ -32,12 +34,11 @@ public final class KMeansBench {
     for (int count = 50; count > 0; count--) {
       KMeansTask fff = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
-      fjpool.invoke(fff);
+      
+      HashMap<Double[], Vector<Double[]>> clusters = fff.computeClusterAverages(fjpool.invoke(fff));
+      
       centroids.clear();
-      for (int i = fff.getReturnvector().size()
-          - 1; i >= 0; i -= (fff.getReturnvector().size() / clusterCount)) {
-        centroids.addElement(fff.getReturnvector().elementAt(i));
-      }
+      centroids.addAll(clusters.keySet());
     }
     fjpool.shutdown();
     starttime = System.currentTimeMillis() - starttime;

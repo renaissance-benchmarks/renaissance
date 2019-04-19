@@ -2,11 +2,11 @@ package org.renaissance.jdk.concurrent;
 
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Vector;
 import java.util.concurrent.RecursiveTask;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
@@ -23,7 +23,6 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
 
   private final Vector<Double[]> centroids;
 
-  private final Vector<Double[]> returnvector = new Vector<Double[]>();
 
   public KMeansTask(Vector<Double[]> data, Vector<Double[]> centroids, int dimension,
       int clusterCount, int forkThreshold, int threadCount) {
@@ -74,6 +73,7 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     return result;
   }
 
+  
   private Double distance(Double[] x, Double[] y) {
     //
     // Calculates Euclidean distance between the two points. Note that we
@@ -86,39 +86,36 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     
     return result;
   }
-  public Double[] average(Double[] x, Double[] y) {
-    Double[] aver = new Double[dimension];
-    for (int i = dimension - 1; i >= 0; i--) {
-      aver[i] = (x[i] + y[i]);
-    }
-    return aver;
-  }
 
+  
   public HashMap<Double[], Vector<Double[]>> computeClusterAverages(
-      HashMap<Double[], Vector<Double[]>> avermap) {
-
-    Iterator<Entry<Double[], Vector<Double[]>>> averiter = avermap.entrySet().iterator();
-    HashMap<Double[], Vector<Double[]>> computerMap = new HashMap<>();
-    int count = 0;
-    while (averiter.hasNext()) {
-      Entry<Double[], Vector<Double[]>> entry = averiter.next();
-      Vector<Double[]> itervec = entry.getValue();
-      Double[] averagemeans = new Double[dimension];
-      for (int i = dimension - 1; i >= 0; i--) {
-        int aversize = itervec.size() - 1;
-        Double sum = 0.0;
-        while (aversize >= 0) {
-          sum += itervec.elementAt(aversize)[i];
-          aversize--;
-        }
-        averagemeans[i] = sum / itervec.size();
-      }
-      returnvector.add(count++, averagemeans);
-      computerMap.put(averagemeans, itervec);
-    }
-    return computerMap;
+    HashMap<Double[], Vector<Double[]>> clusters
+  ) {
+    return clusters.values().stream().collect(Collectors.toMap (
+      this::average, Function.identity(), (ov, nv) -> nv, HashMap::new
+    ));
   }
 
+  
+  private Double[] average(final Vector<Double[]> elements) {
+    final double[] sum = new double[dimension];
+    for (Double [] element : elements) {
+      for (int d = 0; d < dimension; d++) {
+        sum [d] += element [d];
+      }
+    }
+    
+    final int elementCount = elements.size();
+
+    final Double[] result = new Double [dimension];
+    for (int d = 0; d < dimension; d++) {
+      result [d] = sum [d] / elementCount;
+    }
+    
+    return result;
+  }
+
+  
   @Override
   protected HashMap<Double[], Vector<Double[]>> compute() {
     if (data.size() < forkThreshold) {
@@ -145,11 +142,11 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
       leftTask.fork();
       rightTask.fork();
       
-      HashMap <Double[], Vector <Double []>> result = merge(leftTask.join(), rightTask.join());
-      return computeClusterAverages(result);
+      return merge(leftTask.join(), rightTask.join());
     }
   }
 
+  
   private <T> HashMap<T, Vector<T>> merge(
     final Map<T, Vector<T>> left, final Map<T, Vector<T>> right
   ) {
@@ -162,7 +159,4 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     return result;
   }
 
-  public Vector<Double[]> getReturnvector() {
-    return returnvector;
-  }
 }
