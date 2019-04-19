@@ -36,4 +36,9 @@ class FJKMeans extends RenaissanceBenchmark {
   override def runIteration(c: Config): Unit = {
     blackHole(benchmark.run)
   }
+
+  override def tearDownAfterAll(c: Config): Unit = {
+    benchmark.tearDown();
+    benchmark = null;
+  }
 }
