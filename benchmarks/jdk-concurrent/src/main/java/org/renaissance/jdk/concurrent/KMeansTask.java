@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.RecursiveTask;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Double[]>>> {
@@ -82,34 +80,6 @@ public final class KMeansTask extends RecursiveTask<HashMap<Double[], Vector<Dou
     double result = 0.0;
     for (int i = 0; i < dimension; i++) {
       result += (x[i] - y[i]) * (x[i] - y[i]);
-    }
-    
-    return result;
-  }
-
-  
-  public HashMap<Double[], Vector<Double[]>> computeClusterAverages(
-    HashMap<Double[], Vector<Double[]>> clusters
-  ) {
-    return clusters.values().stream().collect(Collectors.toMap (
-      this::average, Function.identity(), (ov, nv) -> nv, HashMap::new
-    ));
-  }
-
-  
-  private Double[] average(final Vector<Double[]> elements) {
-    final double[] sum = new double[dimension];
-    for (Double [] element : elements) {
-      for (int d = 0; d < dimension; d++) {
-        sum [d] += element [d];
-      }
-    }
-    
-    final int elementCount = elements.size();
-
-    final Double[] result = new Double [dimension];
-    for (int d = 0; d < dimension; d++) {
-      result [d] = sum [d] / elementCount;
     }
     
     return result;
