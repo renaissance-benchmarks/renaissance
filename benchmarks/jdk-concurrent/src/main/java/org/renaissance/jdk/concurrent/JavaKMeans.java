@@ -51,7 +51,7 @@ public final class JavaKMeans {
     final Random random = new Random(100);
     final Vector<Double[]> centroids = randomSample(clusterCount, data, random);
 
-    for (int count = iterationCount; count > 0; count--) {
+    for (int iteration = 0; iteration < iterationCount; iteration++) {
       final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
       final UpdateTask updateTask = new UpdateTask(forkJoin.invoke(assignmentTask));
       final Map<Double[], Vector<Double[]>> clusters = forkJoin.invoke(updateTask);
