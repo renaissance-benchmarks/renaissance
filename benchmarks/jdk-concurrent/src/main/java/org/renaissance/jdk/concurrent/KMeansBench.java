@@ -179,6 +179,7 @@ public final class KMeansBench {
       final Map<Double[], Vector<Double[]>> result = new HashMap<>();
       for (int dataIndex = 0; dataIndex < centroidIndices.length; dataIndex++) {
         final int centroidIndex = centroidIndices[dataIndex];
+      
         final Double[] centroid = centroids.elementAt(centroidIndex);
         final Vector<Double[]> cluster = result.computeIfAbsent(centroid, k -> new Vector<>());
         cluster.add(data.elementAt(dataIndex + fromInclusive));
@@ -270,6 +271,7 @@ public final class KMeansBench {
 
     private final int elementCount;
 
+
     public VectorSumTask(final Vector<Double[]> data) {
       this(data, 0, data.size());
     }
@@ -293,8 +295,10 @@ public final class KMeansBench {
 
       } else {
         final int middle = fromInclusive + elementCount / 2;
-        ForkJoinTask<double[]> leftTask = new VectorSumTask(data, fromInclusive, middle).fork();
-        ForkJoinTask<double[]> rightTask = new VectorSumTask(data, middle, toExclusive).fork();
+        final ForkJoinTask<double[]> leftTask = 
+          new VectorSumTask(data, fromInclusive, middle).fork();
+        final ForkJoinTask<double[]> rightTask = 
+          new VectorSumTask(data, middle, toExclusive).fork();
         return add(leftTask.join(), rightTask.join());
       }
     }
