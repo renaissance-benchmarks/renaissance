@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
 import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
@@ -29,13 +30,14 @@ class LogRegression extends RenaissanceBenchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   val logisticRegressionPath = Paths.get("target", "logistic-regression");
 
   val outputPath = logisticRegressionPath.resolve("output")
 
-  val inputFile = "sample_libsvm_data.txt.zip"
+  val inputFile = "/sample_libsvm_data.txt"
 
   val bigInputFile = logisticRegressionPath.resolve("bigfile.txt")
 
@@ -49,7 +51,7 @@ class LogRegression extends RenaissanceBenchmark {
 
   def prepareInput() = {
     FileUtils.deleteDirectory(logisticRegressionPath.toFile)
-    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+    val text = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 400) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }

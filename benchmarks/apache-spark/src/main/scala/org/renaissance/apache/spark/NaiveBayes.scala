@@ -1,7 +1,9 @@
 package org.renaissance.apache.spark
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
+import org.apache.commons.io.IOUtils
 import org.apache.commons.io.FileUtils
 import org.apache.spark.mllib.classification.NaiveBayesModel
 import org.apache.spark.{SparkConf, SparkContext}
@@ -22,13 +24,14 @@ class NaiveBayes extends RenaissanceBenchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   val naiveBayesPath = Paths.get("target", "naive-bayes")
 
   val outputPath = naiveBayesPath.resolve("output")
 
-  val inputFile = "sample_libsvm_data.txt.zip"
+  val inputFile = "/sample_libsvm_data.txt"
 
   val bigInputFile = naiveBayesPath.resolve("bigfile.txt")
 
@@ -42,7 +45,7 @@ class NaiveBayes extends RenaissanceBenchmark {
 
   def prepareInput() = {
     FileUtils.deleteDirectory(naiveBayesPath.toFile)
-    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+    val text = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 8000) {
       FileUtils.write(bigInputFile.toFile, text, true)
     }
