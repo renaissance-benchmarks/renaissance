@@ -46,7 +46,6 @@ public final class KMeansBench {
 
     int forkThreshold = vectorLength / (4 * threadCount) + 1;
 
-    long starttime = System.currentTimeMillis();
     ForkJoinPool fjpool = new ForkJoinPool();
     for (int count = iterationCount; count > 0; count--) {
       KMeansTask fff = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
@@ -58,8 +57,6 @@ public final class KMeansBench {
       centroids.addAll(clusters.keySet());
     }
     fjpool.shutdown();
-    starttime = System.currentTimeMillis() - starttime;
-    System.out.println("the execution time is:" + starttime);
     return centroids;
   }
 }
