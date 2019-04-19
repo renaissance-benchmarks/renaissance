@@ -198,7 +198,7 @@ public final class KMeansBench {
       for (int i = 0; i < dimension; i++) {
         result += (x[i] - y[i]) * (x[i] - y[i]);
       }
-      
+
       return result;
     }
     
@@ -304,10 +304,11 @@ public final class KMeansBench {
     }
 
 
-    private double[] add (final double[] x, final double[] y) {
+    private double[] add(final double[] x, final double[] y) {
       final double[] result = new double[dimension];
+
       for (int i = 0; i < dimension; i++) {
-        result [i] = x[i] + y [i];
+        result[i] = x[i] + y[i];
       }
       
       return result;
@@ -328,7 +329,7 @@ public final class KMeansBench {
     }
 
 
-    private void accumulate (final Double[] val, final double[] acc) {
+    private void accumulate(final Double[] val, final double[] acc) {
       for (int i = 0; i < dimension; i++) {
         acc[i] += val[i];
       }
