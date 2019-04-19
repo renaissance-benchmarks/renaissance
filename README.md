@@ -70,6 +70,11 @@ Usage: renaissance [options] [benchmark-specification]
 The following is the complete list of benchmarks, separated into groups.
 
 
+##### actors
+
+- `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
+
+
 ##### apache-spark
 
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
@@ -99,11 +104,11 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### jdk-streams
 
-- `parallel-streams-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
+- `mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
+
+- `par-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
 
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
-
-- `streams-mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 
 
 ##### neo4j
@@ -206,9 +211,10 @@ The following table contains the licensing information of all the benchmarks:
 | chi-square | APACHE2 | MIT |
 | log-regression | APACHE2 | MIT |
 | movie-lens | APACHE2 | MIT |
-| streams-mnemonics | MIT | MIT |
+| akka-uct | MIT | MIT |
 | scala-k-means | MIT | MIT |
-| parallel-streams-mnemonics | MIT | MIT |
+| mnemonics | MIT | MIT |
+| par-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
