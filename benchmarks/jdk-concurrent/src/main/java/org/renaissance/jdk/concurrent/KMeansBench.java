@@ -168,9 +168,9 @@ public final class KMeansBench {
 
       } else {
         final int middle = fromInclusive + elementCount / 2;
-        ForkJoinTask<double[]> leftTask = new VectorSumTask (data, fromInclusive, middle).fork();
-        ForkJoinTask<double[]> rightTask = new VectorSumTask (data, middle, toExclusive).fork();
-        return add (leftTask.join(), rightTask.join());
+        ForkJoinTask<double[]> leftTask = new VectorSumTask(data, fromInclusive, middle).fork();
+        ForkJoinTask<double[]> rightTask = new VectorSumTask(data, middle, toExclusive).fork();
+        return add(leftTask.join(), rightTask.join());
       }
     }
 
