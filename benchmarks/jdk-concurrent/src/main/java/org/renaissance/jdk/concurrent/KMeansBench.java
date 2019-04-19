@@ -56,10 +56,10 @@ public final class KMeansBench {
 
 
     for (int count = iterationCount; count > 0; count--) {
-      KMeansTask fff = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
+      KMeansTask assignmentTask = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
       
-      HashMap<Double[], Vector<Double[]>> clusters = fff.computeClusterAverages(forkJoin.invoke(fff));
+      HashMap<Double[], Vector<Double[]>> clusters = assignmentTask.computeClusterAverages(forkJoin.invoke(assignmentTask));
       
       centroids.clear();
       centroids.addAll(clusters.keySet());
