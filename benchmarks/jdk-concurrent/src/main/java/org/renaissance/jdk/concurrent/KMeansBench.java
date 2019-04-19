@@ -31,7 +31,7 @@ public final class KMeansBench {
   }
 
  
-  public void run() throws InterruptedException, ExecutionException {
+  public Vector<Double[]> run() throws InterruptedException, ExecutionException {
     Vector<Double[]> data = new Vector<Double[]>(vectorLength);
     Vector<Double[]> centroids = new Vector<Double[]>(dimension);
     Random random = new Random(100);
@@ -60,5 +60,6 @@ public final class KMeansBench {
     fjpool.shutdown();
     starttime = System.currentTimeMillis() - starttime;
     System.out.println("the execution time is:" + starttime);
+    return centroids;
   }
 }
