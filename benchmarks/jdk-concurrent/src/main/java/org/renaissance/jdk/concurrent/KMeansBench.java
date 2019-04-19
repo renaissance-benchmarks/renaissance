@@ -291,7 +291,7 @@ public final class KMeansBench {
     @Override
     protected double[] compute() {
       if (elementCount < forkThreshold) {
-        return vectorSum (data, fromInclusive, toExclusive);
+        return vectorSum();
 
       } else {
         final int middle = fromInclusive + elementCount / 2;
@@ -315,14 +315,11 @@ public final class KMeansBench {
     }
     
 
-    private double[] vectorSum(
-      final Vector<Double[]> elements,
-      final int fromInclusive, final int toExclusive
-    ) {
+    private double[] vectorSum() {
       final double[] result = new double[dimension];
       
       for (int i = fromInclusive; i < toExclusive; i++) {
-        accumulate (elements.elementAt(i), result);
+        accumulate(data.elementAt(i), result);
       }
 
       return result;
