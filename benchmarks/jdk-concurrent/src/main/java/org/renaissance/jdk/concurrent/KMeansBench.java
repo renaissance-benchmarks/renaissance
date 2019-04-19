@@ -177,12 +177,12 @@ public final class KMeansBench {
     
     private Map<Double[], Vector<Double[]>> collectClusters(final int[] centroidIndices) {
       final Map<Double[], Vector<Double[]>> result = new HashMap<>();
-      for (int dataIndex = 0; dataIndex < centroidIndices.length; dataIndex++) {
-        final int centroidIndex = centroidIndices[dataIndex];
       
+      for (int dataIndex = fromInclusive; dataIndex < toExclusive; dataIndex++) {
+        final int centroidIndex = centroidIndices[dataIndex - fromInclusive];
         final Double[] centroid = centroids.elementAt(centroidIndex);
-        final Vector<Double[]> cluster = result.computeIfAbsent(centroid, k -> new Vector<>());
-        cluster.add(data.elementAt(dataIndex + fromInclusive));
+        final Double[] element = data.elementAt(dataIndex);
+        result.computeIfAbsent(centroid, k -> new Vector<>()).add(element);
       }
       
       return result;
