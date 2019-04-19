@@ -55,10 +55,7 @@ public final class KMeansBench {
     final Vector<Double[]> centroids = randomSample(clusterCount, data, random);
 
     for (int count = iterationCount; count > 0; count--) {
-      KMeansTask assignmentTask = new KMeansTask(
-        data, centroids, dimension, clusterCount, forkThreshold, threadCount
-      );
-      
+      final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
       final UpdateTask updateTask = new UpdateTask(forkJoin.invoke(assignmentTask));
       final Map<Double[], Vector<Double[]>> clusters = forkJoin.invoke(updateTask);
       
@@ -104,6 +101,124 @@ public final class KMeansBench {
     }
   }
 
+  //
+  
+  final class AssignmentTask extends RecursiveTask<Map<Double[], Vector<Double[]>>> {
+    
+    private final Vector <Double []> data;
+
+    private final int fromInclusive;
+
+    private final int toExclusive;
+
+    private final int elementCount;
+    
+    private final Vector <Double []> centroids;
+    
+
+    public AssignmentTask(
+      final Vector <Double []> data, final Vector <Double []> centroids
+    ) {
+      this (data, centroids, 0, data.size());
+    }
+    
+    
+    public AssignmentTask(
+      final Vector <Double []> data, final Vector <Double []> centroids, 
+      final int fromInclusive, final int toExclusive
+    ) {
+      this.data = data;
+      this.centroids = centroids;
+      this.fromInclusive = fromInclusive;
+      this.toExclusive = toExclusive;
+      this.elementCount = toExclusive - fromInclusive;
+    }
+
+    
+    @Override
+    protected Map<Double[], Vector<Double[]>> compute() {
+      if (elementCount < forkThreshold) {
+        return assignToClusters();
+        
+      } else {
+        final int middle = fromInclusive + elementCount / 2;
+        final ForkJoinTask<Map<Double[], Vector<Double[]>>> leftTask = 
+          new AssignmentTask(data, centroids, fromInclusive, middle).fork();
+        final ForkJoinTask<Map<Double[], Vector<Double[]>>> rightTask =
+          new AssignmentTask(data, centroids, middle, toExclusive).fork();
+        
+        return merge(leftTask.join(), rightTask.join());
+      }
+    }
+
+    
+    private Map<Double[], Vector<Double[]>> assignToClusters() {
+      final int[] nearestCentroidIndex = findNearestCentroid();
+      return collectClusters(nearestCentroidIndex);
+    }
+
+   
+    private int[] findNearestCentroid() {
+      final int[] result = new int[elementCount];
+
+      for (int dataIndex = fromInclusive; dataIndex < toExclusive; dataIndex++) {
+        final Double[] element = data.elementAt(dataIndex);
+        
+        double min = Double.MAX_VALUE;
+        for (int centroidIndex = 0; centroidIndex < centroids.size(); centroidIndex++) {
+          final double distance = distance(element, centroids.elementAt(centroidIndex));
+          if (distance < min) {
+            result[dataIndex - fromInclusive] = centroidIndex;
+            min = distance;
+          }
+        }
+      }
+
+      return result;
+    }
+
+    
+    private Map<Double[], Vector<Double[]>> collectClusters(final int[] centroidIndices) {
+      final Map<Double[], Vector<Double[]>> result = new HashMap<>();
+      for (int dataIndex = 0; dataIndex < centroidIndices.length; dataIndex++) {
+        final int centroidIndex = centroidIndices[dataIndex];
+        final Double[] centroid = centroids.elementAt(centroidIndex);
+        final Vector<Double[]> cluster = result.computeIfAbsent(centroid, k -> new Vector<>());
+        cluster.add(data.elementAt(dataIndex + fromInclusive));
+      }
+      
+      return result;
+    }
+
+    
+    private Double distance(final Double[] x, final Double[] y) {
+      //
+      // Calculates Euclidean distance between the two points. Note that we
+      // don't use sqrt(), because sqrt(a) < sqrt(b) <=> a < b.
+      //
+      double result = 0.0;
+      for (int i = 0; i < dimension; i++) {
+        result += (x[i] - y[i]) * (x[i] - y[i]);
+      }
+      
+      return result;
+    }
+    
+    
+    private <T> Map<T, Vector<T>> merge(
+      final Map<T, Vector<T>> left, final Map<T, Vector<T>> right
+    ) {
+      final Map<T, Vector<T>> result = new HashMap<>(left);
+      
+      right.forEach((key, val) -> result.merge(
+        key, val, (l, r) -> { l.addAll (r); return l; }
+      ));
+
+      return result;
+    }
+    
+  }
+  
   //
 
   final class UpdateTask extends RecursiveTask<Map <Double[], Vector<Double[]>>> {
@@ -219,5 +334,5 @@ public final class KMeansBench {
     }
     
   }
-  
+
 }
