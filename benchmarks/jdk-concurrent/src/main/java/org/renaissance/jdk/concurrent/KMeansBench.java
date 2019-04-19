@@ -9,12 +9,29 @@ import java.util.concurrent.ForkJoinPool;
 
 
 public final class KMeansBench {
-  private final int dimension = 5;
-  private final int clusterCount = 10;
-  private final int iterationCount = 50;
+  private final int dimension;
+
+  private final int clusterCount;
+
+  private final int iterationCount;
   
-  public void run(int threadCount, int vectorLength)
-      throws InterruptedException, ExecutionException {
+  private final int vectorLength;
+
+  private final int threadCount;
+  
+  public KMeansBench(
+    int dimension, int vectorLength, int clusterCount,
+    int iterationCount, int threadCount
+  ) {
+    this.dimension = dimension;
+    this.vectorLength = vectorLength;
+    this.clusterCount = clusterCount;
+    this.iterationCount = iterationCount;
+    this.threadCount = threadCount;
+  }
+
+ 
+  public void run() throws InterruptedException, ExecutionException {
     Vector<Double[]> data = new Vector<Double[]>(vectorLength);
     Vector<Double[]> centroids = new Vector<Double[]>(dimension);
     Random random = new Random(100);

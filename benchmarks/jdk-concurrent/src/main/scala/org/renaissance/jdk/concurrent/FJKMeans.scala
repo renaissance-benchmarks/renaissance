@@ -11,17 +11,29 @@ class FJKMeans extends RenaissanceBenchmark {
 
   def licenses = License.create(License.APACHE2)
 
+  private val DIMENSION = 5
+
+  private val VECTOR_LENGTH = 30000
+
+  private val CLUSTER_COUNT = 10
+
+  private val ITERATION_COUNT = 50
+
   private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  private val SIZE = 30000
-
   private var benchmark: KMeansBench = null
-  
+
   override def setUpBeforeAll(c: Config): Unit = {
-    benchmark = new KMeansBench()
+    benchmark = new KMeansBench(
+      DIMENSION,
+      VECTOR_LENGTH,
+      CLUSTER_COUNT,
+      ITERATION_COUNT,
+      THREAD_COUNT
+    )
   }
-  
+
   override def runIteration(c: Config): Unit = {
-    benchmark.run(THREAD_COUNT, SIZE)
+    benchmark.run
   }
 }
