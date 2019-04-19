@@ -6,9 +6,11 @@ import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 
 public final class KMeansBench {
+
   private final int dimension;
 
   private final int clusterCount;
@@ -18,6 +20,11 @@ public final class KMeansBench {
   private final int vectorLength;
 
   private final int threadCount;
+
+  //
+  
+  private final ForkJoinPool forkJoin = new ForkJoinPool();
+  
   
   public KMeansBench(
     int dimension, int vectorLength, int clusterCount,
@@ -46,17 +53,28 @@ public final class KMeansBench {
 
     int forkThreshold = vectorLength / (4 * threadCount) + 1;
 
-    ForkJoinPool fjpool = new ForkJoinPool();
     for (int count = iterationCount; count > 0; count--) {
       KMeansTask fff = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
       
-      HashMap<Double[], Vector<Double[]>> clusters = fff.computeClusterAverages(fjpool.invoke(fff));
+      HashMap<Double[], Vector<Double[]>> clusters = fff.computeClusterAverages(forkJoin.invoke(fff));
       
       centroids.clear();
       centroids.addAll(clusters.keySet());
     }
-    fjpool.shutdown();
+    
+    forkJoin.awaitQuiescence(1, TimeUnit.SECONDS);
     return centroids;
   }
+  
+  public void tearDown() {
+    try {
+      forkJoin.shutdown();
+      forkJoin.awaitTermination(1, TimeUnit.SECONDS);
+
+    } catch (final InterruptedException ie) {
+      throw new RuntimeException (ie);
+    }
+  }
+
 }
