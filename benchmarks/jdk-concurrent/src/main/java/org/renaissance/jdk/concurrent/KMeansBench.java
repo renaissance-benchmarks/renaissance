@@ -20,11 +20,13 @@ public final class KMeansBench {
   private final int vectorLength;
 
   private final int threadCount;
+  
+  private final int forkThreshold;
 
   //
   
   private final ForkJoinPool forkJoin = new ForkJoinPool();
-  
+
   
   public KMeansBench(
     int dimension, int vectorLength, int clusterCount,
@@ -35,6 +37,7 @@ public final class KMeansBench {
     this.clusterCount = clusterCount;
     this.iterationCount = iterationCount;
     this.threadCount = threadCount;
+    this.forkThreshold = vectorLength / (4 * threadCount) + 1;
   }
 
  
@@ -51,7 +54,6 @@ public final class KMeansBench {
       centroids.add(i, data.elementAt(Math.abs(random.nextInt() % data.size())));
     }
 
-    int forkThreshold = vectorLength / (4 * threadCount) + 1;
 
     for (int count = iterationCount; count > 0; count--) {
       KMeansTask fff = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
