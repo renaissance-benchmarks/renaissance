@@ -6,15 +6,15 @@ import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveTask;
 
 
 public final class KMeansBench {
-
-  public static void run(int threadCount, int vectorLength)
+  private final int dimension = 5;
+  private final int clusterCount = 10;
+  private final int iterationCount = 50;
+  
+  public void run(int threadCount, int vectorLength)
       throws InterruptedException, ExecutionException {
-    final int dimension = 5;
-    int clusterCount = 10;
     Vector<Double[]> data = new Vector<Double[]>(vectorLength);
     Vector<Double[]> centroids = new Vector<Double[]>(dimension);
     Random random = new Random(100);
@@ -31,7 +31,7 @@ public final class KMeansBench {
 
     long starttime = System.currentTimeMillis();
     ForkJoinPool fjpool = new ForkJoinPool();
-    for (int count = 50; count > 0; count--) {
+    for (int count = iterationCount; count > 0; count--) {
       KMeansTask fff = new KMeansTask(data, centroids, dimension, clusterCount, forkThreshold,
           threadCount);
       

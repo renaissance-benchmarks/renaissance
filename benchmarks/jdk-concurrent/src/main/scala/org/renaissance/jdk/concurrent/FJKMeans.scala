@@ -15,7 +15,13 @@ class FJKMeans extends RenaissanceBenchmark {
 
   private val SIZE = 30000
 
+  private var benchmark: KMeansBench = null
+  
+  override def setUpBeforeAll(c: Config): Unit = {
+    benchmark = new KMeansBench()
+  }
+  
   override def runIteration(c: Config): Unit = {
-    KMeansBench.run(THREAD_COUNT, SIZE)
+    benchmark.run(THREAD_COUNT, SIZE)
   }
 }
