@@ -26,8 +26,6 @@ public final class KMeansBench {
   
   private final int vectorLength;
 
-  private final int threadCount;
-  
   private final int forkThreshold;
 
   //
@@ -43,7 +41,6 @@ public final class KMeansBench {
     this.vectorLength = vectorLength;
     this.clusterCount = clusterCount;
     this.iterationCount = iterationCount;
-    this.threadCount = threadCount;
     this.forkThreshold = vectorLength / (4 * threadCount) + 1;
   }
 
