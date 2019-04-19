@@ -243,8 +243,8 @@ public final class KMeansBench {
     
     private double[] unboxedAverage(final Vector<Double[]> elements) {
       final VectorSumTask sumTask = new VectorSumTask(elements);
-      final double[] vectorSum = getPool().invoke(sumTask);
-      return div(vectorSum, elements.size());
+      final double[] vectorSums = getPool().invoke(sumTask);
+      return div(vectorSums, elements.size());
     }
 
     
