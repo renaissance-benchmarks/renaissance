@@ -1,8 +1,10 @@
 package org.renaissance.jdk.concurrent;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
@@ -11,8 +13,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -97,6 +97,19 @@ public final class JavaKMeans {
     } catch (final InterruptedException ie) {
       throw new RuntimeException (ie);
     }
+  }
+
+
+  private static <T> Map<T, Vector<T>> merge(
+    final Map<T, Vector<T>> left, final Map<T, Vector<T>> right
+  ) {
+    final Map<T, Vector<T>> result = new HashMap<>(left);
+
+    right.forEach((key, val) -> result.merge(
+        key, val, (l, r) -> { l.addAll(r); return l; }
+    ));
+
+    return result;
   }
 
   //
@@ -203,46 +216,68 @@ public final class JavaKMeans {
       return result;
     }
 
-
-    private <T> Map<T, Vector<T>> merge(
-      final Map<T, Vector<T>> left, final Map<T, Vector<T>> right
-    ) {
-      final Map<T, Vector<T>> result = new HashMap<>(left);
-
-      right.forEach((key, val) -> result.merge(
-          key, val, (l, r) -> { l.addAll(r); return l; }
-      ));
-
-      return result;
-    }
-
   }
 
   //
 
   final class UpdateTask extends RecursiveTask<Map<Double[], Vector<Double[]>>> {
 
-    private final Map<Double[], Vector<Double[]>> clusters;
+    private final List<Vector<Double[]>> clusters;
 
-    public UpdateTask(Map<Double[], Vector<Double[]>> clusters) {
+    private final int fromInclusive;
+
+    private final int toExclusive;
+
+    private final int elementCount;
+
+    public UpdateTask(final Map<Double[], Vector<Double[]>> clusters) {
+      this(new ArrayList<>(clusters.values()));
+    }
+
+
+    public UpdateTask(final List<Vector<Double[]>> clusters) {
+      this(clusters, 0, clusters.size());
+    }
+
+
+    public UpdateTask(
+      final List<Vector<Double[]>> clusters,
+      final int fromInclusive, final int toExclusive
+    ) {
       this.clusters = clusters;
+      this.fromInclusive = fromInclusive;
+      this.toExclusive = toExclusive;
+      this.elementCount = toExclusive - fromInclusive;
     }
 
 
     @Override
     protected Map<Double[], Vector<Double[]>> compute() {
-      return clusters.values().stream().collect(Collectors.toMap (
-          this::average, Function.identity(), (ov, nv) -> nv, HashMap::new
-      ));
+      if (elementCount < 2) {
+        final Vector<Double[]> clusterElements = clusters.get(0);
+        final Double[] clusterAverage = boxed(average(clusterElements));
+        final Map<Double[], Vector<Double[]>> result = new HashMap<>();
+        result.put(clusterAverage, clusterElements);
+        return result;
+
+      } else {
+        final int middle = fromInclusive + elementCount / 2;
+        final ForkJoinTask<Map<Double[], Vector<Double[]>>> leftTask =
+          new UpdateTask(clusters, fromInclusive, middle).fork();
+        final ForkJoinTask<Map<Double[], Vector<Double[]>>> rightTask =
+          new UpdateTask(clusters, middle, toExclusive).fork();
+
+        return merge(leftTask.join(), rightTask.join());
+      }
     }
 
 
-    private Double[] average(final Vector<Double[]> elements) {
-      return Arrays.stream(unboxedAverage(elements)).boxed().toArray(Double[]::new);
+    private Double[] boxed(final double[] values) {
+      return Arrays.stream(values).boxed().toArray(Double[]::new);
     }
 
 
-    private double[] unboxedAverage(final Vector<Double[]> elements) {
+    private double[] average(final Vector<Double[]> elements) {
       final VectorSumTask sumTask = new VectorSumTask(elements);
       final double[] vectorSums = getPool().invoke(sumTask);
       return div(vectorSums, elements.size());
@@ -300,6 +335,7 @@ public final class JavaKMeans {
           new VectorSumTask(data, fromInclusive, middle).fork();
         final ForkJoinTask<double[]> rightTask =
           new VectorSumTask(data, middle, toExclusive).fork();
+
         return add(leftTask.join(), rightTask.join());
       }
     }
