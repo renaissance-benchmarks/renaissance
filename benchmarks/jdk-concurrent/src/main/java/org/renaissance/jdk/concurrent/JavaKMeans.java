@@ -114,15 +114,55 @@ public final class JavaKMeans {
 
   //
 
-  final class AssignmentTask extends RecursiveTask<Map<Double[], Vector<Double[]>>> {
+  abstract class RangedTask<V> extends RecursiveTask<V> {
+
+    protected final int fromInclusive;
+
+    protected final int toExclusive;
+
+    protected final int taskSize;
+
+
+    protected RangedTask(
+      final int fromInclusive, final int toExclusive
+    ) {
+      this.fromInclusive = fromInclusive;
+      this.toExclusive = toExclusive;
+      this.taskSize = toExclusive - fromInclusive;
+    }
+
+
+    @Override
+    protected V compute() {
+      if (taskSize < forkThreshold()) {
+        return computeDirectly();
+
+      } else {
+        final int middle = fromInclusive + taskSize / 2;
+        final ForkJoinTask<V> leftTask = createSubtask(fromInclusive, middle).fork();
+        final ForkJoinTask<V> rightTask = createSubtask(middle, toExclusive).fork();
+        return combineResults(leftTask.join(), rightTask.join());
+      }
+    }
+
+    //
+
+    protected abstract int forkThreshold();
+
+    protected abstract V computeDirectly();
+
+    protected abstract ForkJoinTask<V> createSubtask(
+      final int fromInclusive, final int toExclusive
+    );
+
+    protected abstract V combineResults(final V left, final V right);
+  }
+
+  //
+
+  final class AssignmentTask extends RangedTask<Map<Double[], Vector<Double[]>>> {
 
     private final Vector<Double[]> data;
-
-    private final int fromInclusive;
-
-    private final int toExclusive;
-
-    private final int elementCount;
 
     private final Vector<Double[]> centroids;
 
@@ -130,47 +170,49 @@ public final class JavaKMeans {
     public AssignmentTask(
       final Vector<Double[]> data, final Vector<Double[]> centroids
     ) {
-      this (data, centroids, 0, data.size());
+      this(data, centroids, 0, data.size());
     }
 
 
-    public AssignmentTask(
+    private AssignmentTask(
       final Vector<Double[]> data, final Vector<Double[]> centroids,
       final int fromInclusive, final int toExclusive
     ) {
+      super(fromInclusive, toExclusive);
       this.data = data;
       this.centroids = centroids;
-      this.fromInclusive = fromInclusive;
-      this.toExclusive = toExclusive;
-      this.elementCount = toExclusive - fromInclusive;
+    }
+
+    //
+
+    @Override
+    protected int forkThreshold() {
+      return forkThreshold;
     }
 
 
     @Override
-    protected Map<Double[], Vector<Double[]>> compute() {
-      if (elementCount < forkThreshold) {
-        return assignToClusters();
-
-      } else {
-        final int middle = fromInclusive + elementCount / 2;
-        final ForkJoinTask<Map<Double[], Vector<Double[]>>> leftTask =
-          new AssignmentTask(data, centroids, fromInclusive, middle).fork();
-        final ForkJoinTask<Map<Double[], Vector<Double[]>>> rightTask =
-          new AssignmentTask(data, centroids, middle, toExclusive).fork();
-
-        return merge(leftTask.join(), rightTask.join());
-      }
+    protected Map<Double[], Vector<Double[]>> computeDirectly() {
+      return collectClusters(findNearestCentroid());
     }
 
 
-    private Map<Double[], Vector<Double[]>> assignToClusters() {
-      final int[] nearestCentroidIndex = findNearestCentroid();
-      return collectClusters(nearestCentroidIndex);
+    private Map<Double[], Vector<Double[]>> collectClusters(final int[] centroidIndices) {
+      final Map<Double[], Vector<Double[]>> result = new HashMap<>();
+
+      for (int dataIndex = fromInclusive; dataIndex < toExclusive; dataIndex++) {
+        final int centroidIndex = centroidIndices[dataIndex - fromInclusive];
+        final Double[] centroid = centroids.elementAt(centroidIndex);
+        final Double[] element = data.elementAt(dataIndex);
+        result.computeIfAbsent(centroid, k -> new Vector<>()).add(element);
+      }
+
+      return result;
     }
 
 
     private int[] findNearestCentroid() {
-      final int[] result = new int[elementCount];
+      final int[] result = new int[taskSize];
 
       for (int dataIndex = fromInclusive; dataIndex < toExclusive; dataIndex++) {
         final Double[] element = data.elementAt(dataIndex);
@@ -183,20 +225,6 @@ public final class JavaKMeans {
             min = distance;
           }
         }
-      }
-
-      return result;
-    }
-
-
-    private Map<Double[], Vector<Double[]>> collectClusters(final int[] centroidIndices) {
-      final Map<Double[], Vector<Double[]>> result = new HashMap<>();
-
-      for (int dataIndex = fromInclusive; dataIndex < toExclusive; dataIndex++) {
-        final int centroidIndex = centroidIndices[dataIndex - fromInclusive];
-        final Double[] centroid = centroids.elementAt(centroidIndex);
-        final Double[] element = data.elementAt(dataIndex);
-        result.computeIfAbsent(centroid, k -> new Vector<>()).add(element);
       }
 
       return result;
@@ -216,19 +244,30 @@ public final class JavaKMeans {
       return result;
     }
 
+
+    @Override
+    protected ForkJoinTask<Map<Double[], Vector<Double[]>>> createSubtask(
+      final int fromInclusive, final int toExclusive
+    ) {
+      return new AssignmentTask(data, centroids, fromInclusive, toExclusive);
+    }
+
+
+    @Override
+    protected Map<Double[], Vector<Double[]>> combineResults(
+      final Map<Double[], Vector<Double[]>> left, final Map<Double[], Vector<Double[]>> right
+    ) {
+      return merge(left, right);
+    }
+
   }
 
   //
 
-  final class UpdateTask extends RecursiveTask<Map<Double[], Vector<Double[]>>> {
+  final class UpdateTask extends RangedTask<Map<Double[], Vector<Double[]>>> {
 
     private final List<Vector<Double[]>> clusters;
 
-    private final int fromInclusive;
-
-    private final int toExclusive;
-
-    private final int elementCount;
 
     public UpdateTask(final Map<Double[], Vector<Double[]>> clusters) {
       this(new ArrayList<>(clusters.values()));
@@ -240,35 +279,38 @@ public final class JavaKMeans {
     }
 
 
-    public UpdateTask(
+    private UpdateTask(
       final List<Vector<Double[]>> clusters,
       final int fromInclusive, final int toExclusive
     ) {
+      super(fromInclusive, toExclusive);
       this.clusters = clusters;
-      this.fromInclusive = fromInclusive;
-      this.toExclusive = toExclusive;
-      this.elementCount = toExclusive - fromInclusive;
+    }
+
+    //
+
+    @Override
+    protected int forkThreshold() {
+      return 2;
     }
 
 
     @Override
-    protected Map<Double[], Vector<Double[]>> compute() {
-      if (elementCount < 2) {
-        final Vector<Double[]> clusterElements = clusters.get(0);
+    protected Map<Double[], Vector<Double[]>> computeDirectly() {
+      return computeClusterAverages();
+    }
+
+
+    private Map<Double[], Vector<Double[]>> computeClusterAverages() {
+      final Map<Double[], Vector<Double[]>> result = new HashMap<>();
+
+      for (int clusterIndex = fromInclusive; clusterIndex < toExclusive; clusterIndex++) {
+        final Vector<Double[]> clusterElements = clusters.get(clusterIndex);
         final Double[] clusterAverage = boxed(average(clusterElements));
-        final Map<Double[], Vector<Double[]>> result = new HashMap<>();
         result.put(clusterAverage, clusterElements);
-        return result;
-
-      } else {
-        final int middle = fromInclusive + elementCount / 2;
-        final ForkJoinTask<Map<Double[], Vector<Double[]>>> leftTask =
-          new UpdateTask(clusters, fromInclusive, middle).fork();
-        final ForkJoinTask<Map<Double[], Vector<Double[]>>> rightTask =
-          new UpdateTask(clusters, middle, toExclusive).fork();
-
-        return merge(leftTask.join(), rightTask.join());
       }
+
+      return result;
     }
 
 
@@ -293,19 +335,29 @@ public final class JavaKMeans {
       return result;
     }
 
+
+    @Override
+    protected ForkJoinTask<Map<Double[], Vector<Double[]>>> createSubtask(
+      final int fromInclusive, final int toExclusive
+    ) {
+      return new UpdateTask(clusters, fromInclusive, toExclusive);
+    }
+
+
+    @Override
+    protected Map<Double[], Vector<Double[]>> combineResults(
+      final Map<Double[], Vector<Double[]>> left, final Map<Double[], Vector<Double[]>> right
+    ) {
+      return merge(left, right);
+    }
+
   }
 
   //
 
-  final class VectorSumTask extends RecursiveTask<double[]> {
+  final class VectorSumTask extends RangedTask<double[]> {
 
     private final Vector<Double[]> data;
-
-    private final int fromInclusive;
-
-    private final int toExclusive;
-
-    private final int elementCount;
 
 
     public VectorSumTask(final Vector<Double[]> data) {
@@ -313,42 +365,25 @@ public final class JavaKMeans {
     }
 
 
-    public VectorSumTask(
+    private VectorSumTask(
       final Vector<Double[]> data,
       final int fromInclusive, final int toExclusive
     ) {
+      super(fromInclusive, toExclusive);
       this.data = data;
-      this.fromInclusive = fromInclusive;
-      this.toExclusive = toExclusive;
-      this.elementCount = toExclusive - fromInclusive;
+    }
+
+    //
+
+    @Override
+    protected int forkThreshold() {
+      return forkThreshold;
     }
 
 
     @Override
-    protected double[] compute() {
-      if (elementCount < forkThreshold) {
-        return vectorSum();
-
-      } else {
-        final int middle = fromInclusive + elementCount / 2;
-        final ForkJoinTask<double[]> leftTask =
-          new VectorSumTask(data, fromInclusive, middle).fork();
-        final ForkJoinTask<double[]> rightTask =
-          new VectorSumTask(data, middle, toExclusive).fork();
-
-        return add(leftTask.join(), rightTask.join());
-      }
-    }
-
-
-    private double[] add(final double[] x, final double[] y) {
-      final double[] result = new double[dimension];
-
-      for (int i = 0; i < dimension; i++) {
-        result[i] = x[i] + y[i];
-      }
-
-      return result;
+    protected double[] computeDirectly() {
+      return vectorSum();
     }
 
 
@@ -367,6 +402,29 @@ public final class JavaKMeans {
       for (int i = 0; i < dimension; i++) {
         acc[i] += val[i];
       }
+    }
+
+
+    @Override
+    protected ForkJoinTask<double[]> createSubtask(int fromInclusive, int toExclusive) {
+      return new VectorSumTask(data, fromInclusive, toExclusive);
+    }
+
+
+    @Override
+    protected double[] combineResults(final double[] left, final double[] right) {
+      return add(left, right);
+    }
+
+
+    private double[] add(final double[] x, final double[] y) {
+      final double[] result = new double[dimension];
+
+      for (int i = 0; i < dimension; i++) {
+        result[i] = x[i] + y[i];
+      }
+
+      return result;
     }
 
   }
