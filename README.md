@@ -99,7 +99,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### jdk-concurrent
 
-- `f-j-k-means` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
+- `fj-k-means` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
 
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
 
@@ -217,8 +217,8 @@ The following table contains the licensing information of all the benchmarks:
 | scala-k-means | MIT | MIT |
 | mnemonics | MIT | MIT |
 | par-mnemonics | MIT | MIT |
+| fj-k-means | APACHE2 | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
-| f-j-k-means | APACHE2 | MIT |
 | finagle-http | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
 
