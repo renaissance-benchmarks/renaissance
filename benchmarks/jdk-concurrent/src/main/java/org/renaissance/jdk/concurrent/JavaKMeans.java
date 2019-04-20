@@ -103,7 +103,7 @@ public final class JavaKMeans {
 
   final class AssignmentTask extends RecursiveTask<Map<Double[], Vector<Double[]>>> {
 
-    private final Vector <Double []> data;
+    private final Vector<Double[]> data;
 
     private final int fromInclusive;
 
@@ -111,18 +111,18 @@ public final class JavaKMeans {
 
     private final int elementCount;
 
-    private final Vector <Double []> centroids;
+    private final Vector<Double[]> centroids;
 
 
     public AssignmentTask(
-      final Vector <Double []> data, final Vector <Double []> centroids
+      final Vector<Double[]> data, final Vector<Double[]> centroids
     ) {
       this (data, centroids, 0, data.size());
     }
 
 
     public AssignmentTask(
-      final Vector <Double []> data, final Vector <Double []> centroids,
+      final Vector<Double[]> data, final Vector<Double[]> centroids,
       final int fromInclusive, final int toExclusive
     ) {
       this.data = data;
@@ -210,7 +210,7 @@ public final class JavaKMeans {
       final Map<T, Vector<T>> result = new HashMap<>(left);
 
       right.forEach((key, val) -> result.merge(
-        key, val, (l, r) -> { l.addAll (r); return l; }
+          key, val, (l, r) -> { l.addAll(r); return l; }
       ));
 
       return result;
@@ -220,11 +220,11 @@ public final class JavaKMeans {
 
   //
 
-  final class UpdateTask extends RecursiveTask<Map <Double[], Vector<Double[]>>> {
+  final class UpdateTask extends RecursiveTask<Map<Double[], Vector<Double[]>>> {
 
-    private final Map <Double [], Vector<Double[]>> clusters;
+    private final Map<Double[], Vector<Double[]>> clusters;
 
-    public UpdateTask(Map <Double [], Vector<Double[]>> clusters) {
+    public UpdateTask(Map<Double[], Vector<Double[]>> clusters) {
       this.clusters = clusters;
     }
 
