@@ -13,7 +13,7 @@ layout: base
       <img src="/resources/images/banner.png"/>
       <div class="bannerlinks">
         <a href="https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}"><img class="bannerlink" id="link-github" src="/resources/images/icons/github7-gray.png"/></a>
-        <a href="https://gitter.im/{{ site.githubOrg }}/{{ site.githubRepo }}"><img class="bannerlink" id="link-groups" src="/resources/images/icons/mail8-gray.png"/></a>
+        <a href="https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}/issues"><img class="bannerlink" id="link-groups" src="/resources/images/icons/mail8-gray.png"/></a>
         <a href="https://twitter.com/renaissancejvm"><img class="bannerlink" id="link-twitter" src="/resources/images/icons/twitter4-gray.png"/></a>
       </div>
     </div>
@@ -125,6 +125,42 @@ layout: base
     <br/>
     <br/>
   </div>
+
+  <br/>
+  <br/>
+
+  <div class="container_16">
+    <div class="grid_16">
+      <hr class="fancy-line">
+      <div class="fancy-title">
+        <span>NEWS</span>
+      </div>
+    </div>
+  </div>
+
+  <br/>
+  <br/>
+
+  {% for post in site.posts %}
+  <div class="container_16">
+    <h2 class="post-title">
+      <a href="{{ post.url }}">
+        {{ post.title }}
+      </a>
+    </h2>
+    <span class="post-date">
+      {{ post.date | date: '%B %d, %Y' }}
+    </span>
+    {{ post.excerpt }}
+  </div>
+  {% endfor %}
+
+  <br/>
+  <br/>
+  <br/>
+  <br/>
+  <br/>
+
 </div>
 
 
