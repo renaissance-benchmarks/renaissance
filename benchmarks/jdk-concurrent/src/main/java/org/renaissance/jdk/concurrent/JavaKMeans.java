@@ -231,14 +231,15 @@ public final class JavaKMeans {
     }
 
 
-    private Double distance(final Double[] x, final Double[] y) {
+    private double distance(final Double[] x, final Double[] y) {
       //
       // Calculates Euclidean distance between the two points. Note that we
       // don't use sqrt(), because sqrt(a) < sqrt(b) <=> a < b.
       //
       double result = 0.0;
       for (int i = 0; i < dimension; i++) {
-        result += (x[i] - y[i]) * (x[i] - y[i]);
+        final double diff = x[i] - y[i];
+        result += diff * diff;
       }
 
       return result;
