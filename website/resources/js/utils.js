@@ -22,3 +22,22 @@ function loadRemoteContent(elementId, url, logoname, kind) {
     }
   });
 }
+
+function getReleaseList(elementId, url) {
+   var element = document.getElementById(elementId);
+   $.getJSON(url, function (releases) {
+     $.each(releases, function(i, release) {
+       var name = release.name;
+       var tag = release.tag_name;
+       //element.insertAdjacentHTML('beforeend',marked("### " + name + " (" + tag + ")" ))
+       element.insertAdjacentHTML('beforeend',marked("### " + name))
+
+       $.each(release.assets, function(i, asset) {
+         var name = asset.name
+         var url = asset.browser_download_url
+         element.insertAdjacentHTML('beforeend',marked("* ["+name+"]("+url+")"))
+       });
+
+     });
+   });
+ }
