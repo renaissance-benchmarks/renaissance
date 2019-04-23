@@ -25,6 +25,9 @@ class Als extends RenaissanceBenchmark {
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
+  // TODO: Consolidate paths to avoid clashes between parallel executions
+  // https://github.com/D-iii-S/renaissance-benchmarks/issues/13
+
   val alsPath = Paths.get("target", "als")
 
   val outputPath = alsPath.resolve("output")
@@ -90,6 +93,7 @@ class Als extends RenaissanceBenchmark {
   }
 
   def runIteration(c: Config): Unit = {
-    factModel = new org.apache.spark.mllib.recommendation.ALS().run(ratings)
+    val als = new org.apache.spark.mllib.recommendation.ALS()
+    factModel = als.run(ratings)
   }
 }
