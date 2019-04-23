@@ -77,6 +77,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+- `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 60)
+
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
 - `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 40)
@@ -214,6 +216,7 @@ The following table contains the licensing information of all the benchmarks:
 | akka-uct | MIT | MIT |
 | scala-k-means | MIT | MIT |
 | mnemonics | MIT | MIT |
+| als | APACHE2 | MIT |
 | par-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
