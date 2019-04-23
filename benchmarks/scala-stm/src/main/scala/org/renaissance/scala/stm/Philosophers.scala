@@ -4,7 +4,8 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class Philosophers extends RenaissanceBenchmark {
 
-  override def description(): String = "Solves a variant of the dining philosophers problem using ScalaSTM."
+  override def description(): String =
+    "Solves a variant of the dining philosophers problem using ScalaSTM."
 
   override def defaultRepetitions = 30
 
