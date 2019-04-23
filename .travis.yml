@@ -133,6 +133,6 @@ before_script:
   - unset SBT_OPTS
 
 script:
-  - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck && travis_terminate 0; fi'
+  - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck; travis_terminate $?; fi'
   - ./tools/sbt/bin/sbt assembly
   - 'if [ -n "$BENCHMARK" ]; then java -jar ./target/scala-2.12/renaissance-0.1.jar -r 1 $BENCHMARK; fi'
