@@ -15,9 +15,9 @@ class FjKmeans extends RenaissanceBenchmark {
   //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
   private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  private val SIZE = 30000
+  private val VECTOR_LENGTH = 30000
 
   protected override def runIteration(config: Config): Unit = {
-    KMeansBench.run(THREAD_COUNT, SIZE)
+    KMeansBench.run(THREAD_COUNT, VECTOR_LENGTH)
   }
 }
