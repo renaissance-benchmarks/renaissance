@@ -12,7 +12,7 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 
-class ALS extends RenaissanceBenchmark {
+class Als extends RenaissanceBenchmark {
 
   def description = "Runs the ALS algorithm from the Spark MLLib."
 
