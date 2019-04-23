@@ -14,7 +14,7 @@ import scala.util.Random
 
 class Als extends RenaissanceBenchmark {
 
-  def description = "Runs the ALS algorithm from the Spark MLLib."
+  override def description(): String = "Runs the ALS algorithm from the Spark MLlib."
 
   override def defaultRepetitions = 60
 
