@@ -77,8 +77,6 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
-- `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
-
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
 - `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 40)
@@ -142,7 +140,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### twitter-finagle
 
-- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 40)
+- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 90)
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
@@ -202,9 +200,8 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
-
-| finagle-chirper | APACHE2 | MIT |
 | gauss-mix | APACHE2 | MIT |
+| finagle-chirper | APACHE2 | MIT |
 | philosophers | BSD3 | MIT |
 | rx-scrabble | GPL2 | GPL3 |
 | dec-tree | APACHE2 | MIT |
@@ -212,7 +209,6 @@ The following table contains the licensing information of all the benchmarks:
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
-| log-regression | APACHE2 | MIT |
 | future-genetic | APACHE2 | MIT |
 | scala-stm-bench7 | BSD3, GPL2 | GPL3 |
 | chi-square | APACHE2 | MIT |
