@@ -128,7 +128,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### scala-stdlib
 
-- `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+- `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 
 ##### scala-stm
@@ -214,8 +214,8 @@ The following table contains the licensing information of all the benchmarks:
 | chi-square | APACHE2 | MIT |
 | log-regression | APACHE2 | MIT |
 | movie-lens | APACHE2 | MIT |
+| scala-kmeans | MIT | MIT |
 | akka-uct | MIT | MIT |
-| scala-k-means | MIT | MIT |
 | mnemonics | MIT | MIT |
 | par-mnemonics | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
