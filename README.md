@@ -77,6 +77,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### apache-spark
 
+- `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 60)
+
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
 - `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 40)
@@ -130,7 +132,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### scala-stdlib
 
-- `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+- `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 
 ##### scala-stm
@@ -141,6 +143,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 
 ##### twitter-finagle
+
+- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 90)
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
@@ -201,6 +205,7 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | gauss-mix | APACHE2 | MIT |
+| finagle-chirper | APACHE2 | MIT |
 | philosophers | BSD3 | MIT |
 | rx-scrabble | GPL2 | GPL3 |
 | dec-tree | APACHE2 | MIT |
@@ -213,9 +218,10 @@ The following table contains the licensing information of all the benchmarks:
 | chi-square | APACHE2 | MIT |
 | log-regression | APACHE2 | MIT |
 | movie-lens | APACHE2 | MIT |
+| scala-kmeans | MIT | MIT |
 | akka-uct | MIT | MIT |
-| scala-k-means | MIT | MIT |
 | mnemonics | MIT | MIT |
+| als | APACHE2 | MIT |
 | par-mnemonics | MIT | MIT |
 | fj-k-means | APACHE2 | MIT |
 | neo4j-analytics | GPL3 | GPL3 |

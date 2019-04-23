@@ -84,7 +84,8 @@ object UctAkkaActorBenchmark {
           height,
           size + i,
           computationSize,
-          urgent = false)
+          urgent = false
+        )
 
         i += 1
       }
@@ -118,7 +119,8 @@ object UctAkkaActorBenchmark {
             childName ! new UctConfig.UrgentGenerateChildrenMessage(
               ran.nextInt(UctConfig.BINOMIAL_PARAM),
               size,
-              childComp)
+              childComp
+            )
           }
           size += UctConfig.BINOMIAL_PARAM
           if (childHeight + 1 > height) {
@@ -209,7 +211,8 @@ object UctAkkaActorBenchmark {
       height: Int,
       id: Int,
       comp: Int,
-      urgent: Boolean): ActorRef = {
+      urgent: Boolean
+    ): ActorRef = {
       val nodeActor =
         system.actorOf(Props(new NodeActor(parent, root, height, id, comp, urgent)))
       AkkaActorState.startActor(nodeActor)
@@ -225,8 +228,8 @@ object UctAkkaActorBenchmark {
     myHeight: Int,
     myId: Int,
     myCompSize: Int,
-    isUrgent: Boolean)
-    extends AkkaActor[AnyRef] {
+    isUrgent: Boolean
+  ) extends AkkaActor[AnyRef] {
 
     private var urgentChild: Int = 0
     private var hasChildren: Boolean = false
@@ -243,7 +246,8 @@ object UctAkkaActorBenchmark {
           generateUrgentChildren(
             childrenMessage.urgentChildId,
             childrenMessage.currentId,
-            childrenMessage.compSize)
+            childrenMessage.compSize
+          )
         case grantMessage: UctConfig.UpdateGrantMessage =>
           updateGrant(grantMessage.childId)
         case _: UctConfig.TraverseMessage =>
@@ -284,7 +288,8 @@ object UctAkkaActorBenchmark {
           childrenHeight,
           idValue + i,
           compSize,
-          urgent = false)
+          urgent = false
+        )
         i += 1
       }
 
@@ -315,7 +320,8 @@ object UctAkkaActorBenchmark {
           childrenHeight,
           idValue + i,
           compSize,
-          i == urgentChild)
+          i == urgentChild
+        )
         i += 1
       }
 

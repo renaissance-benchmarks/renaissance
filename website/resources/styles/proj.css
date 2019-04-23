@@ -1039,3 +1039,63 @@ pre.prettyprint li {
 .frontends {
   text-align: center;
 }
+
+hr.fancy-line {
+  border: 0;
+  height: 1px;
+  position: relative;
+  margin: 0.5em 0;
+}
+
+hr.fancy-line:before {
+  top: -0.5em;
+  height: 1em;
+}
+
+hr.fancy-line:after {
+  content: '';
+  height: 0.5em;
+  top: -8px; /*or bottom:0; */
+}
+
+hr.fancy-line:before, hr.fancy-line:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+}
+
+hr.fancy-line, hr.fancy-line:before {
+  background: -moz-radial-gradient(center, ellipse cover, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 75%);
+  background: -webkit-gradient(radial, center center, 0px, center center, 75%, color-stop(0%, rgba(0, 0, 0, 0.1)), color-stop(75%, rgba(0, 0, 0, 0)));
+  background: -webkit-radial-gradient(center, ellipse cover, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 75%);
+  background: -o-radial-gradient(center, ellipse cover, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 75%);
+  background: -ms-radial-gradient(center, ellipse cover, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 75%);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 75%);
+}
+
+hr.fancy-line:after {
+  background: #f4f4f4;
+}
+
+div.fancy-title {
+  text-align: center;
+  position: relative;
+  font-size: 20px;
+  top: -21px;
+}
+
+div.fancy-title span {
+  background: hsl(210, 20%, 93%);
+  padding: 12px;
+}
+
+h2.post-title {
+  padding-bottom: 0px;
+  margin: 0px;
+}
+
+span.post-date {
+  font-size: 14px;
+}
+
+
