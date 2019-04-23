@@ -2,7 +2,7 @@ package org.renaissance.jdk.streams
 
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class StreamsMnemonics extends RenaissanceBenchmark {
+class Mnemonics extends RenaissanceBenchmark {
   def description = "Solves the phone mnemonics problem using JDK streams."
 
   override def defaultRepetitions = 16
