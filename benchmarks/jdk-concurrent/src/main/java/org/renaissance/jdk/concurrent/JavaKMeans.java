@@ -75,7 +75,7 @@ public final class JavaKMeans {
 
 
   private Vector<Double[]> generateData(final int count) {
-    return IntStream.range(0, count).mapToObj(i -> makeTuple((double) i)).collect(
+    return IntStream.range(0, count).mapToObj(i -> makeTuple(i)).collect(
       Vector::new, Vector::add, Vector::addAll
     );
   }
