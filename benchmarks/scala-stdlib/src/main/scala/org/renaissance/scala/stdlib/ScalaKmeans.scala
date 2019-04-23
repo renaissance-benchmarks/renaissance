@@ -6,7 +6,7 @@ import org.renaissance.License
 import scala.collection._
 import scala.util.Random
 
-trait KMeansUtilities {
+trait KmeansUtilities {
 
   class Point(val x: Double, val y: Double, val z: Double) {
     private def square(v: Double): Double = v * v
@@ -113,7 +113,7 @@ trait KMeansUtilities {
   }
 }
 
-class ScalaKMeans extends RenaissanceBenchmark with KMeansUtilities {
+class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
   def description = "Runs the K-Means algorithm using Scala collections."
 
   override def defaultRepetitions = 50
