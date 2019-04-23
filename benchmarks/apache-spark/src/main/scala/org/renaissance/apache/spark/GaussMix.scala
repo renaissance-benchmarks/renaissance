@@ -82,7 +82,7 @@ class GaussMix extends RenaissanceBenchmark {
     FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
   }
 
-  def loadData() : Unit = {
+  def loadData(): Unit = {
     input = sc
       .textFile(measurementsFile.toString)
       .map { line =>
