@@ -30,7 +30,7 @@ function getReleaseList(elementId, url) {
        var name = release.name;
        var tag = release.tag_name;
        var date = release.published_at.slice(0, 10);
-       element.insertAdjacentHTML("beforeend", marked("### " + name + " (" + date + ")"))
+       element.insertAdjacentHTML("beforeend", marked("### " + tag + " (" + date + ")"))
 
        $.each(release.assets, function(i, asset) {
          var name = asset.name
