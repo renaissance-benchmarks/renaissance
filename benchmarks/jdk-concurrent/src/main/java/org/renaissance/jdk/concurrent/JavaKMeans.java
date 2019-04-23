@@ -30,7 +30,7 @@ public final class JavaKMeans {
 
   //
 
-  private final ForkJoinPool forkJoin = new ForkJoinPool();
+  private final ForkJoinPool forkJoin;
 
 
   public JavaKMeans(
@@ -42,6 +42,7 @@ public final class JavaKMeans {
     this.clusterCount = clusterCount;
     this.iterationCount = iterationCount;
     this.forkThreshold = vectorLength / (4 * threadCount) + 1;
+    this.forkJoin = new ForkJoinPool(threadCount);
   }
 
 
