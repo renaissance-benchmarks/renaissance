@@ -111,7 +111,7 @@ matrix:
     - os: linux
       jdk: openjdk8
       env:
-        - BENCHMARK=scala-k-means
+        - BENCHMARK=scala-kmeans
 
     - os: linux
       jdk: openjdk8
