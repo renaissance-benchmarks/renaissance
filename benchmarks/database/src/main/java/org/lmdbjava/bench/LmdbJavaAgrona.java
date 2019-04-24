@@ -39,7 +39,6 @@ import org.lmdbjava.PutFlags;
 import static org.lmdbjava.PutFlags.MDB_APPEND;
 import org.lmdbjava.Txn;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class LmdbJavaAgrona {
 
   public void write(final Writer w) {
@@ -47,7 +46,6 @@ public class LmdbJavaAgrona {
     w.write();
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class LmdbJava extends CommonLmdbJava<DirectBuffer> {
 
     /**
@@ -67,9 +65,9 @@ public class LmdbJavaAgrona {
     }
 
     @Override
-    public void setup(File temp_dir, final boolean sync) throws
+    public void setup(File tempDir, final boolean sync) throws
         IOException {
-      super.setup(temp_dir, sync);
+      super.setup(tempDir, sync);
       keyBytes = new byte[keySize];
       valBytes = new byte[valSize];
       rwKey = new UnsafeBuffer(allocateDirect(keySize).order(LITTLE_ENDIAN));
@@ -106,16 +104,15 @@ public class LmdbJavaAgrona {
 
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends LmdbJava {
 
     Cursor<DirectBuffer> c;
     Txn<DirectBuffer> txn;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
+    public void setup(File tempDir) throws IOException {
       bufferProxy = PROXY_DB;
-      super.setup(temp_dir, false);
+      super.setup(tempDir, false);
       super.write();
       final int maxValSizeForCopy = 4_081; // 2nd copy requires *2 /tmp space
       if (valSize <= maxValSizeForCopy && tmp.getName().contains(".readKey-")) {
@@ -134,7 +131,6 @@ public class LmdbJavaAgrona {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends LmdbJava {
 
     /**
@@ -143,9 +139,9 @@ public class LmdbJavaAgrona {
     boolean sync;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
+    public void setup(File tempDir) throws IOException {
       bufferProxy = PROXY_DB;
-      super.setup(temp_dir, sync);
+      super.setup(tempDir, sync);
     }
 
     @Override

@@ -29,8 +29,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class MvStore {
+
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  final static int CPU = Runtime.getRuntime().availableProcessors();
 
   private static volatile Object out = null;
 
@@ -46,7 +49,6 @@ public class MvStore {
   }
 
   public void parReadKey(final Reader r) {
-    final int CPU = Runtime.getRuntime().availableProcessors();
     final int[] keys = r.keys;
     Thread[] threads = new Thread[CPU];
     for (int k = 0; k < CPU; k++) {
@@ -90,7 +92,6 @@ public class MvStore {
     w.write();
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonMvStore extends Common {
 
     MVMap<byte[], byte[]> map;
@@ -107,8 +108,8 @@ public class MvStore {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
       s = new MVStore.Builder()
@@ -151,7 +152,6 @@ public class MvStore {
     }
 
     void parWrite() {
-      final int CPU = Runtime.getRuntime().availableProcessors();
       Thread[] threads = new Thread[CPU];
       for (int k = 0; k < CPU; k++) {
         final int p = k;
@@ -163,9 +163,6 @@ public class MvStore {
             final int rndByteMax = RND_MB.length - valSize;
             int rndByteOffset = 0;
             for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-              // if (i % 1000 == 0) {
-              //   System.out.println("thread " + p + ", key " + i);
-              // }
               int key = keys[i];
               if (intKey) {
                 localwkb.putInt(0, key, LITTLE_ENDIAN);
@@ -202,8 +199,8 @@ public class MvStore {
   public static class Reader extends CommonMvStore {
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       super.write();
     }
 
@@ -216,8 +213,8 @@ public class MvStore {
   public static class Writer extends CommonMvStore {
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
     }
 
     @Override

@@ -33,19 +33,17 @@ import org.lmdbjava.PutFlags;
 import static org.lmdbjava.PutFlags.MDB_APPEND;
 import org.lmdbjava.Txn;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class LmdbJavaByteBuffer {
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class LmdbJava extends CommonLmdbJava<ByteBuffer> {
 
     ByteBuffer rwKey;
     ByteBuffer rwVal;
 
     @Override
-    public void setup(File temp_dir, final boolean sync) throws
+    public void setup(File tempDir, final boolean sync) throws
         IOException {
-      super.setup(temp_dir, sync);
+      super.setup(tempDir, sync);
       rwKey = allocateDirect(keySize).order(LITTLE_ENDIAN);
       rwVal = allocateDirect(valSize);
     }
@@ -85,7 +83,6 @@ public class LmdbJavaByteBuffer {
 
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends LmdbJava {
 
     Cursor<ByteBuffer> c;
@@ -98,9 +95,9 @@ public class LmdbJavaByteBuffer {
     Txn<ByteBuffer> txn;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
+    public void setup(File tempDir) throws IOException {
       bufferProxy = forceSafe ? PROXY_SAFE : PROXY_OPTIMAL;
-      super.setup(temp_dir, false);
+      super.setup(tempDir, false);
       super.write();
       txn = env.txnRead();
       c = db.openCursor(txn);
@@ -114,7 +111,6 @@ public class LmdbJavaByteBuffer {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends LmdbJava {
 
     /**
@@ -123,9 +119,9 @@ public class LmdbJavaByteBuffer {
     boolean sync;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
+    public void setup(File tempDir) throws IOException {
       bufferProxy = PROXY_OPTIMAL;
-      super.setup(temp_dir, sync);
+      super.setup(tempDir, sync);
     }
 
     @Override

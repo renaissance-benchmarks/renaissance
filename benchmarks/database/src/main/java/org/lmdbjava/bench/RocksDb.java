@@ -34,10 +34,8 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class RocksDb {
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonRocksDb extends Common {
 
     RocksDB db;
@@ -53,8 +51,8 @@ public class RocksDb {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
       loadLibrary();
@@ -121,8 +119,8 @@ public class RocksDb {
   public static class Reader extends CommonRocksDb {
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       super.write(num);
     }
 
@@ -132,14 +130,13 @@ public class RocksDb {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends CommonRocksDb {
 
     int batchSize;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
     }
 
     @Override

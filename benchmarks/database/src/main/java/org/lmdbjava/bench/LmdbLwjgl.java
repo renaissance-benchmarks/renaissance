@@ -52,10 +52,8 @@ import static org.lwjgl.util.lmdb.LMDB.mdb_txn_commit;
 import org.lwjgl.util.lmdb.MDBVal;
 import static org.lwjgl.util.lmdb.MDBVal.mallocStack;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class LmdbLwjgl {
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonLmdbLwjgl extends Common {
 
     private static final int POSIX_MODE = 664;
@@ -68,7 +66,6 @@ public class LmdbLwjgl {
      */
     boolean writeMap;
 
-    @SuppressWarnings("checkstyle:methodname")
     static void E(final int rc) {
       if (rc != MDB_SUCCESS) {
         throw new IllegalStateException(mdb_strerror(rc));
@@ -100,9 +97,9 @@ public class LmdbLwjgl {
       return num * ((long) valSize) * 32L / 10L;
     }
 
-    public void setup(File temp_dir, final boolean sync) throws
+    public void setup(File tempDir, final boolean sync) throws
         IOException {
-      super.setup(temp_dir);
+      super.setup(tempDir);
 
       try (MemoryStack stack = stackPush()) {
         final PointerBuffer pp = stack.mallocPointer(1);
@@ -184,15 +181,14 @@ public class LmdbLwjgl {
 
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends CommonLmdbLwjgl {
 
     long c;
     long txn;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir, false);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir, false);
       super.write();
 
       try (MemoryStack stack = stackPush()) {
@@ -214,7 +210,6 @@ public class LmdbLwjgl {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends CommonLmdbLwjgl {
 
     /**
@@ -223,8 +218,8 @@ public class LmdbLwjgl {
     boolean sync;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir, sync);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir, sync);
     }
 
     @Override

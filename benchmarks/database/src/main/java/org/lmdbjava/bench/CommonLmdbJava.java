@@ -42,8 +42,6 @@ import static org.lmdbjava.EnvFlags.MDB_WRITEMAP;
  * Additional state members used by LmdbJava benchmarks.
  *
  */
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension",
-                   "checkstyle:visibilitymodifier"})
 public class CommonLmdbJava<T> extends Common {
 
   static final int POSIX_MODE = 664;
@@ -88,9 +86,9 @@ public class CommonLmdbJava<T> extends Common {
     return num * ((long) valSize) * 32L / 10L;
   }
 
-  public void setup(File temp_dir, final boolean sync) throws
+  public void setup(File tempDir, final boolean sync) throws
       IOException {
-    super.setup(temp_dir);
+    super.setup(tempDir);
     final EnvFlags[] envFlags = envFlags(writeMap, sync);
     env = create(bufferProxy)
         .setMapSize(mapSize(num, valSize))

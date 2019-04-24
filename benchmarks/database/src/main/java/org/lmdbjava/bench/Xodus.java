@@ -42,15 +42,14 @@ public class Xodus {
     w.write();
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonXodus extends Common {
 
     Environment env;
     Store store;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
 
       final EnvironmentConfig cfg = new EnvironmentConfig();
       // size of immutable .xd file is 32MB
@@ -74,7 +73,6 @@ public class Xodus {
       super.teardown();
     }
 
-    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
     void write() {
       // optimal w/ valSize=16368 + default run
       final int batchSize = Math.max(1_000_000 / valSize, 1_000);
@@ -116,14 +114,13 @@ public class Xodus {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends CommonXodus {
 
     Transaction tx;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       super.write();
       tx = env.beginReadonlyTransaction();
       // cannot share Cursor, as there's no Cursor.getFirst() to reset methods
@@ -139,8 +136,8 @@ public class Xodus {
   public static class Writer extends CommonXodus {
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
     }
 
     @Override

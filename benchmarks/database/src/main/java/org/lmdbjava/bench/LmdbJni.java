@@ -39,10 +39,8 @@ import static org.lmdbjava.bench.CommonLmdbJava.dbiFlags;
 import static org.lmdbjava.bench.CommonLmdbJava.envFlags;
 import static org.lmdbjava.bench.CommonLmdbJava.mapSize;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class LmdbJni {
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonLmdbJni extends Common {
 
     Database db;
@@ -77,9 +75,9 @@ public class LmdbJni {
       setProperty(DISABLE_BOUNDS_CHECKS_PROP_NAME, TRUE.toString());
     }
 
-    public void setup(File temp_dir, final boolean sync) throws
+    public void setup(File tempDir, final boolean sync) throws
         IOException {
-      super.setup(temp_dir);
+      super.setup(tempDir);
       wkb = new DirectBuffer(allocateDirect(keySize));
       wvb = new DirectBuffer(allocateDirect(valSize));
       keyBytes = new byte[keySize];
@@ -141,15 +139,14 @@ public class LmdbJni {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends CommonLmdbJni {
 
     BufferCursor c;
     Transaction tx;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir, false);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir, false);
       super.write();
       tx = env.createReadTransaction();
       c = db.bufferCursor(tx);
@@ -163,7 +160,6 @@ public class LmdbJni {
     }
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends CommonLmdbJni {
 
     /**
@@ -172,8 +168,8 @@ public class LmdbJni {
     boolean sync;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir, sync);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir, sync);
     }
 
     @Override

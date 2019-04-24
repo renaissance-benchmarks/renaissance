@@ -1,4 +1,4 @@
-package org.renaissance.dbshootout
+package org.renaissance.database
 
 import java.nio.file.Path
 
@@ -48,29 +48,29 @@ class DbShootout extends RenaissanceBenchmark {
   var mvStoreWriter: MvStore.Writer = null
 
   override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
+  tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
 
     mapDb = new MapDb
-    mapDbWriter = new MapDb.Writer
     mapDbReader = new MapDb.Reader
+    mapDbWriter = new MapDb.Writer
     mapDbReader.setup(tempDirPath.toFile)
     mapDbWriter.setup(tempDirPath.toFile)
 
     levelDb = new LevelDb
-    levelDbWriter = new LevelDb.Writer
     levelDbReader = new LevelDb.Reader
+    levelDbWriter = new LevelDb.Writer
     levelDbReader.setup(tempDirPath.toFile)
     levelDbWriter.setup(tempDirPath.toFile)
 
     chronicle = new Chronicle
-    chronicleWriter = new Chronicle.Writer
     chronicleReader = new Chronicle.Reader
+    chronicleWriter = new Chronicle.Writer
     chronicleReader.setup(tempDirPath.toFile)
     chronicleWriter.setup(tempDirPath.toFile)
 
     mvStore = new MvStore
-    mvStoreWriter = new MvStore.Writer
     mvStoreReader = new MvStore.Reader
+    mvStoreWriter = new MvStore.Writer
     mvStoreReader.setup(tempDirPath.toFile)
     mvStoreWriter.setup(tempDirPath.toFile)
   }

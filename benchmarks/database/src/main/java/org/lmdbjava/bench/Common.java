@@ -25,8 +25,6 @@ import java.io.IOException;
 import static java.lang.Integer.BYTES;
 import static java.lang.System.out;
 import java.util.zip.CRC32;
-
-import com.google.common.io.Files;
 import jnr.posix.FileStat;
 import jnr.posix.POSIX;
 import static jnr.posix.POSIXFactory.getPOSIX;
@@ -38,8 +36,6 @@ import org.apache.commons.math3.random.MersenneTwister;
  * Common state superclass for all DB benchmark states.
  *
  */
-@SuppressWarnings({"checkstyle:designforextension",
-                   "checkstyle:visibilitymodifier"})
 public class Common {
 
   static final byte[] RND_MB = new byte[1_048_576];
@@ -61,7 +57,7 @@ public class Common {
   boolean intKey = true;
 
   /**
-   * Determined during {@link #setup(File temp_dir)} based on {@link #intKey} value.
+   * Determined during {@link #setup(File tempDir)} based on {@link #intKey} value.
    */
   int keySize;
   /**
@@ -102,8 +98,8 @@ public class Common {
     RND.nextBytes(RND_MB);
   }
 
-  public void setup(File temp_dir) throws IOException {
-    TMP_BENCH = temp_dir;
+  public void setup(File tempDir) throws IOException {
+    TMP_BENCH = tempDir;
     keySize = intKey ? BYTES : STRING_KEY_LENGTH;
     crc = new CRC32();
     final IntHashSet set = new IntHashSet(num);
@@ -126,8 +122,8 @@ public class Common {
       }
     }
 
-    tmp = create("");
-    compact = create("-compacted");
+    tmp = createDirectory("");
+    compact = createDirectory("-compacted");
   }
 
   public void reportSpaceBeforeClose() {
@@ -143,7 +139,6 @@ public class Common {
     }
   }
 
-  @SuppressWarnings("UseOfSystemOutOrSystemErr")
   protected void reportSpaceUsed(final File dir, final String desc) {
     final File[] files = dir.listFiles();
     if (files == null) {
@@ -165,7 +160,7 @@ public class Common {
     return "0000000000000000".substring(0, 16 - skey.length()) + skey;
   }
 
-  private File create(final String suffix) {
+  private File createDirectory(final String suffix) {
     final File f = new File(TMP_BENCH,
       getClass().getSimpleName().substring(0, 4) + suffix);
     if (!f.isDirectory() && !f.mkdirs()) {
@@ -174,7 +169,6 @@ public class Common {
     return f;
   }
 
-  @SuppressWarnings("checkstyle:ReturnCount")
   private void rmdir(final File file) {
     if (!file.exists()) {
       return;

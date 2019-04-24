@@ -28,12 +28,15 @@ import static net.openhft.chronicle.map.ChronicleMap.of;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class Chronicle {
+
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  final static int CPU = Runtime.getRuntime().availableProcessors();
 
   private static volatile Object out = null;
 
-  // Chroncile Map does not provide ordered keys, so no CRC/XXH64/rev/prev test
+  // Chronicle Map does not provide ordered keys, so no CRC/XXH64/rev/prev test
   public void readKey(final Reader r) {
     for (final int key : r.keys) {
       if (r.intKey) {
@@ -46,7 +49,6 @@ public class Chronicle {
   }
 
   public void parReadKey(final Reader r) {
-    final int CPU = Runtime.getRuntime().availableProcessors();
     final int[] keys = r.keys;
     Thread[] threads = new Thread[CPU];
     for (int k = 0; k < CPU; k++) {
@@ -91,8 +93,7 @@ public class Chronicle {
     w.parWrite();
   }
 
-  @SuppressWarnings("checkstyle:visibilitymodifier")
-  public static class CommonChroncileMap extends Common {
+  public static class CommonChronicleMap extends Common {
 
     ChronicleMap<byte[], byte[]> map;
 
@@ -107,17 +108,18 @@ public class Chronicle {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
 
       try {
+        File chronicleMapFile = new File(tmp, "chronicle.map");
         map = of(byte[].class, byte[].class)
             .constantKeySizeBySample(new byte[keySize])
             .constantValueSizeBySample(new byte[valSize])
             .entries(num)
-            .createPersistedTo(new File(tmp, "chronicle.map"));
+            .createPersistedTo(chronicleMapFile);
       } catch (final IOException ex) {
         throw new IllegalStateException(ex);
       }
@@ -153,7 +155,6 @@ public class Chronicle {
     }
 
     void parWrite() {
-      final int CPU = Runtime.getRuntime().availableProcessors();
       Thread[] threads = new Thread[CPU];
       for (int k = 0; k < CPU; k++) {
         final int p = k;
@@ -165,9 +166,6 @@ public class Chronicle {
             final int rndByteMax = RND_MB.length - valSize;
             int rndByteOffset = 0;
             for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-              // if (i % 1000 == 0) {
-              //   System.out.println("thread " + p + ", key " + i);
-              // }
               int key = keys[i];
               if (intKey) {
                 localwkb.putInt(0, key, LITTLE_ENDIAN);
@@ -199,11 +197,11 @@ public class Chronicle {
     }
   }
 
-  public static class Reader extends CommonChroncileMap {
+  public static class Reader extends CommonChronicleMap {
 
     @Override
-    public void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
       super.write();
     }
 
@@ -213,12 +211,11 @@ public class Chronicle {
     }
   }
 
-  @SuppressWarnings("checkstyle:javadoctype")
-  public static class Writer extends CommonChroncileMap {
+  public static class Writer extends CommonChronicleMap {
 
     @Override
-    public final void setup(File temp_dir) throws IOException {
-      super.setup(temp_dir);
+    public final void setup(File tempDir) throws IOException {
+      super.setup(tempDir);
     }
 
     @Override
