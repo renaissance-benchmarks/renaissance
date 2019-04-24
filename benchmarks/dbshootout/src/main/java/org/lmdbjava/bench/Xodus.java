@@ -22,111 +22,25 @@ package org.lmdbjava.bench;
 
 import java.io.IOException;
 import static java.util.Arrays.copyOfRange;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import jetbrains.exodus.ArrayByteIterable;
 import jetbrains.exodus.ByteIterable;
 import static jetbrains.exodus.bindings.IntegerBinding.intToEntry;
 import static jetbrains.exodus.bindings.StringBinding.stringToEntry;
-import jetbrains.exodus.env.Cursor;
 import jetbrains.exodus.env.Environment;
 import jetbrains.exodus.env.EnvironmentConfig;
 import static jetbrains.exodus.env.Environments.newInstance;
 import jetbrains.exodus.env.Store;
 import static jetbrains.exodus.env.StoreConfig.WITHOUT_DUPLICATES_WITH_PREFIXING;
 import jetbrains.exodus.env.Transaction;
-import static net.openhft.hashing.LongHashFunction.xx_r39;
 import static org.lmdbjava.bench.Common.RND_MB;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import static org.openjdk.jmh.annotations.Level.Invocation;
-import static org.openjdk.jmh.annotations.Level.Trial;
-import org.openjdk.jmh.annotations.Measurement;
-import static org.openjdk.jmh.annotations.Mode.SampleTime;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-@OutputTimeUnit(MILLISECONDS)
-@Fork(1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-@BenchmarkMode(SampleTime)
-@SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class Xodus {
 
-  @Benchmark
-  public void readCrc(final Reader r, final Blackhole bh) {
-    r.crc.reset();
-    try (Cursor c = r.store.openCursor(r.tx)) {
-      while (c.getNext()) {
-        r.crc.update(c.getKey().getBytesUnsafe(), 0, r.keySize);
-        r.crc.update(c.getValue().getBytesUnsafe(), 0, r.valSize);
-      }
-    }
-    bh.consume(r.crc.getValue());
-  }
-
-  @Benchmark
-  public void readKey(final Reader r, final Blackhole bh) {
-    for (final int key : r.keys) {
-      if (r.intKey) {
-        final ByteIterable val = r.store.get(r.tx, intToEntry(key));
-        if (val != null) {
-          bh.consume(val.getBytesUnsafe());
-        }
-      } else {
-        final ByteIterable val = r.store.get(r.tx, stringToEntry(r.padKey(key)));
-        if (val != null) {
-          bh.consume(val.getBytesUnsafe());
-        }
-      }
-    }
-  }
-
-  @Benchmark
-  public void readRev(final Reader r, final Blackhole bh) {
-    try (Cursor c = r.store.openCursor(r.tx)) {
-      c.getLast();
-      do {
-        bh.consume(c.getValue().getBytesUnsafe());
-      } while (c.getPrev());
-    }
-  }
-
-  @Benchmark
-  public void readSeq(final Reader r, final Blackhole bh) {
-    try (Cursor c = r.store.openCursor(r.tx)) {
-      while (c.getNext()) {
-        bh.consume(c.getValue().getBytesUnsafe());
-      }
-    }
-  }
-
-  @Benchmark
-  public void readXxh64(final Reader r, final Blackhole bh) {
-    long result = 0;
-    try (Cursor c = r.store.openCursor(r.tx)) {
-      while (c.getNext()) {
-        result += xx_r39().hashBytes(c.getKey().getBytesUnsafe(), 0, r.keySize);
-        result += xx_r39().
-            hashBytes(c.getValue().getBytesUnsafe(), 0, r.valSize);
-      }
-    }
-    bh.consume(result);
-  }
-
-  @Benchmark
   public void write(final Writer w) {
     System.out.println("xodus");
     w.write();
   }
 
-  @State(value = Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonXodus extends Common {
 
@@ -201,13 +115,11 @@ public class Xodus {
     }
   }
 
-  @State(Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends CommonXodus {
 
     Transaction tx;
 
-    @Setup(Trial)
     @Override
     public void setup() throws IOException {
       super.setup();
@@ -216,7 +128,6 @@ public class Xodus {
       // cannot share Cursor, as there's no Cursor.getFirst() to reset methods
     }
 
-    @TearDown(Trial)
     @Override
     public void teardown() throws IOException {
       tx.abort();
@@ -224,16 +135,13 @@ public class Xodus {
     }
   }
 
-  @State(Benchmark)
   public static class Writer extends CommonXodus {
 
-    @Setup(Invocation)
     @Override
     public void setup() throws IOException {
       super.setup();
     }
 
-    @TearDown(Invocation)
     @Override
     public void teardown() throws IOException {
       super.teardown();

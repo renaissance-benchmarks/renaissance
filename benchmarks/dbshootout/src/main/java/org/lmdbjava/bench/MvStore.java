@@ -24,52 +24,16 @@ import java.io.File;
 import java.io.IOException;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.copyOf;
-import java.util.Iterator;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static net.openhft.hashing.LongHashFunction.xx_r39;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import static org.openjdk.jmh.annotations.Level.Invocation;
-import static org.openjdk.jmh.annotations.Level.Trial;
-import org.openjdk.jmh.annotations.Measurement;
-import static org.openjdk.jmh.annotations.Mode.SampleTime;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-@OutputTimeUnit(MILLISECONDS)
-@Fork(1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-@BenchmarkMode(SampleTime)
 @SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class MvStore {
 
-  @Benchmark
-  public void readCrc(final Reader r, final Blackhole bh) {
-    r.crc.reset();
-    final Iterator<byte[]> iter = r.map.keyIterator(null);
-    while (iter.hasNext()) {
-      final byte[] k = iter.next();
-      final byte[] v = r.map.get(k);
-      r.crc.update(k);
-      r.crc.update(v);
-    }
-    bh.consume(r.crc.getValue());
-  }
-
   private static volatile Object out = null;
 
-  @Benchmark
   public void readKey(final Reader r) {
     for (final int key : r.keys) {
       if (r.intKey) {
@@ -81,7 +45,6 @@ public class MvStore {
     }
   }
 
-  @Benchmark
   public void parReadKey(final Reader r) {
     final int CPU = Runtime.getRuntime().availableProcessors();
     final int[] keys = r.keys;
@@ -119,47 +82,14 @@ public class MvStore {
     }
   }
 
-  @Benchmark
-  public void readRev(final Reader r, final Blackhole bh) {
-    for (long i = r.map.sizeAsLong() - 1; i >= 0; i--) {
-      final byte[] k = r.map.getKey(i);
-      bh.consume(r.map.get(k));
-    }
-  }
-
-  @Benchmark
-  public void readSeq(final Reader r, final Blackhole bh) {
-    final Iterator<byte[]> iter = r.map.keyIterator(null);
-    while (iter.hasNext()) {
-      final byte[] k = iter.next();
-      bh.consume(r.map.get(k));
-    }
-  }
-
-  @Benchmark
-  public void readXxh64(final Reader r, final Blackhole bh) {
-    long result = 0;
-    final Iterator<byte[]> iter = r.map.keyIterator(null);
-    while (iter.hasNext()) {
-      final byte[] k = iter.next();
-      final byte[] v = r.map.get(k);
-      result += xx_r39().hashBytes(k);
-      result += xx_r39().hashBytes(v);
-    }
-    bh.consume(result);
-  }
-
-  @Benchmark
   public void parWrite(final Writer w) {
     w.parWrite();
   }
 
-  @Benchmark
   public void write(final Writer w) {
     w.write();
   }
 
-  @State(value = Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonMvStore extends Common {
 
@@ -269,33 +199,27 @@ public class MvStore {
     }
   }
 
-  @State(Benchmark)
   public static class Reader extends CommonMvStore {
 
-    @Setup(Trial)
     @Override
     public void setup() throws IOException {
       super.setup();
       super.write();
     }
 
-    @TearDown(Trial)
     @Override
     public void teardown() throws IOException {
       super.teardown();
     }
   }
 
-  @State(Benchmark)
   public static class Writer extends CommonMvStore {
 
-    @Setup(Invocation)
     @Override
     public void setup() throws IOException {
       super.setup();
     }
 
-    @TearDown(Invocation)
     @Override
     public void teardown() throws IOException {
       super.teardown();

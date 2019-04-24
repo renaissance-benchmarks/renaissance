@@ -23,27 +23,18 @@ package org.lmdbjava.bench;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static net.openhft.hashing.LongHashFunction.xx_r39;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.lmdb.LMDB.MDB_APPEND;
 import static org.lwjgl.util.lmdb.LMDB.MDB_CREATE;
-import static org.lwjgl.util.lmdb.LMDB.MDB_FIRST;
 import static org.lwjgl.util.lmdb.LMDB.MDB_INTEGERKEY;
-import static org.lwjgl.util.lmdb.LMDB.MDB_LAST;
-import static org.lwjgl.util.lmdb.LMDB.MDB_NEXT;
 import static org.lwjgl.util.lmdb.LMDB.MDB_NOSYNC;
-import static org.lwjgl.util.lmdb.LMDB.MDB_NOTFOUND;
-import static org.lwjgl.util.lmdb.LMDB.MDB_PREV;
 import static org.lwjgl.util.lmdb.LMDB.MDB_RDONLY;
-import static org.lwjgl.util.lmdb.LMDB.MDB_SET_KEY;
 import static org.lwjgl.util.lmdb.LMDB.MDB_SUCCESS;
 import static org.lwjgl.util.lmdb.LMDB.MDB_WRITEMAP;
 import static org.lwjgl.util.lmdb.LMDB.mdb_cursor_close;
-import static org.lwjgl.util.lmdb.LMDB.mdb_cursor_get;
 import static org.lwjgl.util.lmdb.LMDB.mdb_cursor_open;
 import static org.lwjgl.util.lmdb.LMDB.mdb_cursor_put;
 import static org.lwjgl.util.lmdb.LMDB.mdb_dbi_open;
@@ -59,121 +50,10 @@ import static org.lwjgl.util.lmdb.LMDB.mdb_txn_begin;
 import static org.lwjgl.util.lmdb.LMDB.mdb_txn_commit;
 import org.lwjgl.util.lmdb.MDBVal;
 import static org.lwjgl.util.lmdb.MDBVal.mallocStack;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import static org.openjdk.jmh.annotations.Level.Invocation;
-import static org.openjdk.jmh.annotations.Level.Trial;
-import org.openjdk.jmh.annotations.Measurement;
-import static org.openjdk.jmh.annotations.Mode.SampleTime;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-@OutputTimeUnit(MILLISECONDS)
-@Fork(value = 1, jvmArgsAppend = "-Dorg.lwjgl.util.NoChecks=true")
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-@BenchmarkMode(SampleTime)
 @SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class LmdbLwjgl {
 
-  @Benchmark
-  public void readCrc(final Reader r, final Blackhole bh) {
-    try (MemoryStack stack = stackPush()) {
-      final MDBVal rwKey = mallocStack(stack);
-      final MDBVal rwVal = mallocStack(stack);
-
-      r.crc.reset();
-      int status = mdb_cursor_get(r.c, rwKey, rwVal, MDB_FIRST);
-      while (status != MDB_NOTFOUND) {
-        r.crc.update(rwKey.mv_data());
-        r.crc.update(rwVal.mv_data());
-        status = mdb_cursor_get(r.c, rwKey, rwVal, MDB_NEXT);
-      }
-      bh.consume(r.crc.getValue());
-    }
-  }
-
-  @Benchmark
-  public void readKey(final Reader r, final Blackhole bh) {
-    try (MemoryStack stack = stackPush()) {
-      final MDBVal rwKey = mallocStack(stack);
-      final MDBVal rwVal = mallocStack(stack);
-
-      for (final int key : r.keys) {
-        stack.push();
-        if (r.intKey) {
-          rwKey.mv_data(stack.malloc(4).putInt(0, key));
-        } else {
-          rwKey.mv_data(stack.ASCII(r.padKey(key), false));
-        }
-        bh.consume(mdb_cursor_get(r.c, rwKey, rwVal, MDB_SET_KEY));
-        bh.consume(rwVal.mv_data());
-        stack.pop();
-      }
-    }
-  }
-
-  @Benchmark
-  public void readRev(final Reader r, final Blackhole bh) {
-    try (MemoryStack stack = stackPush()) {
-      final MDBVal key = mallocStack(stack);
-      final MDBVal val = mallocStack(stack);
-
-      int status = mdb_cursor_get(r.c, key, val, MDB_LAST);
-      while (status != MDB_NOTFOUND) {
-        bh.consume(val.mv_data());
-        status = mdb_cursor_get(r.c, key, val, MDB_PREV);
-      }
-    }
-
-  }
-
-  @Benchmark
-  public void readSeq(final Reader r, final Blackhole bh) {
-    try (MemoryStack stack = stackPush()) {
-      final MDBVal key = mallocStack(stack);
-      final MDBVal val = mallocStack(stack);
-
-      int status = mdb_cursor_get(r.c, key, val, MDB_FIRST);
-      while (status != MDB_NOTFOUND) {
-        bh.consume(val.mv_data());
-        status = mdb_cursor_get(r.c, key, val, MDB_NEXT);
-      }
-    }
-  }
-
-  @Benchmark
-  public void readXxh64(final Reader r, final Blackhole bh) {
-    try (MemoryStack stack = stackPush()) {
-      final MDBVal key = mallocStack(stack);
-      final MDBVal val = mallocStack(stack);
-
-      long result = 0;
-
-      int status = mdb_cursor_get(r.c, key, val, MDB_FIRST);
-      while (status != MDB_NOTFOUND) {
-        result += xx_r39().hashBytes(key.mv_data());
-        result += xx_r39().hashBytes(val.mv_data());
-
-        status = mdb_cursor_get(r.c, key, val, MDB_NEXT);
-      }
-      bh.consume(result);
-    }
-  }
-
-  @Benchmark
-  public void write(final Writer w, final Blackhole bh) {
-    w.write();
-  }
-
-  @State(Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonLmdbLwjgl extends Common {
 
@@ -185,7 +65,6 @@ public class LmdbLwjgl {
     /**
      * Whether <code>MDB_WRITEMAP</code> is used.
      */
-    @Param("true")
     boolean writeMap;
 
     @SuppressWarnings("checkstyle:methodname")
@@ -304,14 +183,12 @@ public class LmdbLwjgl {
 
   }
 
-  @State(Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Reader extends CommonLmdbLwjgl {
 
     long c;
     long txn;
 
-    @Setup(Trial)
     @Override
     public void setup() throws IOException {
       super.setup(false);
@@ -328,7 +205,6 @@ public class LmdbLwjgl {
       }
     }
 
-    @TearDown(Trial)
     @Override
     public void teardown() throws IOException {
       mdb_cursor_close(c);
@@ -337,23 +213,19 @@ public class LmdbLwjgl {
     }
   }
 
-  @State(Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends CommonLmdbLwjgl {
 
     /**
      * Whether <code>MDB_NOSYNC</code> is used.
      */
-    @Param("false")
     boolean sync;
 
-    @Setup(Invocation)
     @Override
     public void setup() throws IOException {
       super.setup(sync);
     }
 
-    @TearDown(Invocation)
     @Override
     public void teardown() throws IOException {
       super.teardown();

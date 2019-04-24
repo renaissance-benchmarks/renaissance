@@ -36,16 +36,11 @@ import static org.lmdbjava.Env.create;
 import org.lmdbjava.EnvFlags;
 import static org.lmdbjava.EnvFlags.MDB_NOSYNC;
 import static org.lmdbjava.EnvFlags.MDB_WRITEMAP;
-import org.openjdk.jmh.annotations.Param;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.State;
 
 /**
- * Additional {@link State} members used by LmdbJava benchmarks.
+ * Additional state members used by LmdbJava benchmarks.
  *
- * @param <T> buffer type
  */
-@State(Benchmark)
 @SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension",
                    "checkstyle:visibilitymodifier"})
 public class CommonLmdbJava<T> extends Common {
@@ -59,7 +54,6 @@ public class CommonLmdbJava<T> extends Common {
   /**
    * Whether {@link EnvFlags#MDB_WRITEMAP} is used.
    */
-  @Param("true")
   boolean writeMap;
 
   static {

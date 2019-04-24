@@ -23,7 +23,6 @@ package org.lmdbjava.bench;
 import java.io.File;
 import java.io.IOException;
 import static java.lang.Integer.BYTES;
-import static java.lang.System.getProperty;
 import static java.lang.System.out;
 import java.util.zip.CRC32;
 
@@ -34,18 +33,11 @@ import static jnr.posix.POSIXFactory.getPOSIX;
 import org.agrona.collections.IntHashSet;
 import org.apache.commons.math3.random.BitsStreamGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
-import org.openjdk.jmh.annotations.Param;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.State;
 
 /**
- * Common JMH {@link State} superclass for all DB benchmark states.
+ * Common state superclass for all DB benchmark states.
  *
- * <p>
- * Members do not reflect the typical code standards of the LmdbJava project due
- * to compliance requirements with JMH {@link Param} and {@link State}.
  */
-@State(Benchmark)
 @SuppressWarnings({"checkstyle:designforextension",
                    "checkstyle:visibilitymodifier"})
 public class Common {
@@ -66,7 +58,6 @@ public class Common {
    * (taking 4 bytes) or as zero-padded 16 byte strings. Storing keys as
    * integers offers a major performance gain.
    */
-  @Param("true")
   boolean intKey = true;
 
   /**
@@ -81,7 +72,6 @@ public class Common {
   /**
    * Number of entries to read/write to the database.
    */
-  @Param("500000")
   int num = 500000;
 
   /**
@@ -92,7 +82,6 @@ public class Common {
    * and the keys will instead be inserted (and read back via "readKeys") in a
    * random order.
    */
-  @Param("true")
   boolean sequential = true;
 
   File tmp;
@@ -102,13 +91,11 @@ public class Common {
    * If true, the random bytes are obtained sequentially from a 1 MB random byte
    * buffer.
    */
-  @Param("false")
   boolean valRandom = false;
 
   /**
    * Number of bytes in each value.
    */
-  @Param("100")
   int valSize = 100;
 
   static {

@@ -23,38 +23,17 @@ package org.lmdbjava.bench;
 import java.io.File;
 import java.io.IOException;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import net.openhft.chronicle.map.ChronicleMap;
 import static net.openhft.chronicle.map.ChronicleMap.of;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import static org.openjdk.jmh.annotations.Level.Invocation;
-import static org.openjdk.jmh.annotations.Level.Trial;
-import org.openjdk.jmh.annotations.Measurement;
-import static org.openjdk.jmh.annotations.Mode.SampleTime;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-@OutputTimeUnit(MILLISECONDS)
-@Fork(1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-@BenchmarkMode(SampleTime)
 @SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class Chronicle {
 
   private static volatile Object out = null;
 
   // Chroncile Map does not provide ordered keys, so no CRC/XXH64/rev/prev test
-  @Benchmark
   public void readKey(final Reader r) {
     for (final int key : r.keys) {
       if (r.intKey) {
@@ -66,7 +45,6 @@ public class Chronicle {
     }
   }
 
-  @Benchmark
   public void parReadKey(final Reader r) {
     final int CPU = Runtime.getRuntime().availableProcessors();
     final int[] keys = r.keys;
@@ -105,17 +83,14 @@ public class Chronicle {
     }
   }
 
-  @Benchmark
   public void write(final Writer w) {
     w.write();
   }
 
-  @Benchmark
   public void parWrite(final Writer w) {
     w.parWrite();
   }
 
-  @State(value = Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonChroncileMap extends Common {
 
@@ -224,17 +199,14 @@ public class Chronicle {
     }
   }
 
-  @State(Benchmark)
   public static class Reader extends CommonChroncileMap {
 
-    @Setup(Trial)
     @Override
     public void setup() throws IOException {
       super.setup();
       super.write();
     }
 
-    @TearDown(Trial)
     @Override
     public void teardown() throws IOException {
       super.teardown();
@@ -242,16 +214,13 @@ public class Chronicle {
   }
 
   @SuppressWarnings("checkstyle:javadoctype")
-  @State(Benchmark)
   public static class Writer extends CommonChroncileMap {
 
-    @Setup(Invocation)
     @Override
     public final void setup() throws IOException {
       super.setup();
     }
 
-    @TearDown(Invocation)
     @Override
     public final void teardown() throws IOException {
       super.teardown();

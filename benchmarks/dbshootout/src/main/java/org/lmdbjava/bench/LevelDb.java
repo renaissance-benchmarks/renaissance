@@ -32,49 +32,14 @@ import static org.fusesource.leveldbjni.JniDBFactory.popMemoryPool;
 import static org.fusesource.leveldbjni.JniDBFactory.pushMemoryPool;
 import static org.iq80.leveldb.CompressionType.NONE;
 import org.iq80.leveldb.DB;
-import org.iq80.leveldb.DBIterator;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.WriteBatch;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import static org.openjdk.jmh.annotations.Level.Invocation;
-import static org.openjdk.jmh.annotations.Level.Trial;
-import org.openjdk.jmh.annotations.Measurement;
-import static org.openjdk.jmh.annotations.Mode.SampleTime;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-@OutputTimeUnit(MILLISECONDS)
-@Fork(1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-@BenchmarkMode(SampleTime)
 @SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class LevelDb {
 
-  @Benchmark
-  public void readCrc(final Reader r, final Blackhole bh) throws IOException {
-    r.crc.reset();
-    try (DBIterator iterator = r.db.iterator()) {
-      for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
-        final Entry<byte[], byte[]> peeked = iterator.peekNext();
-        r.crc.update(peeked.getKey());
-        r.crc.update(peeked.getValue());
-      }
-    }
-    bh.consume(r.crc.getValue());
-  }
-
   private static volatile Object out = null;
 
-  @Benchmark
   public void readKey(final Reader r) throws IOException {
     for (final int key : r.keys) {
       if (r.intKey) {
@@ -86,7 +51,6 @@ public class LevelDb {
     }
   }
 
-  @Benchmark
   public void parReadKey(final Reader r) {
     final int CPU = Runtime.getRuntime().availableProcessors();
     final int[] keys = r.keys;
@@ -124,50 +88,14 @@ public class LevelDb {
     }
   }
 
-  @Benchmark
-  public void readRev(final Reader r, final Blackhole bh) throws IOException {
-    try (DBIterator iterator = r.db.iterator()) {
-      for (iterator.seekToLast(); iterator.hasPrev(); iterator.prev()) {
-        final Entry<byte[], byte[]> peeked = iterator.peekPrev();
-        bh.consume(peeked.getValue());
-      }
-    }
-  }
-
-  @Benchmark
-  public void readSeq(final Reader r, final Blackhole bh) throws IOException {
-    try (DBIterator iterator = r.db.iterator()) {
-      for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
-        final Entry<byte[], byte[]> peeked = iterator.peekNext();
-        bh.consume(peeked.getValue());
-      }
-    }
-  }
-
-  @Benchmark
-  public void readXxh64(final Reader r, final Blackhole bh) throws IOException {
-    long result = 0;
-    try (DBIterator iterator = r.db.iterator()) {
-      for (iterator.seekToFirst(); iterator.hasNext(); iterator.next()) {
-        final Entry<byte[], byte[]> peeked = iterator.peekNext();
-        result += xx_r39().hashBytes(peeked.getKey());
-        result += xx_r39().hashBytes(peeked.getValue());
-      }
-    }
-    bh.consume(result);
-  }
-
-  @Benchmark
   public void write(final Writer w) throws IOException {
     w.write(w.batchSize);
   }
 
-  @Benchmark
   public void parWrite(final Writer w) throws IOException {
     w.parWrite(w.batchSize);
   }
 
-  @State(value = Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonLevelDb extends Common {
 
@@ -297,37 +225,30 @@ public class LevelDb {
     }
   }
 
-  @State(Benchmark)
   public static class Reader extends CommonLevelDb {
 
-    @Setup(Trial)
     @Override
     public void setup() throws IOException {
       super.setup();
       super.write(num);
     }
 
-    @TearDown(Trial)
     @Override
     public void teardown() throws IOException {
       super.teardown();
     }
   }
 
-  @State(Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class Writer extends CommonLevelDb {
 
-    @Param("250000")
     int batchSize = 250000;
 
-    @Setup(Invocation)
     @Override
     public void setup() throws IOException {
       super.setup();
     }
 
-    @TearDown(Invocation)
     @Override
     public void teardown() throws IOException {
       super.teardown();

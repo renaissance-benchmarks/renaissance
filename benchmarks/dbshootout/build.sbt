@@ -8,7 +8,6 @@ lazy val dbShootout = (project in file("."))
     scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := "2.11.8",
     libraryDependencies ++= Seq(
-      "org.openjdk.jmh" % "jmh-core" % "1.13",
       "com.github.jnr" % "jnr-posix" % "3.0.29",
       "org.apache.commons" % "commons-math3" % "3.6.1",
       "org.agrona" % "agrona" % "0.9.7",
@@ -30,7 +29,8 @@ lazy val dbShootout = (project in file("."))
       "net.openhft" % "chronicle-map" % "3.17.0" excludeAll(
         ExclusionRule("net.openhft", "chronicle-core"),
         ExclusionRule("net.openhft", "chronicle-bytes"),
-        ExclusionRule("net.openhft", "chronicle-threads")
+        ExclusionRule("net.openhft", "chronicle-threads"),
+        ExclusionRule("org.slf4j", "slf4j-api")
       ),
       "org.lwjgl" % "lwjgl" % "3.1.0",
       "org.lwjgl" % "lwjgl-lmdb" % "3.1.0",

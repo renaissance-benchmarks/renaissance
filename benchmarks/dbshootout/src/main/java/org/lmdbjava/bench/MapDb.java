@@ -33,56 +33,12 @@ import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import static org.mapdb.DBMaker.fileDB;
 import static org.mapdb.Serializer.BYTE_ARRAY;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import static org.openjdk.jmh.annotations.Level.Invocation;
-import static org.openjdk.jmh.annotations.Level.Trial;
-import org.openjdk.jmh.annotations.Measurement;
-import static org.openjdk.jmh.annotations.Mode.SampleTime;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import static org.openjdk.jmh.annotations.Scope.Benchmark;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 
-@OutputTimeUnit(MILLISECONDS)
-@Fork(1)
-@Warmup(iterations = 3)
-@Measurement(iterations = 3)
-@BenchmarkMode(SampleTime)
 @SuppressWarnings({"checkstyle:javadoctype", "checkstyle:designforextension"})
 public class MapDb {
 
-  @Benchmark
-  public void readCrc(final Reader r, final Blackhole bh) {
-    r.crc.reset();
-    final Iterator<Entry<byte[], byte[]>> iterator = r.map.entryIterator();
-    while (iterator.hasNext()) {
-      final Entry<byte[], byte[]> entry = iterator.next();
-      r.crc.update(entry.getKey());
-      r.crc.update(entry.getValue());
-    }
-    bh.consume(r.crc.getValue());
-  }
-
   private static volatile Object out = null;
 
-  @Benchmark
-  public void readKey(final Reader r) {
-    for (final int key : r.keys) {
-      if (r.intKey) {
-        r.wkb.putInt(0, key);
-      } else {
-        r.wkb.putStringWithoutLengthUtf8(0, r.padKey(key));
-      }
-      out = r.map.get(r.wkb.byteArray());
-    }
-  }
-
-  @Benchmark
   public void parReadKey(final Reader r) {
     final int CPU = Runtime.getRuntime().availableProcessors();
     final int[] keys = r.keys;
@@ -120,48 +76,14 @@ public class MapDb {
     }
   }
 
-  @Benchmark
-  public void readRev(final Reader r, final Blackhole bh) {
-    final Iterator<Entry<byte[], byte[]>> iterator = r.map
-        .descendingEntryIterator();
-    while (iterator.hasNext()) {
-      final Entry<byte[], byte[]> entry = iterator.next();
-      bh.consume(entry.getValue());
-    }
-  }
-
-  @Benchmark
-  public void readSeq(final Reader r, final Blackhole bh) {
-    final Iterator<Entry<byte[], byte[]>> iterator = r.map.entryIterator();
-    while (iterator.hasNext()) {
-      final Entry<byte[], byte[]> entry = iterator.next();
-      bh.consume(entry.getValue());
-    }
-  }
-
-  @Benchmark
-  public void readXxh64(final Reader r, final Blackhole bh) {
-    long result = 0;
-    final Iterator<Entry<byte[], byte[]>> iterator = r.map.entryIterator();
-    while (iterator.hasNext()) {
-      final Entry<byte[], byte[]> entry = iterator.next();
-      result += xx_r39().hashBytes(entry.getKey());
-      result += xx_r39().hashBytes(entry.getValue());
-    }
-    bh.consume(result);
-  }
-
-  @Benchmark
   public void write(final Writer w) {
     w.write();
   }
 
-  @Benchmark
   public void parWrite(final Writer w) {
     w.parWrite();
   }
 
-  @State(value = Benchmark)
   @SuppressWarnings("checkstyle:visibilitymodifier")
   public static class CommonMapDb extends Common {
 
@@ -270,39 +192,33 @@ public class MapDb {
     }
   }
 
-  @State(Benchmark)
   public static class Reader extends CommonMapDb {
     public void setNum(Integer x) {
       num = x;
     }
 
-    @Setup(Trial)
     @Override
     public void setup() throws IOException {
       super.setup();
       super.write();
     }
 
-    @TearDown(Trial)
     @Override
     public void teardown() throws IOException {
       super.teardown();
     }
   }
 
-  @State(Benchmark)
   public static class Writer extends CommonMapDb {
     public void setNum(Integer x) {
       num = x;
     }
 
-    @Setup(Invocation)
     @Override
     public void setup() throws IOException {
       super.setup();
     }
 
-    @TearDown(Invocation)
     @Override
     public void teardown() throws IOException {
       super.teardown();
