@@ -99,10 +99,18 @@ public final class JavaKMeans {
   private static <T> Map<T, List<T>> merge(
     final Map<T, List<T>> left, final Map<T, List<T>> right
   ) {
+    //
+    // When merging values with the same key, create a new ArrayList to avoid
+    // modifying an existing list representing a value in another HashMap.
+    //
     final Map<T, List<T>> result = new HashMap<>(left);
 
     right.forEach((key, val) -> result.merge(
-        key, val, (l, r) -> { l.addAll(r); return l; }
+      key, val, (l, r) -> {
+        final List<T> m = new ArrayList<>(l);
+        m.addAll(r);
+        return m;
+      }
     ));
 
     return result;
