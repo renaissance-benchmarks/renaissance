@@ -107,8 +107,8 @@ public class Chronicle {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
 
@@ -202,8 +202,8 @@ public class Chronicle {
   public static class Reader extends CommonChroncileMap {
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       super.write();
     }
 
@@ -217,8 +217,8 @@ public class Chronicle {
   public static class Writer extends CommonChroncileMap {
 
     @Override
-    public final void setup() throws IOException {
-      super.setup();
+    public final void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
     }
 
     @Override

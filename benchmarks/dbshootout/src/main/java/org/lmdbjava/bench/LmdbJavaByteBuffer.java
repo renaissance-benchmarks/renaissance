@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -42,9 +43,9 @@ public class LmdbJavaByteBuffer {
     ByteBuffer rwVal;
 
     @Override
-    public void setup(final boolean sync) throws
+    public void setup(File temp_dir, final boolean sync) throws
         IOException {
-      super.setup(sync);
+      super.setup(temp_dir, sync);
       rwKey = allocateDirect(keySize).order(LITTLE_ENDIAN);
       rwVal = allocateDirect(valSize);
     }
@@ -97,9 +98,9 @@ public class LmdbJavaByteBuffer {
     Txn<ByteBuffer> txn;
 
     @Override
-    public void setup() throws IOException {
+    public void setup(File temp_dir) throws IOException {
       bufferProxy = forceSafe ? PROXY_SAFE : PROXY_OPTIMAL;
-      super.setup(false);
+      super.setup(temp_dir, false);
       super.write();
       txn = env.txnRead();
       c = db.openCursor(txn);
@@ -122,9 +123,9 @@ public class LmdbJavaByteBuffer {
     boolean sync;
 
     @Override
-    public void setup() throws IOException {
+    public void setup(File temp_dir) throws IOException {
       bufferProxy = PROXY_OPTIMAL;
-      super.setup(sync);
+      super.setup(temp_dir, sync);
     }
 
     @Override

@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.setProperty;
@@ -66,9 +67,9 @@ public class LmdbJavaAgrona {
     }
 
     @Override
-    public void setup(final boolean sync) throws
+    public void setup(File temp_dir, final boolean sync) throws
         IOException {
-      super.setup(sync);
+      super.setup(temp_dir, sync);
       keyBytes = new byte[keySize];
       valBytes = new byte[valSize];
       rwKey = new UnsafeBuffer(allocateDirect(keySize).order(LITTLE_ENDIAN));
@@ -112,9 +113,9 @@ public class LmdbJavaAgrona {
     Txn<DirectBuffer> txn;
 
     @Override
-    public void setup() throws IOException {
+    public void setup(File temp_dir) throws IOException {
       bufferProxy = PROXY_DB;
-      super.setup(false);
+      super.setup(temp_dir, false);
       super.write();
       final int maxValSizeForCopy = 4_081; // 2nd copy requires *2 /tmp space
       if (valSize <= maxValSizeForCopy && tmp.getName().contains(".readKey-")) {
@@ -142,9 +143,9 @@ public class LmdbJavaAgrona {
     boolean sync;
 
     @Override
-    public void setup() throws IOException {
+    public void setup(File temp_dir) throws IOException {
       bufferProxy = PROXY_DB;
-      super.setup(sync);
+      super.setup(temp_dir, sync);
     }
 
     @Override

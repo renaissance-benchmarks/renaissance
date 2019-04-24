@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import java.util.Map.Entry;
@@ -112,8 +113,8 @@ public class LevelDb {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
       pushMemoryPool(1_024 * 512);
@@ -228,8 +229,8 @@ public class LevelDb {
   public static class Reader extends CommonLevelDb {
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       super.write(num);
     }
 
@@ -245,8 +246,8 @@ public class LevelDb {
     int batchSize = 250000;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
     }
 
     @Override

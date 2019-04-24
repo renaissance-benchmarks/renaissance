@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import org.agrona.MutableDirectBuffer;
@@ -52,8 +53,8 @@ public class RocksDb {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
       loadLibrary();
@@ -120,8 +121,8 @@ public class RocksDb {
   public static class Reader extends CommonRocksDb {
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       super.write(num);
     }
 
@@ -137,8 +138,8 @@ public class RocksDb {
     int batchSize;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
     }
 
     @Override

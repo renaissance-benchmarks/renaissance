@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.setProperty;
@@ -87,9 +88,9 @@ public class CommonLmdbJava<T> extends Common {
     return num * ((long) valSize) * 32L / 10L;
   }
 
-  public void setup(final boolean sync) throws
+  public void setup(File temp_dir, final boolean sync) throws
       IOException {
-    super.setup();
+    super.setup(temp_dir);
     final EnvFlags[] envFlags = envFlags(writeMap, sync);
     env = create(bufferProxy)
         .setMapSize(mapSize(num, valSize))

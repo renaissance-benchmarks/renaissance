@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import static java.lang.Boolean.TRUE;
 import static java.lang.System.setProperty;
@@ -76,9 +77,9 @@ public class LmdbJni {
       setProperty(DISABLE_BOUNDS_CHECKS_PROP_NAME, TRUE.toString());
     }
 
-    public void setup(final boolean sync) throws
+    public void setup(File temp_dir, final boolean sync) throws
         IOException {
-      super.setup();
+      super.setup(temp_dir);
       wkb = new DirectBuffer(allocateDirect(keySize));
       wvb = new DirectBuffer(allocateDirect(valSize));
       keyBytes = new byte[keySize];
@@ -147,8 +148,8 @@ public class LmdbJni {
     Transaction tx;
 
     @Override
-    public void setup() throws IOException {
-      super.setup(false);
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir, false);
       super.write();
       tx = env.createReadTransaction();
       c = db.bufferCursor(tx);
@@ -171,8 +172,8 @@ public class LmdbJni {
     boolean sync;
 
     @Override
-    public void setup() throws IOException {
-      super.setup(sync);
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir, sync);
     }
 
     @Override

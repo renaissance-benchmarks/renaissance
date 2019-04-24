@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import static java.util.Arrays.copyOfRange;
 import jetbrains.exodus.ArrayByteIterable;
@@ -48,8 +49,8 @@ public class Xodus {
     Store store;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
 
       final EnvironmentConfig cfg = new EnvironmentConfig();
       // size of immutable .xd file is 32MB
@@ -121,8 +122,8 @@ public class Xodus {
     Transaction tx;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       super.write();
       tx = env.beginReadonlyTransaction();
       // cannot share Cursor, as there's no Cursor.getFirst() to reset methods
@@ -138,8 +139,8 @@ public class Xodus {
   public static class Writer extends CommonXodus {
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
     }
 
     @Override

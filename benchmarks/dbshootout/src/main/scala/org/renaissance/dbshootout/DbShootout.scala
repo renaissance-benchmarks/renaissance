@@ -1,7 +1,8 @@
 package org.renaissance.dbshootout
 
-import org.lmdbjava.bench.{Chronicle, LevelDb, MapDb, MvStore}
+import java.nio.file.Path
 
+import org.lmdbjava.bench.{Chronicle, LevelDb, MapDb, MvStore}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class DbShootout extends RenaissanceBenchmark {
@@ -19,6 +20,8 @@ class DbShootout extends RenaissanceBenchmark {
   def licenses = License.create(License.APACHE2)
 
   override def defaultRepetitions = 16
+
+  var tempDirPath: Path = null
 
   var mapDb: MapDb = null
 
@@ -45,29 +48,31 @@ class DbShootout extends RenaissanceBenchmark {
   var mvStoreWriter: MvStore.Writer = null
 
   override def setUpBeforeAll(c: Config): Unit = {
+    tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
+
     mapDb = new MapDb
     mapDbWriter = new MapDb.Writer
     mapDbReader = new MapDb.Reader
-    mapDbReader.setup()
-    mapDbWriter.setup()
+    mapDbReader.setup(tempDirPath.toFile)
+    mapDbWriter.setup(tempDirPath.toFile)
 
     levelDb = new LevelDb
     levelDbWriter = new LevelDb.Writer
     levelDbReader = new LevelDb.Reader
-    levelDbReader.setup()
-    levelDbWriter.setup()
+    levelDbReader.setup(tempDirPath.toFile)
+    levelDbWriter.setup(tempDirPath.toFile)
 
     chronicle = new Chronicle
     chronicleWriter = new Chronicle.Writer
     chronicleReader = new Chronicle.Reader
-    chronicleReader.setup()
-    chronicleWriter.setup()
+    chronicleReader.setup(tempDirPath.toFile)
+    chronicleWriter.setup(tempDirPath.toFile)
 
     mvStore = new MvStore
     mvStoreWriter = new MvStore.Writer
     mvStoreReader = new MvStore.Reader
-    mvStoreReader.setup()
-    mvStoreWriter.setup()
+    mvStoreReader.setup(tempDirPath.toFile)
+    mvStoreWriter.setup(tempDirPath.toFile)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -75,6 +80,8 @@ class DbShootout extends RenaissanceBenchmark {
     levelDbReader.teardown()
     chronicleReader.teardown()
     mvStoreReader.teardown()
+
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
   def runIteration(c: Config): Unit = {

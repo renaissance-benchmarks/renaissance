@@ -20,6 +20,7 @@
 
 package org.lmdbjava.bench;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -99,9 +100,9 @@ public class LmdbLwjgl {
       return num * ((long) valSize) * 32L / 10L;
     }
 
-    public void setup(final boolean sync) throws
+    public void setup(File temp_dir, final boolean sync) throws
         IOException {
-      super.setup();
+      super.setup(temp_dir);
 
       try (MemoryStack stack = stackPush()) {
         final PointerBuffer pp = stack.mallocPointer(1);
@@ -190,8 +191,8 @@ public class LmdbLwjgl {
     long txn;
 
     @Override
-    public void setup() throws IOException {
-      super.setup(false);
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir, false);
       super.write();
 
       try (MemoryStack stack = stackPush()) {
@@ -222,8 +223,8 @@ public class LmdbLwjgl {
     boolean sync;
 
     @Override
-    public void setup() throws IOException {
-      super.setup(sync);
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir, sync);
     }
 
     @Override

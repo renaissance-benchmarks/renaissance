@@ -107,8 +107,8 @@ public class MvStore {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
       s = new MVStore.Builder()
@@ -202,8 +202,8 @@ public class MvStore {
   public static class Reader extends CommonMvStore {
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
       super.write();
     }
 
@@ -216,8 +216,8 @@ public class MvStore {
   public static class Writer extends CommonMvStore {
 
     @Override
-    public void setup() throws IOException {
-      super.setup();
+    public void setup(File temp_dir) throws IOException {
+      super.setup(temp_dir);
     }
 
     @Override

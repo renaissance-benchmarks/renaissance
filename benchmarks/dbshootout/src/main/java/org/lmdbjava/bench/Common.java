@@ -47,7 +47,7 @@ public class Common {
   private static final POSIX POSIX = getPOSIX();
   private static final BitsStreamGenerator RND = new MersenneTwister();
   private static final int S_BLKSIZE = 512; // from sys/stat.h
-  private static final File TMP_BENCH;
+  private static File TMP_BENCH = null;
 
   File compact;
 
@@ -61,7 +61,7 @@ public class Common {
   boolean intKey = true;
 
   /**
-   * Determined during {@link #setup()} based on {@link #intKey} value.
+   * Determined during {@link #setup(File temp_dir)} based on {@link #intKey} value.
    */
   int keySize;
   /**
@@ -100,10 +100,10 @@ public class Common {
 
   static {
     RND.nextBytes(RND_MB);
-    TMP_BENCH = Files.createTempDir();
   }
 
-  public void setup() throws IOException {
+  public void setup(File temp_dir) throws IOException {
+    TMP_BENCH = temp_dir;
     keySize = intKey ? BYTES : STRING_KEY_LENGTH;
     crc = new CRC32();
     final IntHashSet set = new IntHashSet(num);
@@ -126,7 +126,6 @@ public class Common {
       }
     }
 
-    rmdir(TMP_BENCH);
     tmp = create("");
     compact = create("-compacted");
   }
@@ -142,7 +141,6 @@ public class Common {
     if (tmp.getName().contains(".readKey-")) {
       reportSpaceUsed(tmp, "after-close");
     }
-    rmdir(TMP_BENCH);
   }
 
   @SuppressWarnings("UseOfSystemOutOrSystemErr")
@@ -170,7 +168,7 @@ public class Common {
   private File create(final String suffix) {
     final File f = new File(TMP_BENCH,
       getClass().getSimpleName().substring(0, 4) + suffix);
-    if (!f.mkdirs()) {
+    if (!f.isDirectory() && !f.mkdirs()) {
       throw new IllegalStateException("Cannot mkdir " + f);
     }
     return f;
