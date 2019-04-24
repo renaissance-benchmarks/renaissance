@@ -51,7 +51,8 @@ class LogRegression extends RenaissanceBenchmark {
 
   def prepareInput() = {
     FileUtils.deleteDirectory(logisticRegressionPath.toFile)
-    val text = IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
+    val text =
+      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
     for (i <- 0 until 400) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }

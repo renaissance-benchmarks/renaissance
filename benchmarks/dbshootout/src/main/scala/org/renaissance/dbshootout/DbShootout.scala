@@ -6,14 +6,14 @@ import org.lmdbjava.bench.{Chronicle, LevelDb, MapDb, MvStore}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class DbShootout extends RenaissanceBenchmark {
-  /**
-    * The original benchmarks are from https://github.com/lmdbjava/benchmarks
-    * and have been slightly adapted.
-    * For instance, the JMH dependency has been removed and the location where
-    * the benchmark writes on disk has been updated to match the rest of the
-    * renaissance suite.
-    */
 
+  /**
+   * The original benchmarks are from https://github.com/lmdbjava/benchmarks
+   * and have been slightly adapted.
+   * For instance, the JMH dependency has been removed and the location where
+   * the benchmark writes on disk has been updated to match the rest of the
+   * renaissance suite.
+   */
   override def description(): String =
     "Executes a shootout test using several in-memory databases."
 

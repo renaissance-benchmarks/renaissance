@@ -41,7 +41,7 @@ class MovieLens extends RenaissanceBenchmark {
 
   val checkpointPath = movieLensPath.resolve("checkpoint")
 
-  val personalRatingsInputFile =  "/movie-lens-my-ratings.csv"
+  val personalRatingsInputFile = "/movie-lens-my-ratings.csv"
 
   val moviesInputFile = "/movies.csv"
 

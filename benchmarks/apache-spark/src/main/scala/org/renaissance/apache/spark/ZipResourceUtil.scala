@@ -9,7 +9,7 @@ import org.apache.commons.io.IOUtils
 object ZipResourceUtil {
 
   def readZipFromResourceToText(resourceName: String): String = {
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/"  + resourceName))
+    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + resourceName))
     zis.getNextEntry()
     IOUtils.toString(zis, StandardCharsets.UTF_8)
   }

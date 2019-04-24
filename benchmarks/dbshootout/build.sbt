@@ -24,9 +24,9 @@ lazy val dbShootout = (project in file("."))
       "com.h2database" % "h2-mvstore" % "1.4.192",
       "org.rocksdb" % "rocksdbjni" % "4.8.0",
       "net.openhft" % "chronicle-core" % "2.17.2",
-      "net.openhft" % "chronicle-bytes" % "2.17.7" exclude("net.openhft", "chronicle-core"),
-      "net.openhft" % "chronicle-threads" % "2.17.1" exclude("net.openhft", "chronicle-core"),
-      "net.openhft" % "chronicle-map" % "3.17.0" excludeAll(
+      "net.openhft" % "chronicle-bytes" % "2.17.7" exclude ("net.openhft", "chronicle-core"),
+      "net.openhft" % "chronicle-threads" % "2.17.1" exclude ("net.openhft", "chronicle-core"),
+      "net.openhft" % "chronicle-map" % "3.17.0" excludeAll (
         ExclusionRule("net.openhft", "chronicle-core"),
         ExclusionRule("net.openhft", "chronicle-bytes"),
         ExclusionRule("net.openhft", "chronicle-threads"),
