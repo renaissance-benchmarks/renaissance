@@ -97,7 +97,7 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
 
 
-##### dbshootout
+##### database
 
 - `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
 
