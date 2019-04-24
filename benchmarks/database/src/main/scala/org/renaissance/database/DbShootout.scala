@@ -48,7 +48,7 @@ class DbShootout extends RenaissanceBenchmark {
   var mvStoreWriter: MvStore.Writer = null
 
   override def setUpBeforeAll(c: Config): Unit = {
-  tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
+    tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
 
     mapDb = new MapDb
     mapDbReader = new MapDb.Reader
