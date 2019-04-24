@@ -49,16 +49,13 @@ public final class JavaKMeans {
   public List<Double[]> run() throws InterruptedException, ExecutionException {
     final List<Double[]> data = generateData(vectorLength);
 
-    final Random random = new Random(100);
-    final List<Double[]> centroids = randomSample(clusterCount, data, random);
-
+    List<Double[]> centroids = randomSample(clusterCount, data, new Random(100));
     for (int iteration = 0; iteration < iterationCount; iteration++) {
       final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
       final UpdateTask updateTask = new UpdateTask(forkJoin.invoke(assignmentTask));
       final Map<Double[], List<Double[]>> clusters = forkJoin.invoke(updateTask);
 
-      centroids.clear();
-      centroids.addAll(clusters.keySet());
+      centroids = new ArrayList<>(clusters.keySet());
     }
 
     forkJoin.awaitQuiescence(1, TimeUnit.SECONDS);
