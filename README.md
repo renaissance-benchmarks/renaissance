@@ -99,6 +99,11 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
 
 
+##### database
+
+- `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
+
+
 ##### jdk-concurrent
 
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
@@ -208,6 +213,7 @@ The following table contains the licensing information of all the benchmarks:
 | rx-scrabble | GPL2 | GPL3 |
 | dec-tree | APACHE2 | MIT |
 | naive-bayes | APACHE2 | MIT |
+| db-shootout | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
