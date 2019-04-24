@@ -4,7 +4,7 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
-class FjKMeans extends RenaissanceBenchmark {
+class FjKmeans extends RenaissanceBenchmark {
   def description = "Runs the k-means algorithm using the fork/join framework."
 
   override def defaultRepetitions = 30
