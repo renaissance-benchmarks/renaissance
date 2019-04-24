@@ -32,6 +32,18 @@ class AnalyticsBenchmark(val graphDir: File) {
     "FILMS" -> FILMS
   )
 
+  private val directorLabel = new Label {
+    override def name(): String = "Director"
+  }
+
+  private val filmLabel = new Label {
+    override def name(): String = "Film"
+  }
+
+  private val genreLabel = new Label {
+    override def name(): String = "Genre"
+  }
+
   /** Must be called before calling `run`.
    */
   def setupAll(): Unit = {
@@ -88,7 +100,7 @@ class AnalyticsBenchmark(val graphDir: File) {
         val label = (vertex \ "label").extract[String]
         val node = label match {
           case "Genre" =>
-            val node = db.createNode(Label.label(label))
+            val node = db.createNode(genreLabel)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("genreId", (vertex \ "genreId").extract[String])
             node.setProperty("name", (vertex \ "name").extract[String])
@@ -99,14 +111,14 @@ class AnalyticsBenchmark(val graphDir: File) {
             } else {
               (vertex \ "name").extract[String]
             }
-            val node = db.createNode(Label.label(label))
+            val node = db.createNode(filmLabel)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("filmId", (vertex \ "filmId").extract[String])
             node.setProperty("name", filmName)
             node.setProperty("release_date", (vertex \ "release_date").extract[String])
             node
           case "Director" =>
-            val node = db.createNode(Label.label(label))
+            val node = db.createNode(directorLabel)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("directorId", (vertex \ "directorId").extract[String])
             node.setProperty("name", (vertex \ "name").extract[String])
@@ -162,21 +174,21 @@ class AnalyticsBenchmark(val graphDir: File) {
 
   private def createIndices(db: GraphDatabaseService): Unit = {
     println("Creating indices...")
-    createIndex(db, "Director", "id")
-    createIndex(db, "Director", "name")
-    createIndex(db, "Film", "release_date")
-    createIndex(db, "Film", "name")
+    createIndex(db, directorLabel, "id")
+    createIndex(db, directorLabel, "name")
+    createIndex(db, filmLabel, "release_date")
+    createIndex(db, filmLabel, "name")
   }
 
   private def createIndex(
     db: GraphDatabaseService,
-    label: String,
+    label: Label,
     property: String
   ): Unit = {
     val tx = db.beginTx()
     val schema = db.schema()
     schema
-      .indexFor(Label.label(label))
+      .indexFor(label)
       .on(property)
       .create()
     tx.success()
