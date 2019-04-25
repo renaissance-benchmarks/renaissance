@@ -19,14 +19,14 @@ import java.util.logging.Logger;
 
 import org.renaissance.Launcher;
 
-public class RenaissanceClassLoader {
+public class ModuleLoader {
   private static final URL[] URL_ARRAY_TYPE = new URL[0];
 
   private static final Map<String, String[]> GROUP_JAR_NAMES
-    = getGroupJarNames(RenaissanceClassLoader.class.getResourceAsStream("/groups-jars.txt"));
+    = getGroupJarNames(ModuleLoader.class.getResourceAsStream("/groups-jars.txt"));
 
   public static ClassLoader getForGroup(String groupName) throws ClassNotFoundException {
-    Logger logger = Logging.getMethodLogger(RenaissanceClassLoader.class, "getGroupClassloader");
+    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupClassloader");
 
     String[] jarNames = GROUP_JAR_NAMES.get(groupName);
     if (jarNames == null) {
@@ -40,7 +40,7 @@ public class RenaissanceClassLoader {
     }
 
     try {
-      ClassLoader parent = RenaissanceClassLoader.class.getClassLoader();
+      ClassLoader parent = ModuleLoader.class.getClassLoader();
       URL[] extractedUrls = extractAndGetUrls(jarStreams);
       for (InputStream is : jarStreams) {
         is.close();
@@ -55,7 +55,7 @@ public class RenaissanceClassLoader {
   }
   
   private static Map<String, String[]> getGroupJarNames(InputStream jarList) {
-    Logger logger = Logging.getMethodLogger(RenaissanceClassLoader.class, "getGroupJarNames");
+    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupJarNames");
 
     Scanner sc = new Scanner(jarList);
     Map<String, String[]> result = new HashMap<>();
@@ -77,7 +77,7 @@ public class RenaissanceClassLoader {
   }
 
   private static URL[] extractAndGetUrls(List<InputStream> streams) throws IOException {
-    Logger logger = Logging.getMethodLogger(RenaissanceClassLoader.class, "extractAndGetUrls");
+    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "extractAndGetUrls");
 
     Path baseDir = Paths.get(".");
     Path baseUnpackDir = Files.createTempDirectory(baseDir, "jars-");

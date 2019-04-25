@@ -8,7 +8,7 @@ import org.apache.commons.io.IOUtils
 import scala.collection._
 import scala.collection.JavaConverters._
 import scopt._
-import org.renaissance.util.RenaissanceClassLoader
+import org.renaissance.util.ModuleLoader
 
 object RenaissanceSuite {
 
@@ -174,7 +174,7 @@ object RenaissanceSuite {
     val fullBenchClassName = "org.renaissance." + packageName + "." + benchClassName
 
     // Use separate classloader for this benchmark
-    val loader = RenaissanceClassLoader.getForGroup(mainGroup)
+    val loader = ModuleLoader.getForGroup(mainGroup)
 
     val benchClass = loader.loadClass(fullBenchClassName)
     val result = benchClass.newInstance()
