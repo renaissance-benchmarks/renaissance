@@ -485,7 +485,8 @@ using an existing project, such as `scala-stdlib`, as an example.
 The project will be automatically picked up by the build system
 and included into the Renaissance distribution.
 
-Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project.
+Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project
+(rules defined in `.scalafmt.conf`).
 A convenient sbt task can do that check:
 ```
 $$ tools/sbt/bin/sbt renaissanceFormatCheck
@@ -501,6 +502,18 @@ Updating those files can be done with the `--readme` command-line flag. Using sb
 ```
 $$ tools/sbt/bin/sbt runMain org.renaissance.RenaissanceSuite --readme
 ```
+
+### IDE development
+
+#### IntelliJ
+
+In order to work on the project with IntelliJ, one needs to install the following plugins :
+  - `Scala` : part of the codebase uses Scala and Renaissance is organized in sbt projects.
+  - `scalafmt` (optional) : adds an action that can be triggered with `Code -> Reformat with scalafmt`
+  which will reformat the code according to the formatting rule defined in `.scalafmt.conf`
+  (same as the `renaissanceFormat` sbt task).
+
+Then, the root of this repository can be opened as an IntelliJ project.
 
 ### Benchmark evaluation and release process
 
