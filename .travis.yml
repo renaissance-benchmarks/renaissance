@@ -36,6 +36,11 @@ matrix:
     - os: linux
       jdk: openjdk8
       env:
+        - BENCHMARK=db-shootout
+
+    - os: linux
+      jdk: openjdk8
+      env:
         - BENCHMARK=dec-tree
 
     - os: linux
