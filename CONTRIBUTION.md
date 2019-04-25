@@ -49,18 +49,18 @@ The project will be automatically picked up by the build system
 and included into the Renaissance distribution.
 
 Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project.
-A convenient sbt task can do that check :
+A convenient sbt task can do that check:
 ```
 $ tools/sbt/bin/sbt renaissanceFormatCheck
 ```
 
-Another one can directly update the source files to match the desired format :
+Another one can directly update the source files to match the desired format:
 ```
 $ tools/sbt/bin/sbt renaissanceFormat
 ```
 
 Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
-Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do :
+Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
 $ tools/sbt/bin/sbt runMain org.renaissance.RenaissanceSuite --readme
 ```
