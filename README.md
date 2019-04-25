@@ -39,7 +39,7 @@ java -jar '<renaissance-home>/target/scala-2.12/renaissance-0.1.jar' <benchmarks
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
 and `<benchmarks>` is the list of benchmarks that you wish to run.
-For example, you can specify `scala-k-means` as the benchmark.
+For example, you can specify `scala-kmeans` as the benchmark.
 
 
 #### Complete list of command-line options
