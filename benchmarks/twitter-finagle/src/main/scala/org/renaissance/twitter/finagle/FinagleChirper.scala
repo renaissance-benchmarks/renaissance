@@ -97,17 +97,17 @@ class FinagleChirper extends RenaissanceBenchmark {
 
       val compInt = new Comparator[Integer] {
         override def compare(c1: Integer, c2: Integer): Int = {
-            c1.compareTo(c2);
+          c1.compareTo(c2);
         }
         def naturalOrder(): Comparator[Integer] =
-        return new Comparator[Integer] {
+          return new Comparator[Integer] {
             override def compare(c1: Integer, c2: Integer): Int = {
-                c1.compareTo(c2);
+              c1.compareTo(c2);
             }
             override def reversed(): Comparator[Integer] = {
-                Comparator.reverseOrder[Integer];
+              Comparator.reverseOrder[Integer];
             }
-        }
+          }
       }
 
       counts
