@@ -94,6 +94,22 @@ class FinagleChirper extends RenaissanceBenchmark {
               counts.add(username)
           }
       }
+
+      val compInt = new Comparator[Integer] {
+        override def compare(c1: Integer, c2: Integer): Int = {
+          c1.compareTo(c2);
+        }
+        def naturalOrder(): Comparator[Integer] =
+          return new Comparator[Integer] {
+            override def compare(c1: Integer, c2: Integer): Int = {
+              c1.compareTo(c2);
+            }
+            override def reversed(): Comparator[Integer] = {
+              Comparator.reverseOrder[Integer];
+            }
+          }
+      }
+
       counts
         .entrySet()
         .parallelStream()
@@ -102,7 +118,7 @@ class FinagleChirper extends RenaissanceBenchmark {
             override def apply(t: Entry[String]): Integer = t.getCount
           }
         )
-        .max(Comparator.naturalOrder[Integer])
+        .max(compInt.naturalOrder())
         .get
         .toLong
     }
