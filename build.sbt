@@ -11,14 +11,18 @@ val renaissanceVersion = "0.1"
 val renaissanceScalaVersion = "2.12.8"
 
 val benchmarkProjects = for {
+  // Hint: add .filter(_ == "group") to compile with selected group only
+  // (can significantly speed-up compilation/assembly when debugging harness).
   dir <- file("benchmarks").list()
 } yield {
   RootProject(uri("benchmarks/" + dir))
 }
+val subProjects = benchmarkProjects :+ RootProject(uri("renaissance-harness"))
 
 // Do not assemble fat JARs in subprojects
 aggregate in assembly := false
 
+lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
@@ -81,12 +85,13 @@ def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, 
 
 def jarsAndListGenerator = Def.taskDyn {
   val projectJarTasks = for {
-    p <- benchmarkProjects
+    p <- subProjects
   } yield
     Def.task {
       val mainJar = (packageBin in (p, Compile)).value
       val coreJar = (packageBin in (renaissanceCore, Runtime)).value
       val depJars = (dependencyClasspath in (p, Compile)).value.map(_.data).filter(_.isFile)
+      val loadedJarFiles = mainJar +: depJars
       val allJars = mainJar +: coreJar +: depJars
       val project = p.asInstanceOf[RootProject].build.getPath
       val jarFiles = for (jar <- allJars) yield {
@@ -95,7 +100,7 @@ def jarsAndListGenerator = Def.taskDyn {
         Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
         dest
       }
-      (project, jarFiles)
+      (project, jarFiles, loadedJarFiles)
     }
 
   // Add the built-in benchmarks.
@@ -105,7 +110,7 @@ def jarsAndListGenerator = Def.taskDyn {
       (resourceManaged in Compile).value / "benchmarks" / "core" / coreJar.getName
     coreJarDest.getParentFile.mkdirs()
     Files.copy(coreJar.toPath, coreJarDest.toPath, StandardCopyOption.REPLACE_EXISTING)
-    ("benchmarks/core", Seq(coreJarDest))
+    ("benchmarks/core", Seq(coreJarDest), Seq(coreJarDest))
   }
   val jarTasks = coreJarTask +: projectJarTasks
   val nonGpl = nonGplOnly.value
@@ -121,13 +126,13 @@ def jarsAndListGenerator = Def.taskDyn {
     val benchDetails = new java.util.Properties
 
     // Add the benchmarks from the different project groups.
-    for ((project, jars) <- groupJars) {
-      val jarLine = jars
+    for ((project, allJars, loadedJars) <- groupJars) {
+      val jarLine = loadedJars
         .map(jar => project + "/" + jar.getName)
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for ( (name, license, description, repetitions) <- listBenchmarks(project, jars)) {
+      for ( (name, license, description, repetitions) <- listBenchmarks(project, allJars)) {
         if (!nonGpl || license == "MIT") {
           benchGroupContent.append(name).append("=").append(projectShort).append("\n")
           benchDetails.setProperty("benchmark." + name + ".description", description)
@@ -139,7 +144,7 @@ def jarsAndListGenerator = Def.taskDyn {
     IO.write(benchGroupFile, benchGroupContent.toString, StandardCharsets.UTF_8)
     benchDetails.store(benchDetailsStream, "Benchmark details")
     benchGroupFile +: benchDetailsFile +: jarListFile +: groupJars.flatMap {
-      case (_, jars) => jars
+      case (_, jars, _) => jars
     }
   }
 }
@@ -149,9 +154,9 @@ val renaissanceFormat = taskKey[Unit](
 )
 
 def createRenaissanceFormatTask = Def.taskDyn {
-  val formatTasks = for (p <- benchmarkProjects) yield scalafmt in (p, Compile)
-  val testFormatTasks = for (p <- benchmarkProjects) yield scalafmt in (p, Test)
-  val buildFormatTasks = for (p <- benchmarkProjects) yield scalafmtSbt in (p, Compile)
+  val formatTasks = for (p <- subProjects) yield scalafmt in (p, Compile)
+  val testFormatTasks = for (p <- subProjects) yield scalafmt in (p, Test)
+  val buildFormatTasks = for (p <- subProjects) yield scalafmtSbt in (p, Compile)
   flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
 }
 
@@ -162,9 +167,9 @@ val renaissanceFormatCheck = taskKey[Unit](
 )
 
 def createRenaissanceFormatCheckTask = Def.taskDyn {
-  val formatTasks = for (p <- benchmarkProjects) yield scalafmtCheck in (p, Compile)
-  val testFormatTasks = for (p <- benchmarkProjects) yield scalafmtCheck in (p, Test)
-  val buildFormatTasks = for (p <- benchmarkProjects) yield scalafmtSbtCheck in (p, Compile)
+  val formatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Compile)
+  val testFormatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Test)
+  val buildFormatTasks = for (p <- subProjects) yield scalafmtSbtCheck in (p, Compile)
   flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
 }
 
@@ -186,11 +191,6 @@ lazy val renaissance: Project = {
       name := "renaissance",
       version := renaissanceVersion,
       organization := "org.renaissance",
-      scalaVersion := renaissanceScalaVersion,
-      libraryDependencies ++= Seq(
-        "commons-io" % "commons-io" % "2.6",
-        "com.github.scopt" %% "scopt" % "4.0.0-RC2"
-      ),
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceFormatTask,
       renaissanceFormatCheckTask,
@@ -202,7 +202,8 @@ lazy val renaissance: Project = {
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
-      mainClass in assembly := Some("org.renaissance.RenaissanceSuite"),
+      mainClass in assembly := Some("org.renaissance.Launcher"),
+      assemblyOption in assembly ~= { _.copy(includeScala = false) },
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
@@ -220,5 +221,5 @@ lazy val renaissance: Project = {
     .dependsOn(
       renaissanceCore
     )
-  benchmarkProjects.foldLeft(p)(_ aggregate _)
+  subProjects.foldLeft(p)(_ aggregate _)
 }

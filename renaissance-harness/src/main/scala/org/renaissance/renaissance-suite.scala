@@ -8,6 +8,7 @@ import org.apache.commons.io.IOUtils
 import scala.collection._
 import scala.collection.JavaConverters._
 import scopt._
+import org.renaissance.util.RenaissanceClassLoader
 
 object RenaissanceSuite {
 
@@ -166,20 +167,22 @@ object RenaissanceSuite {
     return result
   }
 
-  private def loadBenchmark(name: String): ProxyRenaissanceBenchmark = {
+  private def loadBenchmark(name: String): RenaissanceBenchmark = {
     val mainGroup = benchmarkGroups(name)
-    copyJars(mainGroup)
-
-    val dir = "target/modules/" + mainGroup + "/"
-    val urls = for {
-      file <- new File(dir).listFiles()
-      if file.getName.endsWith(".jar")
-    } yield file.toURI.toURL
-    val loader = new URLClassLoader(urls, ClassLoader.getSystemClassLoader.getParent)
     val benchClassName = camelCase(name)
     val packageName = mainGroup.replace("-", ".")
     val fullBenchClassName = "org.renaissance." + packageName + "." + benchClassName
-    new ProxyRenaissanceBenchmark(loader, fullBenchClassName)
+
+    // Use separate classloader for this benchmark
+    val loader = RenaissanceClassLoader.getForGroup(mainGroup)
+
+    val benchClass = loader.loadClass(fullBenchClassName)
+    val result = benchClass.newInstance()
+
+    // Make current thread as independent of the harness as possible
+    Thread.currentThread.setContextClassLoader(loader)
+
+    return result.asInstanceOf[RenaissanceBenchmark]
   }
 
   private def formatRawBenchmarkList(): String = {
@@ -430,7 +433,7 @@ Note that, as a result, the `renaissance-core` JAR is loaded twice -- once in th
 and separately in the URL class loader of the specified benchmark.
 To enable the harness to call the methods of the
 `${classOf[RenaissanceBenchmark].getSimpleName}` that is loaded in the URL class loader,
-we have a special `${classOf[ProxyRenaissanceBenchmark].getSimpleName}` class,
+we have a special `${classOf[RenaissanceBenchmark].getSimpleName}` class,
 that knows how to call the methods of the benchmark defined in another class loader.
 
 You can see the further details of the build system in the top-level `build.sbt` file,

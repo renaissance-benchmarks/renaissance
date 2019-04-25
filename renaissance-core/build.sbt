@@ -7,10 +7,7 @@ lazy val renaissanceCore = (project in file("."))
     name := "renaissance-core",
     version := renaissanceVersion,
     organization := "org.renaissance",
-    scalaVersion := renaissanceScalaVersion,
-    libraryDependencies ++= Seq(
-      ),
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     crossPaths := false,
     autoScalaLibrary := false
   )
+
