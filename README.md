@@ -14,9 +14,6 @@ and for tools such as profilers, debuggers, or static analyzers, and even differ
 It is intended to be an open-source, collaborative project,
 in which the community can propose and improve benchmark workloads.
 
-The contents of this README file are automatically generated from the codebase,
-and can be refreshed with the `--readme` command-line flag.
-
 
 ### Building the suite
 
@@ -191,8 +188,7 @@ the current state of the benchmark.
 
 ### Contributing
 
-Please see CONTRIBUTION.md for a description of the contributing process.
-
+Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
 
 ### Licensing
 
