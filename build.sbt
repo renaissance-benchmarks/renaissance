@@ -84,6 +84,9 @@ def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, 
 }
 
 def jarsAndListGenerator = Def.taskDyn {
+  // Each generated task returns tuple of
+  // (project path, all JAR files, all JAR files without renaissance core JAR*)
+  // * because renaissance core classes are shared across all benchmarks
   val projectJarTasks = for {
     p <- subProjects
   } yield
