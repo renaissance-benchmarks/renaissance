@@ -1,7 +1,15 @@
 package org.renaissance.util;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +20,7 @@ import java.util.logging.Logger;
 import org.renaissance.Launcher;
 
 public class RenaissanceClassLoader {
+  private static final URL[] URL_ARRAY_TYPE = new URL[0];
 
   private static final Map<String, String[]> GROUP_JAR_NAMES
     = getGroupJarNames(RenaissanceClassLoader.class.getResourceAsStream("/groups-jars.txt"));
@@ -32,11 +41,12 @@ public class RenaissanceClassLoader {
 
     try {
       ClassLoader parent = RenaissanceClassLoader.class.getClassLoader();
-      ClassLoader result = new InputStreamClassLoader(parent, jarStreams.toArray(new InputStream[0]));
+      URL[] extractedUrls = extractAndGetUrls(jarStreams);
       for (InputStream is : jarStreams) {
         is.close();
       }
-      return result;
+
+      return new URLClassLoader(extractedUrls, parent);
     } catch (IOException e) {
       String message = String.format("Failed to load %s: %s", groupName, e.getMessage());
       logger.severe(message);
@@ -64,5 +74,35 @@ public class RenaissanceClassLoader {
     sc.close();
 
     return result;
+  }
+
+  private static URL[] extractAndGetUrls(List<InputStream> streams) throws IOException {
+    Logger logger = Logging.getMethodLogger(RenaissanceClassLoader.class, "extractAndGetUrls");
+
+    Path baseDir = Paths.get(".");
+    Path baseUnpackDir = Files.createTempDirectory(baseDir, "jars-");
+    baseUnpackDir.toFile().deleteOnExit();
+    List<URL> resultUrls = new ArrayList<>();
+
+    for (InputStream inputJar : streams) {
+      Path unpackedTargetPath = Files.createTempFile(baseUnpackDir, "cp-", ".jar");
+      File unpackedTarget = unpackedTargetPath.toFile();
+      unpackedTarget.deleteOnExit();
+      OutputStream unpackedOutStream = new FileOutputStream(unpackedTarget);
+
+      logger.fine(String.format("Extracting %s into %s", inputJar, unpackedTargetPath));
+
+      byte[] buffer = new byte[8 * 1024];
+      int bytesRead;
+      while ((bytesRead = inputJar.read(buffer)) != -1) {
+        unpackedOutStream.write(buffer, 0, bytesRead);
+      }
+
+      unpackedOutStream.close();
+
+      resultUrls.add(unpackedTargetPath.toUri().toURL());
+    }
+
+    return resultUrls.toArray(URL_ARRAY_TYPE);
   }
 }
