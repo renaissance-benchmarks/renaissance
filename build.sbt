@@ -194,6 +194,8 @@ lazy val renaissance: Project = {
       name := "renaissance",
       version := renaissanceVersion,
       organization := "org.renaissance",
+      crossPaths := false,
+      autoScalaLibrary := false,
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceFormatTask,
       renaissanceFormatCheckTask,
@@ -206,7 +208,6 @@ lazy val renaissance: Project = {
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
       mainClass in assembly := Some("org.renaissance.Launcher"),
-      assemblyOption in assembly ~= { _.copy(includeScala = false) },
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
