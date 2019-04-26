@@ -85,7 +85,7 @@ public class ModuleLoader {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "extractAndGetUrls");
 
     Path baseDir = Paths.get(".");
-    Path baseUnpackDir = Files.createTempDirectory(baseDir, "jars-");
+    Path baseUnpackDir = Files.createTempDirectory(baseDir, "tmp-jars-");
     baseUnpackDir.toFile().deleteOnExit();
     List<URL> resultUrls = new ArrayList<>();
 
