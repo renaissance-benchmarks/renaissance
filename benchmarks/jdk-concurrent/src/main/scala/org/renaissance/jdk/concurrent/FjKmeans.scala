@@ -23,22 +23,20 @@ class FjKmeans extends RenaissanceBenchmark {
 
   private var benchmark: JavaKMeans = null
 
+  private var data: java.util.List[Array[java.lang.Double]] = null
+
   override def setUpBeforeAll(c: Config): Unit = {
-    benchmark = new JavaKMeans(
-      DIMENSION,
-      VECTOR_LENGTH,
-      CLUSTER_COUNT,
-      ITERATION_COUNT,
-      THREAD_COUNT
-    )
+    benchmark = new JavaKMeans(DIMENSION, THREAD_COUNT)
+    data = JavaKMeans.generateData(VECTOR_LENGTH, DIMENSION, CLUSTER_COUNT);
   }
 
   override def runIteration(c: Config): Unit = {
-    blackHole(benchmark.run)
+      blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    benchmark.tearDown();
-    benchmark = null;
+    benchmark.tearDown()
+    benchmark = null
+    data = null
   }
 }

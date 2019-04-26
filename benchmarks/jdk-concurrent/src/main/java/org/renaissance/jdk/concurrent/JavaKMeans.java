@@ -20,12 +20,6 @@ public final class JavaKMeans {
 
   private final int dimension;
 
-  private final int clusterCount;
-
-  private final int iterationCount;
-
-  private final int vectorLength;
-
   private final int forkThreshold;
 
   //
@@ -33,22 +27,26 @@ public final class JavaKMeans {
   private final ForkJoinPool forkJoin;
 
 
-  public JavaKMeans(
-    int dimension, int vectorLength, int clusterCount,
-    int iterationCount, int threadCount
-  ) {
+  public JavaKMeans(final int dimension, final int threadCount) {
     this.dimension = dimension;
-    this.vectorLength = vectorLength;
-    this.clusterCount = clusterCount;
-    this.iterationCount = iterationCount;
-    this.forkThreshold = vectorLength / (4 * threadCount) + 1;
+    // Try to (roughly) fit fork data into half the L2 cache. 
+    this.forkThreshold = forkThreshold(dimension, (256 / 2) * 1024);
     this.forkJoin = new ForkJoinPool(threadCount);
   }
 
 
-  public List<Double[]> run() throws InterruptedException, ExecutionException {
-    final List<Double[]> data = generateData(vectorLength);
+  private int forkThreshold(final int dimension, final int sizeLimit) {
+    final int doubleSize = 8 + Double.BYTES; 
+	final int pointerSize = Long.BYTES;
+	final int arraySize = 8 + Integer.BYTES + dimension * pointerSize;
+	final int elementSize = arraySize + dimension * doubleSize;
+	return sizeLimit / (elementSize + pointerSize);
+  }
 
+
+  public List<Double[]> run(
+    final int clusterCount, final List <Double[]> data, final int iterationCount
+  ) throws InterruptedException, ExecutionException {
     List<Double[]> centroids = randomSample(clusterCount, data, new Random(100));
     for (int iteration = 0; iteration < iterationCount; iteration++) {
       final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
@@ -71,17 +69,20 @@ public final class JavaKMeans {
   }
 
 
-  private List<Double[]> generateData(final int count) {
-    return IntStream.range(0, count)
-      .mapToObj(i -> makeTuple(i)).collect(Collectors.toList());
-  }
-
-
-  private Double[] makeTuple(double base) {
-    // TODO This needs to take dimension into account!
-    return new Double[] {
-        base, base + 1, base * 4, base * 2, base * 3,
-    };
+  static List<Double[]> generateData(
+	final int count, final int dimension, final int clusterCount
+  ) {
+	// Create random generators for individual dimensions.
+    final Random[] randoms = IntStream.range(0, dimension).mapToObj(
+	  d -> new Random  (1 + 2 * d)
+    ).toArray(Random[]::new);
+    
+    // Generate random data for all dimensions.
+    return IntStream.range(0, count).mapToObj(i -> {
+  	  return IntStream.range(0, dimension).mapToObj(d ->
+  		(((i + (1 + 2 * d)) % clusterCount) * 1.0 / clusterCount) + randoms[d].nextDouble() * 0.5
+  	  ).toArray(Double[]::new);
+    }).collect(Collectors.toList());
   }
 
 
