@@ -37,7 +37,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/scala-2.12/renaissance-0.1.jar' <benchmarks>
+java -jar '<renaissance-home>/target/renaissance-0.1.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -290,6 +290,6 @@ by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
 You can see the further details of the build system in the top-level `build.sbt` file,
-in the `renaissance-suite.scala` file and in `ModuleLoader``
+in the `renaissance-suite.scala` file and in `ModuleLoader`.
 
 
