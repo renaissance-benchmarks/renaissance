@@ -21,7 +21,7 @@ matrix:
 
     # Each benchmark
     # The following command prepares the actual entries
-    # java -jar target/scala-2.12/renaissance-0.1.jar --raw-list \
+    # java -jar target/renaissance-0.1.jar --raw-list \
     # | sed 's#.*#    - os: linux\n      jdk: openjdk8\n      env:\n        - BENCHMARK=&\n#'
     - os: linux
       jdk: openjdk8
@@ -145,4 +145,4 @@ before_script:
 script:
   - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck; travis_terminate $?; fi'
   - ./tools/sbt/bin/sbt assembly
-  - 'if [ -n "$BENCHMARK" ]; then java -jar ./target/scala-2.12/renaissance-0.1.jar -r 1 $BENCHMARK; fi'
+  - 'if [ -n "$BENCHMARK" ]; then java -jar ./target/renaissance-0.1.jar -r 1 $BENCHMARK; fi'
