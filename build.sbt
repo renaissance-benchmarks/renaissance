@@ -180,6 +180,20 @@ lazy val nonGplOnly = SettingKey[Boolean](
   "If set to true, then the distribution will not include GPL, EPL and MPL-licensed benchmarks."
 )
 
+val setupPrePush = taskKey[Unit](
+  "Installs git pre-push hook."
+)
+
+def startupTransition(state: State): State = {
+  "setupPrePush" :: state
+}
+
+def addLink(source: File, dest: File): Unit = {
+  if (!Files.exists(dest.toPath)) {
+    Files.createSymbolicLink(dest.toPath, source.toPath.toAbsolutePath)
+  }
+}
+
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -198,6 +212,7 @@ lazy val renaissance: Project = {
       cancelable in Global := true,
       remoteDebug := false,
       nonGplOnly := false,
+      setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
 
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
@@ -215,6 +230,10 @@ lazy val renaissance: Project = {
         } else {
           Seq()
         }
+      },
+      onLoad in Global := {
+        val old = (onLoad in Global).value
+        old.andThen(startupTransition)
       }
     )
     .dependsOn(
