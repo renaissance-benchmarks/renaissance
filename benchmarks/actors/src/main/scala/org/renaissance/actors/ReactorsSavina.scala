@@ -1,4 +1,4 @@
-package org.renaissance.reactors
+package org.renaissance.actors
 
 import io.reactors._
 import org.renaissance.Config
