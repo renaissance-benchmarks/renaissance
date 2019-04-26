@@ -14,9 +14,6 @@ and for tools such as profilers, debuggers, or static analyzers, and even differ
 It is intended to be an open-source, collaborative project,
 in which the community can propose and improve benchmark workloads.
 
-The contents of this README file are automatically generated from the codebase,
-and can be refreshed with the `--readme` command-line flag.
-
 
 ### Building the suite
 
@@ -42,7 +39,7 @@ java -jar '<renaissance-home>/target/scala-2.12/renaissance-0.1.jar' <benchmarks
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
 and `<benchmarks>` is the list of benchmarks that you wish to run.
-For example, you can specify `scala-k-means` as the benchmark.
+For example, you can specify `scala-kmeans` as the benchmark.
 
 
 #### Complete list of command-line options
@@ -193,8 +190,7 @@ the current state of the benchmark.
 
 ### Contributing
 
-Please see CONTRIBUTION.md for a description of the contributing process.
-
+Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
 
 ### Licensing
 
