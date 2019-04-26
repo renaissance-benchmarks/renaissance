@@ -25,13 +25,13 @@ public class ModuleLoader {
   private static final Map<String, String[]> GROUP_JAR_NAMES
     = getGroupJarNames(ModuleLoader.class.getResourceAsStream("/groups-jars.txt"));
 
-  public static ClassLoader getForGroup(String groupName) throws ClassNotFoundException {
+  public static ClassLoader getForGroup(String groupName) throws ModuleLoadingException {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupClassloader");
 
     String[] jarNames = GROUP_JAR_NAMES.get(groupName);
     if (jarNames == null) {
       String message = String.format("Group %s not found", groupName);
-      throw new ClassNotFoundException(message);
+      throw new ModuleLoadingException(message);
     }
 
     List<InputStream> jarStreams = new ArrayList<>();
@@ -50,12 +50,17 @@ public class ModuleLoader {
     } catch (IOException e) {
       String message = String.format("Failed to load %s: %s", groupName, e.getMessage());
       logger.severe(message);
-      throw new ClassNotFoundException(message, e);
+      throw new ModuleLoadingException(message, e);
     }
   }
   
   private static Map<String, String[]> getGroupJarNames(InputStream jarList) {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupJarNames");
+
+    if (jarList == null) {
+      logger.severe("JAR list stream is null.");
+      return new HashMap<>();
+    }
 
     Scanner sc = new Scanner(jarList);
     Map<String, String[]> result = new HashMap<>();
