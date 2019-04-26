@@ -116,6 +116,11 @@ matrix:
     - os: linux
       jdk: openjdk8
       env:
+        - BENCHMARK=reactors
+
+    - os: linux
+      jdk: openjdk8
+      env:
         - BENCHMARK=rx-scrabble
 
     - os: linux
