@@ -81,15 +81,6 @@ object RenaissanceSuite {
     parser.parse(args, new Config)
   }
 
-  private def copyJars(mainGroup: String): Unit = {
-    // Copy all the JAR files for this group of benchmarks.
-    val jars = groupJars(mainGroup)
-    for (jar <- jars) {
-      val is = getClass.getResourceAsStream("/" + jar)
-      FileUtils.copyToFile(is, new File("target/modules/" + mainGroup, jar.split("/").last))
-    }
-  }
-
   private def camelCase(s: String): String = {
     s.split("-").map(_.capitalize).mkString
   }
