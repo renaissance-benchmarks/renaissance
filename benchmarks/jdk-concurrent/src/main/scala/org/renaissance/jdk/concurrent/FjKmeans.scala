@@ -13,11 +13,13 @@ class FjKmeans extends RenaissanceBenchmark {
 
   private val DIMENSION = 5
 
-  private val VECTOR_LENGTH = 30000
+  private val VECTOR_LENGTH = 500000
 
-  private val CLUSTER_COUNT = 10
+  private val CLUSTER_COUNT = 5
 
   private val ITERATION_COUNT = 50
+
+  private val LOOP_COUNT = 4
 
   private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -31,7 +33,9 @@ class FjKmeans extends RenaissanceBenchmark {
   }
 
   override def runIteration(c: Config): Unit = {
+    for (i <- 0 until LOOP_COUNT) {
       blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
+    }
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
