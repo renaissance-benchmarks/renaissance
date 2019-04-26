@@ -50,7 +50,10 @@ def kebabCase(s: String): String = {
 }
 
 // Return tuples with (name, distro license, description and default repetitions)
-def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, String, Int)] = {
+def listBenchmarks(
+  project: String,
+  classpath: Seq[File]
+): Seq[(String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
   val baseName = "org.renaissance.RenaissanceBenchmark"
@@ -74,7 +77,8 @@ def listBenchmarks(project: String, classpath: Seq[File]): Seq[(String, String, 
           val instance = clazz.newInstance
           val distro = clazz.getMethod("distro").invoke(instance).toString
           val description = clazz.getMethod("description").invoke(instance).toString
-          val reps = Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
+          val reps =
+            Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
           result += ((kebabCase(clazz.getSimpleName), distro, description, reps))
         }
       }
@@ -135,7 +139,7 @@ def jarsAndListGenerator = Def.taskDyn {
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for ( (name, license, description, repetitions) <- listBenchmarks(project, allJars)) {
+      for ((name, license, description, repetitions) <- listBenchmarks(project, allJars)) {
         if (!nonGpl || license == "MIT") {
           benchGroupContent.append(name).append("=").append(projectShort).append("\n")
           benchDetails.setProperty("benchmark." + name + ".description", description)
@@ -218,7 +222,6 @@ lazy val renaissance: Project = {
       remoteDebug := false,
       nonGplOnly := false,
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
-
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
@@ -226,9 +229,8 @@ lazy val renaissance: Project = {
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-        case x => MergeStrategy.singleOrError
+        case x                                   => MergeStrategy.singleOrError
       },
-
       javaOptions in Compile ++= {
         if (remoteDebug.value) {
           Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
