@@ -8,7 +8,7 @@ The code is organized into three main parts:
 
 - `renaissance-core`: these are the core APIs that a benchmark needs to work with,
   such as the runtime configuration, the benchmark base class or the policy.
-- `renaissance`: this is the overall suite project, which is responsible for running the harness,
+- `renaissance-harness`: this is the overall suite project, which is responsible for
   parsing the arguments, loading the classes, and running the benchmark.
 - a set of projects in the `benchmarks` directory: these are the individual groups of benchmarks
   that share a common set of dependencies. A group is typically thematic, relating to

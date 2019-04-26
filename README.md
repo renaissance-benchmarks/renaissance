@@ -225,67 +225,71 @@ The following table contains the licensing information of all the benchmarks:
 The Renaissance benchmark suite is organized into several `sbt` projects:
 
 - the `renaissance-core` folder that contains a set of *core* classes
+  (common interfaces and a harness launcher)
+- the `renaissance-harness` folder that contains the actual harness
 - the `benchmarks` folder contains a set of *subprojects*, each containing a set of benchmarks
   for a specific domain (and having a separate set of dependencies)
-- the top-level `src` folder contains the *harness*
-
-The *subprojects* that correspond to different groups of benchmarks
-generally depend on different versions of external libraries.
-If they depend on Scala, then their Scala version can be different
-from the Scala version that the Renaissance harness is written in.
-The separation into subprojects was done so that there are never clashes
-between the different dependencies of the different projects.
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
 Its most important class is `RenaissanceBenchmark`,
 which must be extended by a concrete benchmark implementation.
 This means that each *subproject* depends on the *core* project.
 
+Interfaces of *core* are loaded (when Renaissance is started) by the default
+classloader. Every other class (including harness and individual benchmarks)
+is loaded by a separate classloader. This separation was done so that there
+are never clashes between the different dependencies of the different projects.
+Because each benchmark may depend on different versions of external libraries.
+
 The *harness* project implements the functionality that is necessary
-to parse the input arguments, to run the benchmarks, to generate documentation, and so on.
-It depends on the *core* project, but it does not depend on the *subprojects* directly.
-Instead, the JARs of the subprojects are copied as the generated *resources*
-of the *harness* project, and embedded into the resulting JAR artifact.
+to parse the input arguments, to run the benchmarks, to generate documentation,
+and so on. The *harness* is written in Scala and is loaded by the *core*
+in a separate classloader to ensure clean environment for running the
+benchmarks.
+
+The JARs of the subprojects (benchmarks and harness) are copied as generated
+*resources* and embedded into the resulting JAR artifact.
 
 ```
 renaissance-core
-  ^           ^
-  |            \  (classpath dep.)
-  |             \
-  |              ---- subproject X
-  |                      .
-  |                      .
-  | (classpath dep.)     .
-  |                      .
-renaissance harness  <.... (JARs copied as resources)
+  ^
+  | (classpath dependencies)
+  |
+  |-- renaissance harness
+  |
+  |-- benchmark one
+  | `-- dependencies for benchmark one
+  |
+  |-- ...
+  |
+  `-- benchmark n
 ```
 
 When the harness is started, it uses the input arguments to select the benchmark,
 and then unpacks the JARs of the corresponding benchmark group into a scratch folder.
 The harness then creates a classloader with the unpacked JARs and loads the benchmark group.
-The class loader is created directly below the bootstrap class loader.
-This ensures that the classpath dependencies in the system class loader (of the harness)
-are never mixed with any dependencies of a benchmark (which is in the URL class loader).
+The class loader is created directly below the default class loader. Because
+the default class loader contains only base JRE classes and common interfaces
+of *core*, it ensures that dependencies of a benchmark are never mixed with any
+dependencies of any other benchmark or the harness.
 
 ```
-         boot class loader (JDK)
-          ^              ^
-          |              |
-system class loader    URL class loader
-    (harness)             (benchmark)
+        boot class loader (JDK)
+                   ^
+                   |
+          system class loader
+                (core)
+         ^                   ^
+         |                   |
+  URL class loader    URL class loader
+     (harness)          (benchmark)
 ```
 
 We need to do this to, e.g., avoid accidentally resolving the wrong class
 by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
-Note that, as a result, the `renaissance-core` JAR is loaded twice -- once in the harness,
-and separately in the URL class loader of the specified benchmark.
-To enable the harness to call the methods of the
-`RenaissanceBenchmark` that is loaded in the URL class loader,
-we have a special `ProxyRenaissanceBenchmark` class,
-that knows how to call the methods of the benchmark defined in another class loader.
 
 You can see the further details of the build system in the top-level `build.sbt` file,
-and in the `renaissance-suite.scala` file.
+in the `renaissance-suite.scala` file and in `ModuleLoader``
 
 
