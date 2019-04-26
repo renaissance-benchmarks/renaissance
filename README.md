@@ -74,6 +74,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
 
+- `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO. (default repetitions: 10)
+
 
 ##### apache-spark
 
@@ -221,6 +223,7 @@ The following table contains the licensing information of all the benchmarks:
 | mnemonics | MIT | MIT |
 | als | APACHE2 | MIT |
 | par-mnemonics | MIT | MIT |
+| reactors | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
