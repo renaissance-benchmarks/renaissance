@@ -6,6 +6,7 @@ dist: trusty
 language: scala
 scala: 2.12.8
 
+
 matrix:
   include:
     # Bundle build (add more JDKs here eventually)
@@ -19,10 +20,119 @@ matrix:
         - CHECKSTYLE=yes
 
     # Each benchmark
+    # The following command prepares the actual entries
+    # java -jar target/scala-2.12/renaissance-0.1.jar --raw-list \
+    # | sed 's#.*#    - os: linux\n      jdk: openjdk8\n      env:\n        - BENCHMARK=&\n#'
     - os: linux
       jdk: openjdk8
       env:
-        - BENCHMARK=scala-k-means  
+        - BENCHMARK=akka-uct
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=chi-square
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=db-shootout
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=dec-tree
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=dotty
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=dummy
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=finagle-http
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=future-genetic
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=gauss-mix
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=log-regression
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=mnemonics
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=movie-lens
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=naive-bayes
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=neo4j-analytics
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=page-rank
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=par-mnemonics
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=philosophers
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=reactors
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=rx-scrabble
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=scala-kmeans
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=scala-stm-bench7
+
+    - os: linux
+      jdk: openjdk8
+      env:
+        - BENCHMARK=scrabble
+
 
 before_install:
   - java -version
@@ -33,6 +143,6 @@ before_script:
   - unset SBT_OPTS
 
 script:
-  - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck && travis_terminate 0; fi'
+  - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck; travis_terminate $?; fi'
   - ./tools/sbt/bin/sbt assembly
   - 'if [ -n "$BENCHMARK" ]; then java -jar ./target/scala-2.12/renaissance-0.1.jar -r 1 $BENCHMARK; fi'

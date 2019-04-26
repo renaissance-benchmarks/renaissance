@@ -14,9 +14,6 @@ and for tools such as profilers, debuggers, or static analyzers, and even differ
 It is intended to be an open-source, collaborative project,
 in which the community can propose and improve benchmark workloads.
 
-The contents of this README file are automatically generated from the codebase,
-and can be refreshed with the `--readme` command-line flag.
-
 
 ### Building the suite
 
@@ -42,7 +39,7 @@ java -jar '<renaissance-home>/target/renaissance-0.1.jar' <benchmarks>
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
 and `<benchmarks>` is the list of benchmarks that you wish to run.
-For example, you can specify `scala-k-means` as the benchmark.
+For example, you can specify `scala-kmeans` as the benchmark.
 
 
 #### Complete list of command-line options
@@ -74,8 +71,12 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
 
+- `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO. (default repetitions: 10)
+
 
 ##### apache-spark
+
+- `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 60)
 
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
@@ -95,6 +96,11 @@ The following is the complete list of benchmarks, separated into groups.
 ##### core
 
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
+
+
+##### database
+
+- `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
 
 
 ##### jdk-concurrent
@@ -128,7 +134,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### scala-stdlib
 
-- `scala-k-means` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+- `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 
 ##### scala-stm
@@ -139,6 +145,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 
 ##### twitter-finagle
+
+- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 90)
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response. (default repetitions: 12)
 
@@ -182,8 +190,7 @@ the current state of the benchmark.
 
 ### Contributing
 
-Please see CONTRIBUTION.md for a description of the contributing process.
-
+Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
 
 ### Licensing
 
@@ -199,10 +206,12 @@ The following table contains the licensing information of all the benchmarks:
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
 | gauss-mix | APACHE2 | MIT |
+| finagle-chirper | APACHE2 | MIT |
 | philosophers | BSD3 | MIT |
 | rx-scrabble | GPL2 | GPL3 |
 | dec-tree | APACHE2 | MIT |
 | naive-bayes | APACHE2 | MIT |
+| db-shootout | APACHE2 | MIT |
 | page-rank | APACHE2 | MIT |
 | scrabble | GPL2 | GPL3 |
 | dummy | MIT | MIT |
@@ -211,10 +220,12 @@ The following table contains the licensing information of all the benchmarks:
 | chi-square | APACHE2 | MIT |
 | log-regression | APACHE2 | MIT |
 | movie-lens | APACHE2 | MIT |
+| scala-kmeans | MIT | MIT |
 | akka-uct | MIT | MIT |
-| scala-k-means | MIT | MIT |
 | mnemonics | MIT | MIT |
+| als | APACHE2 | MIT |
 | par-mnemonics | MIT | MIT |
+| reactors | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
 | dotty | BSD3 | MIT |

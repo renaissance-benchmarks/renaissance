@@ -263,9 +263,6 @@ and for tools such as profilers, debuggers, or static analyzers, and even differ
 It is intended to be an open-source, collaborative project,
 in which the community can propose and improve benchmark workloads.
 
-The contents of this README file are automatically generated from the codebase,
-and can be refreshed with the `--readme` command-line flag.
-
 
 ### Building the suite
 
@@ -291,7 +288,7 @@ java -jar '<renaissance-home>/target/renaissance-0.1.jar' <benchmarks>
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
 and `<benchmarks>` is the list of benchmarks that you wish to run.
-For example, you can specify `scala-k-means` as the benchmark.
+For example, you can specify `scala-kmeans` as the benchmark.
 
 
 #### Complete list of command-line options
@@ -347,8 +344,7 @@ the current state of the benchmark.
 
 ### Contributing
 
-Please see CONTRIBUTION.md for a description of the contributing process.
-
+Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
 
 ### Licensing
 
@@ -496,6 +492,35 @@ using an existing project, such as `scala-stdlib`, as an example.
 The project will be automatically picked up by the build system
 and included into the Renaissance distribution.
 
+Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project
+(rules defined in `.scalafmt.conf`).
+A convenient sbt task can do that check:
+```
+$$ tools/sbt/bin/sbt renaissanceFormatCheck
+```
+
+Another one can directly update the source files to match the desired format:
+```
+$$ tools/sbt/bin/sbt renaissanceFormat
+```
+
+Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
+Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
+```
+$$ tools/sbt/bin/sbt runMain org.renaissance.RenaissanceSuite --readme
+```
+
+### IDE development
+
+#### IntelliJ
+
+In order to work on the project with IntelliJ, one needs to install the following plugins :
+  - `Scala` : part of the codebase uses Scala and Renaissance is organized in sbt projects.
+  - `scalafmt` (optional) : adds an action that can be triggered with `Code -> Reformat with scalafmt`
+  which will reformat the code according to the formatting rule defined in `.scalafmt.conf`
+  (same as the `renaissanceFormat` sbt task).
+
+Then, the root of this repository can be opened as an IntelliJ project.
 
 ### Benchmark evaluation and release process
 
