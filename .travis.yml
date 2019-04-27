@@ -61,6 +61,11 @@ matrix:
     - os: linux
       jdk: openjdk8
       env:
+        - BENCHMARK=fj-kmeans
+
+    - os: linux
+      jdk: openjdk8
+      env:
         - BENCHMARK=future-genetic
 
     - os: linux

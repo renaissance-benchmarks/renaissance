@@ -105,6 +105,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 ##### jdk-concurrent
 
+- `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
+
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
 
 
@@ -228,6 +230,7 @@ The following table contains the licensing information of all the benchmarks:
 | reactors | MIT | MIT |
 | neo4j-analytics | GPL3 | GPL3 |
 | finagle-http | APACHE2 | MIT |
+| fj-kmeans | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
 
 
