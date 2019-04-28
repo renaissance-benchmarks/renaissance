@@ -60,6 +60,7 @@ class GaussMix extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("gauss-mix")
       .setMaster(s"local[$THREAD_COUNT]")

@@ -72,6 +72,7 @@ class ChiSquare extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("chi-square")
       .setMaster(s"local[$THREAD_COUNT]")
