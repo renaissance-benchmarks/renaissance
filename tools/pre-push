@@ -1,21 +1,26 @@
-#!/bin/sh
+#!/bin/bash
 
 EXIT_CODE=0
 
 # Hooks are always executed from .git/hooks
-HOOKS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-TOOLS_DIR="${HOOKS_DIR}/../../tools"
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+TOOLS_DIR="${ROOT_DIR}/tools"
 
+echo ":: Running pre-push format check ::"
 "$TOOLS_DIR"/sbt/bin/sbt 'renaissanceFormatCheck'
 FORMAT_CHECK=$?
-
 if [[ FORMAT_CHECK -ne 0 ]]; then
-    >&2 echo "Code format check failed !"
-    EXIT_CODE=1
+  >&2 echo "Code format check failed!"
+  EXIT_CODE=1
+else
+  echo "Format check passed."
 fi
 
 if [[ EXIT_CODE -ne 0 ]]; then
-    >&2 echo "Push aborted."
+  >&2 echo "Push aborted."
+  exit $EXIT_CODE
 fi
 
+echo ""
+echo "Pre-push checks successful."
 exit $EXIT_CODE
