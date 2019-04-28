@@ -51,8 +51,14 @@ object RenaissanceSuite {
       help("help")
         .text("Prints this usage text.")
       opt[Int]('r', "repetitions")
-        .text("Number of repetitions of each benchmark")
+        .text("Number of repetitions used with the fixed-iterations policy.")
         .action((v, c) => c.withRepetitions(v))
+      opt[Int]('w', "warmup-seconds")
+        .text("Number of warmup seconds, when using time-based policies.")
+        .action((v, c) => c.withWarmupSeconds(v))
+      opt[Int]('t', "run-seconds")
+        .text("Number of seconds to run after the warmup, when using time-based policies.")
+        .action((v, c) => c.withRunSeconds(v))
       opt[String]("policy")
         .text(
           "Execution policy, one of: " +

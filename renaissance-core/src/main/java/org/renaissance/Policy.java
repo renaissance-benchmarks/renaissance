@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import static org.renaissance.RenaissanceBenchmark.kebabCase;
+
 /** The policy that executes the benchmark
  */
 public abstract class Policy {
@@ -38,9 +40,21 @@ public abstract class Policy {
       .collect(Collectors.toMap(Pair::first, Pair::second));
   }
 
+  public static String kebabCasePolicy(Class<?> cls) {
+    String className = cls.getSimpleName();
+    int prefixLength = className.length() - Policy.class.getSimpleName().length();
+    String shortName = className.substring(0, prefixLength);
+    return kebabCase(shortName);
+  }
+
   static {
     factories = new HashMap<>();
-    factories.put("fixed", (bench, config) -> new FixedIterationsPolicy(bench, config));
+    factories.put(
+      kebabCasePolicy(FixedIterationsPolicy.class),
+      (bench, config) -> new FixedIterationsPolicy(bench, config));
+    factories.put(
+      kebabCasePolicy(FixedWarmupPolicy.class),
+      (bench, config) -> new FixedWarmupPolicy(bench, config));
   }
 }
 

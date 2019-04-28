@@ -21,7 +21,7 @@ public class FixedIterationsPolicy extends Policy {
 
   @Override
   public String description() {
-    return "Runs the benchmark for a fixed number of iterations.";
+    return "Runs the benchmark for a fixed number of iterations (use `-r`).";
   }
 
   @Override
@@ -35,9 +35,9 @@ public class FixedIterationsPolicy extends Policy {
 
   @Override
   public Optional<Throwable> execute() {
+    String name = currentBenchmark.name();
+    String g = currentBenchmark.mainGroup();
     while (iteration < totalIterations) {
-      String name = currentBenchmark.name();
-      String g = currentBenchmark.mainGroup();
       if (iteration == totalIterations - 1) {
         System.out.println("====== " + name + " (" + g + "), " +
           "final iteration started ======");

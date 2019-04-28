@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 public class Config {
   public List<String> benchmarkList;
   public int repetitions;
+  public int warmupSeconds;
+  public int runSeconds;
   public List<Plugin> plugins;
   public String policy;
   public boolean readme;
@@ -17,8 +19,10 @@ public class Config {
   public Config() {
     this.benchmarkList = new ArrayList<>();
     this.repetitions = -1;
+    this.warmupSeconds = 180;
+    this.runSeconds = 60;
     this.plugins = new ArrayList<>();
-    this.policy = "fixed";
+    this.policy = Policy.kebabCasePolicy(FixedIterationsPolicy.class);
     this.readme = false;
     this.printList = false;
     this.printRawList = false;
@@ -56,6 +60,8 @@ public class Config {
     Config c = new Config();
     c.benchmarkList = this.benchmarkList;
     c.repetitions = this.repetitions;
+    c.warmupSeconds = this.warmupSeconds;
+    c.runSeconds = this.runSeconds;
     c.plugins = this.plugins;
     c.policy = this.policy;
     c.readme = this.readme;
@@ -87,6 +93,18 @@ public class Config {
   public Config withRepetitions(int x) {
     Config c = copy();
     c.repetitions = x;
+    return c;
+  }
+
+  public Config withWarmupSeconds(int seconds) {
+    Config c = copy();
+    c.warmupSeconds = seconds;
+    return c;
+  }
+
+  public Config withRunSeconds(int seconds) {
+    Config c = copy();
+    c.runSeconds = seconds;
     return c;
   }
 
