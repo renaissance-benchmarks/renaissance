@@ -15,11 +15,14 @@ object HadoopUtil {
    */
   val inputFile = "/winutils.exe"
 
-  def setUpHadoop(tempDirPath: Path) = {
+  def setUpHadoop(tempDirPath: Path):Any = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
-      val winutilsPath = Paths.get(tempDirPath.toAbsolutePath() + "/bin")
+      val winutilsPath = Paths.get(tempDirPath.toAbsolutePath + "/bin")
       Files.createDirectories(winutilsPath)
-      IOUtils.copy(this.getClass.getResourceAsStream(inputFile), new FileOutputStream(winutilsPath.toString + inputFile))
+      IOUtils.copy(
+        this.getClass.getResourceAsStream(inputFile),
+        new FileOutputStream(winutilsPath.toString + inputFile)
+      )
       System.setProperty("hadoop.home.dir", tempDirPath.toAbsolutePath.toString)
     }
   }
