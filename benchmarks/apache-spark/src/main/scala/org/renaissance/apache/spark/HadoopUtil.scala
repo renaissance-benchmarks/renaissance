@@ -1,6 +1,6 @@
 package org.renaissance.apache.spark
 
-import java.nio.file.{ Path, Paths, Files }
+import java.nio.file.{Files, Path, Paths}
 import org.apache.commons.io.IOUtils
 import java.io.FileOutputStream
 
@@ -15,7 +15,7 @@ object HadoopUtil {
    */
   val inputFile = "/winutils.exe"
 
-  def setUpHadoop(tempDirPath: Path):Any = {
+  def setUpHadoop(tempDirPath: Path): Any = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
       val winutilsPath = Paths.get(tempDirPath.toAbsolutePath + "/bin")
       Files.createDirectories(winutilsPath)
