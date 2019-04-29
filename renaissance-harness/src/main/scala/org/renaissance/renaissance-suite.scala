@@ -116,6 +116,8 @@ object RenaissanceSuite {
       print(formatBenchmarkList)
     } else if (config.printRawList) {
       print(formatRawBenchmarkList)
+    } else if (config.benchmarkList.isEmpty) {
+      println(parser.usage)
     } else {
       // Check that all the benchmarks on the list really exist.
       for (benchName <- config.benchmarkList.asScala) {
