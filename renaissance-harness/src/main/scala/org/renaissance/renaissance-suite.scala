@@ -79,6 +79,9 @@ object RenaissanceSuite {
       opt[Unit]("raw-list")
         .text("Print list of benchmarks, each benchmark name on separate line.")
         .action((_, c) => c.withRawList())
+      opt[Unit]("group-list")
+        .text("Print list of benchmark groups.")
+        .action((_, c) => c.withGroupList())
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed.")
         .optional()
@@ -118,6 +121,8 @@ object RenaissanceSuite {
       print(formatBenchmarkList)
     } else if (config.printRawList) {
       print(formatRawBenchmarkList)
+    } else if (config.printGroupList) {
+      print(formatGroupList)
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage)
     } else {
@@ -149,7 +154,7 @@ object RenaissanceSuite {
       } else if (groupBenchmarks.contains(specifier)) {
         benchmarkSet ++= groupBenchmarks(specifier)
       } else {
-        println(s"Benchmark `${specifier}` does not exist.")
+        println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
       }
     }
@@ -229,6 +234,8 @@ object RenaissanceSuite {
 
     return result.toString
   }
+
+  private def formatGroupList(): String = groupJars.keys.mkString(", ")
 
   private def generateBenchmarkDescription(name: String): String = {
     val bench = loadBenchmark(name)

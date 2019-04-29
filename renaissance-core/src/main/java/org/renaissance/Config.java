@@ -15,6 +15,7 @@ public class Config {
   public boolean readme;
   public boolean printList;
   public boolean printRawList;
+  public boolean printGroupList;
 
   public Config() {
     this.benchmarkSpecifiers = new ArrayList<>();
@@ -26,6 +27,7 @@ public class Config {
     this.readme = false;
     this.printList = false;
     this.printRawList = false;
+    this.printGroupList = false;
   }
 
   public List<String> benchmarkSpecifiers() {
@@ -67,6 +69,7 @@ public class Config {
     c.readme = this.readme;
     c.printList = this.printList;
     c.printRawList = this.printRawList;
+    c.printGroupList = this.printGroupList;
     return c;
   }
 
@@ -129,6 +132,12 @@ public class Config {
   public Config withRawList() {
     Config c = copy();
     c.printRawList = true;
+    return c;
+  }
+
+  public Config withGroupList() {
+    Config c = copy();
+    c.printGroupList = true;
     return c;
   }
 }
