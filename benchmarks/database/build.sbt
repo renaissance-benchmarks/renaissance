@@ -1,6 +1,6 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-lazy val dbShootout = (project in file("."))
+lazy val database = (project in file("."))
   .settings(
     name := "dbshootout",
     organization := "org.renaissance",
