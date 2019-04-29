@@ -65,6 +65,7 @@ class Als extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("als")
       .setMaster(s"local[$THREAD_COUNT]")
@@ -90,6 +91,7 @@ class Als extends RenaissanceBenchmark {
       .saveAsTextFile(outputPath.toString)
 
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
   def runIteration(c: Config): Unit = {

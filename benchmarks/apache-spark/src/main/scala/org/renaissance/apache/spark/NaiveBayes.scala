@@ -71,6 +71,7 @@ class NaiveBayes extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("naive-bayes")
       .setMaster(s"local[$THREAD_COUNT]")
@@ -103,6 +104,7 @@ class NaiveBayes extends RenaissanceBenchmark {
     )
 
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
   def runIteration(c: Config): Unit = {

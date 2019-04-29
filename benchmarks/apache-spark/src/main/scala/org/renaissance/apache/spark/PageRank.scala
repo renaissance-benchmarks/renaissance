@@ -55,6 +55,7 @@ class PageRank extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("page-rank")
       .setMaster(s"local[$THREAD_COUNT]")
