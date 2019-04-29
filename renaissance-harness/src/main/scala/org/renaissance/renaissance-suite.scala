@@ -167,18 +167,25 @@ object RenaissanceSuite {
       val benchmarks = generateBenchmarkList(config)
 
       // Run the main benchmark loop.
+      val failedBenchmarks = new mutable.ArrayBuffer[String](benchmarks.length)
       for (plugin <- config.plugins.asScala) plugin.onCreation()
       try {
         for (benchName <- benchmarks) {
           val bench = loadBenchmark(benchName)
           val exception = bench.runBenchmark(config)
-          if (exception.isPresent) {
-            Console.err.println(s"Exception occurred in ${bench}: ${exception.get.getMessage}")
-            exception.get.printStackTrace()
+          if (exception != null) {
+            failedBenchmarks += benchName
+            Console.err.println(s"Exception occurred in ${bench}: ${exception.getMessage}")
+            exception.printStackTrace()
           }
         }
       } finally {
         for (plugin <- config.plugins.asScala) plugin.onExit()
+      }
+
+      if (failedBenchmarks.nonEmpty) {
+        println(s"The following benchmarks failed: ${failedBenchmarks.mkString(", ")}")
+        sys.exit(1)
       }
     }
   }

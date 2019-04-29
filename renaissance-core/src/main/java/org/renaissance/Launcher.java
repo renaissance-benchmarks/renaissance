@@ -19,6 +19,7 @@ public class Launcher {
     } catch (ReflectiveOperationException|ModuleLoadingException e) {
       logger.severe(String.format("Failed to start the suite: %s", e.getMessage()));
       e.printStackTrace();
+      System.exit(1);
     }
   }
 }
