@@ -104,6 +104,7 @@ class NaiveBayes extends RenaissanceBenchmark {
     )
 
     sc.stop()
+    RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
   def runIteration(c: Config): Unit = {
