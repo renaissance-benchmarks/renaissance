@@ -504,7 +504,7 @@ $$ tools/sbt/bin/sbt renaissanceFormat
 Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
-$$ tools/sbt/bin/sbt runMain org.renaissance.RenaissanceSuite --readme
+$$ tools/sbt/bin/sbt runMain org.renaissance.Launcher --readme
 ```
 
 ### IDE development
