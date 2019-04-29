@@ -237,6 +237,7 @@ class MovieLens extends RenaissanceBenchmark {
   }
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("movie-lens")
       .setMaster(s"local[$THREAD_COUNT]")

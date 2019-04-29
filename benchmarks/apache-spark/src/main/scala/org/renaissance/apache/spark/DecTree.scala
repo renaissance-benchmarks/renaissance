@@ -61,10 +61,12 @@ class DecTree extends RenaissanceBenchmark {
   var iteration: Int = 0
 
   def setUpSpark() = {
+    HadoopUtil.setUpHadoop(tempDirPath)
     val conf = new SparkConf()
       .setAppName("decision-tree")
       .setMaster(s"local[$THREAD_COUNT]")
       .set("spark.local.dir", tempDirPath.toString)
+      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
     sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
   }
