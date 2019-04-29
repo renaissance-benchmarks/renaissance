@@ -18,7 +18,7 @@ object RenaissanceSuite {
     val defaultRepetitions: Int,
     val licenses: Array[String],
     val distro: String
-  ) {}
+  )
 
   val benchmarkGroups = {
     val map = new mutable.HashMap[String, String]
@@ -37,7 +37,7 @@ object RenaissanceSuite {
   val benchmarks = benchmarkGroups.keys
 
   val benchmarkDetails = {
-    var details = new mutable.HashMap[String, BenchmarkMetaInformation]
+    val details = new mutable.HashMap[String, BenchmarkMetaInformation]
     val detailsAsProps = new java.util.Properties
     detailsAsProps.load(getClass.getResourceAsStream("/benchmark-details.properties"))
     for (name <- benchmarks) {
