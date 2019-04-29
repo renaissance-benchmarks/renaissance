@@ -202,14 +202,7 @@ object RenaissanceSuite {
     return result.asInstanceOf[RenaissanceBenchmark]
   }
 
-  private def formatRawBenchmarkList(): String = {
-    val result = new StringBuffer
-    for (name <- benchmarks.toSeq.sorted) {
-      result.append(name + "\n")
-    }
-
-    return result.toString
-  }
+  private def formatRawBenchmarkList(): String = benchmarks.toSeq.sorted.mkString(", ")
 
   private def formatBenchmarkList(): String = {
     val indent = "    "
@@ -235,7 +228,7 @@ object RenaissanceSuite {
     return result.toString
   }
 
-  private def formatGroupList(): String = groupJars.keys.mkString(", ")
+  private def formatGroupList(): String = groupJars.keys.toSeq.sorted.mkString(", ")
 
   private def generateBenchmarkDescription(name: String): String = {
     val bench = loadBenchmark(name)
