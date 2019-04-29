@@ -226,6 +226,7 @@ lazy val renaissance: Project = {
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
       mainClass in assembly := Some("org.renaissance.Launcher"),
+      (compile in Compile) := ((compile in Compile) dependsOn createRenaissanceFormatTask).value,
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
