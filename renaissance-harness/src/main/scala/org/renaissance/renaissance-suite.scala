@@ -1,7 +1,6 @@
 package org.renaissance
 
 import java.io.File
-import java.net.URLClassLoader
 import java.nio.charset.StandardCharsets
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
@@ -13,7 +12,7 @@ import org.renaissance.util.ModuleLoader
 object RenaissanceSuite {
 
   val benchmarkGroups = {
-    val map = new mutable.HashMap[String, String]
+    val map = new mutable.LinkedHashMap[String, String]
     val lines = IOUtils.lineIterator(
       getClass.getResourceAsStream("/benchmark-group.txt"),
       StandardCharsets.UTF_8
@@ -22,6 +21,14 @@ object RenaissanceSuite {
       val line = lines.next()
       val parts = line.split("=")
       map(parts(0)) = parts(1)
+    }
+    map
+  }
+
+  val groupBenchmarks = {
+    val map = new mutable.LinkedHashMap[String, Seq[String]].withDefaultValue(Nil)
+    for ((bench, group) <- benchmarkGroups) {
+      map(group) = map(group) :+ bench
     }
     map
   }
@@ -116,21 +123,16 @@ object RenaissanceSuite {
       print(formatBenchmarkList)
     } else if (config.printRawList) {
       print(formatRawBenchmarkList)
-    } else if (config.benchmarkList.isEmpty) {
+    } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage)
     } else {
       // Check that all the benchmarks on the list really exist.
-      for (benchName <- config.benchmarkList.asScala) {
-        if (!(benchmarkGroups.contains(benchName))) {
-          println(s"Benchmark `${benchName}` does not exist.")
-          sys.exit(1)
-        }
-      }
+      val benchmarks = generateBenchmarkList(config)
 
       // Run the main benchmark loop.
       for (plugin <- config.plugins.asScala) plugin.onCreation()
       try {
-        for (benchName <- config.benchmarkList.asScala) {
+        for (benchName <- benchmarks) {
           val bench = loadBenchmark(benchName)
           val exception = bench.runBenchmark(config)
           if (exception.isPresent) {
@@ -142,6 +144,22 @@ object RenaissanceSuite {
         for (plugin <- config.plugins.asScala) plugin.onExit()
       }
     }
+  }
+
+  def generateBenchmarkList(config: Config): Seq[String] = {
+    val benchmarkSet = new mutable.LinkedHashSet[String]
+    for (specifier <- config.benchmarkSpecifiers.asScala) {
+      if (benchmarkGroups.contains(specifier)) {
+        benchmarkSet += specifier
+      } else if (groupBenchmarks.contains(specifier)) {
+        benchmarkSet ++= groupBenchmarks(specifier)
+      } else {
+        println(s"Benchmark `${specifier}` does not exist.")
+        sys.exit(1)
+      }
+    }
+
+    benchmarkSet.toSeq
   }
 
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
@@ -577,7 +595,7 @@ We will therefore regularly release snapshots of this suite, which will be readi
 These will be known as *minor releases*.
 
 Although we will strive to have high-quality, meaningful benchmarks, it will be necessary
-to profilerate the most important ones, and publish them as *major releases*.
+to proliferate the most important ones, and publish them as *major releases*.
 This way, researchers and developers will be able to test their software
 against those benchmarks that were deemed most relevant.
 A major release will still include all the benchmarks in the suite, but the list of highlighted
