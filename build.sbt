@@ -49,17 +49,17 @@ def kebabCase(s: String): String = {
   sys.error("unreachable")
 }
 
-// Return tuples with (name, distro license, description and default repetitions)
+// Return tuples with (name, distro license, all licenses, description and default repetitions)
 def listBenchmarks(
   project: String,
   classpath: Seq[File]
-): Seq[(String, String, String, Int)] = {
+): Seq[(String, String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
   val baseName = "org.renaissance.RenaissanceBenchmark"
   val dummyName = "org.renaissance.core.Dummy"
   val benchBase = loader.loadClass(baseName)
-  val result = new mutable.ArrayBuffer[(String, String, String, Int)]
+  val result = new mutable.ArrayBuffer[(String, String, String, String, Int)]
   for (jar <- classpath) {
     val jarFile = new JarFile(jar)
     val enumeration = jarFile.entries()
@@ -76,10 +76,16 @@ def listBenchmarks(
         if (isEligible) {
           val instance = clazz.newInstance
           val distro = clazz.getMethod("distro").invoke(instance).toString
+          val licenses = clazz
+            .getMethod("licenses")
+            .invoke(instance)
+            .asInstanceOf[Array[Object]]
+            .map(x => x.toString)
+            .mkString(",")
           val description = clazz.getMethod("description").invoke(instance).toString
           val reps =
             Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
-          result += ((kebabCase(clazz.getSimpleName), distro, description, reps))
+          result += ((kebabCase(clazz.getSimpleName), distro, licenses, description, reps))
         }
       }
     }
@@ -139,11 +145,16 @@ def jarsAndListGenerator = Def.taskDyn {
         .mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for ((name, license, description, repetitions) <- listBenchmarks(project, allJars)) {
-        if (!nonGpl || license == "MIT") {
+      for ((name, distroLicense, licenses, description, repetitions) <- listBenchmarks(
+             project,
+             allJars
+           )) {
+        if (!nonGpl || distroLicense == "MIT") {
           benchGroupContent.append(name).append("=").append(projectShort).append("\n")
           benchDetails.setProperty("benchmark." + name + ".description", description)
           benchDetails.setProperty("benchmark." + name + ".repetitions", repetitions.toString)
+          benchDetails.setProperty("benchmark." + name + ".distro", distroLicense.toString)
+          benchDetails.setProperty("benchmark." + name + ".licenses", licenses.toString)
         }
       }
     }

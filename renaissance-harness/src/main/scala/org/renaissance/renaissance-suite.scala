@@ -12,6 +12,14 @@ import org.renaissance.util.ModuleLoader
 
 object RenaissanceSuite {
 
+  class BenchmarkMetaInformation(
+    val name: String,
+    val description: String,
+    val defaultRepetitions: Int,
+    val licenses: Array[String],
+    val distro: String
+  )
+
   val benchmarkGroups = {
     val map = new mutable.HashMap[String, String]
     val lines = IOUtils.lineIterator(
@@ -27,6 +35,35 @@ object RenaissanceSuite {
   }
 
   val benchmarks = benchmarkGroups.keys
+
+  val benchmarkDetails = {
+    val details = new mutable.HashMap[String, BenchmarkMetaInformation]
+    val detailsAsProps = new java.util.Properties
+    detailsAsProps.load(getClass.getResourceAsStream("/benchmark-details.properties"))
+    for (name <- benchmarks) {
+      val description = detailsAsProps.getProperty(
+        "benchmark." + name + ".description",
+        "Description not provided"
+      )
+      val repetitions = detailsAsProps.getProperty(
+        "benchmark." + name + ".repetitions",
+        "-1"
+      )
+      val licenses = detailsAsProps
+        .getProperty(
+          "benchmark." + name + ".licenses",
+          "unknown"
+        )
+        .split(",")
+      val distro = detailsAsProps.getProperty(
+        "benchmark." + name + ".distro",
+        "unknown"
+      )
+      details(name) =
+        new BenchmarkMetaInformation(name, description, repetitions.toInt, licenses, distro)
+    }
+    details
+  }
 
   val groupJars = {
     val map = new mutable.HashMap[String, List[String]]
@@ -195,20 +232,12 @@ object RenaissanceSuite {
 
   private def formatBenchmarkList(): String = {
     val indent = "    "
-    val details = new java.util.Properties
-    details.load(getClass.getResourceAsStream("/benchmark-details.properties"))
 
     val result = new StringBuffer
     for (name <- benchmarks.toSeq.sorted) {
-      val description = details.getProperty(
-        "benchmark." + name + ".description",
-        "Description not provided"
-      )
-      val descriptionWords = description.split("\\s+")
-      val repetitions = details.getProperty(
-        "benchmark." + name + ".repetitions",
-        "Not specified"
-      )
+      val descriptionWords = benchmarkDetails(name).description.split("\\s+")
+      val repetitionsInt = benchmarkDetails(name).defaultRepetitions
+      val repetitions = if (repetitionsInt < 0) "not specified" else repetitionsInt.toString
       result.append(name).append("\n")
       result.append(foldText(descriptionWords, 65, indent).mkString("\n"))
       result.append(s"\n${indent}Default repetitions: ${repetitions}\n\n")
@@ -218,7 +247,7 @@ object RenaissanceSuite {
   }
 
   private def generateBenchmarkDescription(name: String): String = {
-    val bench = loadBenchmark(name)
+    val bench = benchmarkDetails(name)
     s"- `${bench.name}` - " +
       s"${bench.description} (default repetitions: ${bench.defaultRepetitions})"
   }
@@ -360,8 +389,8 @@ The following table contains the licensing information of all the benchmarks:
 | ------------- | ------------- |:------------------:|
 ${benchmarkGroups.keys
     .map { name =>
-      val b = loadBenchmark(name)
-      s"| ${b.name()} | ${b.licenses().mkString(", ")} | ${b.distro()} |"
+      val b = benchmarkDetails(name)
+      s"| ${b.name} | ${b.licenses.mkString(", ")} | ${b.distro} |"
     }
     .mkString("\n")}
 
