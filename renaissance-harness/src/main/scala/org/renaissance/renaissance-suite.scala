@@ -25,13 +25,8 @@ object RenaissanceSuite {
     map
   }
 
-  val groupBenchmarks = {
-    val map = new mutable.LinkedHashMap[String, Seq[String]].withDefaultValue(Nil)
-    for ((bench, group) <- benchmarkGroups) {
-      map(group) = map(group) :+ bench
-    }
-    map
-  }
+  val groupBenchmarks =
+    benchmarkGroups.groupBy({ case (_, group) => group }).mapValues(_.keys.toSeq)
 
   val benchmarks = benchmarkGroups.keys
 
