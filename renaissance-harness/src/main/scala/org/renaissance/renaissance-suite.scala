@@ -122,7 +122,7 @@ object RenaissanceSuite {
     } else if (config.printRawList) {
       print(formatRawBenchmarkList)
     } else if (config.printGroupList) {
-      print(formatGroupList)
+      println(formatGroupList)
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage)
     } else {
