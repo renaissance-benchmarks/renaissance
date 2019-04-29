@@ -18,6 +18,5 @@ public class Dummy extends RenaissanceBenchmark {
   }
 
   @Override
-  protected void runIteration(Config config) {
-  }
+  protected void runIteration(Config config) {}
 }

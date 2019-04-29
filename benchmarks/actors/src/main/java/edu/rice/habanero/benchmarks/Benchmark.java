@@ -6,9 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author <a href="http://shams.web.rice.edu/">Shams Imam</a> (shams@rice.edu)
- */
+/** @author <a href="http://shams.web.rice.edu/">Shams Imam</a> (shams@rice.edu) */
 public abstract class Benchmark {
 
   final Map<String, List<Double>> customAttrs = new HashMap<>();
@@ -36,5 +34,4 @@ public abstract class Benchmark {
   public abstract void runIteration();
 
   public abstract void cleanupIteration(boolean lastIteration, double execTimeMillis);
-
 }

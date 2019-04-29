@@ -1,6 +1,5 @@
 package org.renaissance.jdk.concurrent;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-
 public final class JavaKMeans {
 
   private final int dimension;
@@ -26,27 +24,24 @@ public final class JavaKMeans {
 
   private final ForkJoinPool forkJoin;
 
-
   public JavaKMeans(final int dimension, final int threadCount) {
     this.dimension = dimension;
-    // Try to (roughly) fit fork data into half the L2 cache. 
+    // Try to (roughly) fit fork data into half the L2 cache.
     this.forkThreshold = forkThreshold(dimension, (256 / 2) * 1024);
     this.forkJoin = new ForkJoinPool(threadCount);
   }
 
-
   private int forkThreshold(final int dimension, final int sizeLimit) {
-    final int doubleSize = 8 + Double.BYTES; 
-	final int pointerSize = Long.BYTES;
-	final int arraySize = 8 + Integer.BYTES + dimension * pointerSize;
-	final int elementSize = arraySize + dimension * doubleSize;
-	return sizeLimit / (elementSize + pointerSize);
+    final int doubleSize = 8 + Double.BYTES;
+    final int pointerSize = Long.BYTES;
+    final int arraySize = 8 + Integer.BYTES + dimension * pointerSize;
+    final int elementSize = arraySize + dimension * doubleSize;
+    return sizeLimit / (elementSize + pointerSize);
   }
 
-
   public List<Double[]> run(
-    final int clusterCount, final List <Double[]> data, final int iterationCount
-  ) throws InterruptedException, ExecutionException {
+      final int clusterCount, final List<Double[]> data, final int iterationCount)
+      throws InterruptedException, ExecutionException {
     List<Double[]> centroids = randomSample(clusterCount, data, new Random(100));
     for (int iteration = 0; iteration < iterationCount; iteration++) {
       final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
@@ -60,31 +55,32 @@ public final class JavaKMeans {
     return centroids;
   }
 
-
   private List<Double[]> randomSample(
-    final int sampleCount, final List<Double[]> data, final Random random
-  ) {
-    return random.ints(sampleCount, 0, data.size())
-      .mapToObj(data::get).collect(Collectors.toList());
+      final int sampleCount, final List<Double[]> data, final Random random) {
+    return random
+        .ints(sampleCount, 0, data.size())
+        .mapToObj(data::get)
+        .collect(Collectors.toList());
   }
 
+  static List<Double[]> generateData(final int count, final int dimension, final int clusterCount) {
+    // Create random generators for individual dimensions.
+    final Random[] randoms =
+        IntStream.range(0, dimension).mapToObj(d -> new Random(1 + 2 * d)).toArray(Random[]::new);
 
-  static List<Double[]> generateData(
-	final int count, final int dimension, final int clusterCount
-  ) {
-	// Create random generators for individual dimensions.
-    final Random[] randoms = IntStream.range(0, dimension).mapToObj(
-	  d -> new Random  (1 + 2 * d)
-    ).toArray(Random[]::new);
-    
     // Generate random data for all dimensions.
-    return IntStream.range(0, count).mapToObj(i -> {
-  	  return IntStream.range(0, dimension).mapToObj(d ->
-  		(((i + (1 + 2 * d)) % clusterCount) * 1.0 / clusterCount) + randoms[d].nextDouble() * 0.5
-  	  ).toArray(Double[]::new);
-    }).collect(Collectors.toList());
+    return IntStream.range(0, count)
+        .mapToObj(
+            i -> {
+              return IntStream.range(0, dimension)
+                  .mapToObj(
+                      d ->
+                          (((i + (1 + 2 * d)) % clusterCount) * 1.0 / clusterCount)
+                              + randoms[d].nextDouble() * 0.5)
+                  .toArray(Double[]::new);
+            })
+        .collect(Collectors.toList());
   }
-
 
   public void tearDown() {
     try {
@@ -92,27 +88,28 @@ public final class JavaKMeans {
       forkJoin.awaitTermination(1, TimeUnit.SECONDS);
 
     } catch (final InterruptedException ie) {
-      throw new RuntimeException (ie);
+      throw new RuntimeException(ie);
     }
   }
 
-
   private static <T> Map<T, List<T>> merge(
-    final Map<T, List<T>> left, final Map<T, List<T>> right
-  ) {
+      final Map<T, List<T>> left, final Map<T, List<T>> right) {
     //
     // When merging values with the same key, create a new ArrayList to avoid
     // modifying an existing list representing a value in another HashMap.
     //
     final Map<T, List<T>> result = new HashMap<>(left);
 
-    right.forEach((key, val) -> result.merge(
-      key, val, (l, r) -> {
-        final List<T> m = new ArrayList<>(l);
-        m.addAll(r);
-        return m;
-      }
-    ));
+    right.forEach(
+        (key, val) ->
+            result.merge(
+                key,
+                val,
+                (l, r) -> {
+                  final List<T> m = new ArrayList<>(l);
+                  m.addAll(r);
+                  return m;
+                }));
 
     return result;
   }
@@ -127,15 +124,11 @@ public final class JavaKMeans {
 
     protected final int taskSize;
 
-
-    protected RangedTask(
-      final int fromInclusive, final int toExclusive
-    ) {
+    protected RangedTask(final int fromInclusive, final int toExclusive) {
       this.fromInclusive = fromInclusive;
       this.toExclusive = toExclusive;
       this.taskSize = toExclusive - fromInclusive;
     }
-
 
     @Override
     protected V compute() {
@@ -157,8 +150,7 @@ public final class JavaKMeans {
     protected abstract V computeDirectly();
 
     protected abstract ForkJoinTask<V> createSubtask(
-      final int fromInclusive, final int toExclusive
-    );
+        final int fromInclusive, final int toExclusive);
 
     protected abstract V combineResults(final V left, final V right);
   }
@@ -171,18 +163,15 @@ public final class JavaKMeans {
 
     private final List<Double[]> centroids;
 
-
-    public AssignmentTask(
-      final List<Double[]> data, final List<Double[]> centroids
-    ) {
+    public AssignmentTask(final List<Double[]> data, final List<Double[]> centroids) {
       this(data, centroids, 0, data.size());
     }
 
-
     private AssignmentTask(
-      final List<Double[]> data, final List<Double[]> centroids,
-      final int fromInclusive, final int toExclusive
-    ) {
+        final List<Double[]> data,
+        final List<Double[]> centroids,
+        final int fromInclusive,
+        final int toExclusive) {
       super(fromInclusive, toExclusive);
       this.data = data;
       this.centroids = centroids;
@@ -195,12 +184,10 @@ public final class JavaKMeans {
       return forkThreshold;
     }
 
-
     @Override
     protected Map<Double[], List<Double[]>> computeDirectly() {
       return collectClusters(findNearestCentroid());
     }
-
 
     private Map<Double[], List<Double[]>> collectClusters(final int[] centroidIndices) {
       final Map<Double[], List<Double[]>> result = new HashMap<>();
@@ -214,7 +201,6 @@ public final class JavaKMeans {
 
       return result;
     }
-
 
     private int[] findNearestCentroid() {
       final int[] result = new int[taskSize];
@@ -235,7 +221,6 @@ public final class JavaKMeans {
       return result;
     }
 
-
     private double distance(final Double[] x, final Double[] y) {
       //
       // Calculates Euclidean distance between the two points. Note that we
@@ -250,22 +235,17 @@ public final class JavaKMeans {
       return result;
     }
 
-
     @Override
     protected ForkJoinTask<Map<Double[], List<Double[]>>> createSubtask(
-      final int fromInclusive, final int toExclusive
-    ) {
+        final int fromInclusive, final int toExclusive) {
       return new AssignmentTask(data, centroids, fromInclusive, toExclusive);
     }
 
-
     @Override
     protected Map<Double[], List<Double[]>> combineResults(
-      final Map<Double[], List<Double[]>> left, final Map<Double[], List<Double[]>> right
-    ) {
+        final Map<Double[], List<Double[]>> left, final Map<Double[], List<Double[]>> right) {
       return merge(left, right);
     }
-
   }
 
   //
@@ -274,21 +254,16 @@ public final class JavaKMeans {
 
     private final List<List<Double[]>> clusters;
 
-
     public UpdateTask(final Map<Double[], List<Double[]>> clusters) {
       this(new ArrayList<>(clusters.values()));
     }
-
 
     public UpdateTask(final List<List<Double[]>> clusters) {
       this(clusters, 0, clusters.size());
     }
 
-
     private UpdateTask(
-      final List<List<Double[]>> clusters,
-      final int fromInclusive, final int toExclusive
-    ) {
+        final List<List<Double[]>> clusters, final int fromInclusive, final int toExclusive) {
       super(fromInclusive, toExclusive);
       this.clusters = clusters;
     }
@@ -300,12 +275,10 @@ public final class JavaKMeans {
       return 2;
     }
 
-
     @Override
     protected Map<Double[], List<Double[]>> computeDirectly() {
       return computeClusterAverages();
     }
-
 
     private Map<Double[], List<Double[]>> computeClusterAverages() {
       final Map<Double[], List<Double[]>> result = new HashMap<>();
@@ -319,18 +292,15 @@ public final class JavaKMeans {
       return result;
     }
 
-
     private Double[] boxed(final double[] values) {
       return Arrays.stream(values).boxed().toArray(Double[]::new);
     }
-
 
     private double[] average(final List<Double[]> elements) {
       final VectorSumTask sumTask = new VectorSumTask(elements);
       final double[] vectorSums = getPool().invoke(sumTask);
       return div(vectorSums, elements.size());
     }
-
 
     private double[] div(double[] values, int divisor) {
       final double[] result = new double[values.length];
@@ -341,22 +311,17 @@ public final class JavaKMeans {
       return result;
     }
 
-
     @Override
     protected ForkJoinTask<Map<Double[], List<Double[]>>> createSubtask(
-      final int fromInclusive, final int toExclusive
-    ) {
+        final int fromInclusive, final int toExclusive) {
       return new UpdateTask(clusters, fromInclusive, toExclusive);
     }
 
-
     @Override
     protected Map<Double[], List<Double[]>> combineResults(
-      final Map<Double[], List<Double[]>> left, final Map<Double[], List<Double[]>> right
-    ) {
+        final Map<Double[], List<Double[]>> left, final Map<Double[], List<Double[]>> right) {
       return merge(left, right);
     }
-
   }
 
   //
@@ -365,16 +330,12 @@ public final class JavaKMeans {
 
     private final List<Double[]> data;
 
-
     public VectorSumTask(final List<Double[]> data) {
       this(data, 0, data.size());
     }
 
-
     private VectorSumTask(
-      final List<Double[]> data,
-      final int fromInclusive, final int toExclusive
-    ) {
+        final List<Double[]> data, final int fromInclusive, final int toExclusive) {
       super(fromInclusive, toExclusive);
       this.data = data;
     }
@@ -386,12 +347,10 @@ public final class JavaKMeans {
       return forkThreshold;
     }
 
-
     @Override
     protected double[] computeDirectly() {
       return vectorSum();
     }
-
 
     private double[] vectorSum() {
       final double[] result = new double[dimension];
@@ -403,25 +362,21 @@ public final class JavaKMeans {
       return result;
     }
 
-
     private void accumulate(final Double[] val, final double[] acc) {
       for (int i = 0; i < dimension; i++) {
         acc[i] += val[i];
       }
     }
 
-
     @Override
     protected ForkJoinTask<double[]> createSubtask(int fromInclusive, int toExclusive) {
       return new VectorSumTask(data, fromInclusive, toExclusive);
     }
 
-
     @Override
     protected double[] combineResults(final double[] left, final double[] right) {
       return add(left, right);
     }
-
 
     private double[] add(final double[] x, final double[] y) {
       final double[] result = new double[dimension];
@@ -432,7 +387,5 @@ public final class JavaKMeans {
 
       return result;
     }
-
   }
-
 }

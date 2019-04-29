@@ -53,7 +53,7 @@ public class Config {
   }
 
   public boolean printRawList() {
-      return printRawList;
+    return printRawList;
   }
 
   public Config copy() {
@@ -78,15 +78,17 @@ public class Config {
 
   public Config withPlugins(String v) {
     Config c = copy();
-    c.plugins = Arrays.stream(v.split(","))
-      .map(n -> {
-        try {
-          return (Plugin) Class.forName(v).newInstance();
-        } catch (Throwable e) {
-          throw new RuntimeException(e);
-        }
-      })
-      .collect(Collectors.toList());
+    c.plugins =
+        Arrays.stream(v.split(","))
+            .map(
+                n -> {
+                  try {
+                    return (Plugin) Class.forName(v).newInstance();
+                  } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                  }
+                })
+            .collect(Collectors.toList());
     return c;
   }
 

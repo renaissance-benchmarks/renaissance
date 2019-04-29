@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,16 +48,12 @@ public class LmdbJavaAgrona {
 
   public static class LmdbJava extends CommonLmdbJava<DirectBuffer> {
 
-    /**
-     * CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer).
-     */
+    /** CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer). */
     byte[] keyBytes;
 
     MutableDirectBuffer rwKey;
     MutableDirectBuffer rwVal;
-    /**
-     * CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer).
-     */
+    /** CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer). */
     byte[] valBytes;
 
     static {
@@ -65,8 +61,7 @@ public class LmdbJavaAgrona {
     }
 
     @Override
-    public void setup(File tempDir, final boolean sync) throws
-        IOException {
+    public void setup(File tempDir, final boolean sync) throws IOException {
       super.setup(tempDir, sync);
       keyBytes = new byte[keySize];
       valBytes = new byte[valSize];
@@ -76,7 +71,7 @@ public class LmdbJavaAgrona {
 
     void write() {
       try (Txn<DirectBuffer> tx = env.txnWrite()) {
-        try (Cursor<DirectBuffer> c = db.openCursor(tx);) {
+        try (Cursor<DirectBuffer> c = db.openCursor(tx); ) {
           final PutFlags flags = sequential ? MDB_APPEND : null;
           final int rndByteMax = RND_MB.length - valSize;
           int rndByteOffset = 0;
@@ -101,7 +96,6 @@ public class LmdbJavaAgrona {
         tx.commit();
       }
     }
-
   }
 
   public static class Reader extends LmdbJava {
@@ -133,9 +127,7 @@ public class LmdbJavaAgrona {
 
   public static class Writer extends LmdbJava {
 
-    /**
-     * Whether <code>MDB_NOSYNC</code> is used.
-     */
+    /** Whether <code>MDB_NOSYNC</code> is used. */
     boolean sync;
 
     @Override
@@ -149,5 +141,4 @@ public class LmdbJavaAgrona {
       super.teardown();
     }
   }
-
 }

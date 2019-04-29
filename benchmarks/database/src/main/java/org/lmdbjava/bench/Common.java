@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,10 +32,7 @@ import org.agrona.collections.IntHashSet;
 import org.apache.commons.math3.random.BitsStreamGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 
-/**
- * Common state superclass for all DB benchmark states.
- *
- */
+/** Common state superclass for all DB benchmark states. */
 public class Common {
 
   static final byte[] RND_MB = new byte[1_048_576];
@@ -50,48 +47,37 @@ public class Common {
   CRC32 crc;
 
   /**
-   * Keys are always an integer, however they are actually stored as integers
-   * (taking 4 bytes) or as zero-padded 16 byte strings. Storing keys as
-   * integers offers a major performance gain.
+   * Keys are always an integer, however they are actually stored as integers (taking 4 bytes) or as
+   * zero-padded 16 byte strings. Storing keys as integers offers a major performance gain.
    */
   boolean intKey = true;
 
-  /**
-   * Determined during {@link #setup(File tempDir)} based on {@link #intKey} value.
-   */
+  /** Determined during {@link #setup(File tempDir)} based on {@link #intKey} value. */
   int keySize;
-  /**
-   * Keys in designated (random/sequential) order.
-   */
+  /** Keys in designated (random/sequential) order. */
   int[] keys;
 
-  /**
-   * Number of entries to read/write to the database.
-   */
+  /** Number of entries to read/write to the database. */
   int num = 500000;
 
   /**
-   * Whether the keys are to be inserted into the database in sequential order
-   * (and in the "readKeys" case, read back in that order). For LMDB, sequential
-   * inserts use {@link org.lmdbjava.PutFlags#MDB_APPEND} and offer a major
-   * performance gain. If this field is false, the append flag will not be used
-   * and the keys will instead be inserted (and read back via "readKeys") in a
-   * random order.
+   * Whether the keys are to be inserted into the database in sequential order (and in the
+   * "readKeys" case, read back in that order). For LMDB, sequential inserts use {@link
+   * org.lmdbjava.PutFlags#MDB_APPEND} and offer a major performance gain. If this field is false,
+   * the append flag will not be used and the keys will instead be inserted (and read back via
+   * "readKeys") in a random order.
    */
   boolean sequential = true;
 
   File tmp;
 
   /**
-   * Whether the values contain random bytes or are simply the same as the key.
-   * If true, the random bytes are obtained sequentially from a 1 MB random byte
-   * buffer.
+   * Whether the values contain random bytes or are simply the same as the key. If true, the random
+   * bytes are obtained sequentially from a 1 MB random byte buffer.
    */
   boolean valRandom = false;
 
-  /**
-   * Number of bytes in each value.
-   */
+  /** Number of bytes in each value. */
   int valSize = 100;
 
   static {
@@ -161,8 +147,7 @@ public class Common {
   }
 
   private File createDirectory(final String suffix) {
-    final File f = new File(TMP_BENCH,
-      getClass().getSimpleName().substring(0, 4) + suffix);
+    final File f = new File(TMP_BENCH, getClass().getSimpleName().substring(0, 4) + suffix);
     if (!f.isDirectory() && !f.mkdirs()) {
       throw new IllegalStateException("Cannot mkdir " + f);
     }

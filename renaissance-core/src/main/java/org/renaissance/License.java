@@ -26,7 +26,7 @@ public enum License {
 
   public static License distro(License[] licenses) {
     for (License license : licenses) {
-      switch(license) {
+      switch (license) {
         case GPL2:
         case GPL3:
         case EPL1:

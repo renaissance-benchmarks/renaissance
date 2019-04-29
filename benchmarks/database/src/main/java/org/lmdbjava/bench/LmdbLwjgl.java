@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,9 +61,7 @@ public class LmdbLwjgl {
     int db;
     long env;
 
-    /**
-     * Whether <code>MDB_WRITEMAP</code> is used.
-     */
+    /** Whether <code>MDB_WRITEMAP</code> is used. */
     boolean writeMap;
 
     static void E(final int rc) {
@@ -97,8 +95,7 @@ public class LmdbLwjgl {
       return num * ((long) valSize) * 32L / 10L;
     }
 
-    public void setup(File tempDir, final boolean sync) throws
-        IOException {
+    public void setup(File tempDir, final boolean sync) throws IOException {
       super.setup(tempDir);
 
       try (MemoryStack stack = stackPush()) {
@@ -157,9 +154,7 @@ public class LmdbLwjgl {
             rwKey.mv_data(stack.ASCII(padKey(key), false));
           }
           if (valRandom) {
-            final ByteBuffer rnd = stack.malloc(valSize).put(RND_MB,
-                                                             rndByteOffset,
-                                                             valSize);
+            final ByteBuffer rnd = stack.malloc(valSize).put(RND_MB, rndByteOffset, valSize);
             rnd.flip();
             rwVal.mv_data(rnd);
             rndByteOffset += valSize;
@@ -178,7 +173,6 @@ public class LmdbLwjgl {
         mdb_txn_commit(tx);
       }
     }
-
   }
 
   public static class Reader extends CommonLmdbLwjgl {
@@ -212,9 +206,7 @@ public class LmdbLwjgl {
 
   public static class Writer extends CommonLmdbLwjgl {
 
-    /**
-     * Whether <code>MDB_NOSYNC</code> is used.
-     */
+    /** Whether <code>MDB_NOSYNC</code> is used. */
     boolean sync;
 
     @Override
@@ -227,5 +219,4 @@ public class LmdbLwjgl {
       super.teardown();
     }
   }
-
 }

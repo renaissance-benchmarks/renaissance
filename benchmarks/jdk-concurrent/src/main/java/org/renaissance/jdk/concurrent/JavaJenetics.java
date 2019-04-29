@@ -18,7 +18,6 @@ import io.jenetics.util.Factory;
 import io.jenetics.util.MSeq;
 import io.jenetics.util.RandomRegistry;
 
-
 public final class JavaJenetics {
 
   private static final double GENE_MIN_VALUE = -2000;
@@ -43,11 +42,9 @@ public final class JavaJenetics {
 
   public JavaJenetics() {}
 
-
   public void setupBeforeAll() {
     RandomRegistry.setRandom(new Random(RANDOM_SEED));
   }
-
 
   public void tearDownAfterAll() {
     executor.shutdown();
@@ -60,33 +57,33 @@ public final class JavaJenetics {
     }
   }
 
-
   public Object runIteration() {
     final CompletableFuture<Chromosome<DoubleGene>> future =
-      IntStream.range(0, THREAD_COUNT).mapToObj(
-        i -> CompletableFuture.supplyAsync(this::evolveChromosome, executor)
-      ).reduce((f, g) -> f.thenCombine(g, this::average)).get();
+        IntStream.range(0, THREAD_COUNT)
+            .mapToObj(i -> CompletableFuture.supplyAsync(this::evolveChromosome, executor))
+            .reduce((f, g) -> f.thenCombine(g, this::average))
+            .get();
 
     final Chromosome<DoubleGene> result = future.join();
     System.out.println(result.getGene(0) + ", " + result.getGene(1));
     return result;
   }
 
-
   private Chromosome<DoubleGene> evolveChromosome() {
-    final Factory<Genotype<DoubleGene>> factory = Genotype.of(
-      DoubleChromosome.of(GENE_MIN_VALUE, GENE_MAX_VALUE, GENE_COUNT)
-    );
+    final Factory<Genotype<DoubleGene>> factory =
+        Genotype.of(DoubleChromosome.of(GENE_MIN_VALUE, GENE_MAX_VALUE, GENE_COUNT));
 
-    final Engine<DoubleGene, Double> engine = Engine.builder(this::fitness, factory)
-      .selector(new MonteCarloSelector<>()).populationSize(CHROMOSOME_COUNT).build();
+    final Engine<DoubleGene, Double> engine =
+        Engine.builder(this::fitness, factory)
+            .selector(new MonteCarloSelector<>())
+            .populationSize(CHROMOSOME_COUNT)
+            .build();
 
-    final Genotype<DoubleGene> result = engine.stream()
-      .limit(GENERATION_COUNT).collect(EvolutionResult.toBestGenotype());
+    final Genotype<DoubleGene> result =
+        engine.stream().limit(GENERATION_COUNT).collect(EvolutionResult.toBestGenotype());
 
     return result.getChromosome();
   }
-
 
   private Double fitness(final Genotype<DoubleGene> g) {
     final Chromosome<DoubleGene> c = g.getChromosome();
@@ -95,15 +92,11 @@ public final class JavaJenetics {
     return -x * x - y * y;
   }
 
-
   private Chromosome<DoubleGene> average(
-    final Chromosome<DoubleGene> ca, final Chromosome<DoubleGene> cb
-  ) {
+      final Chromosome<DoubleGene> ca, final Chromosome<DoubleGene> cb) {
     return DoubleChromosome.of(
-      IntStream.range(0, ca.length())
-        .mapToObj(i -> ca.getGene(i).mean(cb.getGene(i)))
-        .collect(MSeq.toMSeq())
-    );
+        IntStream.range(0, ca.length())
+            .mapToObj(i -> ca.getGene(i).mean(cb.getGene(i)))
+            .collect(MSeq.toMSeq()));
   }
-
 }

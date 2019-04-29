@@ -7,10 +7,11 @@ package edu.rice.habanero.benchmarks.uct;
  */
 public final class UctConfig {
 
-  protected static int MAX_NODES = 200_000; //_000; // maximum nodes
+  protected static int MAX_NODES = 200_000; // _000; // maximum nodes
   protected static int AVG_COMP_SIZE = 500; // average computation size
   protected static int STDEV_COMP_SIZE = 100; // standard deviation of the computation size
-  protected static int BINOMIAL_PARAM = 10; // binomial parameter: each node may have either 0 or binomial children
+  protected static int BINOMIAL_PARAM =
+      10; // binomial parameter: each node may have either 0 or binomial children
   protected static int URGENT_NODE_PERCENT = 50; // percentage of urgent nodes
   protected static boolean debug = false;
 
@@ -101,7 +102,8 @@ public final class UctConfig {
     public final int currentId;
     public final int compSize;
 
-    public UrgentGenerateChildrenMessage(final int urgentChildId, final int currentId, final int compSize) {
+    public UrgentGenerateChildrenMessage(
+        final int urgentChildId, final int currentId, final int compSize) {
       this.urgentChildId = urgentChildId;
       this.currentId = currentId;
       this.compSize = compSize;

@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,37 +46,26 @@ public class LmdbJni {
     Database db;
     Env env;
 
-    /**
-     * CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer).
-     */
+    /** CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer). */
     byte[] keyBytes;
 
-    /**
-     * CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer).
-     */
+    /** CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer). */
     byte[] valBytes;
 
-    /**
-     * CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer).
-     */
+    /** CRC scratch (memory-mapped MDB can't return a byte[] or ByteBuffer). */
     DirectBuffer wkb;
 
-    /**
-     * Whether {@link EnvFlags#MDB_WRITEMAP} is used.
-     */
+    /** Whether {@link EnvFlags#MDB_WRITEMAP} is used. */
     boolean writeMap;
 
-    /**
-     * Writable value buffer.
-     */
+    /** Writable value buffer. */
     DirectBuffer wvb;
 
     static {
       setProperty(DISABLE_BOUNDS_CHECKS_PROP_NAME, TRUE.toString());
     }
 
-    public void setup(File tempDir, final boolean sync) throws
-        IOException {
+    public void setup(File tempDir, final boolean sync) throws IOException {
       super.setup(tempDir);
       wkb = new DirectBuffer(allocateDirect(keySize));
       wvb = new DirectBuffer(allocateDirect(valSize));
@@ -107,7 +96,7 @@ public class LmdbJni {
 
     void write() {
       try (Transaction tx = env.createWriteTransaction()) {
-        try (BufferCursor c = db.bufferCursor(tx);) {
+        try (BufferCursor c = db.bufferCursor(tx); ) {
           final int rndByteMax = RND_MB.length - valSize;
           int rndByteOffset = 0;
           for (final int key : keys) {
@@ -162,9 +151,7 @@ public class LmdbJni {
 
   public static class Writer extends CommonLmdbJni {
 
-    /**
-     * Whether {@link EnvFlags#MDB_NOSYNC} is used.
-     */
+    /** Whether {@link EnvFlags#MDB_NOSYNC} is used. */
     boolean sync;
 
     @Override
@@ -177,5 +164,4 @@ public class LmdbJni {
       super.teardown();
     }
   }
-
 }

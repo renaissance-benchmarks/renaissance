@@ -2,9 +2,7 @@ package org.renaissance;
 
 import java.util.Optional;
 
-/**
- * Represents a run in which a fixed number of iterations are sequentially executed.
- */
+/** Represents a run in which a fixed number of iterations are sequentially executed. */
 public class FixedWarmupPolicy extends Policy {
   private RenaissanceBenchmark currentBenchmark;
   private Config config;
@@ -22,8 +20,8 @@ public class FixedWarmupPolicy extends Policy {
 
   @Override
   public String description() {
-    return "Warms up the VM by running the benchmark a fixed amount of time, " +
-      "and then runs the benchmark again for some fixed amount of time (use `-w` and `-t`).";
+    return "Warms up the VM by running the benchmark a fixed amount of time, "
+        + "and then runs the benchmark again for some fixed amount of time (use `-w` and `-t`).";
   }
 
   @Override
@@ -41,23 +39,48 @@ public class FixedWarmupPolicy extends Policy {
     String g = currentBenchmark.mainGroup();
     long startWarmupTime = System.currentTimeMillis();
     while (System.currentTimeMillis() < startWarmupTime + warmupSeconds * 1000) {
-      System.out.println("====== " + name + " (" + g + "), " +
-        "warmup iteration " + iteration + " started ======");
+      System.out.println(
+          "====== "
+              + name
+              + " ("
+              + g
+              + "), "
+              + "warmup iteration "
+              + iteration
+              + " started ======");
       long nanos = currentBenchmark.runIterationWithBeforeAndAfter(this, config);
       double millis = (nanos / 1000) / 1000.0;
-      System.out.println("====== " + name + " (" + g + "), " +
-        "warmup iteration " + iteration + " completed (" + millis + " ms) ======");
+      System.out.println(
+          "====== "
+              + name
+              + " ("
+              + g
+              + "), "
+              + "warmup iteration "
+              + iteration
+              + " completed ("
+              + millis
+              + " ms) ======");
       iteration++;
     }
     iteration = 0;
     long startRunTime = System.currentTimeMillis();
     while (System.currentTimeMillis() < startRunTime + runSeconds * 1000) {
-      System.out.println("====== " + name + " (" + g + "), " +
-        "iteration " + iteration + " started ======");
+      System.out.println(
+          "====== " + name + " (" + g + "), " + "iteration " + iteration + " started ======");
       long nanos = currentBenchmark.runIterationWithBeforeAndAfter(this, config);
       double millis = (nanos / 1000) / 1000.0;
-      System.out.println("====== " + name + " (" + g + "), " +
-        "iteration " + iteration + " completed (" + millis + " ms) ======");
+      System.out.println(
+          "====== "
+              + name
+              + " ("
+              + g
+              + "), "
+              + "iteration "
+              + iteration
+              + " completed ("
+              + millis
+              + " ms) ======");
       iteration++;
     }
     return Optional.empty();

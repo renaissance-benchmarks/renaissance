@@ -2,9 +2,7 @@ package org.renaissance;
 
 import java.util.Optional;
 
-/**
- * Represents a run in which a fixed number of iterations are sequentially executed.
- */
+/** Represents a run in which a fixed number of iterations are sequentially executed. */
 public class FixedIterationsPolicy extends Policy {
   private RenaissanceBenchmark currentBenchmark;
   private Config config;
@@ -16,7 +14,7 @@ public class FixedIterationsPolicy extends Policy {
     this.config = config;
     this.iteration = 0;
     this.totalIterations =
-      (config.repetitions() < 0) ? currentBenchmark.defaultRepetitions() : config.repetitions();
+        (config.repetitions() < 0) ? currentBenchmark.defaultRepetitions() : config.repetitions();
   }
 
   @Override
@@ -39,20 +37,35 @@ public class FixedIterationsPolicy extends Policy {
     String g = currentBenchmark.mainGroup();
     while (iteration < totalIterations) {
       if (iteration == totalIterations - 1) {
-        System.out.println("====== " + name + " (" + g + "), " +
-          "final iteration started ======");
+        System.out.println("====== " + name + " (" + g + "), " + "final iteration started ======");
       } else {
-        System.out.println("====== " + name + " (" + g + "), " +
-          "iteration " + iteration + " started ======");
+        System.out.println(
+            "====== " + name + " (" + g + "), " + "iteration " + iteration + " started ======");
       }
       long nanos = currentBenchmark.runIterationWithBeforeAndAfter(this, config);
       double millis = (nanos / 1000) / 1000.0;
       if (iteration == totalIterations - 1) {
-        System.out.println("====== " + name + " (" + g + "), " +
-          "final iteration completed (" + millis + " ms) ======");
+        System.out.println(
+            "====== "
+                + name
+                + " ("
+                + g
+                + "), "
+                + "final iteration completed ("
+                + millis
+                + " ms) ======");
       } else {
-        System.out.println("====== " + name + " (" + g + "), " +
-          "iteration " + iteration + " completed (" + millis + " ms) ======");
+        System.out.println(
+            "====== "
+                + name
+                + " ("
+                + g
+                + "), "
+                + "iteration "
+                + iteration
+                + " completed ("
+                + millis
+                + " ms) ======");
       }
       iteration++;
     }

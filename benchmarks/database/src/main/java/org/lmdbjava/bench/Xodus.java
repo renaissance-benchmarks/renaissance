@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,13 +57,13 @@ public class Xodus {
       cfg.setLogCachePageSize(0x2_0000);
       env = newInstance(tmp, cfg);
 
-      env.executeInTransaction((final Transaction txn) -> {
-        // WITHOUT_DUPLICATES_WITH_PREFIXING means Patricia tree is used,
-        // not B+Tree (WITHOUT_DUPLICATES)
-        // Patricia tree gives faster random access, both for reading and writing
-        store = env.openStore("without_dups", WITHOUT_DUPLICATES_WITH_PREFIXING,
-                              txn);
-      });
+      env.executeInTransaction(
+          (final Transaction txn) -> {
+            // WITHOUT_DUPLICATES_WITH_PREFIXING means Patricia tree is used,
+            // not B+Tree (WITHOUT_DUPLICATES)
+            // Patricia tree gives faster random access, both for reading and writing
+            store = env.openStore("without_dups", WITHOUT_DUPLICATES_WITH_PREFIXING, txn);
+          });
     }
 
     @Override
@@ -82,34 +82,34 @@ public class Xodus {
         // write in several transactions so as not to block GC
         final int keyStartIndex = k;
         k += batchSize;
-        env.executeInTransaction((final Transaction tx) -> {
-          for (int i = 0, j = keyStartIndex; i < batchSize && j < keys.length;
-               i++, j++) {
-            final int key = keys[j];
-            final ByteIterable keyBi;
-            final ByteIterable valBi;
-            if (intKey) {
-              keyBi = intToEntry(key);
-            } else {
-              keyBi = stringToEntry(padKey(key));
-            }
-            if (valRandom) {
-              valBi = new ArrayByteIterable(rbi.nextBytes());
-            } else {
-              final byte[] bytes = new byte[valSize];
-              bytes[0] = (byte) (key >>> 24);
-              bytes[1] = (byte) (key >>> 16);
-              bytes[2] = (byte) (key >>> 8);
-              bytes[3] = (byte) key;
-              valBi = new ArrayByteIterable(bytes, valSize);
-            }
-            if (sequential) {
-              store.putRight(tx, keyBi, valBi);
-            } else {
-              store.put(tx, keyBi, valBi);
-            }
-          }
-        });
+        env.executeInTransaction(
+            (final Transaction tx) -> {
+              for (int i = 0, j = keyStartIndex; i < batchSize && j < keys.length; i++, j++) {
+                final int key = keys[j];
+                final ByteIterable keyBi;
+                final ByteIterable valBi;
+                if (intKey) {
+                  keyBi = intToEntry(key);
+                } else {
+                  keyBi = stringToEntry(padKey(key));
+                }
+                if (valRandom) {
+                  valBi = new ArrayByteIterable(rbi.nextBytes());
+                } else {
+                  final byte[] bytes = new byte[valSize];
+                  bytes[0] = (byte) (key >>> 24);
+                  bytes[1] = (byte) (key >>> 16);
+                  bytes[2] = (byte) (key >>> 8);
+                  bytes[3] = (byte) key;
+                  valBi = new ArrayByteIterable(bytes, valSize);
+                }
+                if (sequential) {
+                  store.putRight(tx, keyBi, valBi);
+                } else {
+                  store.put(tx, keyBi, valBi);
+                }
+              }
+            });
       }
     }
   }

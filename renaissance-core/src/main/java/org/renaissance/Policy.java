@@ -10,21 +10,17 @@ import java.util.stream.Collectors;
 
 import static org.renaissance.RenaissanceBenchmark.kebabCase;
 
-/** The policy that executes the benchmark
- */
+/** The policy that executes the benchmark */
 public abstract class Policy {
   public abstract String description();
 
-  /** The benchmark that is executing.
-   */
+  /** The benchmark that is executing. */
   public abstract RenaissanceBenchmark currentBenchmark();
 
-  /** Runs the benchmark multiple times.
-   */
+  /** Runs the benchmark multiple times. */
   public abstract Optional<Throwable> execute();
 
-  /** The name of the benchmark that is currently executing.
-   */
+  /** The name of the benchmark that is currently executing. */
   public String currentBenchmarkName() {
     return currentBenchmark().name();
   }
@@ -32,12 +28,15 @@ public abstract class Policy {
   public static Map<String, BiFunction<RenaissanceBenchmark, Config, Policy>> factories;
 
   public static Map<String, String> descriptions() {
-    return factories.entrySet().stream()
-      .map(entry -> {
-        String description = entry.getValue().apply(new Dummy(), new Config()).description();
-        return new Pair<>(entry.getKey(), description);
-      })
-      .collect(Collectors.toMap(Pair::first, Pair::second));
+    return factories
+        .entrySet()
+        .stream()
+        .map(
+            entry -> {
+              String description = entry.getValue().apply(new Dummy(), new Config()).description();
+              return new Pair<>(entry.getKey(), description);
+            })
+        .collect(Collectors.toMap(Pair::first, Pair::second));
   }
 
   public static String kebabCasePolicy(Class<?> cls) {
@@ -50,11 +49,10 @@ public abstract class Policy {
   static {
     factories = new HashMap<>();
     factories.put(
-      kebabCasePolicy(FixedIterationsPolicy.class),
-      (bench, config) -> new FixedIterationsPolicy(bench, config));
+        kebabCasePolicy(FixedIterationsPolicy.class),
+        (bench, config) -> new FixedIterationsPolicy(bench, config));
     factories.put(
-      kebabCasePolicy(FixedWarmupPolicy.class),
-      (bench, config) -> new FixedWarmupPolicy(bench, config));
+        kebabCasePolicy(FixedWarmupPolicy.class),
+        (bench, config) -> new FixedWarmupPolicy(bench, config));
   }
 }
-

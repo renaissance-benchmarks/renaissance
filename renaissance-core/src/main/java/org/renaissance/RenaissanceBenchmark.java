@@ -25,7 +25,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   public final String name() {
     String cn = this.getClass().getSimpleName();
     String camelCaseName =
-      (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
+        (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
     return kebabCase(camelCaseName);
   }
 
@@ -57,17 +57,13 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     return Optional.empty();
   }
 
-  public void setUpBeforeAll(Config c) {
-  }
+  public void setUpBeforeAll(Config c) {}
 
-  public void tearDownAfterAll(Config c) {
-  }
+  public void tearDownAfterAll(Config c) {}
 
-  public void beforeIteration(Config c) {
-  }
+  public void beforeIteration(Config c) {}
 
-  public void afterIteration(Config c) {
-  }
+  public void afterIteration(Config c) {}
 
   public final Optional<Throwable> runBenchmark(Config config) {
     try {
@@ -77,7 +73,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
         System.exit(1);
       }
       BiFunction<RenaissanceBenchmark, Config, Policy> factory =
-        Policy.factories.get(config.policy());
+          Policy.factories.get(config.policy());
       Policy policy = factory.apply(this, config);
       for (Plugin plugin : config.plugins()) {
         plugin.onStart(policy);
@@ -106,9 +102,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     blackHoleField = value;
   }
 
-  /**
-   * This method runs the functionality of the benchmark.
-   */
+  /** This method runs the functionality of the benchmark. */
   protected abstract void runIteration(Config config);
 
   long runIterationWithBeforeAndAfter(Policy policy, Config config) {
@@ -143,22 +137,25 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   }
 
   private static void deleteRecursively(final Path dirPath) throws IOException {
-    Files.walkFileTree(dirPath, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        return delete(file);
-      }
+    Files.walkFileTree(
+        dirPath,
+        new SimpleFileVisitor<Path>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+              throws IOException {
+            return delete(file);
+          }
 
-      @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-        return delete(dir);
-      }
+          @Override
+          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            return delete(dir);
+          }
 
-      private FileVisitResult delete(Path path) throws IOException {
-        Files.delete(path);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+          private FileVisitResult delete(Path path) throws IOException {
+            Files.delete(path);
+            return FileVisitResult.CONTINUE;
+          }
+        });
   }
 
   public static Path generateTempDir(String name) {
@@ -171,4 +168,3 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     return p;
   }
 }
-

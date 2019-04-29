@@ -1,6 +1,5 @@
 package org.renaissance.rx;
 
-
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -17,24 +16,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-
 public final class Util {
-  private Util() {
-  }
+  private Util() {}
 
   public static Set<String> readScrabbleWords() {
     Set<String> scrabbleWords = new HashSet<>();
     Iterator<String> lines;
     try {
-      lines = IOUtils.lineIterator(
-        Util.class.getResourceAsStream("/scrabble.txt"), StandardCharsets.UTF_8);
+      lines =
+          IOUtils.lineIterator(
+              Util.class.getResourceAsStream("/scrabble.txt"), StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    Stream<String> scrabbleWordsStream = StreamSupport.stream(
-      Spliterators.spliteratorUnknownSize(lines, Spliterator.ORDERED), false);
-    scrabbleWords.addAll(
-      scrabbleWordsStream.map(String::toLowerCase).collect(Collectors.toSet()));
+    Stream<String> scrabbleWordsStream =
+        StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(lines, Spliterator.ORDERED), false);
+    scrabbleWords.addAll(scrabbleWordsStream.map(String::toLowerCase).collect(Collectors.toSet()));
     return scrabbleWords;
   }
 
@@ -42,17 +40,20 @@ public final class Util {
     Set<String> shakespeareWords = new HashSet<>();
     Iterator<String> lines;
     try {
-      lines = IOUtils.lineIterator(
-        Util.class.getResourceAsStream("/shakespeare.txt"), StandardCharsets.UTF_8);
+      lines =
+          IOUtils.lineIterator(
+              Util.class.getResourceAsStream("/shakespeare.txt"), StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    Stream<String> shakespeareWordsStream = StreamSupport.stream(
-      Spliterators.spliteratorUnknownSize(lines, Spliterator.ORDERED), false);
-    shakespeareWords.addAll(shakespeareWordsStream
-      .flatMap(line -> Arrays.stream(line.split("\\s")))
-      .map(String::toLowerCase).collect(Collectors.toSet())
-    );
+    Stream<String> shakespeareWordsStream =
+        StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(lines, Spliterator.ORDERED), false);
+    shakespeareWords.addAll(
+        shakespeareWordsStream
+            .flatMap(line -> Arrays.stream(line.split("\\s")))
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet()));
     return shakespeareWords;
   }
 }

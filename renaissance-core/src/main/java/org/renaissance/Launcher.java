@@ -15,8 +15,8 @@ public class Launcher {
       ClassLoader loader = ModuleLoader.getForGroup("renaissance-harness");
       Class<?> suiteClass = loader.loadClass("org.renaissance.RenaissanceSuite");
       Method suiteMain = suiteClass.getMethod("main", String[].class);
-      suiteMain.invoke(null, new Object[] { args });
-    } catch (ReflectiveOperationException|ModuleLoadingException e) {
+      suiteMain.invoke(null, new Object[] {args});
+    } catch (ReflectiveOperationException | ModuleLoadingException e) {
       logger.severe(String.format("Failed to start the suite: %s", e.getMessage()));
       e.printStackTrace();
     }

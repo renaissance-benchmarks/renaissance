@@ -9,20 +9,20 @@ import java.util.logging.StreamHandler;
 public class Logging {
   private static final Handler STDERR_HANDLER;
   private static final Level LOG_LEVEL;
-  
+
   static {
     STDERR_HANDLER = new StreamHandler(System.err, new SimpleFormatter());
     LOG_LEVEL = getLevel();
     STDERR_HANDLER.setLevel(LOG_LEVEL);
   }
-  
+
   private Logging() {}
 
   public static Logger getLogger(String name) {
     Logger logger = Logger.getLogger(name);
     logger.setLevel(LOG_LEVEL);
     logger.addHandler(STDERR_HANDLER);
-    
+
     return logger;
   }
 

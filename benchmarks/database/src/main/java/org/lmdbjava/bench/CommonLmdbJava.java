@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,10 +38,7 @@ import org.lmdbjava.EnvFlags;
 import static org.lmdbjava.EnvFlags.MDB_NOSYNC;
 import static org.lmdbjava.EnvFlags.MDB_WRITEMAP;
 
-/**
- * Additional state members used by LmdbJava benchmarks.
- *
- */
+/** Additional state members used by LmdbJava benchmarks. */
 public class CommonLmdbJava<T> extends Common {
 
   static final int POSIX_MODE = 664;
@@ -50,9 +47,7 @@ public class CommonLmdbJava<T> extends Common {
   Dbi<T> db;
   Env<T> env;
 
-  /**
-   * Whether {@link EnvFlags#MDB_WRITEMAP} is used.
-   */
+  /** Whether {@link EnvFlags#MDB_WRITEMAP} is used. */
   boolean writeMap;
 
   static {
@@ -62,9 +57,9 @@ public class CommonLmdbJava<T> extends Common {
   static final DbiFlags[] dbiFlags(final boolean intKey) {
     final DbiFlags[] flags;
     if (intKey) {
-      flags = new DbiFlags[]{MDB_CREATE, MDB_INTEGERKEY};
+      flags = new DbiFlags[] {MDB_CREATE, MDB_INTEGERKEY};
     } else {
-      flags = new DbiFlags[]{MDB_CREATE};
+      flags = new DbiFlags[] {MDB_CREATE};
     }
     return flags;
   }
@@ -86,15 +81,15 @@ public class CommonLmdbJava<T> extends Common {
     return num * ((long) valSize) * 32L / 10L;
   }
 
-  public void setup(File tempDir, final boolean sync) throws
-      IOException {
+  public void setup(File tempDir, final boolean sync) throws IOException {
     super.setup(tempDir);
     final EnvFlags[] envFlags = envFlags(writeMap, sync);
-    env = create(bufferProxy)
-        .setMapSize(mapSize(num, valSize))
-        .setMaxDbs(1)
-        .setMaxReaders(2)
-        .open(tmp, POSIX_MODE, envFlags);
+    env =
+        create(bufferProxy)
+            .setMapSize(mapSize(num, valSize))
+            .setMaxDbs(1)
+            .setMaxReaders(2)
+            .open(tmp, POSIX_MODE, envFlags);
 
     final DbiFlags[] flags = dbiFlags(intKey);
     db = env.openDbi("db", flags);

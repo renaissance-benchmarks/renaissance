@@ -22,8 +22,8 @@ import org.renaissance.Launcher;
 public class ModuleLoader {
   private static final URL[] URL_ARRAY_TYPE = new URL[0];
 
-  private static final Map<String, String[]> GROUP_JAR_NAMES
-    = getGroupJarNames(ModuleLoader.class.getResourceAsStream("/groups-jars.txt"));
+  private static final Map<String, String[]> GROUP_JAR_NAMES =
+      getGroupJarNames(ModuleLoader.class.getResourceAsStream("/groups-jars.txt"));
 
   public static ClassLoader getForGroup(String groupName) throws ModuleLoadingException {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupClassloader");
@@ -53,7 +53,7 @@ public class ModuleLoader {
       throw new ModuleLoadingException(message, e);
     }
   }
-  
+
   private static Map<String, String[]> getGroupJarNames(InputStream jarList) {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupJarNames");
 

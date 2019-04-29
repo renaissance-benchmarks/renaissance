@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,16 +41,15 @@ public class LmdbJavaByteBuffer {
     ByteBuffer rwVal;
 
     @Override
-    public void setup(File tempDir, final boolean sync) throws
-        IOException {
+    public void setup(File tempDir, final boolean sync) throws IOException {
       super.setup(tempDir, sync);
       rwKey = allocateDirect(keySize).order(LITTLE_ENDIAN);
       rwVal = allocateDirect(valSize);
     }
 
     void write() {
-      try (Txn<ByteBuffer> tx = env.txnWrite();) {
-        try (Cursor<ByteBuffer> c = db.openCursor(tx);) {
+      try (Txn<ByteBuffer> tx = env.txnWrite(); ) {
+        try (Cursor<ByteBuffer> c = db.openCursor(tx); ) {
           final PutFlags flags = sequential ? MDB_APPEND : null;
           final int rndByteMax = RND_MB.length - valSize;
           int rndByteOffset = 0;
@@ -80,16 +79,13 @@ public class LmdbJavaByteBuffer {
         tx.commit();
       }
     }
-
   }
 
   public static class Reader extends LmdbJava {
 
     Cursor<ByteBuffer> c;
 
-    /**
-     * Whether the byte buffer accessor is safe or not.
-     */
+    /** Whether the byte buffer accessor is safe or not. */
     boolean forceSafe;
 
     Txn<ByteBuffer> txn;
@@ -113,9 +109,7 @@ public class LmdbJavaByteBuffer {
 
   public static class Writer extends LmdbJava {
 
-    /**
-     * Whether <code>MDB_NOSYNC</code> is used.
-     */
+    /** Whether <code>MDB_NOSYNC</code> is used. */
     boolean sync;
 
     @Override
@@ -129,5 +123,4 @@ public class LmdbJavaByteBuffer {
       super.teardown();
     }
   }
-
 }
