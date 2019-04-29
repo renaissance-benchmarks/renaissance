@@ -56,3 +56,15 @@ before_script:
   # For us, the default options are broken as they pass "-v"
   # to the JVM instead after the sbt JAR.
   - unset SBT_OPTS
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  # (see https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html#Caching)
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt -name "*.lock" -print -delete
