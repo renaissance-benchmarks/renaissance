@@ -52,8 +52,12 @@ Usage: renaissance [options] [benchmark-specification]
 
   --help                   Prints this usage text.
   -r, --repetitions <value>
-                           Number of repetitions of each benchmark
-  --policy <value>         Execution policy, one of: fixed
+                           Number of repetitions used with the fixed-iterations policy.
+  -w, --warmup-seconds <value>
+                           Number of warmup seconds, when using time-based policies.
+  -t, --run-seconds <value>
+                           Number of seconds to run after the warmup, when using time-based policies.
+  --policy <value>         Execution policy, one of: fixed-warmup, fixed-iterations
   --plugins <value>        Comma-separated list of class names of plugin implementations.
   --readme                 Regenerates the README file, and does not run anything.
   --list                   Print list of benchmarks with their description.
@@ -160,7 +164,9 @@ The suite is designed to support multiple ways of executing a benchmark --
 for example, a fixed number of iterations, or a fixed amount of time.
 This logic is encapsulated in run policies. Current policies include:
 
-- `fixed` -- Runs the benchmark for a fixed number of iterations.
+- `fixed-warmup` -- Warms up the VM by running the benchmark a fixed amount of time, and then runs the benchmark again for some fixed amount of time (use `-w` and `-t`).
+
+- `fixed-iterations` -- Runs the benchmark for a fixed number of iterations (use `-r`).
 
 
 
