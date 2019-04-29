@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Config {
-  public List<String> benchmarkList;
+  public List<String> benchmarkSpecifiers;
   public int repetitions;
   public int warmupSeconds;
   public int runSeconds;
@@ -15,9 +15,10 @@ public class Config {
   public boolean readme;
   public boolean printList;
   public boolean printRawList;
+  public boolean printGroupList;
 
   public Config() {
-    this.benchmarkList = new ArrayList<>();
+    this.benchmarkSpecifiers = new ArrayList<>();
     this.repetitions = -1;
     this.warmupSeconds = 180;
     this.runSeconds = 60;
@@ -26,10 +27,11 @@ public class Config {
     this.readme = false;
     this.printList = false;
     this.printRawList = false;
+    this.printGroupList = false;
   }
 
-  public List<String> benchmarkList() {
-    return benchmarkList;
+  public List<String> benchmarkSpecifiers() {
+    return benchmarkSpecifiers;
   }
 
   public int repetitions() {
@@ -58,7 +60,7 @@ public class Config {
 
   public Config copy() {
     Config c = new Config();
-    c.benchmarkList = this.benchmarkList;
+    c.benchmarkSpecifiers = this.benchmarkSpecifiers;
     c.repetitions = this.repetitions;
     c.warmupSeconds = this.warmupSeconds;
     c.runSeconds = this.runSeconds;
@@ -67,12 +69,13 @@ public class Config {
     c.readme = this.readme;
     c.printList = this.printList;
     c.printRawList = this.printRawList;
+    c.printGroupList = this.printGroupList;
     return c;
   }
 
   public Config withBenchmarkSpecification(String v) {
     Config c = copy();
-    c.benchmarkList = Arrays.stream(v.split(",")).collect(Collectors.toList());
+    c.benchmarkSpecifiers = Arrays.stream(v.split(",")).collect(Collectors.toList());
     return c;
   }
 
@@ -129,6 +132,12 @@ public class Config {
   public Config withRawList() {
     Config c = copy();
     c.printRawList = true;
+    return c;
+  }
+
+  public Config withGroupList() {
+    Config c = copy();
+    c.printGroupList = true;
     return c;
   }
 }

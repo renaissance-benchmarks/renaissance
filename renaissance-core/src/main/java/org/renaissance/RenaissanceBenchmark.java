@@ -33,8 +33,8 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     String fullName = getClass().getName();
     String simpleName = getClass().getSimpleName();
     String packageName = fullName.substring(0, fullName.indexOf(simpleName) - 1);
-    String groupName = packageName.substring(packageName.lastIndexOf('.') + 1);
-    return groupName;
+    String groupName = packageName.substring("org.renaissance.".length());
+    return groupName.replaceAll("\\.", "-");
   }
 
   public int defaultRepetitions() {
