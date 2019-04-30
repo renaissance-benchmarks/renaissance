@@ -11,7 +11,7 @@ lazy val renaissanceHarness = (project in file("."))
     libraryDependencies ++= Seq(
       "commons-io" % "commons-io" % "2.6",
       "com.github.scopt" %% "scopt" % "4.0.0-RC2",
-      "io.spray" %%  "spray-json" % "1.3.5"
+      "io.spray" %% "spray-json" % "1.3.5"
     ),
     scalafmtConfig := Some(file(".scalafmt.conf"))
   )
