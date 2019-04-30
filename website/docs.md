@@ -2,7 +2,7 @@
 layout: mainpage
 projectname: Renaissance Suite
 logoname: mona-lisa-round.png
-title: Renaissance
+title: Documentation
 permalink: /docs.html
 ---
 
