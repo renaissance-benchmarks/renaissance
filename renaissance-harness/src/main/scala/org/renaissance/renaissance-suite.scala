@@ -11,6 +11,50 @@ import org.renaissance.util.ModuleLoader
 
 object RenaissanceSuite {
 
+  class CsvWriter(val filename: String) extends ResultObserver {
+    val results = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+
+    def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
+      val benchStorage = results.getOrElse(benchmark, new mutable.HashMap)
+      results.update(benchmark, benchStorage)
+      val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
+      benchStorage.update(metric, metricStorage)
+      metricStorage += value
+    }
+
+    def onExit(): Unit = {
+      val csv = new StringBuffer
+      csv.append("benchmark")
+      val columns = new mutable.ArrayBuffer[String]
+      for (v <- results.values.map(_.keys).flatten.toStream.distinct) {
+        columns += v
+        csv.append(",").append(v)
+      }
+      csv.append("\n")
+
+      for ((benchmark, res) <- results) {
+        val maxIndex = res.values.map(_.size).max - 1
+        for (i <- (0 to maxIndex)) {
+          val line = new StringBuffer
+          line.append(benchmark)
+          for (c <- columns) {
+            val values = res.getOrElse(c, new mutable.ArrayBuffer)
+            val score = if (i < values.size) values(i) else 0
+            line.append(",").append(score.toString)
+          }
+          csv.append(line).append("\n")
+        }
+      }
+
+      FileUtils.write(
+        new File(filename),
+        csv.toString,
+        java.nio.charset.StandardCharsets.UTF_8,
+        false
+      )
+    }
+  }
+
   class BenchmarkMetaInformation(
     val name: String,
     val description: String,
@@ -107,6 +151,9 @@ object RenaissanceSuite {
       opt[String]("plugins")
         .text("Comma-separated list of class names of plugin implementations.")
         .action((v, c) => c.withPlugins(v))
+      opt[String]("csv")
+        .text("Output results to CSV file.")
+        .action((v, c) => c.withResultObserver(new CsvWriter(v)))
       opt[Unit]("readme")
         .text("Regenerates the README file, and does not run anything.")
         .action((_, c) => c.withReadme(true))
@@ -181,6 +228,7 @@ object RenaissanceSuite {
         }
       } finally {
         for (plugin <- config.plugins.asScala) plugin.onExit()
+        for (observer <- config.resultObservers.asScala) observer.onExit()
       }
 
       if (failedBenchmarks.nonEmpty) {

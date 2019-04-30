@@ -12,6 +12,7 @@ public class Config {
   public int runSeconds;
   public List<Plugin> plugins;
   public String policy;
+  public List<ResultObserver> resultObservers;
   public boolean readme;
   public boolean printList;
   public boolean printRawList;
@@ -24,6 +25,7 @@ public class Config {
     this.runSeconds = 60;
     this.plugins = new ArrayList<>();
     this.policy = Policy.kebabCasePolicy(FixedIterationsPolicy.class);
+    this.resultObservers = new ArrayList<>();
     this.readme = false;
     this.printList = false;
     this.printRawList = false;
@@ -46,6 +48,10 @@ public class Config {
     return policy;
   }
 
+  public List<ResultObserver> resultObservers() {
+    return resultObservers;
+  }
+
   public boolean readme() {
     return readme;
   }
@@ -66,6 +72,7 @@ public class Config {
     c.runSeconds = this.runSeconds;
     c.plugins = this.plugins;
     c.policy = this.policy;
+    c.resultObservers = new ArrayList<>(this.resultObservers);
     c.readme = this.readme;
     c.printList = this.printList;
     c.printRawList = this.printRawList;
@@ -114,6 +121,12 @@ public class Config {
   public Config withPolicy(String policy) {
     Config c = copy();
     c.policy = policy;
+    return c;
+  }
+
+  public Config withResultObserver(ResultObserver observer) {
+    Config c = copy();
+    c.resultObservers.add(observer);
     return c;
   }
 

@@ -131,6 +131,10 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
 
     afterIteration(config);
 
+    for (ResultObserver observer : config.resultObservers()) {
+      observer.onNewResult(name(), "nanos", duration);
+    }
+
     return duration;
   }
 

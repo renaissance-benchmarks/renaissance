@@ -59,6 +59,7 @@ Usage: renaissance [options] [benchmark-specification]
                            Number of seconds to run after the warmup, when using time-based policies.
   --policy <value>         Execution policy, one of: fixed-warmup, fixed-iterations
   --plugins <value>        Comma-separated list of class names of plugin implementations.
+  --csv <value>            Output results to CSV file.
   --readme                 Regenerates the README file, and does not run anything.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks, each benchmark name on separate line.
