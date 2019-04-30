@@ -264,7 +264,7 @@ object RenaissanceSuite {
     return result.toString
   }
 
-  private def formatGroupList(): String = groupJars.keys.toSeq.sorted.mkString(", ")
+  private def formatGroupList(): String = groupBenchmarks.keys.toSeq.sorted.mkString(", ")
 
   private def generateBenchmarkDescription(name: String): String = {
     val bench = benchmarkDetails(name)
