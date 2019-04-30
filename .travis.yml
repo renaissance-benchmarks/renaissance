@@ -7,147 +7,64 @@ language: scala
 scala: 2.12.8
 
 
-matrix:
+refs:
+  - &bundle
+    stage: bundle
+    script:
+      - ./tools/sbt/bin/sbt assembly
+
+  - &bench
+    stage: benchmark
+    script:
+      - ./tools/sbt/bin/sbt assembly
+      - 'java -jar ./target/renaissance-0.1.jar --raw-list | sed "s#, #\n#g" >list.txt'
+      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -jar ./target/renaissance-0.1.jar -r 1 "$BENCH" || exit 1; done'
+
+jobs:
   include:
-    # Bundle build (add more JDKs here eventually)
-    - os: linux
+    - stage: "Basic checks"
+      name: "Check style"
+      script:
+        - ./tools/sbt/bin/sbt renaissanceFormatCheck
+
+    - stage: "Basic checks"
+      name: "README.md is up to date"
+      script:
+        - ./tools/sbt/bin/sbt assembly
+        - java -jar ./target/renaissance-0.1.jar --readme && git diff --exit-code -- README.md CONTRIBUTION.md
+
+    - <<: *bundle
+      os: osx
+    - <<: *bundle
       jdk: openjdk8
+    - <<: *bundle
+      jdk: oraclejdk8
 
-    # Formatting check
-    - os: linux
+    - <<: *bench
+      os: osx
+    - <<: *bench
       jdk: openjdk8
-      env:
-        - CHECKSTYLE=yes
+    - <<: *bench
+      jdk: oraclejdk8
 
-    # Each benchmark
-    # The following command prepares the actual entries
-    # java -jar target/renaissance-0.1.jar --raw-list \
-    # | sed 's#.*#    - os: linux\n      jdk: openjdk8\n      env:\n        - BENCHMARK=&\n#'
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=akka-uct
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=chi-square
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=db-shootout
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=dec-tree
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=dotty
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=dummy
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=finagle-http
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=fj-kmeans
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=future-genetic
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=gauss-mix
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=log-regression
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=mnemonics
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=movie-lens
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=naive-bayes
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=neo4j-analytics
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=page-rank
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=par-mnemonics
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=philosophers
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=reactors
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=rx-scrabble
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=scala-kmeans
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=scala-stm-bench7
-
-    - os: linux
-      jdk: openjdk8
-      env:
-        - BENCHMARK=scrabble
-
-
-before_install:
-  - java -version
+stages:
+  - "Basic checks"
+  - bundle
+  - benchmark
 
 before_script:
   # For us, the default options are broken as they pass "-v"
   # to the JVM instead after the sbt JAR.
   - unset SBT_OPTS
 
-script:
-  - 'if [ "$CHECKSTYLE" = "yes" ]; then ./tools/sbt/bin/sbt renaissanceFormatCheck; travis_terminate $?; fi'
-  - ./tools/sbt/bin/sbt assembly
-  - 'if [ -n "$BENCHMARK" ]; then java -jar ./target/renaissance-0.1.jar -r 1 $BENCHMARK; fi'
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+before_cache:
+  # Cleanup the cached directories to avoid unnecessary cache updates
+  # (see https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html#Caching)
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt -name "*.lock" -print -delete
