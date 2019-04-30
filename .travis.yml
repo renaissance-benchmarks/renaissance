@@ -17,8 +17,8 @@ refs:
     stage: benchmark
     script:
       - ./tools/sbt/bin/sbt assembly
-      - java -jar ./target/renaissance-0.1.jar --raw-list >list.txt
-      - 'for BENCH in `cat list.txt`; do java -jar ./target/renaissance-0.1.jar -r 1 "$BENCH" || exit 1; done'
+      - 'java -jar ./target/renaissance-0.1.jar --raw-list | sed "s#, #\n#g" >list.txt'
+      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -jar ./target/renaissance-0.1.jar -r 1 "$BENCH" || exit 1; done'
 
 jobs:
   include:
