@@ -28,7 +28,7 @@ object RenaissanceSuite {
       val csv = new StringBuffer
       csv.append("benchmark")
       val columns = new mutable.ArrayBuffer[String]
-      for (v <- results.values.map(_.keys).flatten.toStream.distinct) {
+      for (v <- results.values.map(_.keys).flatten.toStream.distinct.sorted) {
         columns += v
         csv.append(",").append(v)
       }
