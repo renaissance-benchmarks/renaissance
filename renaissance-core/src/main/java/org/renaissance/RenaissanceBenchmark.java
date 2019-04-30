@@ -33,8 +33,8 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     String fullName = getClass().getName();
     String simpleName = getClass().getSimpleName();
     String packageName = fullName.substring(0, fullName.indexOf(simpleName) - 1);
-    String groupName = packageName.substring(packageName.lastIndexOf('.') + 1);
-    return groupName;
+    String groupName = packageName.substring("org.renaissance.".length());
+    return groupName.replaceAll("\\.", "-");
   }
 
   public int defaultRepetitions() {
@@ -69,7 +69,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   public void afterIteration(Config c) {
   }
 
-  public final Optional<Throwable> runBenchmark(Config config) {
+  public final Throwable runBenchmark(Config config) {
     try {
       setUpBeforeAll(config);
       if (!Policy.factories.containsKey(config.policy())) {
@@ -89,9 +89,9 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
           plugin.onTermination(policy);
         }
       }
-      return Optional.empty();
+      return null;
     } catch (Throwable t) {
-      return Optional.of(t);
+      return t;
     } finally {
       try {
         tearDownAfterAll(config);
@@ -138,7 +138,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     try {
       deleteRecursively(dirPath);
     } catch (Throwable t) {
-      System.err.println("Error removing temp directory ! " + t.getMessage());
+      System.err.println("Error removing temp directory! " + t.getMessage());
     }
   }
 
@@ -166,7 +166,7 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     try {
       p = Files.createTempDirectory(Paths.get("."), name);
     } catch (IOException e) {
-      System.err.println("Error creating temp directory ! " + e.getMessage());
+      System.err.println("Error creating temp directory! " + e.getMessage());
     }
     return p;
   }

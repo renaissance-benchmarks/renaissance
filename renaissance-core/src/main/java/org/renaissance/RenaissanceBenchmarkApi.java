@@ -27,5 +27,5 @@ public interface RenaissanceBenchmarkApi {
 
   void afterIteration(Config c);
 
-  Optional<Throwable> runBenchmark(Config config);
+  Throwable runBenchmark(Config config);
 }
