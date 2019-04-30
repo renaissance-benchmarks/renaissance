@@ -68,11 +68,34 @@ object RenaissanceSuite {
       metricStorage += value
     }
 
+    def getEnvironment(): JsValue = {
+      val result = new mutable.HashMap[String, JsValue]
+
+      val osInfo = new mutable.HashMap[String, JsValue]
+      osInfo.update("name", System.getProperty("os.name", "unknown").toJson)
+      osInfo.update("arch", System.getProperty("os.arch", "unknown").toJson)
+      osInfo.update("version", System.getProperty("os.version", "unknown").toJson)
+      result.update("os", osInfo.toMap.toJson)
+
+      val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean()
+      val vmArgs = runtimeMxBean.getInputArguments()
+
+      val vmInfo = new mutable.HashMap[String, JsValue]
+      vmInfo.update("name", System.getProperty("java.vm.name", "unknown").toJson)
+      vmInfo.update("vm_version", System.getProperty("java.vm.version", "unknown").toJson)
+      vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
+      vmInfo.update("args", vmArgs.asScala.toList.toJson)
+      result.update("vm", vmInfo.toMap.toJson)
+
+      return result.toMap.toJson
+    }
+
     def onExit(): Unit = {
       val metrics = results.values.map(_.keys).flatten.toStream.distinct.sorted
       val tree = new mutable.HashMap[String, JsValue]
       tree.update("format_version", new JsNumber(1))
       tree.update("benchmarks", new JsArray(results.keys.map(new JsString(_)).toList))
+      tree.update("environment", getEnvironment)
 
       val resultTree = new mutable.HashMap[String, JsValue]
       for ((benchmark, res) <- results) {
