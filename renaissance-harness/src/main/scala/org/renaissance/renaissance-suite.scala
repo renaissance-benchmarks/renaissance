@@ -39,7 +39,7 @@ object RenaissanceSuite {
           line.append(benchmark)
           for (c <- columns) {
             val values = res.getOrElse(c, new mutable.ArrayBuffer)
-            val score = if (i < values.size) values(i) else 0
+            val score = if (i < values.size) values(i).toString else "NA"
             line.append(",").append(score.toString)
           }
           csv.append(line).append("\n")
