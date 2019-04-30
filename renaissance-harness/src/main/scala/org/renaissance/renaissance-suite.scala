@@ -7,6 +7,8 @@ import org.apache.commons.io.IOUtils
 import scala.collection._
 import scala.collection.JavaConverters._
 import scopt._
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 import org.renaissance.util.ModuleLoader
 
 object RenaissanceSuite {
@@ -49,6 +51,53 @@ object RenaissanceSuite {
       FileUtils.write(
         new File(filename),
         csv.toString,
+        java.nio.charset.StandardCharsets.UTF_8,
+        false
+      )
+    }
+  }
+
+  class JsonWriter(val filename: String) extends ResultObserver {
+    val results = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+
+    def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
+      val benchStorage = results.getOrElse(benchmark, new mutable.HashMap)
+      results.update(benchmark, benchStorage)
+      val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
+      benchStorage.update(metric, metricStorage)
+      metricStorage += value
+    }
+
+    def onExit(): Unit = {
+      val metrics = results.values.map(_.keys).flatten.toStream.distinct.sorted
+      val tree = new mutable.HashMap[String, JsValue]
+      tree.update("format_version", new JsNumber(1))
+      tree.update("benchmarks", new JsArray(results.keys.map(new JsString(_)).toList))
+
+      val resultTree = new mutable.HashMap[String, JsValue]
+      for ((benchmark, res) <- results) {
+        val subtree = new mutable.ArrayBuffer[JsValue]
+        val maxIndex = res.values.map(_.size).max - 1
+        for (i <- (0 to maxIndex)) {
+          val scores = new mutable.HashMap[String, JsValue]
+          for (c <- metrics) {
+            val values = res.getOrElse(c, new mutable.ArrayBuffer)
+            if (i < values.size) {
+              scores.update(c, new JsNumber(values(i)))
+            } else {
+              scores.update(c, new JsString("NA"))
+            }
+          }
+          subtree += new JsObject(scores.toMap)
+        }
+        resultTree.update(benchmark, new JsArray(subtree.toList))
+      }
+
+      tree.update("results", new JsObject(resultTree.toMap))
+
+      FileUtils.write(
+        new File(filename),
+        tree.toMap.toJson.prettyPrint,
         java.nio.charset.StandardCharsets.UTF_8,
         false
       )
@@ -154,6 +203,9 @@ object RenaissanceSuite {
       opt[String]("csv")
         .text("Output results to CSV file.")
         .action((v, c) => c.withResultObserver(new CsvWriter(v)))
+      opt[String]("json")
+        .text("Output results to JSON file.")
+        .action((v, c) => c.withResultObserver(new JsonWriter(v)))
       opt[Unit]("readme")
         .text("Regenerates the README file, and does not run anything.")
         .action((_, c) => c.withReadme(true))
