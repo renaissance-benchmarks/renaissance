@@ -27,11 +27,11 @@ jobs:
       script:
         - ./tools/sbt/bin/sbt renaissanceFormatCheck
 
-    #- stage: "Basic checks"
-    #  name: "README.md is up to date"
-    #  script:
-    #    - ./tools/sbt/bin/sbt assembly
-    #    - java -jar ./target/renaissance-0.1.jar --readme && git diff --quiet --exit-code -- README.md CONTRIBUTION.md
+    - stage: "Basic checks"
+      name: "README.md is up to date"
+      script:
+        - ./tools/sbt/bin/sbt assembly
+        - java -jar ./target/renaissance-0.1.jar --readme && git diff --exit-code -- README.md CONTRIBUTION.md
 
     - <<: *bundle
       os: osx
