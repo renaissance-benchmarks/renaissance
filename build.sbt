@@ -4,9 +4,6 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.jar.JarFile
 import java.util.regex.Pattern
-
-import CheckstyleSeverityLevel.CheckstyleSeverityLevel
-
 import scala.collection._
 
 val renaissanceVersion = "0.1"
@@ -209,14 +206,6 @@ def addLink(source: File, dest: File): Unit = {
   }
 }
 
-val javaCheckstyle = taskKey[Unit](
-  "Runs checkstyle on Java code."
-)
-val checkstyleOutputFile = SettingKey[File]("checkstyle-target", "The location of the generated checkstyle report")
-val checkstyleConfigLocation = SettingKey[CheckstyleConfigLocation]("checkstyle-config-location", "The location of the checkstyle configuration file")
-val checkstyleXsltTransformations = SettingKey[Option[Set[CheckstyleXSLTSettings]]]("xslt-transformations", "An optional set of XSLT transformations to be applied to the checkstyle output")
-val checkstyleSeverityLevel = SettingKey[Option[CheckstyleSeverityLevel]]("checkstyle-severity-level", "Sets the severity levels which should fail the build")
-
 lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
@@ -228,8 +217,6 @@ lazy val renaissance: Project = {
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceFormatTask,
       renaissanceFormatCheckTask,
-      CheckstyleTaskFactory.projectSettings,
-      javaCheckstyle := CheckstyleTaskFactory.checkstyleTask(Compile).value,
       checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml"),
       fork in run := true,
       cancelable in Global := true,

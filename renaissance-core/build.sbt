@@ -6,6 +6,7 @@ lazy val renaissanceCore = (project in file("."))
     version := renaissanceVersion,
     organization := "org.renaissance",
     crossPaths := false,
-    autoScalaLibrary := false
+    autoScalaLibrary := false,
+    checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml")
   )
 

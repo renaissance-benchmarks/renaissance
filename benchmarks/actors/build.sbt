@@ -10,7 +10,8 @@ lazy val actors = (project in file("."))
       "com.typesafe.akka" %% "akka-actor" % "2.3.11",
       "io.reactors" %% "reactors-core" % "0.7"
     ),
-    scalafmtConfig := Some(file(".scalafmt.conf"))
+    scalafmtConfig := Some(file(".scalafmt.conf")),
+    checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml")
   )
   .dependsOn(
     renaissanceCore
