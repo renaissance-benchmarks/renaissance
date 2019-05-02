@@ -112,6 +112,8 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
   protected abstract void runIteration(Config config);
 
   long runIterationWithBeforeAndAfter(Policy policy, Config config) {
+    long unixTsBefore = System.currentTimeMillis();
+
     beforeIteration(config);
 
     for (Plugin plugin : config.plugins()) {
@@ -130,6 +132,14 @@ public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
     }
 
     afterIteration(config);
+
+    long unixTsAfter = System.currentTimeMillis();
+
+    for (ResultObserver observer : config.resultObservers()) {
+      observer.onNewResult(name(), "nanos", duration);
+      observer.onNewResult(name(), "unixts.before", unixTsBefore);
+      observer.onNewResult(name(), "unixts.after", unixTsAfter);
+    }
 
     return duration;
   }

@@ -7,9 +7,136 @@ import org.apache.commons.io.IOUtils
 import scala.collection._
 import scala.collection.JavaConverters._
 import scopt._
+import spray.json._
+import spray.json.DefaultJsonProtocol._
 import org.renaissance.util.ModuleLoader
 
 object RenaissanceSuite {
+  abstract class ResultWriter extends ResultObserver {
+    val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+
+    def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
+      val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
+      allResults.update(benchmark, benchStorage)
+      val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
+      benchStorage.update(metric, metricStorage)
+      metricStorage += value
+    }
+
+    def getBenchmarks: Iterable[String] = {
+      allResults.keys
+    }
+
+    def getColumns(): Seq[String] = {
+      allResults.values.flatMap(_.keys).toSeq.distinct.sorted
+    }
+
+    def getResults()
+      : Iterable[(String, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
+      for {
+        benchName <- getBenchmarks
+        benchResults = allResults(benchName)
+        maxIndex = benchResults.values.map(_.size).max - 1
+      } yield
+        (
+          benchName,
+          benchResults.toMap.asInstanceOf[Map[String, mutable.ArrayBuffer[Long]]],
+          (0 to maxIndex)
+        )
+  }
+
+  class CsvWriter(val filename: String) extends ResultWriter {
+
+    def onExit(): Unit = {
+      val csv = new StringBuffer
+      csv.append("benchmark")
+      val columns = new mutable.ArrayBuffer[String]
+      for (c <- getColumns) {
+        columns += c
+        csv.append(",").append(c)
+      }
+      csv.append("\n")
+
+      for ((benchmark, results, repetitions) <- getResults) {
+        for (i <- repetitions) {
+          val line = new StringBuffer
+          line.append(benchmark)
+          for (c <- columns) {
+            val values = results.getOrElse(c, new mutable.ArrayBuffer)
+            val score = if (i < values.size) values(i).toString else "NA"
+            line.append(",").append(score.toString)
+          }
+          csv.append(line).append("\n")
+        }
+      }
+
+      FileUtils.write(
+        new File(filename),
+        csv.toString,
+        java.nio.charset.StandardCharsets.UTF_8,
+        false
+      )
+    }
+  }
+
+  class JsonWriter(val filename: String) extends ResultWriter {
+
+    def getEnvironment(): JsValue = {
+      val result = new mutable.HashMap[String, JsValue]
+
+      val osInfo = new mutable.HashMap[String, JsValue]
+      osInfo.update("name", System.getProperty("os.name", "unknown").toJson)
+      osInfo.update("arch", System.getProperty("os.arch", "unknown").toJson)
+      osInfo.update("version", System.getProperty("os.version", "unknown").toJson)
+      result.update("os", osInfo.toMap.toJson)
+
+      val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean()
+      val vmArgs = runtimeMxBean.getInputArguments()
+
+      val vmInfo = new mutable.HashMap[String, JsValue]
+      vmInfo.update("name", System.getProperty("java.vm.name", "unknown").toJson)
+      vmInfo.update("vm_version", System.getProperty("java.vm.version", "unknown").toJson)
+      vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
+      vmInfo.update("args", vmArgs.asScala.toList.toJson)
+      result.update("vm", vmInfo.toMap.toJson)
+
+      return result.toMap.toJson
+    }
+
+    def onExit(): Unit = {
+      val columns = getColumns
+
+      val tree = new mutable.HashMap[String, JsValue]
+      tree.update("format_version", 1.toJson)
+      tree.update("benchmarks", getBenchmarks.toList.toJson)
+      tree.update("environment", getEnvironment)
+
+      val resultTree = new mutable.HashMap[String, JsValue]
+      for ((benchmark, results, repetitions) <- getResults) {
+        val subtree = new mutable.ArrayBuffer[JsValue]
+        for (i <- repetitions) {
+          val scores = new mutable.HashMap[String, JsValue]
+          for (c <- columns) {
+            val values = results.getOrElse(c, new mutable.ArrayBuffer)
+            if (i < values.size) {
+              scores.update(c, values(i).toJson)
+            }
+          }
+          subtree += scores.toMap.toJson
+        }
+        resultTree.update(benchmark, subtree.toList.toJson)
+      }
+
+      tree.update("results", resultTree.toMap.toJson)
+
+      FileUtils.write(
+        new File(filename),
+        tree.toMap.toJson.prettyPrint,
+        java.nio.charset.StandardCharsets.UTF_8,
+        false
+      )
+    }
+  }
 
   class BenchmarkMetaInformation(
     val name: String,
@@ -107,6 +234,12 @@ object RenaissanceSuite {
       opt[String]("plugins")
         .text("Comma-separated list of class names of plugin implementations.")
         .action((v, c) => c.withPlugins(v))
+      opt[String]("csv")
+        .text("Output results to CSV file.")
+        .action((v, c) => c.withResultObserver(new CsvWriter(v)))
+      opt[String]("json")
+        .text("Output results to JSON file.")
+        .action((v, c) => c.withResultObserver(new JsonWriter(v)))
       opt[Unit]("readme")
         .text("Regenerates the README file, and does not run anything.")
         .action((_, c) => c.withReadme(true))
@@ -181,6 +314,7 @@ object RenaissanceSuite {
         }
       } finally {
         for (plugin <- config.plugins.asScala) plugin.onExit()
+        for (observer <- config.resultObservers.asScala) observer.onExit()
       }
 
       if (failedBenchmarks.nonEmpty) {
