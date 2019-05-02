@@ -12,8 +12,7 @@ lazy val renaissanceHarness = (project in file("."))
       "commons-io" % "commons-io" % "2.6",
       "com.github.scopt" %% "scopt" % "4.0.0-RC2"
     ),
-    scalafmtConfig := Some(file(".scalafmt.conf")),
-    checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml")
+    scalafmtConfig := Some(file(".scalafmt.conf"))
   )
   .dependsOn(
     renaissanceCore

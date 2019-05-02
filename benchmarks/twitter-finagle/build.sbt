@@ -16,8 +16,7 @@ lazy val twitterFinagle = (project in file("."))
       "com.twitter" %% "util-core" % "19.4.0",
       "com.twitter" %% "util-events" % "7.0.0"
     ),
-    scalafmtConfig := Some(file(".scalafmt.conf")),
-    checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml")
+    scalafmtConfig := Some(file(".scalafmt.conf"))
   )
   .dependsOn(
     renaissanceCore
