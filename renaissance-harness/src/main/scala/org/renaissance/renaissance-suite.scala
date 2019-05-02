@@ -12,35 +12,57 @@ import spray.json.DefaultJsonProtocol._
 import org.renaissance.util.ModuleLoader
 
 object RenaissanceSuite {
-
-  class CsvWriter(val filename: String) extends ResultObserver {
-    val results = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+  abstract class ResultWriter extends ResultObserver {
+    val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
 
     def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
-      val benchStorage = results.getOrElse(benchmark, new mutable.HashMap)
-      results.update(benchmark, benchStorage)
+      val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
+      allResults.update(benchmark, benchStorage)
       val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
       benchStorage.update(metric, metricStorage)
       metricStorage += value
     }
 
+    def getBenchmarks: Iterable[String] = {
+      allResults.keys
+    }
+
+    def getColumns(): Seq[String] = {
+      allResults.values.flatMap(_.keys).toSeq.distinct.sorted
+    }
+
+    def getResults()
+      : Iterable[(String, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
+      for {
+        benchName <- getBenchmarks
+        benchResults = allResults(benchName)
+        maxIndex = benchResults.values.map(_.size).max - 1
+      } yield
+        (
+          benchName,
+          benchResults.toMap.asInstanceOf[Map[String, mutable.ArrayBuffer[Long]]],
+          (0 to maxIndex)
+        )
+  }
+
+  class CsvWriter(val filename: String) extends ResultWriter {
+
     def onExit(): Unit = {
       val csv = new StringBuffer
       csv.append("benchmark")
       val columns = new mutable.ArrayBuffer[String]
-      for (v <- results.values.flatMap(_.keys).toSeq.distinct.sorted) {
-        columns += v
-        csv.append(",").append(v)
+      for (c <- getColumns) {
+        columns += c
+        csv.append(",").append(c)
       }
       csv.append("\n")
 
-      for ((benchmark, res) <- results) {
-        val maxIndex = res.values.map(_.size).max - 1
-        for (i <- (0 to maxIndex)) {
+      for ((benchmark, results, repetitions) <- getResults) {
+        for (i <- repetitions) {
           val line = new StringBuffer
           line.append(benchmark)
           for (c <- columns) {
-            val values = res.getOrElse(c, new mutable.ArrayBuffer)
+            val values = results.getOrElse(c, new mutable.ArrayBuffer)
             val score = if (i < values.size) values(i).toString else "NA"
             line.append(",").append(score.toString)
           }
@@ -57,16 +79,7 @@ object RenaissanceSuite {
     }
   }
 
-  class JsonWriter(val filename: String) extends ResultObserver {
-    val results = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
-
-    def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
-      val benchStorage = results.getOrElse(benchmark, new mutable.HashMap)
-      results.update(benchmark, benchStorage)
-      val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
-      benchStorage.update(metric, metricStorage)
-      metricStorage += value
-    }
+  class JsonWriter(val filename: String) extends ResultWriter {
 
     def getEnvironment(): JsValue = {
       val result = new mutable.HashMap[String, JsValue]
@@ -91,32 +104,30 @@ object RenaissanceSuite {
     }
 
     def onExit(): Unit = {
-      val metrics = results.values.flatMap(_.keys).toSeq.distinct.sorted
+      val columns = getColumns
+
       val tree = new mutable.HashMap[String, JsValue]
-      tree.update("format_version", new JsNumber(1))
-      tree.update("benchmarks", new JsArray(results.keys.map(new JsString(_)).toList))
+      tree.update("format_version", 1.toJson)
+      tree.update("benchmarks", getBenchmarks.toList.toJson)
       tree.update("environment", getEnvironment)
 
       val resultTree = new mutable.HashMap[String, JsValue]
-      for ((benchmark, res) <- results) {
+      for ((benchmark, results, repetitions) <- getResults) {
         val subtree = new mutable.ArrayBuffer[JsValue]
-        val maxIndex = res.values.map(_.size).max - 1
-        for (i <- (0 to maxIndex)) {
+        for (i <- repetitions) {
           val scores = new mutable.HashMap[String, JsValue]
-          for (c <- metrics) {
-            val values = res.getOrElse(c, new mutable.ArrayBuffer)
+          for (c <- columns) {
+            val values = results.getOrElse(c, new mutable.ArrayBuffer)
             if (i < values.size) {
-              scores.update(c, new JsNumber(values(i)))
-            } else {
-              scores.update(c, new JsString("NA"))
+              scores.update(c, values(i).toJson)
             }
           }
-          subtree += new JsObject(scores.toMap)
+          subtree += scores.toMap.toJson
         }
-        resultTree.update(benchmark, new JsArray(subtree.toList))
+        resultTree.update(benchmark, subtree.toList.toJson)
       }
 
-      tree.update("results", new JsObject(resultTree.toMap))
+      tree.update("results", resultTree.toMap.toJson)
 
       FileUtils.write(
         new File(filename),
