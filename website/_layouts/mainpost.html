@@ -1,0 +1,87 @@
+---
+layout: base
+---
+
+
+<div id="content">
+  <div id="main" class="container_16">
+
+    {% if page.date %}
+
+    <!-- This renders a single post -->
+
+    <div class="grid_12">
+      <br/>
+
+      <h2 class="post-title">
+        <a href="{{ page.url }}">
+          {{ page.title }}
+        </a>
+      </h2>
+      <span class="post-date">
+        {{ page.date | date: '%B %d, %Y' }},
+        author: {{ page.author }}
+      </span>
+
+      {{ content }}
+
+    </div>
+
+    {% else %}
+
+    <!-- This renders all the posts -->
+
+    <div class="grid_12">
+      <h1>News</h1>
+
+      <br/>
+
+      {% for post in site.posts %}
+        <h2 class="post-title">
+          <a href="{{ post.url }}">
+            {{ post.title }}
+          </a>
+        </h2>
+        <span class="post-date">
+          {{ post.date | date: '%B %d, %Y' }},
+          author: {{ post.author }}
+        </span>
+        <div>
+          {{ post.content }}
+        </div>
+      {% endfor %}
+    </div>
+
+    {% endif %}
+
+    <div class="grid_4">
+      {% if page.date %}
+      {% else %}
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      {% endif %}
+
+      <h3>All posts</h3>
+
+      <ul class="post-list">
+      {% for post in site.posts %}
+        <li>
+          <span class="list-title">
+            <a href="{{ post.url }}">
+              {{ post.title }}
+            </a>
+          </span>
+          <br/>
+          <span class="post-date">
+            {{ post.date | date: '%B %d, %Y' }}
+          </span>
+        </li>
+      {% endfor %}
+      </ul>
+    </div>
+
+  </div>
+</div>

@@ -1094,8 +1094,26 @@ h2.post-title {
   margin: 0px;
 }
 
+span.list-title {
+  font-size: 16px;
+}
+
+ul.post-list {
+  padding: 0px;
+}
+
+ul.post-list li {
+  list-style-type: none;
+}
+
 span.post-date {
   font-size: 14px;
 }
 
+a.faint-link {
+  color: #555;
+}
 
+a.faint-link:hover {
+  color: #888;
+}

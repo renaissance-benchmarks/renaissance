@@ -123,12 +123,13 @@ layout: base
 
   <br/>
   <br/>
+  <br/>
 
   <div class="container_16">
     <div class="grid_16">
       <hr class="fancy-line">
       <div class="fancy-title">
-        <span>NEWS</span>
+        <span><a href="/posts" class="faint-link">NEWS</a></span>
       </div>
     </div>
   </div>
@@ -136,19 +137,40 @@ layout: base
   <br/>
   <br/>
 
-  {% for post in site.posts %}
+  {% for post in site.posts | limit: 4 %}
   <div class="container_16">
-    <h2 class="post-title">
-      <a href="{{ post.url }}">
-        {{ post.title }}
-      </a>
-    </h2>
-    <span class="post-date">
-      {{ post.date | date: '%B %d, %Y' }}
-    </span>
-    {{ post.excerpt }}
+    <div class="grid_16">
+      <h2 class="post-title">
+        <a href="{{ post.url }}">
+          {{ post.title }}
+        </a>
+      </h2>
+      <span class="post-date">
+        {{ post.date | date: '%B %d, %Y' }},
+        author: {{ post.author }}
+      </span>
+      <div>
+        {{ post.excerpt }}
+        <a href="{{ post.url }}">
+          ... read more ...
+        </a>
+      </div>
+    </div>
   </div>
+
+  <br/>
   {% endfor %}
+
+  <br/>
+  <br/>
+  <br/>
+
+  <div class="container_16">
+    <hr class="fancy-line">
+    <div class="fancy-title">
+      <span><a href="/posts" class="faint-link">See more news</a></span>
+    </div>
+  </div>
 
   <br/>
   <br/>
