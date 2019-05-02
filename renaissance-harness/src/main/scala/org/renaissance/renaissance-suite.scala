@@ -28,7 +28,7 @@ object RenaissanceSuite {
       val csv = new StringBuffer
       csv.append("benchmark")
       val columns = new mutable.ArrayBuffer[String]
-      for (v <- results.values.map(_.keys).flatten.toStream.distinct.sorted) {
+      for (v <- results.values.flatMap(_.keys).toSeq.distinct.sorted) {
         columns += v
         csv.append(",").append(v)
       }
@@ -91,7 +91,7 @@ object RenaissanceSuite {
     }
 
     def onExit(): Unit = {
-      val metrics = results.values.map(_.keys).flatten.toStream.distinct.sorted
+      val metrics = results.values.flatMap(_.keys).toSeq.distinct.sorted
       val tree = new mutable.HashMap[String, JsValue]
       tree.update("format_version", new JsNumber(1))
       tree.update("benchmarks", new JsArray(results.keys.map(new JsString(_)).toList))
