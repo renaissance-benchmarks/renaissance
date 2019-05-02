@@ -173,6 +173,19 @@ val renaissanceFormatCheck = taskKey[Unit](
   "Check formatting via scalafmt."
 )
 
+val javaCheckstyle = taskKey[Unit](
+  "Check formatting via checkstyle."
+)
+
+def createJavaCheckstyleTask = Def.taskDyn {
+  val formatTasks = for (p <- subProjects) yield javaCheckstyle in (p, Compile)
+  val testFormatTasks = for (p <- subProjects) yield javaCheckstyle in (p, Test)
+  flattenTasks(formatTasks ++ testFormatTasks)
+}
+
+val javaCheckstyleTask = javaCheckstyle := createJavaCheckstyleTask.value
+
+
 def createRenaissanceFormatCheckTask = Def.taskDyn {
   val formatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Compile)
   val testFormatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Test)
@@ -217,6 +230,8 @@ lazy val renaissance: Project = {
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
       renaissanceFormatTask,
       renaissanceFormatCheckTask,
+      javaCheckstyleTask,
+      checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml"),
       fork in run := true,
       cancelable in Global := true,
       remoteDebug := false,

@@ -20,7 +20,8 @@ lazy val apacheSpark = (project in file("."))
       "org.apache.spark" %% "spark-mllib" % sparkVersion,
       "commons-io" % "commons-io" % "2.6"
     ),
-    scalafmtConfig := Some(file(".scalafmt.conf"))
+    scalafmtConfig := Some(file(".scalafmt.conf")),
+    checkstyleConfigLocation := CheckstyleConfigLocation.File("java-checkstyle.xml")
   )
   .dependsOn(
     renaissanceCore
