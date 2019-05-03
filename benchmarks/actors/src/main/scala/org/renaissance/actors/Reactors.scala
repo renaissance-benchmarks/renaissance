@@ -23,9 +23,15 @@ class Reactors extends RenaissanceBenchmark {
 
   private var system: ReactorSystem = null
 
+  private var scalingFactor: Double = 1
+
   override def setUpBeforeAll(c: Config): Unit = {
     // Instantiate the default reactor system used throughout the benchmark.
     system = ReactorSystem.default("bench-system")
+
+    if (c.functionalTest) {
+      scalingFactor = 0.1
+    }
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -38,25 +44,25 @@ class Reactors extends RenaissanceBenchmark {
     // TODO Address workload scaling. One possibility is to tune dimensions so that each workload sends roughly equal number of messages.
 
     println("Baseline workload: Reactor scheduling events")
-    new Baseline(system).run(1000000)
+    new Baseline(system).run((1000000 * scalingFactor).intValue())
     println("BigBench workload: Many-to-many message ping pong")
-    new BigBench(system).run(4000)
+    new BigBench(system).run((4000 * scalingFactor).intValue())
     println("CountingActor workload: Single reactor event processing")
-    new CountingActor(system).run(8000000)
+    new CountingActor(system).run((8000000 * scalingFactor).intValue())
     println("Fibonacci workload: Dynamic reactor mix with varying lifetimes")
-    new Fibonacci(system).run(28)
+    new Fibonacci(system).run((28 * scalingFactor).intValue())
     println("ForkJoinCreation workload: Reactor creation performance")
-    new ForkJoinCreation(system).run(250000)
+    new ForkJoinCreation(system).run((250000 * scalingFactor).intValue())
     println("ForkJoinThroughput workload: Reactor processing performance")
-    new ForkJoinThroughput(system).run(21000)
+    new ForkJoinThroughput(system).run((21000 * scalingFactor).intValue())
     println("PingPong workload: Reactor pair sequential ping pong performance")
-    new PingPong(system).run(1500000)
+    new PingPong(system).run((1500000 * scalingFactor).intValue())
     println("StreamingPingPong workload: Reactor pair overlapping ping pong performance")
-    new StreamingPingPong(system).run(5000000)
+    new StreamingPingPong(system).run((5000000 * scalingFactor).intValue())
     println("Roundabout workload: Many channels reactor performance")
-    new Roundabout(system).run(750000)
+    new Roundabout(system).run((750000 * scalingFactor).intValue())
     println("ThreadRing workload: Reactor ring forwarding performance")
-    new ThreadRing(system).run(2500000)
+    new ThreadRing(system).run((2500000 * scalingFactor).intValue())
   }
 }
 
