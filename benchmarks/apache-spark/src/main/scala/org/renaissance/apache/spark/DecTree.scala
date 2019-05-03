@@ -46,6 +46,8 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
 
   val inputFile = "/sample_libsvm_data.txt"
 
+  var numCopies = 100
+
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 
   var tempDirPath: Path = null
@@ -65,7 +67,7 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
 
     val text =
       IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    for (i <- 0 until 100) {
+    for (i <- 0 until numCopies) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
 
@@ -102,6 +104,9 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("dec_tree")
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      numCopies = 5
+    }
     training = prepareAndLoadInput(decisionTreePath, inputFile)
     pipeline = constructPipeline()
   }

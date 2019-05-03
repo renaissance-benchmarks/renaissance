@@ -39,6 +39,8 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   val inputFile = "/sample_libsvm_data.txt"
 
+  var numCopies = 400
+
   val bigInputFile = logisticRegressionPath.resolve("bigfile.txt")
 
   var mlModel: LogisticRegressionModel = null
@@ -53,7 +55,7 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
     FileUtils.deleteDirectory(logisticRegressionPath.toFile)
     val text =
       IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    for (i <- 0 until 400) {
+    for (i <- 0 until numCopies) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
   }
@@ -78,6 +80,9 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("log_regression")
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      numCopies = 5
+    }
     prepareInput()
     loadData()
   }

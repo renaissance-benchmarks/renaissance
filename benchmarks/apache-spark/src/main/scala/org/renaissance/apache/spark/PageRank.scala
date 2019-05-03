@@ -15,7 +15,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   override def licenses = License.create(License.APACHE2)
 
-  val ITERATIONS = 2
+  var ITERATIONS = 2
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -35,14 +35,19 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   var tempDirPath: Path = null
 
-  def prepareInput() = {
+  def prepareInput(c: Config) = {
     FileUtils.deleteDirectory(pageRankPath.toFile)
-    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+    var text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+    if (c.functionalTest) {
+      val MAX_LINE = 5000
+      val sublist = for ((line, num) <- text.lines.zipWithIndex if num < MAX_LINE) yield line
+      text = sublist.toList.mkString("\n")
+    }
     FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
   }
 
   def loadData() = {
-    val lines = sc.textFile(bigInputFile.toString)
+    var lines = sc.textFile(bigInputFile.toString)
     links = lines
       .map { line =>
         val parts = line.split("\\s+")
@@ -57,7 +62,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
-    prepareInput()
+    prepareInput(c)
     loadData()
   }
 

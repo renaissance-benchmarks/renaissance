@@ -28,7 +28,7 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
   val COMPONENTS = 5
 
-  val SIZE = 1500000
+  var SIZE = 1500000
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -74,6 +74,9 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("chi_square")
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      SIZE = 10000
+    }
     prepareInput()
     loadData()
   }

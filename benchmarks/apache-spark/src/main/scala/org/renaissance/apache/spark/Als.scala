@@ -34,6 +34,8 @@ class Als extends RenaissanceBenchmark with SparkUtil {
 
   val bigInputFile = alsPath.resolve("bigfile.txt")
 
+  var numRatings = 20000
+
   var sc: SparkContext = null
 
   var factModel: MatrixFactorizationModel = null
@@ -45,7 +47,7 @@ class Als extends RenaissanceBenchmark with SparkUtil {
   def prepareInput() = {
     FileUtils.deleteDirectory(alsPath.toFile)
     val rand = new Random
-    val lines = (0 until 20000).flatMap { user =>
+    val lines = (0 until numRatings).flatMap { user =>
       (0 until 100).map { product =>
         val score = 1 + rand.nextInt(3) + rand.nextInt(3)
         s"$user::$product::$score"
@@ -67,6 +69,9 @@ class Als extends RenaissanceBenchmark with SparkUtil {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("als")
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      numRatings = 500
+    }
     prepareInput()
     loadData()
   }
