@@ -17,6 +17,7 @@ public class Config {
   public boolean printList;
   public boolean printRawList;
   public boolean printGroupList;
+  public boolean functionalTest;
 
   public Config() {
     this.benchmarkSpecifiers = new ArrayList<>();
@@ -30,6 +31,7 @@ public class Config {
     this.printList = false;
     this.printRawList = false;
     this.printGroupList = false;
+    this.functionalTest = false;
   }
 
   public List<String> benchmarkSpecifiers() {
@@ -61,7 +63,11 @@ public class Config {
   }
 
   public boolean printRawList() {
-      return printRawList;
+    return printRawList;
+  }
+
+  public boolean functionalTest() {
+    return functionalTest;
   }
 
   public Config copy() {
@@ -77,6 +83,7 @@ public class Config {
     c.printList = this.printList;
     c.printRawList = this.printRawList;
     c.printGroupList = this.printGroupList;
+    c.functionalTest = this.functionalTest;
     return c;
   }
 
@@ -151,6 +158,12 @@ public class Config {
   public Config withGroupList() {
     Config c = copy();
     c.printGroupList = true;
+    return c;
+  }
+
+  public Config withFunctionalTest() {
+    Config c = copy();
+    c.functionalTest = true;
     return c;
   }
 }
