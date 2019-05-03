@@ -787,6 +787,7 @@ The current members of the committee are:
 - Lubomir Bulej, Charles University in Prague
 - Gilles Duboscq, Oracle Labs
 - François Farquet, Oracle Labs
+- Vojtech Horky, Charles University in Prague
 - David Leopoldseder, Johannes Kepler University Linz
 - Aleksandar Prokopec, Oracle Labs
 - Andrea Rosà, Università della Svizzera italiana
