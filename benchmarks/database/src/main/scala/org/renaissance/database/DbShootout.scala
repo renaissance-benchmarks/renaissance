@@ -47,32 +47,38 @@ class DbShootout extends RenaissanceBenchmark {
 
   var mvStoreWriter: MvStore.Writer = null
 
+  var numEntriesToReadWrite: Int = 500000
+
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
+
+    if (c.functionalTest) {
+      numEntriesToReadWrite = 10000
+    }
 
     mapDb = new MapDb
     mapDbReader = new MapDb.Reader
     mapDbWriter = new MapDb.Writer
-    mapDbReader.setup(tempDirPath.toFile)
-    mapDbWriter.setup(tempDirPath.toFile)
+    mapDbReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    mapDbWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
 
     levelDb = new LevelDb
     levelDbReader = new LevelDb.Reader
     levelDbWriter = new LevelDb.Writer
-    levelDbReader.setup(tempDirPath.toFile)
-    levelDbWriter.setup(tempDirPath.toFile)
+    levelDbReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    levelDbWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
 
     chronicle = new Chronicle
     chronicleReader = new Chronicle.Reader
     chronicleWriter = new Chronicle.Writer
-    chronicleReader.setup(tempDirPath.toFile)
-    chronicleWriter.setup(tempDirPath.toFile)
+    chronicleReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    chronicleWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
 
     mvStore = new MvStore
     mvStoreReader = new MvStore.Reader
     mvStoreWriter = new MvStore.Writer
-    mvStoreReader.setup(tempDirPath.toFile)
-    mvStoreWriter.setup(tempDirPath.toFile)
+    mvStoreReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    mvStoreWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

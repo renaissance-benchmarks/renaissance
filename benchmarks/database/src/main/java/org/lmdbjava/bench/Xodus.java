@@ -48,8 +48,8 @@ public class Xodus {
     Store store;
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries);
 
       final EnvironmentConfig cfg = new EnvironmentConfig();
       // size of immutable .xd file is 32MB
@@ -119,8 +119,8 @@ public class Xodus {
     Transaction tx;
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries);
       super.write();
       tx = env.beginReadonlyTransaction();
       // cannot share Cursor, as there's no Cursor.getFirst() to reset methods
@@ -136,8 +136,8 @@ public class Xodus {
   public static class Writer extends CommonXodus {
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries);
     }
 
     @Override

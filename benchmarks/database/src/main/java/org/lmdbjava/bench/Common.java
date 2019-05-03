@@ -57,7 +57,7 @@ public class Common {
   boolean intKey = true;
 
   /**
-   * Determined during {@link #setup(File tempDir)} based on {@link #intKey} value.
+   * Determined during {@link #setup(File tempDir, int numEntries)} based on {@link #intKey} value.
    */
   int keySize;
   /**
@@ -98,8 +98,9 @@ public class Common {
     RND.nextBytes(RND_MB);
   }
 
-  public void setup(File tempDir) throws IOException {
+  public void setup(File tempDir, int numEntries) throws IOException {
     TMP_BENCH = tempDir;
+    num = numEntries;
     keySize = intKey ? BYTES : STRING_KEY_LENGTH;
     crc = new CRC32();
     final IntHashSet set = new IntHashSet(num);

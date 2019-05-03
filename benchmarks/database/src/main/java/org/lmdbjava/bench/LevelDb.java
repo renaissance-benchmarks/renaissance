@@ -111,8 +111,8 @@ public class LevelDb {
     MutableDirectBuffer wvb;
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries);
       wkb = new UnsafeBuffer(new byte[keySize]);
       wvb = new UnsafeBuffer(new byte[valSize]);
       pushMemoryPool(1_024 * 512);
@@ -223,8 +223,8 @@ public class LevelDb {
   public static class Reader extends CommonLevelDb {
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries);
       super.write(num);
     }
 
@@ -239,8 +239,8 @@ public class LevelDb {
     int batchSize = 250000;
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries);
     }
 
     @Override

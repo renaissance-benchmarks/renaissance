@@ -41,9 +41,9 @@ public class LmdbJavaByteBuffer {
     ByteBuffer rwVal;
 
     @Override
-    public void setup(File tempDir, final boolean sync) throws
+    public void setup(File tempDir, int numEntries, final boolean sync) throws
         IOException {
-      super.setup(tempDir, sync);
+      super.setup(tempDir, numEntries, sync);
       rwKey = allocateDirect(keySize).order(LITTLE_ENDIAN);
       rwVal = allocateDirect(valSize);
     }
@@ -95,9 +95,9 @@ public class LmdbJavaByteBuffer {
     Txn<ByteBuffer> txn;
 
     @Override
-    public void setup(File tempDir) throws IOException {
+    public void setup(File tempDir, int numEntries) throws IOException {
       bufferProxy = forceSafe ? PROXY_SAFE : PROXY_OPTIMAL;
-      super.setup(tempDir, false);
+      super.setup(tempDir, numEntries, false);
       super.write();
       txn = env.txnRead();
       c = db.openCursor(txn);
@@ -119,9 +119,9 @@ public class LmdbJavaByteBuffer {
     boolean sync;
 
     @Override
-    public void setup(File tempDir) throws IOException {
+    public void setup(File tempDir, int numEntries) throws IOException {
       bufferProxy = PROXY_OPTIMAL;
-      super.setup(tempDir, sync);
+      super.setup(tempDir, numEntries, sync);
     }
 
     @Override
