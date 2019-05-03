@@ -65,7 +65,7 @@ Usage: renaissance [options] [benchmark-specification]
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks, each benchmark name on separate line.
   --group-list             Print list of benchmark groups.
-  benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed.
+  benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed (or all).
 ```
 
 

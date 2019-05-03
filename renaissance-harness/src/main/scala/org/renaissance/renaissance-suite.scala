@@ -253,7 +253,7 @@ object RenaissanceSuite {
         .text("Print list of benchmark groups.")
         .action((_, c) => c.withGroupList())
       arg[String]("benchmark-specification")
-        .text("Comma-separated list of benchmarks (or groups) that must be executed.")
+        .text("Comma-separated list of benchmarks (or groups) that must be executed (or all).")
         .optional()
         .action((v, c) => c.withBenchmarkSpecification(v))
     }
@@ -331,6 +331,8 @@ object RenaissanceSuite {
         benchmarkSet += specifier
       } else if (groupBenchmarks.contains(specifier)) {
         benchmarkSet ++= groupBenchmarks(specifier)
+      } else if (specifier == "all") {
+        benchmarkSet ++= benchmarks
       } else {
         println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
