@@ -250,13 +250,13 @@ object RenaissanceSuite {
         .text("Print list of benchmarks with their description.")
         .action((_, c) => c.withList())
       opt[Unit]("raw-list")
-        .text("Print list of benchmarks, each benchmark name on separate line.")
+        .text("Print list of benchmarks (each benchmark name on separate line).")
         .action((_, c) => c.withRawList())
       opt[Unit]("group-list")
-        .text("Print list of benchmark groups.")
+        .text("Print list of benchmark groups (each group name on separate line).")
         .action((_, c) => c.withGroupList())
       arg[String]("benchmark-specification")
-        .text("Comma-separated list of benchmarks (or groups) that must be executed.")
+        .text("Comma-separated list of benchmarks (or groups) that must be executed (or all).")
         .optional()
         .action((v, c) => c.withBenchmarkSpecification(v))
     }
@@ -293,7 +293,7 @@ object RenaissanceSuite {
     } else if (config.printList) {
       print(formatBenchmarkList)
     } else if (config.printRawList) {
-      print(formatRawBenchmarkList)
+      println(formatRawBenchmarkList)
     } else if (config.printGroupList) {
       println(formatGroupList)
     } else if (config.benchmarkSpecifiers.isEmpty) {
@@ -334,6 +334,8 @@ object RenaissanceSuite {
         benchmarkSet += specifier
       } else if (groupBenchmarks.contains(specifier)) {
         benchmarkSet ++= groupBenchmarks(specifier)
+      } else if (specifier == "all") {
+        benchmarkSet ++= benchmarks
       } else {
         println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
@@ -383,7 +385,7 @@ object RenaissanceSuite {
     return result.asInstanceOf[RenaissanceBenchmark]
   }
 
-  private def formatRawBenchmarkList(): String = benchmarks.toSeq.sorted.mkString(", ")
+  private def formatRawBenchmarkList(): String = benchmarks.toSeq.sorted.mkString("\n")
 
   private def formatBenchmarkList(): String = {
     val indent = "    "
@@ -401,7 +403,7 @@ object RenaissanceSuite {
     return result.toString
   }
 
-  private def formatGroupList(): String = groupBenchmarks.keys.toSeq.sorted.mkString(", ")
+  private def formatGroupList(): String = groupBenchmarks.keys.toSeq.sorted.mkString("\n")
 
   private def generateBenchmarkDescription(name: String): String = {
     val bench = benchmarkDetails(name)
@@ -692,7 +694,7 @@ $$ tools/sbt/bin/sbt renaissanceFormat
 Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
-$$ tools/sbt/bin/sbt runMain org.renaissance.RenaissanceSuite --readme
+$$ tools/sbt/bin/sbt runMain org.renaissance.Launcher --readme
 ```
 
 ### IDE development
@@ -785,14 +787,15 @@ The new major release is then bundled and the binaries are made available public
 
 The current members of the committee are:
 
-- Petr Tuma, Charles University in Prague
 - Lubomir Bulej, Charles University in Prague
-- David Leopoldseder, Johannes Kepler University Linz
-- Andrea Rosà, Università della Svizzera italiana
 - Gilles Duboscq, Oracle Labs
-- Alex Villazon, Universidad Privada Boliviana
 - François Farquet, Oracle Labs
+- Vojtech Horky, Charles University in Prague
+- David Leopoldseder, Johannes Kepler University Linz
 - Aleksandar Prokopec, Oracle Labs
+- Andrea Rosà, Università della Svizzera italiana
+- Petr Tuma, Charles University in Prague
+- Alex Villazon, Universidad Privada Boliviana
 """
 
 }

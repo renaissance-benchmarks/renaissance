@@ -14,6 +14,7 @@ val benchmarkProjects = for {
   // Hint: add .filter(_ == "group") to compile with selected group only
   // (can significantly speed-up compilation/assembly when debugging harness).
   dir <- file("benchmarks").list()
+  if dir != null && file("benchmarks/" + dir + "/build.sbt").exists()
 } yield {
   RootProject(uri("benchmarks/" + dir))
 }

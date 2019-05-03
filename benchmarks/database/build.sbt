@@ -1,8 +1,8 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-lazy val dbShootout = (project in file("."))
+lazy val database = (project in file("."))
   .settings(
-    name := "dbshootout",
+    name := "database",
     organization := "org.renaissance",
     version := "0.1.0",
     scalafmtConfig := Some(file(".scalafmt.conf")),
