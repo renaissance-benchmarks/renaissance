@@ -9,7 +9,7 @@ import org.renaissance.RenaissanceBenchmark
 
 trait SparkUtil {
 
-  val portAllocationMaxRetries : Int = 64
+  val portAllocationMaxRetries: Int = 64
 
   val winUtils = "/winutils.exe"
 
@@ -26,7 +26,7 @@ trait SparkUtil {
     sc
   }
 
-  def tearDownSparkContext(sc:SparkContext): Unit = {
+  def tearDownSparkContext(sc: SparkContext): Unit = {
     if (sc != null) {
       sc.stop()
     }
@@ -38,8 +38,7 @@ trait SparkUtil {
    https://github.com/srccodes/hadoop-common-2.2.0-bin
    If Spark version is updated in future releases of renaissance,
    the file must be upgraded to the corresponding Hadoop version
- */
-
+   */
   def setUpHadoop(tempDirPath: Path): Any = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
       val winutilsPath = Paths.get(tempDirPath.toAbsolutePath + "/bin")
