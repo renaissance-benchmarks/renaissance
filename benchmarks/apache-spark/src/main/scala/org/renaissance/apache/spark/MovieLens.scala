@@ -20,7 +20,7 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
-class MovieLens extends RenaissanceBenchmark {
+class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
   /* TODO Implement changes regarding how to declare and pass
   benchmark-specific parameters
@@ -236,20 +236,11 @@ class MovieLens extends RenaissanceBenchmark {
     Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("movie-lens")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setCheckpointDir(checkpointPath.toString)
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("movie_lens")
     setUpLogger()
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc.setCheckpointDir(checkpointPath.toString)
   }
 
   def writeResourceToFile(resourceStream: InputStream, outputPath: Path) = {
@@ -287,7 +278,7 @@ class MovieLens extends RenaissanceBenchmark {
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

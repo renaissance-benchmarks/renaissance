@@ -12,7 +12,7 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 
-class Als extends RenaissanceBenchmark {
+class Als extends RenaissanceBenchmark with SparkUtil {
 
   override def description(): String = "Runs the ALS algorithm from the Spark MLlib."
 
@@ -64,20 +64,9 @@ class Als extends RenaissanceBenchmark {
       .cache()
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("als")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("als")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     prepareInput()
     loadData()
   }
@@ -90,7 +79,7 @@ class Als extends RenaissanceBenchmark {
       }
       .saveAsTextFile(outputPath.toString)
 
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

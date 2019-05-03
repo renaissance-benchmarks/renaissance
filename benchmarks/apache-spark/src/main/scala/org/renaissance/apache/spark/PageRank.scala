@@ -8,7 +8,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class PageRank extends RenaissanceBenchmark {
+class PageRank extends RenaissanceBenchmark with SparkUtil {
   def description = "Runs a number of PageRank iterations, using RDDs."
 
   override def defaultRepetitions = 20
@@ -54,19 +54,9 @@ class PageRank extends RenaissanceBenchmark {
     ranks = links.mapValues(v => 1.0)
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("page-rank")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     prepareInput()
     loadData()
   }
@@ -91,8 +81,7 @@ class PageRank extends RenaissanceBenchmark {
       }
       .mkString("\n")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
-
 }

@@ -17,7 +17,7 @@ import org.apache.spark.rdd.RDD
 import scala.util.Random
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class GaussMix extends RenaissanceBenchmark {
+class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   /* TODO Implement changes regarding how to declare and pass
   benchmark-specific parameters
@@ -54,19 +54,9 @@ class GaussMix extends RenaissanceBenchmark {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("gauss_mix")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     prepareInput()
     loadData()
-  }
-
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("gauss-mix")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
   }
 
   def prepareInput() = {
@@ -96,7 +86,7 @@ class GaussMix extends RenaissanceBenchmark {
   override def tearDownAfterAll(c: Config) = {
     val output = gmm.gaussians.mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

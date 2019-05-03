@@ -12,7 +12,7 @@ import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class LogRegression extends RenaissanceBenchmark {
+class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   def description = "Runs the logistic regression workload from the Spark MLlib."
 
@@ -75,20 +75,9 @@ class LogRegression extends RenaissanceBenchmark {
       }
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("logistic-regression")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("log_regression")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     prepareInput()
     loadData()
   }
@@ -107,7 +96,7 @@ class LogRegression extends RenaissanceBenchmark {
   override def tearDownAfterAll(c: Config): Unit = {
     FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", true)
     FileUtils.write(outputPath.toFile, mlModel.intercept.toString, true)
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 }
