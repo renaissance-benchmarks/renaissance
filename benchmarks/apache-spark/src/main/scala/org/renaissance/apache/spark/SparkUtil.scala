@@ -9,7 +9,7 @@ import org.renaissance.RenaissanceBenchmark
 
 trait SparkUtil {
 
-  val portAllocationMaxRetries : Int = 16
+  val portAllocationMaxRetries : Int = 64
 
   val winUtils = "/winutils.exe"
 
