@@ -782,14 +782,14 @@ The new major release is then bundled and the binaries are made available public
 
 The current members of the committee are:
 
-- Petr Tuma, Charles University in Prague
 - Lubomir Bulej, Charles University in Prague
-- David Leopoldseder, Johannes Kepler University Linz
-- Andrea Rosà, Università della Svizzera italiana
 - Gilles Duboscq, Oracle Labs
-- Alex Villazon, Universidad Privada Boliviana
 - François Farquet, Oracle Labs
+- David Leopoldseder, Johannes Kepler University Linz
 - Aleksandar Prokopec, Oracle Labs
+- Andrea Rosà, Università della Svizzera italiana
+- Petr Tuma, Charles University in Prague
+- Alex Villazon, Universidad Privada Boliviana
 """
 
 }

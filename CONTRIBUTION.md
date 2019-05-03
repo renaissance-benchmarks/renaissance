@@ -63,7 +63,7 @@ $ tools/sbt/bin/sbt renaissanceFormat
 Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
-$ tools/sbt/bin/sbt runMain org.renaissance.RenaissanceSuite --readme
+$ tools/sbt/bin/sbt runMain org.renaissance.Launcher --readme
 ```
 
 ### IDE development
@@ -156,11 +156,11 @@ The new major release is then bundled and the binaries are made available public
 
 The current members of the committee are:
 
-- Petr Tuma, Charles University in Prague
 - Lubomir Bulej, Charles University in Prague
-- David Leopoldseder, Johannes Kepler University Linz
-- Andrea Rosà, Università della Svizzera italiana
 - Gilles Duboscq, Oracle Labs
-- Alex Villazon, Universidad Privada Boliviana
 - François Farquet, Oracle Labs
+- David Leopoldseder, Johannes Kepler University Linz
 - Aleksandar Prokopec, Oracle Labs
+- Andrea Rosà, Università della Svizzera italiana
+- Petr Tuma, Charles University in Prague
+- Alex Villazon, Universidad Privada Boliviana
