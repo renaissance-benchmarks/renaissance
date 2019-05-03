@@ -63,9 +63,9 @@ Usage: renaissance [options] [benchmark-specification]
   --json <value>           Output results to JSON file.
   --readme                 Regenerates the README file, and does not run anything.
   --list                   Print list of benchmarks with their description.
-  --raw-list               Print list of benchmarks, each benchmark name on separate line.
-  --group-list             Print list of benchmark groups.
-  benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed.
+  --raw-list               Print list of benchmarks (each benchmark name on separate line).
+  --group-list             Print list of benchmark groups (each group name on separate line).
+  benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed (or all).
 ```
 
 
