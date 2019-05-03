@@ -247,10 +247,10 @@ object RenaissanceSuite {
         .text("Print list of benchmarks with their description.")
         .action((_, c) => c.withList())
       opt[Unit]("raw-list")
-        .text("Print list of benchmarks, each benchmark name on separate line.")
+        .text("Print list of benchmarks (each benchmark name on separate line).")
         .action((_, c) => c.withRawList())
       opt[Unit]("group-list")
-        .text("Print list of benchmark groups.")
+        .text("Print list of benchmark groups (each group name on separate line).")
         .action((_, c) => c.withGroupList())
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed (or all).")
@@ -290,7 +290,7 @@ object RenaissanceSuite {
     } else if (config.printList) {
       print(formatBenchmarkList)
     } else if (config.printRawList) {
-      print(formatRawBenchmarkList)
+      println(formatRawBenchmarkList)
     } else if (config.printGroupList) {
       println(formatGroupList)
     } else if (config.benchmarkSpecifiers.isEmpty) {
@@ -382,7 +382,7 @@ object RenaissanceSuite {
     return result.asInstanceOf[RenaissanceBenchmark]
   }
 
-  private def formatRawBenchmarkList(): String = benchmarks.toSeq.sorted.mkString(", ")
+  private def formatRawBenchmarkList(): String = benchmarks.toSeq.sorted.mkString("\n")
 
   private def formatBenchmarkList(): String = {
     val indent = "    "
@@ -400,7 +400,7 @@ object RenaissanceSuite {
     return result.toString
   }
 
-  private def formatGroupList(): String = groupBenchmarks.keys.toSeq.sorted.mkString(", ")
+  private def formatGroupList(): String = groupBenchmarks.keys.toSeq.sorted.mkString("\n")
 
   private def generateBenchmarkDescription(name: String): String = {
     val bench = benchmarkDetails(name)
