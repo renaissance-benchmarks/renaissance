@@ -17,6 +17,10 @@ On this page, we provide basic usage instructions, and other useful information.
 - [Contributing to Renaissance](#contribution-guide)
 - [Licensing Information](#licensing)
 
+The motivation behind the Renaissance benchmark suite,
+as well as the detailed analysis of the individual benchmarks,
+are described in the following [PLDI'19 paper](/resources/docs/renaissance-suite.pdf).
+
 
 # <a name="getting-started"></a> Getting Started with Renaissance
 
