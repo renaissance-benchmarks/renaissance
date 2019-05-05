@@ -74,14 +74,14 @@ Usage: renaissance [options] [benchmark-specification]
 The following is the complete list of benchmarks, separated into groups.
 
 
-##### actors
+#### actors
 
 - `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
 
 - `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO. (default repetitions: 10)
 
 
-##### apache-spark
+#### apache-spark
 
 - `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 60)
 
@@ -100,24 +100,24 @@ The following is the complete list of benchmarks, separated into groups.
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
 
-##### core
+#### core
 
 - `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
 
 
-##### database
+#### database
 
 - `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
 
 
-##### jdk-concurrent
+#### jdk-concurrent
 
 - `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
 
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
 
 
-##### jdk-streams
+#### jdk-streams
 
 - `mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 
@@ -126,34 +126,34 @@ The following is the complete list of benchmarks, separated into groups.
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
 
 
-##### neo4j
+#### neo4j
 
 - `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
 
 
-##### rx
+#### rx
 
 - `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
 
 
-##### scala-dotty
+#### scala-dotty
 
 - `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
 
-##### scala-stdlib
+#### scala-stdlib
 
 - `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 
-##### scala-stm
+#### scala-stm
 
 - `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
 
 - `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM. (default repetitions: 60)
 
 
-##### twitter-finagle
+#### twitter-finagle
 
 - `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 90)
 
