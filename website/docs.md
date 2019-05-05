@@ -14,7 +14,7 @@ Thank you for your interest in using the Renaissance Benchmark Suite!
 On this page, we provide basic usage instructions, and other useful information.
 
 - [Getting Started with Renaissance](#getting-started)
-- [Contributing to Renaissance](#contributing)
+- [Contributing to Renaissance](#contribution-guide)
 - [Licensing Information](#licensing)
 
 
@@ -24,11 +24,11 @@ The Renaissance Benchmark Suite comes with an informative guide
 on how to run Renaissance benchmarks, how to add new benchmarks, run policies and plugins,
 and a technical overview of the internal design of the suite.
 
-<div id="contribution-holder">
+<div id="readme-holder">
 </div>
 <script>
 loadRemoteContent(
-  "contribution-holder",
+  "readme-holder",
   "https://api.github.com/repos/{{ site.githubOrg }}/{{ site.githubRepo }}/contents/README.md",
   "{{ page.logoname }}",
   "markdown"
@@ -41,7 +41,7 @@ https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}/blob/master/README
 ).
 
 
-# <a name="contributing"></a> Contributing to Renaissance
+# <a name="contribution-guide"></a> Contributing to Renaissance
 
 One of the aims of the Renaissance suite is to continually evolve,
 and maintain a collection of relevant and interesting benchmarks
