@@ -90,7 +90,7 @@ Before submitting a pull request, it is recommendable to open an issue first,
 and discuss the benchmark proposal with the maintainers.
 
 
-##### Benchmark criteria
+#### Benchmark criteria
 
 Here is some of the quality criteria that a new benchmark should satisfy:
 
@@ -126,7 +126,7 @@ Here is some of the quality criteria that a new benchmark should satisfy:
 - *Open-source*: the benchmark must consist of open-source code, with well-defined licenses.
 
 
-##### Release process
+#### Release process
 
 While the open-source process is designed to accept contributions on an ongoing basis,
 we expect that this benchmark suite will grow considerably over the course of time.
