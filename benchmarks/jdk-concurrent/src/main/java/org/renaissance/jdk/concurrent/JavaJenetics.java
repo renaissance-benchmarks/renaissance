@@ -21,31 +21,40 @@ import io.jenetics.util.RandomRegistry;
 
 public final class JavaJenetics {
 
-  private static final double GENE_MIN_VALUE = -2000;
+  private double geneMinValue = -2000;
 
-  private static final double GENE_MAX_VALUE = 2000;
+  private double geneMaxValue = 2000;
 
-  private static final int GENE_COUNT = 200;
+  private int geneCount = 200;
 
-  private static final int CHROMOSOME_COUNT = 50;
+  private int chromosomeCount = 50;
 
-  private static final int GENERATION_COUNT = 5000;
+  private int generationCount = 5000;
 
   //
 
-  private static final int RANDOM_SEED = 7;
+  private int randomSeed = 7;
 
-  private static final int THREAD_COUNT = 2;
+  private int threadCount = 2;
 
   private final ExecutorService executor = Executors.newWorkStealingPool();
 
   //
 
-  public JavaJenetics() {}
+  public JavaJenetics(int geneMinValue, int geneMaxValue, int geneCount, int chromosomeCount,
+                      int generationCount, int threadCount, int randomSeed) {
+    this.geneMinValue = geneMinValue;
+    this.geneMaxValue = geneMaxValue;
+    this.geneCount = geneCount;
+    this.chromosomeCount = chromosomeCount;
+    this.generationCount = generationCount;
+    this.randomSeed = randomSeed;
+    this.threadCount = threadCount;
+  }
 
 
   public void setupBeforeAll() {
-    RandomRegistry.setRandom(new Random(RANDOM_SEED));
+    RandomRegistry.setRandom(new Random(randomSeed));
   }
 
 
@@ -61,9 +70,9 @@ public final class JavaJenetics {
   }
 
 
-  public Object runIteration() {
+  public Object runRepetition() {
     final CompletableFuture<Chromosome<DoubleGene>> future =
-      IntStream.range(0, THREAD_COUNT).mapToObj(
+      IntStream.range(0, threadCount).mapToObj(
         i -> CompletableFuture.supplyAsync(this::evolveChromosome, executor)
       ).reduce((f, g) -> f.thenCombine(g, this::average)).get();
 
@@ -75,14 +84,14 @@ public final class JavaJenetics {
 
   private Chromosome<DoubleGene> evolveChromosome() {
     final Factory<Genotype<DoubleGene>> factory = Genotype.of(
-      DoubleChromosome.of(GENE_MIN_VALUE, GENE_MAX_VALUE, GENE_COUNT)
+      DoubleChromosome.of(geneMinValue, geneMaxValue, geneCount)
     );
 
     final Engine<DoubleGene, Double> engine = Engine.builder(this::fitness, factory)
-      .selector(new MonteCarloSelector<>()).populationSize(CHROMOSOME_COUNT).build();
+      .selector(new MonteCarloSelector<>()).populationSize(chromosomeCount).build();
 
     final Genotype<DoubleGene> result = engine.stream()
-      .limit(GENERATION_COUNT).collect(EvolutionResult.toBestGenotype());
+      .limit(generationCount).collect(EvolutionResult.toBestGenotype());
 
     return result.getChromosome();
   }
