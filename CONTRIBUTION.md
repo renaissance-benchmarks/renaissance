@@ -126,6 +126,13 @@ Here is some of the quality criteria that a new benchmark should satisfy:
 - *Open-source*: the benchmark must consist of open-source code, with well-defined licenses.
 
 
+#### Code of Conduct
+
+We would also like to point you to the
+[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/CODE-OF-CONDUCT.md). As a member
+of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
+the community.
+
 #### Release process
 
 While the open-source process is designed to accept contributions on an ongoing basis,

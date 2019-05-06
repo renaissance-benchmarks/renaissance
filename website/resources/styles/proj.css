@@ -436,7 +436,7 @@ div.banner div.bannercenter img {
 
 div.banner div.bannercenter div.bannerlinks {
   position: relative;
-  left: 1150px;
+  left: 1010px;
   top: -240px;
   width: 200px;
 }
@@ -1022,6 +1022,16 @@ pre.prettyprint li {
   text-shadow: 1px 1px 1px rgba(200, 200, 200, 0.9);
   color: rgba(100, 100, 100, 0.8);
   z-index: 10;
+}
+
+span.punchline {
+  text-align: center;
+  display:block;
+}
+
+span.subpunchline {
+  text-align: center;
+  display:block;
 }
 
 .subpunchline-color1 {
