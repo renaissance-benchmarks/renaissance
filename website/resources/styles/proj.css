@@ -1024,6 +1024,16 @@ pre.prettyprint li {
   z-index: 10;
 }
 
+span.punchline {
+  text-align: center;
+  display:block;
+}
+
+span.subpunchline {
+  text-align: center;
+  display:block;
+}
+
 .subpunchline-color1 {
   color: rgba(60, 160, 40, 0.8);
 }
