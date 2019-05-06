@@ -14,11 +14,17 @@ function loadRemoteContent(elementId, url, logoname, kind) {
       contentText = contentText.replace(/\t/g, '    ').replace(/  /g, '&nbsp; ').replace(/  /g, ' &nbsp;').replace(/\r\n|\n|\r/g, '<br />');
       element.appendChild(icon);
       element.appendChild(title);
-      element.innerHTML = element.innerHTML + '<br/>' + contentText;
+      element.innerHTML = element.innerHTML + "<br/>" + contentText;
     } else if (kind == "markdown") {
       var contentMarkdown = window.atob(data.content);
       var renderedMarkdown = marked(contentMarkdown);
-      element.innerHTML = element.innerHTML + '<br/>' + renderedMarkdown;
+      element.innerHTML = element.innerHTML + " " + renderedMarkdown;
+      $(function() {
+        $("pre").addClass("prettyprint linenums");
+        $(".language-scala > pre").addClass("lang-scala");
+        $(".language-java > pre").addClass("lang-java");
+        prettyPrint();
+      });
     }
   });
 }

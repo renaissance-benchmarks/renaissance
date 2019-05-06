@@ -17,8 +17,8 @@ refs:
     stage: benchmark
     script:
       - ./tools/sbt/bin/sbt assembly
-      - 'java -jar ./target/renaissance-0.1.jar --raw-list >list.txt'
-      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-0.1.jar --functional-test -r 1 "$BENCH" || exit 1; done'
+      - 'java -jar ./target/renaissance-0.9.0.jar --raw-list >list.txt'
+      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-0.9.0.jar --functional-test -r 1 "$BENCH" || exit 1; done'
 
 jobs:
   include:
@@ -31,7 +31,7 @@ jobs:
       name: "README.md is up to date"
       script:
         - ./tools/sbt/bin/sbt assembly
-        - java -jar ./target/renaissance-0.1.jar --readme && git diff --exit-code -- README.md CONTRIBUTION.md
+        - java -jar ./target/renaissance-0.9.0.jar --readme && git diff --exit-code -- README.md CONTRIBUTION.md
 
     - <<: *bundle
       os: osx

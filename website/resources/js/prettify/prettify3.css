@@ -7,7 +7,7 @@ pre.prettyprint {
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   border-radius: 5px;
-  box-shadow: 0px 2px 2px #ccc;
+  box-shadow: 0px 1px 2px #ccc;
 }
 
 pre code {
@@ -52,6 +52,8 @@ li.L1,li.L3,li.L5,li.L7,li.L9 { }
 .prettyprint ol.linenums > li {
   list-style-type: decimal;
   background: #efefef;
+  color: #ccc;
+  font-size: 12px;
 }
 
 @media print {

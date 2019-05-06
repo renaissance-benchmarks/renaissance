@@ -6,7 +6,7 @@ import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
 
-val renaissanceVersion = "0.1"
+val renaissanceVersion = "0.9.0"
 
 val renaissanceScalaVersion = "2.12.8"
 
