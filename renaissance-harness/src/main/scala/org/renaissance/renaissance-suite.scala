@@ -212,7 +212,7 @@ object RenaissanceSuite {
 
   private val parser: OptionParser[Config] =
     new OptionParser[Config]("renaissance") {
-      head("Renaissance Benchmark Suite", "0.1")
+      head("Renaissance Benchmark Suite", MetaInfo.getRenaissanceVersion)
 
       help("help")
         .text("Prints this usage text.")
