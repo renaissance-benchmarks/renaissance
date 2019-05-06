@@ -1127,11 +1127,3 @@ a.faint-link {
 a.faint-link:hover {
   color: #888;
 }
-
-#measurements {
-  text-align: center;
-}
-
-#measurements img {
-  height: 500px;
-}
