@@ -27,17 +27,21 @@ class FinagleHttp extends RenaissanceBenchmark {
 
   /** Number of requests sent during the execution of the benchmark.
    */
-  val NUM_REQUESTS = 2000000
+  var NUM_REQUESTS = 2000000
 
   /** Number of clients that are simultaneously sending the requests.
    */
-  val NUM_CLIENTS = 20
+  var NUM_CLIENTS = 20
 
   var server: ListeningServer = null
 
   var port: Int = -1
 
   override def setUpBeforeAll(c: Config): Unit = {
+    if (c.functionalTest) {
+      NUM_REQUESTS = 1000
+      NUM_CLIENTS = 5
+    }
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")
     val muxer: HttpMuxer = new HttpMuxer()
