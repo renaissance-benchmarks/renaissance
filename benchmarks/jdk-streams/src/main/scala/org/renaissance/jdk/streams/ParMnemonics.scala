@@ -15,6 +15,9 @@ class ParMnemonics extends RenaissanceBenchmark {
 
   override def setUpBeforeAll(c: Config): Unit = {
     testInput = "72252762577225276257528249849874238824"
+    if (c.functionalTest) {
+      testInput = "7225276257722527"
+    }
     coder = new MnemonicsCoderWithStream(
       java.util.Arrays.asList(
         "Scala",
