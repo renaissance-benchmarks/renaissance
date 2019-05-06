@@ -18,7 +18,13 @@ class Philosophers extends RenaissanceBenchmark {
   /**
    * Number of meals consumed by each Philosopher thread.
    */
-  private val NUMBER_OF_MEALS = 500000
+  private var NUMBER_OF_MEALS = 500000
+
+  override def setUpBeforeAll(c: Config) = {
+    if (c.functionalTest) {
+      NUMBER_OF_MEALS = 500
+    }
+  }
 
   override def runIteration(c: Config): Unit = {
     RealityShowPhilosophers.run(NUMBER_OF_MEALS, THREAD_COUNT)
