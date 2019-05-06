@@ -25,7 +25,7 @@ import org.renaissance.RenaissanceBenchmark
 
 import scala.util.Random
 
-class DecTree extends RenaissanceBenchmark {
+class DecTree extends RenaissanceBenchmark with SparkUtil {
 
   /* TODO Implement changes regarding how to declare and pass
   benchmark-specific parameters
@@ -46,6 +46,8 @@ class DecTree extends RenaissanceBenchmark {
 
   val inputFile = "/sample_libsvm_data.txt"
 
+  var numCopies = 100
+
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 
   var tempDirPath: Path = null
@@ -60,23 +62,12 @@ class DecTree extends RenaissanceBenchmark {
 
   var iteration: Int = 0
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("decision-tree")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   def prepareAndLoadInput(decisionTreePath: Path, inputFile: String): DataFrame = {
     FileUtils.deleteDirectory(decisionTreePath.toFile)
 
     val text =
       IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    for (i <- 0 until 100) {
+    for (i <- 0 until numCopies) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
 
@@ -112,7 +103,10 @@ class DecTree extends RenaissanceBenchmark {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("dec_tree")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      numCopies = 5
+    }
     training = prepareAndLoadInput(decisionTreePath, inputFile)
     pipeline = constructPipeline()
   }
@@ -133,7 +127,7 @@ class DecTree extends RenaissanceBenchmark {
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 }

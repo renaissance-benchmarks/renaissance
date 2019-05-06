@@ -33,6 +33,10 @@ import java.util.TreeMap;
 
 
 public class RxScrabbleImplementation extends Scrabble {
+  public RxScrabbleImplementation(String scrabblePath, String shakespearePath) {
+    super(scrabblePath, shakespearePath);
+  }
+
   public List<Entry<Integer, List<String>>> runScrabble() throws InterruptedException {
     // Function to compute the score of a given word
     Func1<Integer, Observable<Integer>> scoreOfALetter =

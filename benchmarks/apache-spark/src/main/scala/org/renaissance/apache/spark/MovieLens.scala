@@ -20,7 +20,7 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
-class MovieLens extends RenaissanceBenchmark {
+class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
   /* TODO Implement changes regarding how to declare and pass
   benchmark-specific parameters
@@ -45,7 +45,9 @@ class MovieLens extends RenaissanceBenchmark {
 
   val moviesInputFile = "/movies.csv"
 
-  val ratingsInputFile = "/ratings.csv"
+  var ratingsInputFile = "/ratings.csv"
+
+  val ratingsSmallInputFile = "/ratings-small.csv"
 
   val bigFilesPath = movieLensPath.resolve("bigfiles")
 
@@ -54,6 +56,12 @@ class MovieLens extends RenaissanceBenchmark {
   val ratingsBigFile = bigFilesPath.resolve("ratings.txt")
 
   var tempDirPath: Path = null
+
+  var alsRanks = List(8, 12)
+
+  var alsLambdas = List(0.1, 10.0)
+
+  var alsNumIters = List(10, 20)
 
   class MovieLensHelper {
     var movies: Map[Int, String] = null
@@ -158,13 +166,9 @@ class MovieLens extends RenaissanceBenchmark {
       )
     }
 
-    def trainModels() = {
+    def trainModels(ranks: List[Int], lambdas: List[Double], numIters: List[Int]) = {
 
       // Train models and evaluate them on the validation set.
-
-      val ranks = List(8, 12)
-      val lambdas = List(0.1, 10.0)
-      val numIters = List(10, 20)
 
       for (rank <- ranks; lambda <- lambdas; numIter <- numIters) {
         val model = ALS.train(training, rank, numIter, lambda)
@@ -236,20 +240,17 @@ class MovieLens extends RenaissanceBenchmark {
     Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("movie-lens")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setCheckpointDir(checkpointPath.toString)
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("movie_lens")
     setUpLogger()
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc.setCheckpointDir(checkpointPath.toString)
+    if (c.functionalTest) {
+      ratingsInputFile = ratingsSmallInputFile
+      alsRanks = List(12)
+      alsLambdas = List(10.0)
+      alsNumIters = List(10)
+    }
   }
 
   def writeResourceToFile(resourceStream: InputStream, outputPath: Path) = {
@@ -282,12 +283,12 @@ class MovieLens extends RenaissanceBenchmark {
     // last digit of the timestamp, add myRatings to train, and cache them.
     helper.splitRatings(4, 6, 8)
 
-    helper.trainModels()
+    helper.trainModels(alsRanks, alsLambdas, alsNumIters)
     helper.recommendMovies()
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

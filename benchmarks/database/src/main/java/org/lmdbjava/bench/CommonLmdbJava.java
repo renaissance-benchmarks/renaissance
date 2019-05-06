@@ -86,9 +86,9 @@ public class CommonLmdbJava<T> extends Common {
     return num * ((long) valSize) * 32L / 10L;
   }
 
-  public void setup(File tempDir, final boolean sync) throws
+  public void setup(File tempDir, int numEntries, final boolean sync) throws
       IOException {
-    super.setup(tempDir);
+    super.setup(tempDir, numEntries);
     final EnvFlags[] envFlags = envFlags(writeMap, sync);
     env = create(bufferProxy)
         .setMapSize(mapSize(num, valSize))

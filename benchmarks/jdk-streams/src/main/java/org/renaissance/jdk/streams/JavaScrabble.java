@@ -52,14 +52,14 @@ public class JavaScrabble {
 
   public static Set<String> scrabbleWords;
 
-  static {
+  public JavaScrabble(String shakespearePath, String scrabblePath) throws RuntimeException {
     try {
       byte[] shakespeareBytes =
-        IOUtils.toByteArray(JavaScrabble.class.getResourceAsStream("/shakespeare.txt"));
+        IOUtils.toByteArray(JavaScrabble.class.getResourceAsStream(shakespearePath));
       allWords = new String(shakespeareBytes).split("\\s+");
 
       byte[] scrabbleBytes =
-        IOUtils.toByteArray(JavaScrabble.class.getResourceAsStream("/scrabble.txt"));
+        IOUtils.toByteArray(JavaScrabble.class.getResourceAsStream(scrabblePath));
       String[] scrabbleWordArray = new String(scrabbleBytes).split("\\s+");
       scrabbleWords = new HashSet<>(Arrays.asList(scrabbleWordArray));
     } catch (Exception e) {
@@ -67,7 +67,7 @@ public class JavaScrabble {
     }
   }
 
-  public static int run() {
+  public int run() {
     // Function to compute the score of a given word
     IntUnaryOperator scoreOfALetter = letter -> letterScores[letter - 'A'];
 

@@ -8,14 +8,14 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class PageRank extends RenaissanceBenchmark {
+class PageRank extends RenaissanceBenchmark with SparkUtil {
   def description = "Runs a number of PageRank iterations, using RDDs."
 
   override def defaultRepetitions = 20
 
   override def licenses = License.create(License.APACHE2)
 
-  val ITERATIONS = 2
+  var ITERATIONS = 2
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -35,14 +35,19 @@ class PageRank extends RenaissanceBenchmark {
 
   var tempDirPath: Path = null
 
-  def prepareInput() = {
+  def prepareInput(c: Config) = {
     FileUtils.deleteDirectory(pageRankPath.toFile)
-    val text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+    var text = ZipResourceUtil.readZipFromResourceToText(inputFile)
+    if (c.functionalTest) {
+      val MAX_LINE = 5000
+      val sublist = for ((line, num) <- text.lines.zipWithIndex if num < MAX_LINE) yield line
+      text = sublist.toList.mkString("\n")
+    }
     FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
   }
 
   def loadData() = {
-    val lines = sc.textFile(bigInputFile.toString)
+    var lines = sc.textFile(bigInputFile.toString)
     links = lines
       .map { line =>
         val parts = line.split("\\s+")
@@ -54,20 +59,10 @@ class PageRank extends RenaissanceBenchmark {
     ranks = links.mapValues(v => 1.0)
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("page-rank")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
-    setUpSpark()
-    prepareInput()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    prepareInput(c)
     loadData()
   }
 
@@ -91,8 +86,7 @@ class PageRank extends RenaissanceBenchmark {
       }
       .mkString("\n")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
-
 }

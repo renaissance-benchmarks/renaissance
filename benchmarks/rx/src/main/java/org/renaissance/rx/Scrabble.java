@@ -79,9 +79,9 @@ public class Scrabble {
   public Set<String> scrabbleWords;
   public Set<String> shakespeareWords;
 
-  public Scrabble() {
-    scrabbleWords = Util.readScrabbleWords();
-    shakespeareWords = Util.readShakespeareWords();
+  public Scrabble(String scrabblePath, String shakespearePath) {
+    scrabbleWords = Util.readScrabbleWords(scrabblePath);
+    shakespeareWords = Util.readShakespeareWords(shakespearePath);
   }
 
 }

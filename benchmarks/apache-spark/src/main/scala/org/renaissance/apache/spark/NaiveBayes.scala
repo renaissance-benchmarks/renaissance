@@ -12,7 +12,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class NaiveBayes extends RenaissanceBenchmark {
+class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
   override def description(): String =
     "Runs the multinomial naive Bayes algorithm from the Spark MLlib."
 
@@ -70,20 +70,9 @@ class NaiveBayes extends RenaissanceBenchmark {
       .cache()
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("naive-bayes")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("naive_bayes")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     prepareInput()
     loadData()
   }
@@ -103,7 +92,7 @@ class NaiveBayes extends RenaissanceBenchmark {
       true
     )
 
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

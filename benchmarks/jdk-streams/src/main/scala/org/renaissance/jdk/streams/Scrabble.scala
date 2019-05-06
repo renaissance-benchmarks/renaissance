@@ -11,7 +11,20 @@ class Scrabble extends RenaissanceBenchmark {
 
   def licenses = License.create(License.GPL2)
 
+  var shakespearePath = "/shakespeare.txt"
+
+  var scrabblePath = "/scrabble.txt"
+
+  var scrabble: JavaScrabble = null
+
+  override def setUpBeforeAll(c: Config): Unit = {
+    if (c.functionalTest) {
+      shakespearePath = "/shakespeare-truncated.txt"
+    }
+    scrabble = new JavaScrabble(shakespearePath, scrabblePath)
+  }
+
   override def runIteration(c: Config): Unit = {
-    blackHole(JavaScrabble.run())
+    blackHole(scrabble.run())
   }
 }

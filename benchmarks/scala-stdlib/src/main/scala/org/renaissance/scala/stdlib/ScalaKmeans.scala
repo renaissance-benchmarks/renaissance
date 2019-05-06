@@ -120,6 +120,10 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
 
   def licenses = License.create(License.MIT)
 
+  var numPoints = 500000
+
+  var k = 32
+
   val eta = 0.01
 
   var centers: GenSeq[Point] = null
@@ -129,8 +133,10 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
   var means: GenSeq[Point] = null
 
   override def setUpBeforeAll(c: Config): Unit = {
-    val numPoints = 500000
-    val k = 32
+    if (c.functionalTest) {
+      numPoints = 5000
+      k = 8
+    }
     points = generatePoints(k, numPoints)
     means = initializeMeans(k, points)
   }

@@ -18,7 +18,7 @@ import org.renaissance.License
 
 import scala.util.Random
 
-class ChiSquare extends RenaissanceBenchmark {
+class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
   def description = "Runs the chi-square test from Spark MLlib."
 
@@ -28,7 +28,7 @@ class ChiSquare extends RenaissanceBenchmark {
 
   val COMPONENTS = 5
 
-  val SIZE = 1500000
+  var SIZE = 1500000
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -71,20 +71,12 @@ class ChiSquare extends RenaissanceBenchmark {
       .cache()
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("chi-square")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("chi_square")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      SIZE = 10000
+    }
     prepareInput()
     loadData()
   }
@@ -97,7 +89,7 @@ class ChiSquare extends RenaissanceBenchmark {
   override def tearDownAfterAll(c: Config): Unit = {
     val output = results.map(_.statistic).mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

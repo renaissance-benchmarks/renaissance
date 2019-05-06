@@ -354,8 +354,8 @@ class FinagleChirper extends RenaissanceBenchmark {
   val caches = new mutable.ArrayBuffer[ListeningServer]
   var cachePorts = new mutable.ArrayBuffer[Int]
   val startingFeedSize = 80
-  val requestCount: Int = 1250
-  val userCount: Int = 5000
+  var requestCount: Int = 1250
+  var userCount: Int = 5000
 
   val usernameBases = Seq(
     "johnny",
@@ -401,6 +401,10 @@ class FinagleChirper extends RenaissanceBenchmark {
     yield usernameBases(i % usernameBases.length) + i
 
   override def setUpBeforeAll(c: Config): Unit = {
+    if (c.functionalTest) {
+      requestCount = 10
+      userCount = 10
+    }
     master = Http.serve(":0", new Master)
     /* TODO
     Implement an unified mechanism of assigning ports to benchmarks.

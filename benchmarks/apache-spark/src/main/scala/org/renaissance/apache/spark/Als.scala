@@ -12,7 +12,7 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 
-class Als extends RenaissanceBenchmark {
+class Als extends RenaissanceBenchmark with SparkUtil {
 
   override def description(): String = "Runs the ALS algorithm from the Spark MLlib."
 
@@ -34,6 +34,8 @@ class Als extends RenaissanceBenchmark {
 
   val bigInputFile = alsPath.resolve("bigfile.txt")
 
+  var numRatings = 20000
+
   var sc: SparkContext = null
 
   var factModel: MatrixFactorizationModel = null
@@ -45,7 +47,7 @@ class Als extends RenaissanceBenchmark {
   def prepareInput() = {
     FileUtils.deleteDirectory(alsPath.toFile)
     val rand = new Random
-    val lines = (0 until 20000).flatMap { user =>
+    val lines = (0 until numRatings).flatMap { user =>
       (0 until 100).map { product =>
         val score = 1 + rand.nextInt(3) + rand.nextInt(3)
         s"$user::$product::$score"
@@ -64,20 +66,12 @@ class Als extends RenaissanceBenchmark {
       .cache()
   }
 
-  def setUpSpark() = {
-    HadoopUtil.setUpHadoop(tempDirPath)
-    val conf = new SparkConf()
-      .setAppName("als")
-      .setMaster(s"local[$THREAD_COUNT]")
-      .set("spark.local.dir", tempDirPath.toString)
-      .set("spark.sql.warehouse.dir", tempDirPath.resolve("warehouse").toString)
-    sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-  }
-
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("als")
-    setUpSpark()
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    if (c.functionalTest) {
+      numRatings = 500
+    }
     prepareInput()
     loadData()
   }
@@ -90,7 +84,7 @@ class Als extends RenaissanceBenchmark {
       }
       .saveAsTextFile(outputPath.toString)
 
-    sc.stop()
+    tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 

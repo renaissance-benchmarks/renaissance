@@ -65,9 +65,9 @@ public class LmdbJavaAgrona {
     }
 
     @Override
-    public void setup(File tempDir, final boolean sync) throws
+    public void setup(File tempDir, int numEntries, final boolean sync) throws
         IOException {
-      super.setup(tempDir, sync);
+      super.setup(tempDir, numEntries, sync);
       keyBytes = new byte[keySize];
       valBytes = new byte[valSize];
       rwKey = new UnsafeBuffer(allocateDirect(keySize).order(LITTLE_ENDIAN));
@@ -110,9 +110,9 @@ public class LmdbJavaAgrona {
     Txn<DirectBuffer> txn;
 
     @Override
-    public void setup(File tempDir) throws IOException {
+    public void setup(File tempDir, int numEntries) throws IOException {
       bufferProxy = PROXY_DB;
-      super.setup(tempDir, false);
+      super.setup(tempDir, numEntries, false);
       super.write();
       final int maxValSizeForCopy = 4_081; // 2nd copy requires *2 /tmp space
       if (valSize <= maxValSizeForCopy && tmp.getName().contains(".readKey-")) {
@@ -139,9 +139,9 @@ public class LmdbJavaAgrona {
     boolean sync;
 
     @Override
-    public void setup(File tempDir) throws IOException {
+    public void setup(File tempDir, int numEntries) throws IOException {
       bufferProxy = PROXY_DB;
-      super.setup(tempDir, sync);
+      super.setup(tempDir, numEntries, sync);
     }
 
     @Override

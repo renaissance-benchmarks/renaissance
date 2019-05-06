@@ -11,12 +11,19 @@ class RxScrabble extends RenaissanceBenchmark {
 
   def licenses = License.create(License.GPL2)
 
+  var scrabblePath: String = "/scrabble.txt"
+
+  var shakespearePath: String = "/shakespeare.txt"
+
   var bench: RxScrabbleImplementation = null
 
   @volatile var lastResult = 0
 
   override def setUpBeforeAll(c: Config): Unit = {
-    bench = new RxScrabbleImplementation
+    if (c.functionalTest) {
+      shakespearePath = "/shakespeare-truncated.txt"
+    }
+    bench = new RxScrabbleImplementation(scrabblePath, shakespearePath)
   }
 
   override def runIteration(c: Config): Unit = {

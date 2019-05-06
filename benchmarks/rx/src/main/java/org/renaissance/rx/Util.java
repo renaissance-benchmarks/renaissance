@@ -22,12 +22,12 @@ public final class Util {
   private Util() {
   }
 
-  public static Set<String> readScrabbleWords() {
+  public static Set<String> readScrabbleWords(String scrabblePath) {
     Set<String> scrabbleWords = new HashSet<>();
     Iterator<String> lines;
     try {
       lines = IOUtils.lineIterator(
-        Util.class.getResourceAsStream("/scrabble.txt"), StandardCharsets.UTF_8);
+        Util.class.getResourceAsStream(scrabblePath), StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -38,12 +38,12 @@ public final class Util {
     return scrabbleWords;
   }
 
-  public static Set<String> readShakespeareWords() {
+  public static Set<String> readShakespeareWords(String shakespearePath) {
     Set<String> shakespeareWords = new HashSet<>();
     Iterator<String> lines;
     try {
       lines = IOUtils.lineIterator(
-        Util.class.getResourceAsStream("/shakespeare.txt"), StandardCharsets.UTF_8);
+        Util.class.getResourceAsStream(shakespearePath), StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

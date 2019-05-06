@@ -97,9 +97,9 @@ public class LmdbLwjgl {
       return num * ((long) valSize) * 32L / 10L;
     }
 
-    public void setup(File tempDir, final boolean sync) throws
+    public void setup(File tempDir, int numEntries, final boolean sync) throws
         IOException {
-      super.setup(tempDir);
+      super.setup(tempDir, numEntries);
 
       try (MemoryStack stack = stackPush()) {
         final PointerBuffer pp = stack.mallocPointer(1);
@@ -187,8 +187,8 @@ public class LmdbLwjgl {
     long txn;
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir, false);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries, false);
       super.write();
 
       try (MemoryStack stack = stackPush()) {
@@ -218,8 +218,8 @@ public class LmdbLwjgl {
     boolean sync;
 
     @Override
-    public void setup(File tempDir) throws IOException {
-      super.setup(tempDir, sync);
+    public void setup(File tempDir, int numEntries) throws IOException {
+      super.setup(tempDir, numEntries, sync);
     }
 
     @Override

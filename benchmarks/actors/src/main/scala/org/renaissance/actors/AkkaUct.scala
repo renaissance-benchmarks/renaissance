@@ -16,10 +16,16 @@ class AkkaUct extends RenaissanceBenchmark {
 
   private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
 
+  private var numIterations: Int = 10
+
   override def setUpBeforeAll(c: Config): Unit = {
     bench = new UctAkkaActorBenchmark.UctAkkaActorBenchmark
     bench.initialize(new Array[String](0))
     AkkaActorState.initialize()
+
+    if (c.functionalTest) {
+      numIterations = 2
+    }
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -29,7 +35,7 @@ class AkkaUct extends RenaissanceBenchmark {
   }
 
   protected override def runIteration(config: Config): Unit = {
-    for (i <- 0 until 10) {
+    for (i <- 0 until numIterations) {
       bench.runIteration()
     }
   }
