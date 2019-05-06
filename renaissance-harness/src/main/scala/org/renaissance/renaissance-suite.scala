@@ -431,7 +431,7 @@ ${benchmarkName
       }
       .mkString("\n")
 
-  val logoUrl = "https://github.com/D-iii-S/renaissance-benchmarks/" +
+  val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
     "raw/master/website/resources/images/mona-lisa-round.png"
 
   lazy val readme = s"""
@@ -787,14 +787,14 @@ The new major release is then bundled and the binaries are made available public
 
 The current members of the committee are:
 
-- Lubomir Bulej, Charles University in Prague
+- Lubomir Bulej, Charles University
 - Gilles Duboscq, Oracle Labs
 - François Farquet, Oracle Labs
-- Vojtech Horky, Charles University in Prague
+- Vojtech Horky, Charles University
 - David Leopoldseder, Johannes Kepler University Linz
 - Aleksandar Prokopec, Oracle Labs
 - Andrea Rosà, Università della Svizzera italiana
-- Petr Tuma, Charles University in Prague
+- Petr Tuma, Charles University
 - Alex Villazon, Universidad Privada Boliviana
 """
 
