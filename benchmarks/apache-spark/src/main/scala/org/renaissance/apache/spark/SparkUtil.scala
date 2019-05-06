@@ -32,12 +32,13 @@ trait SparkUtil {
     }
   }
 
-  /* For Spark version on renaissance (2.0.0) the Hadoop version is 2.2.0
-   For Windows, the binary zip is not included in the dependencies
-   We include in the resource winutils.exe from
-   https://github.com/srccodes/hadoop-common-2.2.0-bin
-   If Spark version is updated in future releases of renaissance,
-   the file must be upgraded to the corresponding Hadoop version
+  /**
+   * For Spark version on renaissance (2.0.0) the Hadoop version is 2.2.0
+   * For Windows, the binary zip is not included in the dependencies
+   * We include in the resource winutils.exe from
+   * https://github.com/srccodes/hadoop-common-2.2.0-bin
+   * If Spark version is updated in future releases of renaissance,
+   * the file must be upgraded to the corresponding Hadoop version.
    */
   def setUpHadoop(tempDirPath: Path): Any = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
