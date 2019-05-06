@@ -129,7 +129,7 @@ Here is some of the quality criteria that a new benchmark should satisfy:
 #### Code of Conduct
 
 We would also like to point you to the
-[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/CODE-OF-CONDUCT.md). As a member
+[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/blob/master/CODE-OF-CONDUCT.md). As a member
 of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
 the community.
 
