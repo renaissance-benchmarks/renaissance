@@ -234,6 +234,11 @@ lazy val renaissance: Project = {
       remoteDebug := false,
       nonGplOnly := false,
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
+      packageOptions := Seq(
+        sbt.Package.ManifestAttributes(
+          ("Renaissance-Version", renaissanceVersion)
+        )
+      ),
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
