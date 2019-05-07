@@ -8,7 +8,7 @@ The code is organized into three main parts:
 
 - `renaissance-core`: these are the core APIs that a benchmark needs to work with,
   such as the runtime configuration, the benchmark base class or the policy.
-- `renaissance-harness`: this is the overall suite project, which is responsible for
+- `renaissance`: this is the overall suite project, which is responsible for running the harness,
   parsing the arguments, loading the classes, and running the benchmark.
 - a set of projects in the `benchmarks` directory: these are the individual groups of benchmarks
   that share a common set of dependencies. A group is typically thematic, relating to
@@ -48,35 +48,6 @@ using an existing project, such as `scala-stdlib`, as an example.
 The project will be automatically picked up by the build system
 and included into the Renaissance distribution.
 
-Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project
-(rules defined in `.scalafmt.conf`).
-A convenient sbt task can do that check:
-```
-$ tools/sbt/bin/sbt renaissanceFormatCheck
-```
-
-Another one can directly update the source files to match the desired format:
-```
-$ tools/sbt/bin/sbt renaissanceFormat
-```
-
-Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
-Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
-```
-$ tools/sbt/bin/sbt runMain org.renaissance.Launcher --readme
-```
-
-### IDE development
-
-#### IntelliJ
-
-In order to work on the project with IntelliJ, one needs to install the following plugins :
-  - `Scala` : part of the codebase uses Scala and Renaissance is organized in sbt projects.
-  - `scalafmt` (optional) : adds an action that can be triggered with `Code -> Reformat with scalafmt`
-  which will reformat the code according to the formatting rule defined in `.scalafmt.conf`
-  (same as the `renaissanceFormat` sbt task).
-
-Then, the root of this repository can be opened as an IntelliJ project.
 
 ### Benchmark evaluation and release process
 
@@ -90,7 +61,7 @@ Before submitting a pull request, it is recommendable to open an issue first,
 and discuss the benchmark proposal with the maintainers.
 
 
-#### Benchmark criteria
+##### Benchmark criteria
 
 Here is some of the quality criteria that a new benchmark should satisfy:
 
@@ -126,14 +97,7 @@ Here is some of the quality criteria that a new benchmark should satisfy:
 - *Open-source*: the benchmark must consist of open-source code, with well-defined licenses.
 
 
-#### Code of Conduct
-
-We would also like to point you to the
-[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/blob/master/CODE-OF-CONDUCT.md). As a member
-of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
-the community.
-
-#### Release process
+##### Release process
 
 While the open-source process is designed to accept contributions on an ongoing basis,
 we expect that this benchmark suite will grow considerably over the course of time.
@@ -141,7 +105,7 @@ We will therefore regularly release snapshots of this suite, which will be readi
 These will be known as *minor releases*.
 
 Although we will strive to have high-quality, meaningful benchmarks, it will be necessary
-to proliferate the most important ones, and publish them as *major releases*.
+to profilerate the most important ones, and publish them as *major releases*.
 This way, researchers and developers will be able to test their software
 against those benchmarks that were deemed most relevant.
 A major release will still include all the benchmarks in the suite, but the list of highlighted
@@ -163,13 +127,11 @@ The new major release is then bundled and the binaries are made available public
 
 The current members of the committee are:
 
-- Walter Binder, Università della Svizzera italiana
-- Lubomir Bulej, Charles University
-- Gilles Duboscq, Oracle Labs
-- François Farquet, Oracle Labs
-- Vojtech Horky, Charles University
+- Petr Tuma, Charles University in Prague
+- Lubomir Bulej, Charles University in Prague
 - David Leopoldseder, Johannes Kepler University Linz
-- Aleksandar Prokopec, Oracle Labs
 - Andrea Rosà, Università della Svizzera italiana
-- Petr Tuma, Charles University
+- Gilles Duboscq, Oracle Labs
 - Alex Villazon, Universidad Privada Boliviana
+- François Farquet, Oracle Labs
+- Aleksandar Prokopec, Oracle Labs
