@@ -47,7 +47,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite 0.9.0
+Renaissance Benchmark Suite ?.?.?
 Usage: renaissance [options] [benchmark-specification]
 
   --help                   Prints this usage text.
