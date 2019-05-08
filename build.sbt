@@ -57,9 +57,8 @@ def listBenchmarks(
 ): Seq[(String, String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
-  val baseName = "org.renaissance.RenaissanceBenchmark"
-  val dummyName = "org.renaissance.core.Dummy"
-  val benchBase = loader.loadClass(baseName)
+  val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
+  val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
   val result = new mutable.ArrayBuffer[(String, String, String, String, Int)]
   for (jar <- classpath) {
     val jarFile = new JarFile(jar)
@@ -68,14 +67,20 @@ def listBenchmarks(
       val entry = enumeration.nextElement()
       if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
         val name = entry.getName
-          .substring(0, entry.getName.length - 6)
+          .substring(0, entry.getName.length - ".class".length)
           .replace("/", ".")
         val clazz = loader.loadClass(name)
+
         val isEligible =
-          benchBase.isAssignableFrom(clazz) && clazz.getName != baseName &&
-            (clazz.getName != dummyName || project == "benchmarks/core")
+          !excludePattern.matcher(clazz.getPackage.getName).matches() &&
+            benchBase.isAssignableFrom(clazz)
         if (isEligible) {
-          val instance = clazz.newInstance
+          // Can we PLEASE have a reasonable logging support in SBT?
+          // And NOT the streams.value or sLog.value that cannot be used here?
+          // It's a turing-complete build system and we can't even log conveniently!
+          println("eligible benchmark: " + clazz.getName)
+
+          val instance = clazz.getDeclaredConstructor().newInstance()
           val distro = clazz.getMethod("distro").invoke(instance).toString
           val licenses = clazz
             .getMethod("licenses")
