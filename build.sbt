@@ -10,6 +10,10 @@ val renaissanceVersion = "0.9.0"
 
 val renaissanceScalaVersion = "2.12.8"
 
+lazy val renaissanceCore = RootProject(uri("renaissance-core"))
+
+lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
+
 val benchmarkProjects = for {
   // Hint: add .filter(_ == "group") to compile with selected group only
   // (can significantly speed-up compilation/assembly when debugging harness).
@@ -22,9 +26,6 @@ val subProjects = benchmarkProjects :+ RootProject(uri("renaissance-harness"))
 
 // Do not assemble fat JARs in subprojects
 aggregate in assembly := false
-
-lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
-lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
   tasks.toList match {
