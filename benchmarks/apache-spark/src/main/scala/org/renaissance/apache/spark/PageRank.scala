@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 import org.renaissance.{Config, License, RenaissanceBenchmark}
+import scala.collection.immutable.StringOps
 
 class PageRank extends RenaissanceBenchmark with SparkUtil {
   def description = "Runs a number of PageRank iterations, using RDDs."
@@ -40,7 +41,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
     var text = ZipResourceUtil.readZipFromResourceToText(inputFile)
     if (c.functionalTest) {
       val MAX_LINE = 5000
-      val sublist = for ((line, num) <- text.lines.zipWithIndex if num < MAX_LINE) yield line
+      val sublist = for ((line, num) <- new StringOps(text).lines.zipWithIndex if num < MAX_LINE) yield line
       text = sublist.toList.mkString("\n")
     }
     FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
