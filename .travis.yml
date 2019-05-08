@@ -39,6 +39,10 @@ jobs:
       jdk: openjdk8
     - <<: *bundle
       jdk: oraclejdk8
+    - <<: *bundle
+      jdk: oraclejdk9
+    - <<: *bundle
+      jdk: oraclejdk11
 
     - <<: *bench
       os: osx
@@ -46,6 +50,10 @@ jobs:
       jdk: openjdk8
     - <<: *bench
       jdk: oraclejdk8
+    - <<: *bench
+      jdk: oraclejdk9
+    - <<: *bench
+      jdk: oraclejdk11
 
 stages:
   - "Basic checks"
