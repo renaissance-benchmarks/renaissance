@@ -12,11 +12,16 @@ refs:
     stage: bundle
     script:
       - ./tools/sbt/bin/sbt assembly
+      - 'mkdir -p "$HOME/.prebuilt"'
+      - 'ls "$HOME/.prebuilt"'
+      - 'rm -rf "$HOME/.prebuilt"/*.jar'
+      - 'cp target/renaissance-0.9.0.jar "$HOME/.prebuilt/"`git rev-parse HEAD`.jar'
 
   - &bench
     stage: benchmark
     script:
-      - ./tools/sbt/bin/sbt assembly
+      - mkdir -p target
+      - CACHED_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`.jar; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" target/renaissance-0.9.0.jar; else ./tools/sbt/bin/sbt assembly; fi
       - 'java -jar ./target/renaissance-0.9.0.jar --raw-list >list.txt'
       - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-0.9.0.jar --functional-test -r 1 "$BENCH" || exit 1; done'
 
@@ -69,6 +74,7 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - $HOME/.prebuilt
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
