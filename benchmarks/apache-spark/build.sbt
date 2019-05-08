@@ -11,8 +11,8 @@ val sparkVersion = "2.0.0"
 lazy val apacheSpark = (project in file("."))
   .settings(
     name := "apache-spark",
-    organization := "org.renaissance",
-    version := "0.1.0",
+    version := (version in renaissanceCore).value,
+    organization := (organization in renaissanceCore).value,
     scalaVersion := sparkScalaVersion,
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,

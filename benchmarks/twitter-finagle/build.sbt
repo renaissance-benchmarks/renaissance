@@ -3,8 +3,8 @@ lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 lazy val twitterFinagle = (project in file("."))
   .settings(
     name := "twitter-finagle",
-    organization := "org.renaissance",
-    version := "0.1.0",
+    version := (version in renaissanceCore).value,
+    organization := (organization in renaissanceCore).value,
     scalaVersion := "2.11.8",
     libraryDependencies := Seq(
       "com.twitter" %% "finagle-http" % "19.4.0",

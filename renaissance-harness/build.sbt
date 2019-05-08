@@ -5,8 +5,8 @@ val renaissanceScalaVersion = "2.12.8"
 lazy val renaissanceHarness = (project in file("."))
   .settings(
     name := "renaissance-harness",
-    version := "0.1",
-    organization := "org.renaissance",
+    version := (version in renaissanceCore).value,
+    organization := (organization in renaissanceCore).value,
     scalaVersion := renaissanceScalaVersion,
     libraryDependencies ++= Seq(
       "commons-io" % "commons-io" % "2.6",
