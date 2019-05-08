@@ -1,10 +1,7 @@
 sudo: false
 dist: trusty
 
-# The version is actually determined by SBT but we want the
-# latest image anyway
-language: scala
-scala: 2.12.8
+language: minimal
 
 
 refs:
