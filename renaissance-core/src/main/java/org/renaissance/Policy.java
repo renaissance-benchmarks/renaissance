@@ -1,7 +1,5 @@
 package org.renaissance;
 
-import org.renaissance.core.Dummy;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -31,10 +29,21 @@ public abstract class Policy {
 
   public static Map<String, BiFunction<RenaissanceBenchmark, Config, Policy>> factories;
 
+
   public static Map<String, String> descriptions() {
+    // TODO Get rid of this dummy. Policies need to be loaded differently.
+    final RenaissanceBenchmark dummy = new RenaissanceBenchmark() {
+      @Override
+      public String description() { return null; }
+      @Override
+      public License[] licenses() { return new License[0]; }
+      @Override
+      protected void runIteration(Config config) {}
+    };
+
     return factories.entrySet().stream()
       .map(entry -> {
-        String description = entry.getValue().apply(new Dummy(), new Config()).description();
+        String description = entry.getValue().apply(dummy, new Config()).description();
         return new Pair<>(entry.getKey(), description);
       })
       .collect(Collectors.toMap(Pair::first, Pair::second));
