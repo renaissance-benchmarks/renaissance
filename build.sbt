@@ -6,8 +6,6 @@ import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
 
-val renaissanceVersion = "0.9.0"
-
 val renaissanceScalaVersion = "2.12.8"
 
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
@@ -224,8 +222,8 @@ lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
       name := "renaissance",
-      version := renaissanceVersion,
-      organization := "org.renaissance",
+      version := (version in renaissanceCore).value,
+      organization := (organization in renaissanceCore).value,
       crossPaths := false,
       autoScalaLibrary := false,
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
@@ -238,12 +236,12 @@ lazy val renaissance: Project = {
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
       packageOptions := Seq(
         sbt.Package.ManifestAttributes(
-          ("Renaissance-Version", renaissanceVersion)
+          ("Renaissance-Version", (version in renaissanceCore).value)
         )
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
-      assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
+      assemblyJarName in assembly := "renaissance-" + (version in renaissanceCore).value + ".jar",
       mainClass in assembly := Some("org.renaissance.Launcher"),
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
