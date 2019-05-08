@@ -9,7 +9,7 @@ import org.renaissance.RenaissanceBenchmark
 
 trait SparkUtil {
 
-  val portAllocationMaxRetries: Int = 64
+  val portAllocationMaxRetries: Int = 16
 
   val winUtils = "/winutils.exe"
 
@@ -20,6 +20,7 @@ trait SparkUtil {
       .setMaster(s"local[$thread_count]")
       .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
+      .set("spark.driver.bindAddress", "127.0.0.1")
       .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
