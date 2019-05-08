@@ -22,7 +22,8 @@ val benchmarkProjects = for {
 } yield {
   RootProject(uri("benchmarks/" + dir))
 }
-val subProjects = benchmarkProjects :+ RootProject(uri("renaissance-harness"))
+
+val subProjects = benchmarkProjects :+ renaissanceHarness
 
 // Do not assemble fat JARs in subprojects
 aggregate in assembly := false
