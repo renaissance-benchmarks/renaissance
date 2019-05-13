@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
-public abstract class RenaissanceBenchmark implements RenaissanceBenchmarkApi {
+public abstract class RenaissanceBenchmark {
   public static final String kebabCase(String camelCaseName) {
     // This functionality is duplicated in the kebabCase function of the build file.
     Pattern pattern = Pattern.compile("([A-Za-z])([A-Z])");
