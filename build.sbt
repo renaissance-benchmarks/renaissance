@@ -120,21 +120,10 @@ def jarsAndListGenerator = Def.taskDyn {
       (project, jarFiles, loadedJarFiles)
     }
 
-  // Add the built-in benchmarks.
-  val coreJarTask = Def.task {
-    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
-    val coreJarDest =
-      (resourceManaged in Compile).value / "benchmarks" / "core" / coreJar.getName
-    coreJarDest.getParentFile.mkdirs()
-    Files.copy(coreJar.toPath, coreJarDest.toPath, StandardCopyOption.REPLACE_EXISTING)
-    ("benchmarks/core", Seq(coreJarDest), Seq(coreJarDest))
-  }
-  val jarTasks = coreJarTask +: projectJarTasks
   val nonGpl = nonGplOnly.value
 
   // Flatten list, create a groups-jars file, and a benchmark-group file.
-  flattenTasks(jarTasks).map { groupJars =>
-    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
+  flattenTasks(projectJarTasks).map { groupJars =>
     // Add the benchmarks from the different project groups.
     val jarListContent = new StringBuilder
     val benchGroupContent = new StringBuilder
