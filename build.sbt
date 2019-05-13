@@ -277,7 +277,6 @@ lazy val renaissance: Project = {
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
       packageOptions := Seq(
         sbt.Package.ManifestAttributes(
-          ("Renaissance-Version", (version in renaissanceCore).value),
           ("Specification-Title", "Renaissance Benchmark Suite")
           // Consider Specification-Version to mark sets of active benchmarks
         )
