@@ -1,7 +1,6 @@
 import java.net.URLClassLoader
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import java.nio.file.{Files, Path, StandardCopyOption}
 import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
@@ -219,9 +218,28 @@ def startupTransition(state: State): State = {
   "setupPrePush" :: state
 }
 
-def addLink(source: File, dest: File): Unit = {
-  if (!Files.exists(dest.toPath)) {
-    Files.createSymbolicLink(dest.toPath, source.toPath.toAbsolutePath)
+
+// Installs a symlink to local pre-push hook.
+def addLink(scriptFile: File, linkFile: File): Unit = {
+  val linkPath = linkFile.toPath
+  if (Files.isSymbolicLink(linkPath)) {
+    // If the link can be read/executed, ensure that
+    // it points to the desired pre-push hook script.
+    val scriptPath = scriptFile.toPath
+    if (Files.isExecutable(linkPath)) {
+      if (Files.isSameFile(linkPath.toRealPath(), scriptPath)) {
+        return
+      }
+    }
+
+    // Otherwise just force a new relative symlink.
+    val scriptRelPath = linkPath.getParent.relativize(scriptPath)
+    println(s"Setting pre-push hook link to ${scriptRelPath}")
+    Files.delete(linkPath)
+    Files.createSymbolicLink(linkPath, scriptRelPath)
+
+  } else {
+    println("Not installing pre-push hook link over existing regular file!")
   }
 }
 
