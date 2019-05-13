@@ -3,6 +3,6 @@ lazy val renaissanceCore = (project in file("."))
     name := "renaissance-core",
     organization := "org.renaissance",
     crossPaths := false,
-    autoScalaLibrary := false
+    autoScalaLibrary := false,
+    scalafmtConfig := Some(file(".scalafmt.conf"))
   )
-
