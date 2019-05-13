@@ -1,6 +1,6 @@
 import java.net.URLClassLoader
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, StandardCopyOption}
+import java.nio.file.{Files, StandardCopyOption}
 import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
@@ -51,20 +51,19 @@ def kebabCase(s: String): String = {
 }
 
 // Return tuples with (name, distro license, all licenses, description and default repetitions)
-def listBenchmarks(
-  project: String,
-  classpath: Seq[File]
-): Seq[(String, String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
   val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
+def listBenchmarks(project: String, classpath: Seq[File]) = {
   val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
   val result = new mutable.ArrayBuffer[(String, String, String, String, Int)]
-  for (jar <- classpath) {
-    val jarFile = new JarFile(jar)
-    val enumeration = jarFile.entries()
-    while (enumeration.hasMoreElements) {
-      val entry = enumeration.nextElement()
+
+  //
+  // Scan all JAR files for classes in the org.renaissance package implementing
+  // the benchmark interface and collect metadata from class annotations.
+  //
+  for (jarFile <- classpath.map(jar => new JarFile(jar))) {
+    for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
       if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
         val name = entry.getName
           .substring(0, entry.getName.length - ".class".length)
@@ -75,9 +74,6 @@ def listBenchmarks(
           !excludePattern.matcher(clazz.getPackage.getName).matches() &&
             benchBase.isAssignableFrom(clazz)
         if (isEligible) {
-          // Can we PLEASE have a reasonable logging support in SBT?
-          // And NOT the streams.value or sLog.value that cannot be used here?
-          // It's a turing-complete build system and we can't even log conveniently!
           println("eligible benchmark: " + clazz.getName)
 
           val instance = clazz.getDeclaredConstructor().newInstance()
@@ -92,10 +88,12 @@ def listBenchmarks(
           val reps =
             Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
           result += ((kebabCase(clazz.getSimpleName), distro, licenses, description, reps))
+          // Print info to see what benchmarks are picked up by the build.
         }
       }
     }
   }
+
   result
 }
 
@@ -137,26 +135,24 @@ def jarsAndListGenerator = Def.taskDyn {
   // Flatten list, create a groups-jars file, and a benchmark-group file.
   flattenTasks(jarTasks).map { groupJars =>
     val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
+    // Add the benchmarks from the different project groups.
     val jarListContent = new StringBuilder
-    val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
     val benchGroupContent = new StringBuilder
-    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
-    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
     val benchDetails = new java.util.Properties
 
-    // Add the benchmarks from the different project groups.
     for ((project, allJars, loadedJars) <- groupJars) {
-      val jarLine = loadedJars
-        .map(jar => project + "/" + jar.getName)
-        .mkString(",")
+      val jarLine = loadedJars.map(jar => project + "/" + jar.getName).mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
+
+      // Scan project jars for benchmarks and fill the property file.
       for ((name, distroLicense, licenses, description, repetitions) <- listBenchmarks(
              project,
              allJars
            )) {
         if (!nonGpl || distroLicense == "MIT") {
           benchGroupContent.append(name).append("=").append(projectShort).append("\n")
+
           benchDetails.setProperty("benchmark." + name + ".description", description)
           benchDetails.setProperty("benchmark." + name + ".repetitions", repetitions.toString)
           benchDetails.setProperty("benchmark." + name + ".distro", distroLicense.toString)
@@ -164,9 +160,17 @@ def jarsAndListGenerator = Def.taskDyn {
         }
       }
     }
+
+    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
     IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
+
+    val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
     IO.write(benchGroupFile, benchGroupContent.toString, StandardCharsets.UTF_8)
+
+    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
+    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
     benchDetails.store(benchDetailsStream, "Benchmark details")
+
     benchGroupFile +: benchDetailsFile +: jarListFile +: groupJars.flatMap {
       case (_, jars, _) => jars
     }
@@ -210,7 +214,6 @@ val setupPrePush = taskKey[Unit](
 def startupTransition(state: State): State = {
   "setupPrePush" :: state
 }
-
 
 // Installs a symlink to local pre-push hook.
 def addLink(scriptFile: File, linkFile: File): Unit = {
