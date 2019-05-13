@@ -1,9 +1,7 @@
 package org.renaissance.scala.stm
 
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import stmbench7.Benchmark
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class ScalaStmBench7 extends RenaissanceBenchmark {
   def description = "Runs the stmbench7 benchmark using ScalaSTM."

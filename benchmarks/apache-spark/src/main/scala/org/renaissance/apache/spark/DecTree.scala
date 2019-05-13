@@ -2,28 +2,15 @@ package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
-import java.util.zip.ZipInputStream
 
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
+import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
-import org.apache.spark.ml.Pipeline
-import org.apache.spark.ml.PipelineModel
-import org.apache.spark.ml.PipelineStage
-import org.apache.spark.ml.classification.DecisionTreeClassificationModel
-import org.apache.spark.ml.classification.DecisionTreeClassifier
-import org.apache.spark.ml.feature.StringIndexer
-import org.apache.spark.ml.feature.VectorIndexer
-import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SQLContext
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-
-import scala.util.Random
+import org.apache.spark.ml.{Pipeline, PipelineModel, PipelineStage}
+import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier}
+import org.apache.spark.ml.feature.{StringIndexer, VectorIndexer}
+import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class DecTree extends RenaissanceBenchmark with SparkUtil {
 

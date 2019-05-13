@@ -3,6 +3,7 @@ package org.renaissance.database
 import java.nio.file.Path
 
 import org.lmdbjava.bench.{Chronicle, LevelDb, MapDb, MvStore}
+import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class DbShootout extends RenaissanceBenchmark {

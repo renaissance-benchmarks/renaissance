@@ -1,8 +1,7 @@
 package org.renaissance.rx
 
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class RxScrabble extends RenaissanceBenchmark {
   def description = "Solves the Scrabble puzzle using the Rx streams."

@@ -4,9 +4,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
 import org.apache.commons.io.FileUtils
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
+import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
+
 import scala.collection.immutable.StringOps
 
 class PageRank extends RenaissanceBenchmark with SparkUtil {

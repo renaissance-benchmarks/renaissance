@@ -1,5 +1,6 @@
 package org.renaissance.jdk.streams
 
+import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class ParMnemonics extends RenaissanceBenchmark {

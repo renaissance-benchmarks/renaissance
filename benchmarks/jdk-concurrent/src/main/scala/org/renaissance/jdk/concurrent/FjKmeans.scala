@@ -1,8 +1,7 @@
 package org.renaissance.jdk.concurrent
 
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class FjKmeans extends RenaissanceBenchmark {
   def description = "Runs the k-means algorithm using the fork/join framework."

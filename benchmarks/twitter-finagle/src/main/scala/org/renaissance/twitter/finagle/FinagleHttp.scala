@@ -1,20 +1,18 @@
 package org.renaissance.twitter.finagle
 
+import java.net.InetSocketAddress
+import java.util.Date
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.twitter.finagle.ListeningServer
-import com.twitter.finagle._
 import com.twitter.finagle.http._
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.tracing.NullTracer
+import com.twitter.finagle.{ListeningServer, _}
 import com.twitter.io.Buf
-import com.twitter.util.Await
-import com.twitter.util.Future
-import java.net.InetSocketAddress
-import java.util.Date
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import com.twitter.util.{Await, Future}
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class FinagleHttp extends RenaissanceBenchmark {
 

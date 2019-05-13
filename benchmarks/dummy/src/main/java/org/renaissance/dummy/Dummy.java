@@ -4,7 +4,8 @@ import org.renaissance.Config;
 import org.renaissance.License;
 import org.renaissance.RenaissanceBenchmark;
 
-import static org.renaissance.License.MIT;
+import static org.renaissance.Benchmark.Description;
+import static org.renaissance.Benchmark.Licenses;
 
 public final class Dummy extends RenaissanceBenchmark {
   @Override

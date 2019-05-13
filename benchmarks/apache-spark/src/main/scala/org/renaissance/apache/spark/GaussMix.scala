@@ -1,21 +1,17 @@
 package org.renaissance.apache.spark
 
-import java.io._
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
-import java.util.zip._
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
+import org.apache.spark.mllib.clustering.{GaussianMixture, GaussianMixtureModel}
 import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.clustering.GaussianMixture
-import org.apache.spark.mllib.clustering.GaussianMixtureModel
 import org.apache.spark.rdd.RDD
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class GaussMix extends RenaissanceBenchmark with SparkUtil {
 

@@ -6,6 +6,7 @@ import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.IOUtils
+import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.collection._

@@ -2,23 +2,16 @@ package org.renaissance.apache.spark
 
 import java.io.InputStream
 import java.net.URL
-import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
-import scala.io.Source
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.apache.log4j.Logger
-import org.apache.log4j.Level
-import org.apache.spark.SparkConf
+import org.apache.commons.io.{FileUtils, IOUtils}
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import org.apache.spark.rdd._
 import org.apache.spark.mllib.recommendation.{ALS, MatrixFactorizationModel, Rating}
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.apache.spark.rdd._
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
@@ -28,6 +21,7 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
    */
 
   def description = "Recommends movies using the ALS algorithm."
+import scala.io.Source
 
   override def defaultRepetitions = 20
 

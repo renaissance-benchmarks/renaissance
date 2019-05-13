@@ -2,9 +2,8 @@ package org.renaissance.actors
 
 import edu.rice.habanero.actors.AkkaActorState
 import edu.rice.habanero.benchmarks.uct.UctAkkaActorBenchmark
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class AkkaUct extends RenaissanceBenchmark {
   override def description(): String =

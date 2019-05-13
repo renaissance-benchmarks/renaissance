@@ -1,5 +1,6 @@
 package org.renaissance.scala.stm
 
+import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class Philosophers extends RenaissanceBenchmark {

@@ -1,33 +1,24 @@
 package org.renaissance.twitter.finagle
 
-import com.google.common.collect.ConcurrentHashMultiset
-import com.google.common.collect.Multiset.Entry
-import com.twitter.finagle.Http
-import com.twitter.finagle.ListeningServer
-import com.twitter.finagle.Service
-import com.twitter.finagle.http.Method
-import com.twitter.finagle.http.Request
-import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.Status
-import com.twitter.io.Buf
-import com.twitter.io.BufReader
-import com.twitter.util.Await
-import com.twitter.util.Future
-import com.twitter.util.FuturePool
-import java.net.InetSocketAddress
-import java.net.URLEncoder
 import java.io.File
+import java.net.{InetSocketAddress, URLEncoder}
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Comparator
 import java.util.concurrent.atomic.AtomicReference
+
+import com.google.common.collect.ConcurrentHashMultiset
+import com.google.common.collect.Multiset.Entry
+import com.twitter.finagle.http.{Method, Request, Response, Status}
+import com.twitter.finagle.{Http, ListeningServer, Service}
+import com.twitter.io.{Buf, BufReader}
+import com.twitter.util.{Await, Future, FuturePool}
 import org.apache.commons.io.IOUtils
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
+
 import scala.collection._
 import scala.util.hashing.byteswap32
-import scala.io.Source
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 
 class FinagleChirper extends RenaissanceBenchmark {
 

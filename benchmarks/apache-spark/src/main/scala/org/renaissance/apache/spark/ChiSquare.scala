@@ -4,17 +4,14 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.mllib.stat.test.ChiSqTestResult
 import org.apache.spark.rdd.RDD
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.Config
-import org.renaissance.License
+import org.renaissance.Benchmark._
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 

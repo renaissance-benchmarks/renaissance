@@ -3,13 +3,13 @@ package org.renaissance.apache.spark
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, Paths}
 
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
+import org.apache.commons.io.{FileUtils, IOUtils}
+import org.apache.spark.SparkContext
 import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.{SparkConf, SparkContext}
+import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class LogRegression extends RenaissanceBenchmark with SparkUtil {

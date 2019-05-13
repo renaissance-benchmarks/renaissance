@@ -1,11 +1,10 @@
 package org.renaissance.neo4j
 
-import java.io.File
 import java.nio.file.Paths
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+
+import org.renaissance.Benchmark._
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
+import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class Neo4jAnalytics extends RenaissanceBenchmark {
   def description = "Executes Neo4J graph queries against a movie database."
