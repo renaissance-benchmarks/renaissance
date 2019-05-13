@@ -57,15 +57,13 @@ def kebabCase(s: String): String = {
 def distroFromLicenses(licenses: Array[License]): License = {
   for (license <- licenses) {
     license match {
-      case License.GPL2 =>
-      case License.GPL3 =>
-      case License.EPL1 =>
-      case License.MPL2 =>
+      case License.GPL2 | License.GPL3 | License.EPL1 | License.MPL2 =>
         return License.GPL3
       case _ =>
-      // wait for default
+      // MIT-compatible, check next entry
     }
   }
+
   License.MIT
 }
 
