@@ -13,14 +13,14 @@ lazy val apacheSpark = (project in file("."))
     name := "apache-spark",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
+    scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := sparkScalaVersion,
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
       "org.apache.spark" %% "spark-mllib" % sparkVersion,
       "commons-io" % "commons-io" % "2.6"
-    ),
-    scalafmtConfig := Some(file(".scalafmt.conf"))
+    )
   )
   .dependsOn(
     renaissanceCore
