@@ -173,32 +173,25 @@ def jarsAndListGenerator = Def.taskDyn {
   }
 }
 
-// TODO These tasks may be unnecessary, aggregation seems to work
 val renaissanceFormat = taskKey[Unit](
   "Reformat source code with scalafmt."
 )
 
-def createRenaissanceFormatTask = Def.taskDyn {
-  val formatTasks = for (p <- subProjects) yield scalafmt in (p, Compile)
-  val testFormatTasks = for (p <- subProjects) yield scalafmt in (p, Test)
-  val buildFormatTasks = for (p <- allProjects) yield scalafmtSbt in (p, Compile)
-  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
+val renaissanceFormatTask = renaissanceFormat := {
+  (scalafmt in Compile).value
+  (scalafmt in Test).value
+  (scalafmtSbt in Compile).value
 }
-
-val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
 
 val renaissanceFormatCheck = taskKey[Unit](
   "Check formatting via scalafmt."
 )
 
-def createRenaissanceFormatCheckTask = Def.taskDyn {
-  val formatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Compile)
-  val testFormatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Test)
-  val buildFormatTasks = for (p <- allProjects) yield scalafmtSbtCheck in (p, Compile)
-  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
+val renaissanceFormatCheckTask = renaissanceFormatCheck := {
+  (scalafmtCheck in Compile).value
+  (scalafmtCheck in Test).value
+  (scalafmtSbtCheck in Compile).value
 }
-
-val renaissanceFormatCheckTask = renaissanceFormatCheck := createRenaissanceFormatCheckTask.value
 
 lazy val remoteDebug = SettingKey[Boolean](
   "remoteDebug",
