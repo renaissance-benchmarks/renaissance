@@ -3,6 +3,9 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.jar.JarFile
 import java.util.regex.Pattern
+
+import org.renaissance.{Launcher, License, RenaissanceBenchmark}
+
 import scala.collection._
 
 val renaissanceScalaVersion = "2.12.8"
@@ -50,45 +53,72 @@ def kebabCase(s: String): String = {
   sys.error("unreachable")
 }
 
+// Determine target Renaissance distro based on the licenses
+def distroFromLicenses(licenses: Array[License]): License = {
+  for (license <- licenses) {
+    license match {
+      case License.GPL2 =>
+      case License.GPL3 =>
+      case License.EPL1 =>
+      case License.MPL2 =>
+        return License.GPL3
+      case _ =>
+      // wait for default
+    }
+  }
+  License.MIT
+}
+
 // Return tuples with (name, distro license, all licenses, description and default repetitions)
-  val urls = classpath.map(_.toURI.toURL)
-  val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
-  val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
 def listBenchmarks(project: String, classpath: Seq[File]) = {
+  //
+  // Load the benchmark base class and create a class loader for the project
+  // with the class loader of the base class as its parent. This will allow
+  // us to use core classes here.
+  //
+  val benchBase = classOf[RenaissanceBenchmark]
+  val urls = classpath.map(_.toURI.toURL).toArray
+  val loader = new URLClassLoader(urls, benchBase.getClassLoader)
   val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
-  val result = new mutable.ArrayBuffer[(String, String, String, String, Int)]
 
   //
   // Scan all JAR files for classes in the org.renaissance package implementing
   // the benchmark interface and collect metadata from class annotations.
   //
+  val result = new mutable.ArrayBuffer[(String, License, Array[License], String, Int)]
   for (jarFile <- classpath.map(jar => new JarFile(jar))) {
     for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
       if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
-        val name = entry.getName
+        val benchClassName = entry.getName
           .substring(0, entry.getName.length - ".class".length)
           .replace("/", ".")
-        val clazz = loader.loadClass(name)
+        val clazz = loader.loadClass(benchClassName)
 
         val isEligible =
           !excludePattern.matcher(clazz.getPackage.getName).matches() &&
             benchBase.isAssignableFrom(clazz)
         if (isEligible) {
-          println("eligible benchmark: " + clazz.getName)
-
-          val instance = clazz.getDeclaredConstructor().newInstance()
-          val distro = clazz.getMethod("distro").invoke(instance).toString
-          val licenses = clazz
-            .getMethod("licenses")
-            .invoke(instance)
-            .asInstanceOf[Array[Object]]
-            .map(x => x.toString)
-            .mkString(",")
-          val description = clazz.getMethod("description").invoke(instance).toString
-          val reps =
-            Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
-          result += ((kebabCase(clazz.getSimpleName), distro, licenses, description, reps))
           // Print info to see what benchmarks are picked up by the build.
+          val benchClass = clazz.asSubclass(benchBase)
+          println(s"class: ${benchClass.getName}")
+
+          val bench = benchClass.getDeclaredConstructor().newInstance()
+          val name = bench.name
+          val group = bench.mainGroup
+          println(s"\tbenchmark: ${group}/${name}")
+
+          val licenses = bench.licenses
+          val licensesString = licenses.map(l => l.toString).mkString(",")
+          val distro = distroFromLicenses(licenses)
+          println(s"\tlicensing: ${licensesString} => ${distro}")
+
+          val reps = bench.defaultRepetitions
+          println(s"\trepetitions: ${reps}")
+
+          val desc = bench.description
+          println(s"\tdescription: ${desc}")
+
+          result += ((name, distro, licenses, desc, reps))
         }
       }
     }
@@ -139,13 +169,16 @@ def jarsAndListGenerator = Def.taskDyn {
              project,
              allJars
            )) {
-        if (!nonGpl || distroLicense == "MIT") {
+        if (!nonGpl || distroLicense == License.MIT) {
           benchGroupContent.append(name).append("=").append(projectShort).append("\n")
 
           benchDetails.setProperty("benchmark." + name + ".description", description)
           benchDetails.setProperty("benchmark." + name + ".repetitions", repetitions.toString)
           benchDetails.setProperty("benchmark." + name + ".distro", distroLicense.toString)
-          benchDetails.setProperty("benchmark." + name + ".licenses", licenses.toString)
+          benchDetails.setProperty(
+            "benchmark." + name + ".licenses",
+            licenses.map(l => l.toString).mkString(",")
+          )
         }
       }
     }
@@ -252,7 +285,7 @@ lazy val renaissance: Project = {
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + (version in renaissanceCore).value + ".jar",
-      mainClass in assembly := Some("org.renaissance.Launcher"),
+      mainClass in assembly := Some(classOf[Launcher].getName),
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
