@@ -22,6 +22,7 @@ val benchmarkProjects = for {
 }
 
 val subProjects = benchmarkProjects :+ renaissanceHarness
+val allProjects = subProjects :+ renaissanceCore
 
 // Do not assemble fat JARs in subprojects
 aggregate in assembly := false
@@ -173,6 +174,7 @@ def jarsAndListGenerator = Def.taskDyn {
   }
 }
 
+// TODO These tasks may be unnecessary, aggregation seems to work
 val renaissanceFormat = taskKey[Unit](
   "Reformat source code with scalafmt."
 )
@@ -180,7 +182,7 @@ val renaissanceFormat = taskKey[Unit](
 def createRenaissanceFormatTask = Def.taskDyn {
   val formatTasks = for (p <- subProjects) yield scalafmt in (p, Compile)
   val testFormatTasks = for (p <- subProjects) yield scalafmt in (p, Test)
-  val buildFormatTasks = for (p <- subProjects) yield scalafmtSbt in (p, Compile)
+  val buildFormatTasks = for (p <- allProjects) yield scalafmtSbt in (p, Compile)
   flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
 }
 
@@ -193,7 +195,7 @@ val renaissanceFormatCheck = taskKey[Unit](
 def createRenaissanceFormatCheckTask = Def.taskDyn {
   val formatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Compile)
   val testFormatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Test)
-  val buildFormatTasks = for (p <- subProjects) yield scalafmtSbtCheck in (p, Compile)
+  val buildFormatTasks = for (p <- allProjects) yield scalafmtSbtCheck in (p, Compile)
   flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
 }
 
@@ -268,5 +270,5 @@ lazy val renaissance: Project = {
     .dependsOn(
       renaissanceCore
     )
-  subProjects.foldLeft(p)(_ aggregate _)
+  allProjects.foldLeft(p)(_ aggregate _)
 }
