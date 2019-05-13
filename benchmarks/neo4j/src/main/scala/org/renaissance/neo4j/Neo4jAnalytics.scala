@@ -10,13 +10,14 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
   def description = "Executes Neo4J graph queries against a movie database."
 
   def licenses = License.create(License.GPL3)
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  // TODO: Unify how the scratch directories are handled, throughout the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
   val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
 
-  // TODO: Unify how custom parameters are passed to the benchmarks.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
   var benchmark: AnalyticsBenchmark = new AnalyticsBenchmark(
     scratchPath.toFile,
     sys.props.get("renaissance.neo4j.long-query-count").map(_.toInt),
@@ -25,7 +26,6 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
   )
 
   override def defaultRepetitions = 20
-
   override def setUpBeforeAll(c: Config): Unit = {
     benchmark.setupAll()
   }

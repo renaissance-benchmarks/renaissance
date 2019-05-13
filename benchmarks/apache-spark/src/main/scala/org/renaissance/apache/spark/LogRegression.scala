@@ -19,6 +19,8 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
   override def defaultRepetitions = 20
 
   override def licenses(): Array[License] = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val REGULARIZATION_PARAM = 0.1
 
@@ -28,18 +30,18 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   val CONVERGENCE_TOLERANCE = 0.0
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
-
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  var numCopies = 400
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val logisticRegressionPath = Paths.get("target", "logistic-regression");
 
   val outputPath = logisticRegressionPath.resolve("output")
 
   val inputFile = "/sample_libsvm_data.txt"
-
-  var numCopies = 400
 
   val bigInputFile = logisticRegressionPath.resolve("bigfile.txt")
 

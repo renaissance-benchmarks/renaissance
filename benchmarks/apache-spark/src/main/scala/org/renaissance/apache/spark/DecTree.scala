@@ -14,26 +14,26 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 class DecTree extends RenaissanceBenchmark with SparkUtil {
 
-  /* TODO Implement changes regarding how to declare and pass
-  benchmark-specific parameters
-  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
-   */
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   def description = "Runs the Random Forest algorithm from Spark MLlib."
 
   override def defaultRepetitions = 40
 
   override def licenses = License.create(License.APACHE2)
+  var numCopies = 100
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val decisionTreePath = Paths.get("target", "dec-tree")
 
   val outputPath = decisionTreePath.resolve("output")
 
   val inputFile = "/sample_libsvm_data.txt"
-
-  var numCopies = 100
 
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 

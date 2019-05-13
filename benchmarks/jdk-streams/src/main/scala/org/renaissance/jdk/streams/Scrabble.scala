@@ -9,6 +9,8 @@ class Scrabble extends RenaissanceBenchmark {
   override def defaultRepetitions = 50
 
   def licenses = License.create(License.GPL2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   var shakespearePath = "/shakespeare.txt"
 

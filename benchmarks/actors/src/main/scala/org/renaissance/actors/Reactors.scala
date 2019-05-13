@@ -13,15 +13,16 @@ class Reactors extends RenaissanceBenchmark {
     "Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO."
 
   // Code based on https://github.com/reactors-io/reactors
-  // Original uses BSD 3-clause license
-  // Result compatible with MIT license
   override def licenses(): Array[License] = License.create(License.MIT)
+  // The original uses BSD 3-clause license, the result is compatible with MIT license.
 
   override def defaultRepetitions = 10
-
-  private var system: ReactorSystem = null
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   private var scalingFactor: Double = 1
+
+  private var system: ReactorSystem = null
 
   override def setUpBeforeAll(c: Config): Unit = {
     // Instantiate the default reactor system used throughout the benchmark.
@@ -39,7 +40,7 @@ class Reactors extends RenaissanceBenchmark {
 
   def runIteration(c: Config): Unit = {
 
-    // TODO Address workload scaling. One possibility is to tune dimensions so that each workload sends roughly equal number of messages.
+    // TODO Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 
     println("Baseline workload: Reactor scheduling events")
     new Baseline(system).run((1000000 * scalingFactor).intValue())

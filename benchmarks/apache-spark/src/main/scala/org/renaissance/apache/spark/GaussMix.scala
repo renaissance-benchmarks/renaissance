@@ -15,16 +15,13 @@ import scala.util.Random
 
 class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
-  /* TODO Implement changes regarding how to declare and pass
-  benchmark-specific parameters
-  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
-   */
-
   def description = "Computes a Gaussian mixture model using expectation-maximization."
 
   override def defaultRepetitions = 40
 
   override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val DISTRIBUTION_COUNT = 6
 
@@ -35,6 +32,9 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
   var SIZE = 15000
 
   var NUM_GMM_ITERATIONS = 15
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val gaussMixPath = Paths.get("target", "gauss-mix")
 

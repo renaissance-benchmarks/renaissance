@@ -119,6 +119,8 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
   override def defaultRepetitions = 50
 
   def licenses = License.create(License.MIT)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   var numPoints = 500000
 

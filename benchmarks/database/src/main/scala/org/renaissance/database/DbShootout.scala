@@ -19,8 +19,14 @@ class DbShootout extends RenaissanceBenchmark {
     "Executes a shootout test using several in-memory databases."
 
   def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   override def defaultRepetitions = 16
+  var numEntriesToReadWrite: Int = 500000
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   var tempDirPath: Path = null
 
@@ -47,8 +53,6 @@ class DbShootout extends RenaissanceBenchmark {
   var mvStoreReader: MvStore.Reader = null
 
   var mvStoreWriter: MvStore.Writer = null
-
-  var numEntriesToReadWrite: Int = 500000
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")

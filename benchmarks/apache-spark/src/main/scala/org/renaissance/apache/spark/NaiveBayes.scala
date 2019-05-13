@@ -19,13 +19,15 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
   override def defaultRepetitions = 30
 
   override def licenses(): Array[License] = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val SMOOTHING = 1.0
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
-
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val naiveBayesPath = Paths.get("target", "naive-bayes")
 

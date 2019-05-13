@@ -18,22 +18,21 @@ class Als extends RenaissanceBenchmark with SparkUtil {
   override def defaultRepetitions = 60
 
   override def licenses(): Array[License] = License.create(License.APACHE2)
-
   // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
+  var numRatings = 20000
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  // TODO: Consolidate paths to avoid clashes between parallel executions
-  // https://github.com/D-iii-S/renaissance-benchmarks/issues/13
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val alsPath = Paths.get("target", "als")
 
   val outputPath = alsPath.resolve("output")
 
   val bigInputFile = alsPath.resolve("bigfile.txt")
-
-  var numRatings = 20000
 
   var sc: SparkContext = null
 

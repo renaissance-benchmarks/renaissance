@@ -11,7 +11,8 @@ class FjKmeans extends RenaissanceBenchmark {
   def licenses = License.create(License.APACHE2)
 
   // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
   private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   private var DIMENSION = 5

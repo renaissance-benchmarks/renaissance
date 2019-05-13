@@ -17,10 +17,15 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
   override def defaultRepetitions = 20
 
   override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   var ITERATIONS = 2
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val pageRankPath = Paths.get("target", "page-rank")
 

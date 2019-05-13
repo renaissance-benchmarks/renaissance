@@ -22,6 +22,8 @@ class FinagleHttp extends RenaissanceBenchmark {
   override def defaultRepetitions = 12
 
   def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   /** Number of requests sent during the execution of the benchmark.
    */

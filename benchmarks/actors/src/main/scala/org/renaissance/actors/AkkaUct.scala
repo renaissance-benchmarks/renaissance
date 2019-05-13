@@ -10,12 +10,13 @@ class AkkaUct extends RenaissanceBenchmark {
     "Runs the Unbalanced Cobwebbed Tree actor workload in Akka."
 
   override def licenses(): Array[License] = License.create(License.MIT)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   override def defaultRepetitions = 24
+  private var numIterations: Int = 10
 
   private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
-
-  private var numIterations: Int = 10
 
   override def setUpBeforeAll(c: Config): Unit = {
     bench = new UctAkkaActorBenchmark.UctAkkaActorBenchmark

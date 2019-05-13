@@ -13,21 +13,20 @@ import org.apache.spark.rdd._
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
-class MovieLens extends RenaissanceBenchmark with SparkUtil {
-
-  /* TODO Implement changes regarding how to declare and pass
-  benchmark-specific parameters
-  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
-   */
-
   def description = "Recommends movies using the ALS algorithm."
 import scala.io.Source
 
   override def defaultRepetitions = 20
+class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
   override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   var sc: SparkContext = null
 

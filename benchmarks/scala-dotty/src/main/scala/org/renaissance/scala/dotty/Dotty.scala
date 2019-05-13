@@ -17,6 +17,8 @@ class Dotty extends RenaissanceBenchmark {
   override def defaultRepetitions = 50
 
   def licenses = License.create(License.BSD3)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   private val zipPath = "sources.zip"
 
