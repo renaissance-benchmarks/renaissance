@@ -11,8 +11,6 @@ public interface RenaissanceBenchmarkApi {
 
   License[] licenses();
 
-  License distro();
-
   int defaultRepetitions();
 
   Optional<String> initialRelease();
