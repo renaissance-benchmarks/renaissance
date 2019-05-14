@@ -36,11 +36,11 @@ public interface Benchmark {
 
 
   /**
-   * Short (one-line) description of a benchmark. Default not set.
+   * A brief (one-line) summary description of a benchmark. Default not set.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
-  @interface Description {
+  @interface Summary {
 
     String value();
 
@@ -52,7 +52,7 @@ public interface Benchmark {
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
-  @interface LongDescription {
+  @interface Description {
 
     String value();
 

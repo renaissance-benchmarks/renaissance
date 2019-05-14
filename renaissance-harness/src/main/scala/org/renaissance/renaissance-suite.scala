@@ -2,14 +2,17 @@ package org.renaissance
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import scala.collection._
-import scala.collection.JavaConverters._
-import scopt._
-import spray.json._
-import spray.json.DefaultJsonProtocol._
+import java.util.Properties
+
+import org.apache.commons.io.{FileUtils, IOUtils}
 import org.renaissance.util.ModuleLoader
+import scopt._
+import spray.json.DefaultJsonProtocol._
+import spray.json._
+
+import scala.collection.JavaConverters._
+import scala.collection._
+import scala.collection.immutable.TreeMap
 
 object RenaissanceSuite {
   abstract class ResultWriter extends ResultObserver {
@@ -138,60 +141,60 @@ object RenaissanceSuite {
     }
   }
 
-  class BenchmarkMetaInformation(
+  sealed class BenchmarkInfo(
+    val className: String,
     val name: String,
+    val group: String,
+    val summary: String,
     val description: String,
-    val defaultRepetitions: Int,
+    val repetitions: Int,
     val licenses: Array[String],
     val distro: String
-  )
-
-  val benchmarkGroups = {
-    val map = new mutable.LinkedHashMap[String, String]
-    val lines = IOUtils.lineIterator(
-      getClass.getResourceAsStream("/benchmark-group.txt"),
-      StandardCharsets.UTF_8
-    )
-    while (lines.hasNext) {
-      val line = lines.next()
-      val parts = line.split("=")
-      map(parts(0)) = parts(1)
-    }
-    map
+  ) {
+    def summaryWords() = summary.split("\\s+")
+    def printableLicenses() = licenses.mkString(", ")
   }
 
-  val groupBenchmarks =
-    benchmarkGroups.groupBy({ case (_, group) => group }).mapValues(_.keys.toSeq)
+  object BenchmarkInfo {
 
-  val benchmarks = benchmarkGroups.keys
+    def fromProperties(p: Properties, mapper: (String) => String) = {
+      def get(name: String, defaultValue: String) = {
+        p.getProperty(mapper(name), defaultValue)
+      }
 
-  val benchmarkDetails = {
-    val details = new mutable.HashMap[String, BenchmarkMetaInformation]
-    val detailsAsProps = new java.util.Properties
-    detailsAsProps.load(getClass.getResourceAsStream("/benchmark-details.properties"))
-    for (name <- benchmarks) {
-      val description = detailsAsProps.getProperty(
-        "benchmark." + name + ".description",
-        "Description not provided"
+      new BenchmarkInfo(
+        className = get("class", ""),
+        name = get("name", ""),
+        group = get("group", ""),
+        summary = get("summary", ""),
+        description = get("description", ""),
+        repetitions = get("repetitions", "20").toInt,
+        licenses = get("licenses", "").split(","),
+        distro = get("distro", "")
       )
-      val repetitions = detailsAsProps.getProperty(
-        "benchmark." + name + ".repetitions",
-        "-1"
-      )
-      val licenses = detailsAsProps
-        .getProperty(
-          "benchmark." + name + ".licenses",
-          "unknown"
-        )
-        .split(",")
-      val distro = detailsAsProps.getProperty(
-        "benchmark." + name + ".distro",
-        "unknown"
-      )
-      details(name) =
-        new BenchmarkMetaInformation(name, description, repetitions.toInt, licenses, distro)
     }
-    details
+  }
+
+  val benchmarksByName = {
+    val properties = new java.util.Properties
+    properties.load(getClass.getResourceAsStream("/benchmark-details.properties"))
+
+    val names = asScalaSet(properties.stringPropertyNames())
+      .filter(_.endsWith(".name"))
+      .map(properties.getProperty(_))
+      .toSeq
+
+    def makeInfo(name: String, p: Properties) = {
+      BenchmarkInfo.fromProperties(p, key => s"benchmark.${name}.${key}")
+    }
+
+    // Produce a Map ordered by benchmark name
+    TreeMap(names.map(name => (name, makeInfo(name, properties))).toArray: _*)
+  }
+
+  val benchmarksByGroup = {
+    // Produce a Map ordered by group name
+    TreeMap(benchmarksByName.values.groupBy(_.group).toArray: _*)
   }
 
   val groupJars = {
@@ -269,10 +272,6 @@ object RenaissanceSuite {
     parser.parse(args, new Config)
   }
 
-  private def camelCase(s: String): String = {
-    s.split("-").map(_.capitalize).mkString
-  }
-
   def main(args: Array[String]): Unit = {
     val config = parse(args) match {
       case Some(c) => c
@@ -332,21 +331,24 @@ object RenaissanceSuite {
   }
 
   def generateBenchmarkList(config: Config): Seq[String] = {
-    val benchmarkSet = new mutable.LinkedHashSet[String]
+    val result = new mutable.LinkedHashSet[String]
     for (specifier <- config.benchmarkSpecifiers.asScala) {
-      if (benchmarkGroups.contains(specifier)) {
-        benchmarkSet += specifier
-      } else if (groupBenchmarks.contains(specifier)) {
-        benchmarkSet ++= groupBenchmarks(specifier)
+      if (benchmarksByName.contains(specifier)) {
+        // Add an individual benchmark
+        result += specifier
+      } else if (benchmarksByGroup.contains(specifier)) {
+        // Add benchmarks for a given group
+        result ++= benchmarksByGroup(specifier).map(_.name)
       } else if (specifier == "all") {
-        benchmarkSet ++= benchmarks
+        // Add all benchmarks except the dummy
+        result ++= benchmarksByName.filterKeys(_ != "dummy").keys
       } else {
         println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
       }
     }
 
-    benchmarkSet.toSeq
+    result.toSeq
   }
 
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
@@ -372,68 +374,58 @@ object RenaissanceSuite {
   }
 
   private def loadBenchmark(name: String): RenaissanceBenchmark = {
-    val mainGroup = benchmarkGroups(name)
-    val benchClassName = camelCase(name)
-    val packageName = mainGroup.replace("-", ".")
-    val fullBenchClassName = "org.renaissance." + packageName + "." + benchClassName
+    val bench = benchmarksByName(name)
 
     // Use separate classloader for this benchmark
-    val loader = ModuleLoader.getForGroup(mainGroup)
-
-    val benchClass = loader.loadClass(fullBenchClassName)
-    val result = benchClass.newInstance()
+    val loader = ModuleLoader.getForGroup(bench.group)
+    val benchClass = loader.loadClass(bench.className)
+    val result = benchClass.getDeclaredConstructor().newInstance()
 
     // Make current thread as independent of the harness as possible
     Thread.currentThread.setContextClassLoader(loader)
-
-    return result.asInstanceOf[RenaissanceBenchmark]
+    result.asInstanceOf[RenaissanceBenchmark]
   }
 
-  private def formatRawBenchmarkList(): String = benchmarks.toSeq.sorted.mkString("\n")
+  private def formatRawBenchmarkList(): String = benchmarksByName.keys.mkString("\n")
 
   private def formatBenchmarkList(): String = {
     val indent = "    "
 
     val result = new StringBuffer
-    for (name <- benchmarks.toSeq.sorted) {
-      val descriptionWords = benchmarkDetails(name).description.split("\\s+")
-      val repetitionsInt = benchmarkDetails(name).defaultRepetitions
-      val repetitions = if (repetitionsInt < 0) "not specified" else repetitionsInt.toString
+    for ((name, bench) <- benchmarksByName) {
       result.append(name).append("\n")
-      result.append(foldText(descriptionWords, 65, indent).mkString("\n"))
-      result.append(s"\n${indent}Default repetitions: ${repetitions}\n\n")
+      result.append(foldText(bench.summaryWords, 65, indent).mkString("\n")).append("\n")
+      result.append(s"${indent}Default repetitions: ${bench.repetitions}").append("\n\n")
     }
 
     return result.toString
   }
 
-  private def formatGroupList(): String = groupBenchmarks.keys.toSeq.sorted.mkString("\n")
+  private def formatGroupList(): String = benchmarksByGroup.keys.toSeq.sorted.mkString("\n")
 
-  private def generateBenchmarkDescription(name: String): String = {
-    val bench = benchmarkDetails(name)
-    s"- `${bench.name}` - " +
-      s"${bench.description} (default repetitions: ${bench.defaultRepetitions})"
+  private def formatBenchmarkListMarkdown = {
+    def formatItem(b: BenchmarkInfo) = {
+      s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
+    }
+
+    val result = new StringBuffer
+    for ((group, benches) <- benchmarksByGroup) {
+      result.append(s"#### ${group}").append("\n\n")
+
+      val sortedBenches = benches.toSeq.sortBy(_.name)
+      result.append(sortedBenches.map(b => formatItem(b)).mkString("\n\n")).append("\n\n")
+    }
+
+    result.toString
   }
 
-  private def generateBenchmarkList =
-    benchmarkGroups
-      .groupBy(_._2)
-      .toSeq
-      .sortBy(_._1)
-      .map {
-        case (group, benchmarkName) =>
-          s"""
-#### $group
+  def formatBenchmarkTableMarkdown = {
+    def formatRow(b: BenchmarkInfo) = {
+      s"| ${b.name} | ${b.printableLicenses} | ${b.distro} |"
+    }
 
-${benchmarkName
-            .map(_._1)
-            .toSeq
-            .sorted
-            .map(generateBenchmarkDescription)
-            .mkString("\n\n")}
-"""
-      }
-      .mkString("\n")
+    benchmarksByName.values.map(b => formatRow(b)).mkString("\n")
+  }
 
   val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
     "raw/master/website/resources/images/mona-lisa-round.png"
@@ -465,7 +457,7 @@ $$ tools/sbt/bin/sbt assembly
 ```
 
 This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs and create the final JAR under `target/scala-2.12`.
+bundle the JARs and create the final JAR under `target` directory.
 
 
 ### Running the benchmarks
@@ -495,7 +487,7 @@ ${parser.usage}
 
 The following is the complete list of benchmarks, separated into groups.
 
-${generateBenchmarkList}
+${formatBenchmarkListMarkdown}
 
 
 ### Run policies
@@ -550,12 +542,7 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
-${benchmarkGroups.keys
-    .map { name =>
-      val b = benchmarkDetails(name)
-      s"| ${b.name} | ${b.licenses.mkString(", ")} | ${b.distro} |"
-    }
-    .mkString("\n")}
+${formatBenchmarkTableMarkdown}
 
 
 ### Design overview
@@ -663,10 +650,10 @@ Here is an example:
 
 ```
 import org.renaissance._
+import org.renaissance.Benchmark._
 
+@Summary("Runs some performance-critical Java code.")
 final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleName} {
-  override def description = "Runs some performance-critical Java code."
-
   override protected def runIteration(config: ${classOf[Config].getSimpleName}): Unit = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
@@ -698,7 +685,7 @@ $$ tools/sbt/bin/sbt renaissanceFormat
 Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
-$$ tools/sbt/bin/sbt runMain org.renaissance.Launcher --readme
+$$ tools/sbt/bin/sbt runMain ${classOf[Launcher].getName} --readme
 ```
 
 ### IDE development

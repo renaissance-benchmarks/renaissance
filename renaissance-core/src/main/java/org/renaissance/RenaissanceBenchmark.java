@@ -3,7 +3,6 @@ package org.renaissance;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
@@ -23,34 +22,47 @@ public abstract class RenaissanceBenchmark {
   private volatile Object blackHoleField;
 
   public final String name() {
-    String cn = this.getClass().getSimpleName();
-    String camelCaseName =
-      (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
-    return kebabCase(camelCaseName);
+    Class<?> benchClass = this.getClass();
+    Benchmark.Name annotation = benchClass.getDeclaredAnnotation(Benchmark.Name.class);
+    if (annotation != null) {
+      return annotation.value();
+    } else {
+      String cn = benchClass.getSimpleName();
+      String camelCaseName =
+        (cn.charAt(cn.length() - 1) == '$') ? cn.substring(0, cn.length() - 1) : cn;
+      return kebabCase(camelCaseName);
+    }
   }
+
 
   public final String mainGroup() {
-    String fullName = getClass().getName();
-    String simpleName = getClass().getSimpleName();
-    String packageName = fullName.substring(0, fullName.indexOf(simpleName) - 1);
-    String groupName = packageName.substring("org.renaissance.".length());
-    return groupName.replaceAll("\\.", "-");
-  }
-
-  public int defaultRepetitions() {
-    return 20;
+    Class<?> benchClass = this.getClass();
+    Benchmark.Group annotation = benchClass.getDeclaredAnnotation(Benchmark.Group.class);
+    if (annotation != null) {
+      return annotation.value();
+    } else {
+      String groupPkg = getPackageRelativeTo(benchClass, Benchmark.class);
+      return groupPkg.replaceAll("[.]", "-");
+    }
   }
 
   public abstract String description();
 
   public abstract License[] licenses();
-
-  public Optional<String> initialRelease() {
-    return Optional.empty();
+  private static String getPackageRelativeTo (Class<?> target, Class<?> base) {
+    final String targetPkg = target.getPackage().getName();
+    final String basePkg = base.getPackage().getName();
+    if (targetPkg.startsWith(basePkg)) {
+      return targetPkg.substring(basePkg.length() + 1);
+    } else {
+      return targetPkg;
+    }
   }
 
-  public Optional<String> finalRelease() {
-    return Optional.empty();
+  public int defaultRepetitions() {
+    Class<?> benchClass = this.getClass();
+    Benchmark.Repetitions annotation = benchClass.getDeclaredAnnotation(Benchmark.Repetitions.class);
+    return (annotation != null) ? annotation.value() : 20;
   }
 
   public void setUpBeforeAll(Config c) {

@@ -38,35 +38,6 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def kebabCase(s: String): String = {
-  // This functionality is duplicated in the RenaissanceBenchmark class.
-  val camelCaseName = if (s.last == '$') s.init else s
-  val pattern = Pattern.compile("([A-Za-z])([A-Z])")
-  var result = camelCaseName
-  do {
-    val last = result
-    result = pattern.matcher(result).replaceFirst("$1-$2")
-    if (last == result) {
-      return result.toLowerCase()
-    }
-  } while (true)
-  sys.error("unreachable")
-}
-
-// Determine target Renaissance distro based on the licenses
-def distroFromLicenses(licenses: Array[License]): License = {
-  for (license <- licenses) {
-    license match {
-      case License.GPL2 | License.GPL3 | License.EPL1 | License.MPL2 =>
-        return License.GPL3
-      case _ =>
-      // MIT-compatible, check next entry
-    }
-  }
-
-  License.MIT
-}
-
 // Return tuples with (name, distro license, all licenses, description and default repetitions)
 def listBenchmarks(project: String, classpath: Seq[File]) = {
   //
@@ -83,7 +54,7 @@ def listBenchmarks(project: String, classpath: Seq[File]) = {
   // Scan all JAR files for classes in the org.renaissance package implementing
   // the benchmark interface and collect metadata from class annotations.
   //
-  val result = new mutable.ArrayBuffer[(String, License, Array[License], String, Int)]
+  val result = new mutable.ArrayBuffer[BenchmarkInfo]
   for (jarFile <- classpath.map(jar => new JarFile(jar))) {
     for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
       if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
@@ -98,25 +69,10 @@ def listBenchmarks(project: String, classpath: Seq[File]) = {
         if (isEligible) {
           // Print info to see what benchmarks are picked up by the build.
           val benchClass = clazz.asSubclass(benchBase)
-          println(s"class: ${benchClass.getName}")
+          val info = new BenchmarkInfo(benchClass)
+          info.print()
 
-          val bench = benchClass.getDeclaredConstructor().newInstance()
-          val name = bench.name
-          val group = bench.mainGroup
-          println(s"\tbenchmark: ${group}/${name}")
-
-          val licenses = bench.licenses
-          val licensesString = licenses.map(l => l.toString).mkString(",")
-          val distro = distroFromLicenses(licenses)
-          println(s"\tlicensing: ${licensesString} => ${distro}")
-
-          val reps = bench.defaultRepetitions
-          println(s"\trepetitions: ${reps}")
-
-          val desc = bench.description
-          println(s"\tdescription: ${desc}")
-
-          result += ((name, distro, licenses, desc, reps))
+          result += info
         }
       }
     }
@@ -150,11 +106,10 @@ def jarsAndListGenerator = Def.taskDyn {
 
   val nonGpl = nonGplOnly.value
 
-  // Flatten list, create a groups-jars file, and a benchmark-group file.
+  // Flatten list and create a groups-jars file and the benchmark-details file.
   flattenTasks(projectJarTasks).map { groupJars =>
     // Add the benchmarks from the different project groups.
     val jarListContent = new StringBuilder
-    val benchGroupContent = new StringBuilder
     val benchDetails = new java.util.Properties
 
     for ((project, allJars, loadedJars) <- groupJars) {
@@ -163,20 +118,11 @@ def jarsAndListGenerator = Def.taskDyn {
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
 
       // Scan project jars for benchmarks and fill the property file.
-      for ((name, distroLicense, licenses, description, repetitions) <- listBenchmarks(
-             project,
-             allJars
-           )) {
-        if (!nonGpl || distroLicense == License.MIT) {
-          benchGroupContent.append(name).append("=").append(projectShort).append("\n")
-
-          benchDetails.setProperty("benchmark." + name + ".description", description)
-          benchDetails.setProperty("benchmark." + name + ".repetitions", repetitions.toString)
-          benchDetails.setProperty("benchmark." + name + ".distro", distroLicense.toString)
-          benchDetails.setProperty(
-            "benchmark." + name + ".licenses",
-            licenses.map(l => l.toString).mkString(",")
-          )
+      for (benchInfo <- listBenchmarks(project, allJars)) {
+        if (!nonGpl || benchInfo.distro() == License.MIT) {
+          for ((k, v) <- benchInfo.toMap()) {
+            benchDetails.setProperty(s"benchmark.${benchInfo.name}.$k", v);
+          }
         }
       }
     }
@@ -184,14 +130,11 @@ def jarsAndListGenerator = Def.taskDyn {
     val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
     IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
 
-    val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
-    IO.write(benchGroupFile, benchGroupContent.toString, StandardCharsets.UTF_8)
-
     val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
     val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
     benchDetails.store(benchDetailsStream, "Benchmark details")
 
-    benchGroupFile +: benchDetailsFile +: jarListFile +: groupJars.flatMap {
+    benchDetailsFile +: jarListFile +: groupJars.flatMap {
       case (_, jars, _) => jars
     }
   }
