@@ -213,13 +213,13 @@ object RenaissanceSuite {
     map
   }
 
+  val renaissanceTitle = classOf[RenaissanceBenchmark].getPackage.getSpecificationTitle
+
+  val renaissanceVersion = classOf[RenaissanceBenchmark].getPackage.getImplementationVendor
+
   private val parser: OptionParser[Config] =
     new OptionParser[Config]("renaissance") {
-      private val pkg = classOf[RenaissanceBenchmark].getPackage
-      val title = pkg.getSpecificationTitle
-      val version = pkg.getImplementationVersion
-
-      head(s"${title}, version ${version}")
+      head(s"${renaissanceTitle}, version ${renaissanceVersion}")
 
       help("help")
         .text("Prints this usage text.")
@@ -466,7 +466,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/renaissance-0.1.jar' <benchmarks>
+java -jar '<renaissance-home>/target/renaissance-${renaissanceVersion}.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -557,8 +557,11 @@ The Renaissance benchmark suite is organized into several `sbt` projects:
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
 Its most important class is `${classOf[RenaissanceBenchmark].getSimpleName}`,
-which must be extended by a concrete benchmark implementation.
-This means that each *subproject* depends on the *core* project.
+which must be extended by a concrete benchmark implementation, and the
+annotations in the `${classOf[Benchmark].getSimpleName}` class, which are
+used to set static information about a benchmark, such as a summary or
+detailed description.
+Consequently, each *subproject* depends on the *core* project.
 
 Interfaces of *core* are loaded (when Renaissance is started) by the default
 classloader. Every other class (including harness and individual benchmarks)

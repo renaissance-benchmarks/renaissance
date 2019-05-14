@@ -34,7 +34,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/renaissance-0.1.jar' <benchmarks>
+java -jar '<renaissance-home>/target/renaissance-org.renaissance.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -47,7 +47,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version 0.9.0
+Renaissance Benchmark Suite, version org.renaissance
 Usage: renaissance [options] [benchmark-specification]
 
   --help                   Prints this usage text.
@@ -245,8 +245,11 @@ The Renaissance benchmark suite is organized into several `sbt` projects:
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
 Its most important class is `RenaissanceBenchmark`,
-which must be extended by a concrete benchmark implementation.
-This means that each *subproject* depends on the *core* project.
+which must be extended by a concrete benchmark implementation, and the
+annotations in the `Benchmark` class, which are
+used to set static information about a benchmark, such as a summary or
+detailed description.
+Consequently, each *subproject* depends on the *core* project.
 
 Interfaces of *core* are loaded (when Renaissance is started) by the default
 classloader. Every other class (including harness and individual benchmarks)
