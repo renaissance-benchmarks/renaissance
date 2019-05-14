@@ -140,25 +140,9 @@ def jarsAndListGenerator = Def.taskDyn {
   }
 }
 
-val renaissanceFormat = taskKey[Unit](
-  "Reformat source code with scalafmt."
-)
+addCommandAlias("renaissanceFormat", ";scalafmt;scalafmtSbt")
 
-val renaissanceFormatTask = renaissanceFormat := {
-  (scalafmt in Compile).value
-  (scalafmt in Test).value
-  (scalafmtSbt in Compile).value
-}
-
-val renaissanceFormatCheck = taskKey[Unit](
-  "Check formatting via scalafmt."
-)
-
-val renaissanceFormatCheckTask = renaissanceFormatCheck := {
-  (scalafmtCheck in Compile).value
-  (scalafmtCheck in Test).value
-  (scalafmtSbtCheck in Compile).value
-}
+addCommandAlias("renaissanceFormatCheck", ";scalafmtCheck;scalafmtSbtCheck")
 
 lazy val remoteDebug = SettingKey[Boolean](
   "remoteDebug",
@@ -211,8 +195,6 @@ lazy val renaissance: Project = {
       crossPaths := false,
       autoScalaLibrary := false,
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      renaissanceFormatTask,
-      renaissanceFormatCheckTask,
       fork in run := true,
       cancelable in Global := true,
       remoteDebug := false,
