@@ -215,7 +215,7 @@ object RenaissanceSuite {
 
   val renaissanceTitle = classOf[RenaissanceBenchmark].getPackage.getSpecificationTitle
 
-  val renaissanceVersion = classOf[RenaissanceBenchmark].getPackage.getImplementationVendor
+  val renaissanceVersion = classOf[RenaissanceBenchmark].getPackage.getImplementationVersion
 
   private val parser: OptionParser[Config] =
     new OptionParser[Config]("renaissance") {

@@ -34,7 +34,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/renaissance-org.renaissance.jar' <benchmarks>
+java -jar '<renaissance-home>/target/renaissance-0.9.0.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -47,7 +47,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version org.renaissance
+Renaissance Benchmark Suite, version 0.9.0
 Usage: renaissance [options] [benchmark-specification]
 
   --help                   Prints this usage text.
