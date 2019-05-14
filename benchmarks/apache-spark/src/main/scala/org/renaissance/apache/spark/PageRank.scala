@@ -14,6 +14,8 @@ import org.renaissance.Benchmark._
 
 import scala.collection.immutable.StringOps
 
+@Name("page-rank")
+@Group("apache-spark")
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)

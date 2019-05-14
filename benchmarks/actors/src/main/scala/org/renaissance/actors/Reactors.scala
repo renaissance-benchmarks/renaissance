@@ -11,6 +11,8 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Random
 
+@Name("reactors")
+@Group("actors")
 @Summary(
   "Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO."
 )

@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("philosophers")
+@Group("scala-stm")
 @Summary("Solves a variant of the dining philosophers problem using ScalaSTM.")
 @Licenses(Array(License.BSD3))
 @Repetitions(30)

@@ -115,6 +115,8 @@ trait KmeansUtilities {
   }
 }
 
+@Name("scala-kmeans")
+@Group("scala-stdlib")
 @Summary("Runs the K-Means algorithm using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(50)

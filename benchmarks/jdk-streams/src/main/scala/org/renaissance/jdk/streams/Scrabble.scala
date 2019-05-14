@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("scrabble")
+@Group("jdk-streams")
 @Summary("Solves the Scrabble puzzle using JDK Streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(50)

@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("fj-kmeans")
+@Group("jdk-concurrent")
 @Summary("Runs the k-means algorithm using the fork/join framework.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)

@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("scala-stm-bench7")
+@Group("scala-stm")
 @Summary("Runs the stmbench7 benchmark using ScalaSTM.")
 @Licenses(Array(License.BSD3, License.GPL2))
 @Repetitions(60)

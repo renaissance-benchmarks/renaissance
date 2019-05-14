@@ -8,6 +8,8 @@ import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
 
+@Name("neo4j-analytics")
+@Group("neo4j")
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
 @Repetitions(20)

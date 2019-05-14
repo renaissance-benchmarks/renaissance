@@ -21,6 +21,8 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
+@Name("dec-tree")
+@Group("apache-spark")
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)

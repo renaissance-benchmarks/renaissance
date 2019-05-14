@@ -17,6 +17,8 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
+@Name("log-regression")
+@Group("apache-spark")
 @Summary("Runs the logistic regression workload from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)

@@ -22,6 +22,8 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
+@Name("finagle-http")
+@Group("twitter-finagle")
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)

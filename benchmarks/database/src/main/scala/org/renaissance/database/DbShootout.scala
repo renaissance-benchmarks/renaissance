@@ -11,6 +11,8 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
+@Name("db-shootout")
+@Group("database")
 @Summary("Executes a shootout test using several in-memory databases.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(16)

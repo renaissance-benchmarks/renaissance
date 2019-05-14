@@ -17,6 +17,8 @@ import org.renaissance.Benchmark._
 
 import scala.util.Random
 
+@Name("gauss-mix")
+@Group("apache-spark")
 @Summary("Computes a Gaussian mixture model using expectation-maximization.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)

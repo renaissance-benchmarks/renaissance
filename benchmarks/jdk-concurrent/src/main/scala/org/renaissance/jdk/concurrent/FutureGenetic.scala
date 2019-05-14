@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("future-genetic")
+@Group("jdk-concurrent")
 @Summary("Runs a genetic algorithm using the Jenetics library and futures.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(50)

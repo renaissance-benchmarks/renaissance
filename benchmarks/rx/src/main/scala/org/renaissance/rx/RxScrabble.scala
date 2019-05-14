@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("rx-scrabble")
+@Group("rx")
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(80)

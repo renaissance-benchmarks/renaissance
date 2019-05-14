@@ -22,6 +22,8 @@ import org.renaissance.Benchmark._
 
 import scala.io.Source
 
+@Name("movie-lens")
+@Group("apache-spark")
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)

@@ -31,6 +31,8 @@ import org.renaissance.RenaissanceBenchmark
 import scala.collection._
 import scala.util.hashing.byteswap32
 
+@Name("finagle-chirper")
+@Group("twitter-finagle")
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(90)

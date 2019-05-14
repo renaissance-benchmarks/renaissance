@@ -14,6 +14,8 @@ import org.renaissance.Benchmark._
 
 import scala.collection._
 
+@Name("dotty")
+@Group("scala-dotty")
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
 @Repetitions(50)

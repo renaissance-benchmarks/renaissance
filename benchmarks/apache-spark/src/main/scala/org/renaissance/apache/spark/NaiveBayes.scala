@@ -16,6 +16,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("naive-bayes")
+@Group("apache-spark")
 @Summary("Runs the multinomial naive Bayes algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)

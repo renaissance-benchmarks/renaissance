@@ -5,6 +5,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("mnemonics")
+@Group("jdk-streams")
 @Summary("Solves the phone mnemonics problem using JDK streams.")
 @Licenses(Array(License.MIT))
 @Repetitions(16)

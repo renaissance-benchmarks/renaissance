@@ -18,6 +18,8 @@ import org.renaissance.Benchmark._
 
 import scala.util.Random
 
+@Name("chi-square")
+@Group("apache-spark")
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)

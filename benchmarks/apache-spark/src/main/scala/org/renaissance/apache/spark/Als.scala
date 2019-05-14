@@ -15,6 +15,8 @@ import org.renaissance.Benchmark._
 
 import scala.util.Random
 
+@Name("als")
+@Group("apache-spark")
 @Summary("Runs the ALS algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)

@@ -7,6 +7,8 @@ import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 
+@Name("akka-uct")
+@Group("actors")
 @Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
 @Licenses(Array(License.MIT))
 @Repetitions(24)
