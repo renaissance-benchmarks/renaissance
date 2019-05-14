@@ -349,6 +349,7 @@ class FinagleChirper extends RenaissanceBenchmark {
   val batchSize = 4
   var master: ListeningServer = null
   var masterPort: Int = -1
+  var masterService: Service[Request, Response] = null
   val clientCount = Runtime.getRuntime.availableProcessors
   val cacheCount = Runtime.getRuntime.availableProcessors
   val caches = new mutable.ArrayBuffer[ListeningServer]
@@ -400,8 +401,6 @@ class FinagleChirper extends RenaissanceBenchmark {
   lazy val usernames = for (i <- 0 until userCount)
     yield usernameBases(i % usernameBases.length) + i
 
-  var masterService: Service[Request, Response] = null
-
   override def setUpBeforeAll(c: Config): Unit = {
     if (c.functionalTest) {
       requestCount = 10
@@ -429,7 +428,6 @@ class FinagleChirper extends RenaissanceBenchmark {
     Await.ready(master.close())
     masterService.close()
   }
-
 
   override def beforeIteration(c: Config): Unit = {
     val resetQuery = "/api/reset"
