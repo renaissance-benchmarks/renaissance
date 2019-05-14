@@ -28,10 +28,10 @@ Here is an example:
 
 ```
 import org.renaissance._
+import org.renaissance.Benchmark._
 
+@Summary("Runs some performance-critical Java code.")
 final class MyJavaBenchmark extends RenaissanceBenchmark {
-  override def description = "Runs some performance-critical Java code."
-
   override protected def runIteration(config: Config): Unit = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
