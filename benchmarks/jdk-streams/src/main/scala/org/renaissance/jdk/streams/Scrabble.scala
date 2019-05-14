@@ -1,7 +1,9 @@
 package org.renaissance.jdk.streams
 
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 @Summary("Solves the Scrabble puzzle using JDK Streams.")
 @Licenses(Array(License.GPL2))

@@ -1,16 +1,20 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
-import org.apache.commons.io.{FileUtils, IOUtils}
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.NaiveBayesModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 @Summary("Runs the multinomial naive Bayes algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))

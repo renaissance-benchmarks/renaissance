@@ -2,9 +2,11 @@ package org.renaissance.neo4j
 
 import java.nio.file.Paths
 
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))

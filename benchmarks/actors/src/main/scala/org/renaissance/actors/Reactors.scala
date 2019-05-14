@@ -1,11 +1,14 @@
 package org.renaissance.actors
 
 import io.reactors._
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+import scala.concurrent.Await
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Promise}
 import scala.util.Random
 
 @Summary(

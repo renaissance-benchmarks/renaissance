@@ -2,9 +2,14 @@ package org.renaissance.database
 
 import java.nio.file.Path
 
-import org.lmdbjava.bench.{Chronicle, LevelDb, MapDb, MvStore}
+import org.lmdbjava.bench.Chronicle
+import org.lmdbjava.bench.LevelDb
+import org.lmdbjava.bench.MapDb
+import org.lmdbjava.bench.MvStore
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 
 @Summary("Executes a shootout test using several in-memory databases.")
 @Licenses(Array(License.APACHE2))

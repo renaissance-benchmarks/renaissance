@@ -1,13 +1,16 @@
 package org.renaissance.scala.dotty
 
-import java.io.{FileOutputStream, _}
+import java.io.FileOutputStream
+import java.io._
 import java.net.URLClassLoader
 import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.IOUtils
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.collection._
 

@@ -2,8 +2,10 @@ package org.renaissance.actors
 
 import edu.rice.habanero.actors.AkkaActorState
 import edu.rice.habanero.benchmarks.uct.UctAkkaActorBenchmark
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 @Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
 @Licenses(Array(License.MIT))

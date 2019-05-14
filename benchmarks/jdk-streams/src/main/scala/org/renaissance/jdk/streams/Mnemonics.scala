@@ -1,7 +1,9 @@
 package org.renaissance.jdk.streams
 
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 @Summary("Solves the phone mnemonics problem using JDK streams.")
 @Licenses(Array(License.MIT))

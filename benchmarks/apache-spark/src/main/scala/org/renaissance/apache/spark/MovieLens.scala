@@ -3,15 +3,22 @@ package org.renaissance.apache.spark
 import java.io.InputStream
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
-import org.apache.commons.io.{FileUtils, IOUtils}
-import org.apache.log4j.{Level, Logger}
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
-import org.apache.spark.mllib.recommendation.{ALS, MatrixFactorizationModel, Rating}
+import org.apache.spark.mllib.recommendation.ALS
+import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
+import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd._
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.io.Source
 
