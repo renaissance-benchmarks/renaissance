@@ -400,6 +400,8 @@ class FinagleChirper extends RenaissanceBenchmark {
   lazy val usernames = for (i <- 0 until userCount)
     yield usernameBases(i % usernameBases.length) + i
 
+  var masterService: Service[Request, Response] = null
+
   override def setUpBeforeAll(c: Config): Unit = {
     if (c.functionalTest) {
       requestCount = 10
@@ -417,6 +419,7 @@ class FinagleChirper extends RenaissanceBenchmark {
     }
     println("Master port: " + masterPort)
     println("Cache ports: " + cachePorts.mkString(", "))
+    masterService = Http.newService(":" + masterPort)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -424,13 +427,14 @@ class FinagleChirper extends RenaissanceBenchmark {
       Await.ready(cache.close())
     }
     Await.ready(master.close())
+    masterService.close()
   }
 
+
   override def beforeIteration(c: Config): Unit = {
-    val master = Http.newService(":" + masterPort)
     val resetQuery = "/api/reset"
     val request = Request(Method.Get, resetQuery)
-    require(Await.result(master.apply(request)).status == Status.Ok)
+    require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
   override def runIteration(c: Config): Unit = {
