@@ -11,12 +11,11 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.collection._
 
+@Summary("Runs the Dotty compiler on a set of source code files.")
+@Licenses(Array(License.BSD3))
+@Repetitions(50)
 class Dotty extends RenaissanceBenchmark {
-  def description = "Runs the Dotty compiler on a set of source code files."
 
-  override def defaultRepetitions = 50
-
-  def licenses = License.create(License.BSD3)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

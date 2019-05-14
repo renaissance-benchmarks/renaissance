@@ -14,14 +14,11 @@ import com.twitter.util.{Await, Future}
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(12)
 class FinagleHttp extends RenaissanceBenchmark {
 
-  def description =
-    "Sends many small Finagle HTTP requests to a Finagle HTTP server, and awaits the response."
-
-  override def defaultRepetitions = 12
-
-  def licenses = License.create(License.APACHE2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

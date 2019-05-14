@@ -3,12 +3,10 @@ package org.renaissance.jdk.concurrent
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Runs a genetic algorithm using the Jenetics library and futures.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(50)
 class FutureGenetic extends RenaissanceBenchmark {
-  def description = "Runs a genetic algorithm using the Jenetics library and futures."
-
-  override def defaultRepetitions = 50
-
-  def licenses = License.create(License.APACHE2)
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

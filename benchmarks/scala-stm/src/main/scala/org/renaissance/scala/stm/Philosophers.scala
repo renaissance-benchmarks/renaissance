@@ -3,14 +3,10 @@ package org.renaissance.scala.stm
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Solves a variant of the dining philosophers problem using ScalaSTM.")
+@Licenses(Array(License.BSD3))
+@Repetitions(30)
 class Philosophers extends RenaissanceBenchmark {
-
-  override def description(): String =
-    "Solves a variant of the dining philosophers problem using ScalaSTM."
-
-  override def defaultRepetitions = 30
-
-  def licenses = License.create(License.BSD3)
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

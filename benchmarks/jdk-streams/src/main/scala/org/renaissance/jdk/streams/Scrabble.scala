@@ -3,12 +3,11 @@ package org.renaissance.jdk.streams
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Solves the Scrabble puzzle using JDK Streams.")
+@Licenses(Array(License.GPL2))
+@Repetitions(50)
 class Scrabble extends RenaissanceBenchmark {
-  def description = "Solves the Scrabble puzzle using JDK Streams."
 
-  override def defaultRepetitions = 50
-
-  def licenses = License.create(License.GPL2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

@@ -20,13 +20,10 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 import scala.collection._
 import scala.util.hashing.byteswap32
 
+@Summary("Simulates a microblogging service using Twitter Finagle.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(90)
 class FinagleChirper extends RenaissanceBenchmark {
-
-  def description = "Simulates a microblogging service using Twitter Finagle."
-
-  def licenses = License.create(License.APACHE2)
-
-  override def defaultRepetitions = 90
 
   class Master extends Service[Request, Response] {
     val lock = new AnyRef

@@ -46,9 +46,6 @@ public abstract class RenaissanceBenchmark {
     }
   }
 
-  public abstract String description();
-
-  public abstract License[] licenses();
   private static String getPackageRelativeTo (Class<?> target, Class<?> base) {
     final String targetPkg = target.getPackage().getName();
     final String basePkg = base.getPackage().getName();

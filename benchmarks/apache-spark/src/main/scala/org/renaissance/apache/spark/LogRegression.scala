@@ -12,13 +12,11 @@ import org.apache.spark.sql._
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Runs the logistic regression workload from the Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(20)
 class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
-  def description = "Runs the logistic regression workload from the Spark MLlib."
-
-  override def defaultRepetitions = 20
-
-  override def licenses(): Array[License] = License.create(License.APACHE2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

@@ -12,13 +12,11 @@ import org.apache.spark.rdd.RDD
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Runs the multinomial naive Bayes algorithm from the Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(30)
 class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
-  override def description(): String =
-    "Runs the multinomial naive Bayes algorithm from the Spark MLlib."
 
-  override def defaultRepetitions = 30
-
-  override def licenses(): Array[License] = License.create(License.APACHE2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

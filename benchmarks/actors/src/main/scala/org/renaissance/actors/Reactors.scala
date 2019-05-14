@@ -8,15 +8,16 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Promise}
 import scala.util.Random
 
+@Summary(
+  "Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO."
+)
+@Licenses(Array(License.MIT))
+@Repetitions(10)
 class Reactors extends RenaissanceBenchmark {
-  override def description(): String =
-    "Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO."
 
   // Code based on https://github.com/reactors-io/reactors
-  override def licenses(): Array[License] = License.create(License.MIT)
   // The original uses BSD 3-clause license, the result is compatible with MIT license.
 
-  override def defaultRepetitions = 10
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

@@ -3,12 +3,10 @@ package org.renaissance.jdk.concurrent
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Runs the k-means algorithm using the fork/join framework.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(30)
 class FjKmeans extends RenaissanceBenchmark {
-  def description = "Runs the k-means algorithm using the fork/join framework."
-
-  override def defaultRepetitions = 30
-
-  def licenses = License.create(License.APACHE2)
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

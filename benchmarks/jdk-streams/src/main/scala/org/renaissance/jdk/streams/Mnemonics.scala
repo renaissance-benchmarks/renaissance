@@ -3,12 +3,10 @@ package org.renaissance.jdk.streams
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Solves the phone mnemonics problem using JDK streams.")
+@Licenses(Array(License.MIT))
+@Repetitions(16)
 class Mnemonics extends RenaissanceBenchmark {
-  def description = "Solves the phone mnemonics problem using JDK streams."
-
-  override def defaultRepetitions = 16
-
-  def licenses = License.create(License.MIT)
 
   var testInput: String = null
 

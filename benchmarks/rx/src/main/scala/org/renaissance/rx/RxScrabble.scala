@@ -3,14 +3,14 @@ package org.renaissance.rx
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Solves the Scrabble puzzle using the Rx streams.")
+@Licenses(Array(License.GPL2))
+@Repetitions(80)
 class RxScrabble extends RenaissanceBenchmark {
-  def description = "Solves the Scrabble puzzle using the Rx streams."
 
-  override def defaultRepetitions = 80
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  def licenses = License.create(License.GPL2)
   var shakespearePath: String = "/shakespeare.txt"
 
   var scrabblePath: String = "/scrabble.txt"

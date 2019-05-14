@@ -13,13 +13,11 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 
+@Summary("Computes a Gaussian mixture model using expectation-maximization.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(40)
 class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
-  def description = "Computes a Gaussian mixture model using expectation-maximization."
-
-  override def defaultRepetitions = 40
-
-  override def licenses = License.create(License.APACHE2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

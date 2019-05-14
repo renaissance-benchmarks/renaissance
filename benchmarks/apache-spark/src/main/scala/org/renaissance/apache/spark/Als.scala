@@ -11,13 +11,11 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 
+@Summary("Runs the ALS algorithm from the Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(60)
 class Als extends RenaissanceBenchmark with SparkUtil {
 
-  override def description(): String = "Runs the ALS algorithm from the Spark MLlib."
-
-  override def defaultRepetitions = 60
-
-  override def licenses(): Array[License] = License.create(License.APACHE2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 

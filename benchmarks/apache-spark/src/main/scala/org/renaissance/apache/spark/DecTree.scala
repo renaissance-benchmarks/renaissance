@@ -6,22 +6,23 @@ import java.nio.file.{Path, Paths}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.{Pipeline, PipelineModel, PipelineStage}
-import org.apache.spark.ml.classification.{DecisionTreeClassificationModel, DecisionTreeClassifier}
+import org.apache.spark.ml.classification.{
+  DecisionTreeClassificationModel,
+  DecisionTreeClassifier
+}
 import org.apache.spark.ml.feature.{StringIndexer, VectorIndexer}
 import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Runs the Random Forest algorithm from Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(40)
 class DecTree extends RenaissanceBenchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  def description = "Runs the Random Forest algorithm from Spark MLlib."
-
-  override def defaultRepetitions = 40
-
-  override def licenses = License.create(License.APACHE2)
   var numCopies = 100
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors

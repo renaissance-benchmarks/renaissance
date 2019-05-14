@@ -3,12 +3,10 @@ package org.renaissance.scala.stm
 import org.renaissance.Benchmark._
 import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Summary("Runs the stmbench7 benchmark using ScalaSTM.")
+@Licenses(Array(License.BSD3, License.GPL2))
+@Repetitions(60)
 class ScalaStmBench7 extends RenaissanceBenchmark {
-  def description = "Runs the stmbench7 benchmark using ScalaSTM."
-
-  override def defaultRepetitions = 60
-
-  def licenses = License.create(License.BSD3, License.GPL2)
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

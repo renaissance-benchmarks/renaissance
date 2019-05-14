@@ -15,13 +15,11 @@ import org.renaissance.{Config, License, RenaissanceBenchmark}
 
 import scala.util.Random
 
+@Summary("Runs the chi-square test from Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(60)
 class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
-  def description = "Runs the chi-square test from Spark MLlib."
-
-  override def defaultRepetitions = 60
-
-  override def licenses = License.create(License.APACHE2)
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
