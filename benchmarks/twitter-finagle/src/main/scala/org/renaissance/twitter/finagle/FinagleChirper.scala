@@ -322,6 +322,7 @@ class FinagleChirper extends RenaissanceBenchmark {
       for (feed <- feeds) {
         Await.ready(feed.close())
       }
+      Await.ready(master.close())
     }
   }
 
@@ -426,7 +427,7 @@ class FinagleChirper extends RenaissanceBenchmark {
       Await.ready(cache.close())
     }
     Await.ready(master.close())
-    masterService.close()
+    Await.ready(masterService.close())
   }
 
   override def beforeIteration(c: Config): Unit = {
