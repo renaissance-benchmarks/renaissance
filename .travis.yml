@@ -62,9 +62,10 @@ jobs:
       jdk: oraclejdk9
     - <<: *bench
       jdk: oraclejdk11
-    - <<: *bench
-      env:
-        - USE_JDK=OpenJ9
+    # Disabled because of #131
+    #- <<: *bench
+    #  env:
+    #    - USE_JDK=OpenJ9
 
 stages:
   - "Basic checks"
