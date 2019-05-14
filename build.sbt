@@ -6,9 +6,11 @@ import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
 
-val renaissanceVersion = "0.9.0"
-
 val renaissanceScalaVersion = "2.12.8"
+
+lazy val renaissanceCore = RootProject(uri("renaissance-core"))
+
+lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
 
 val benchmarkProjects = for {
   // Hint: add .filter(_ == "group") to compile with selected group only
@@ -18,13 +20,11 @@ val benchmarkProjects = for {
 } yield {
   RootProject(uri("benchmarks/" + dir))
 }
-val subProjects = benchmarkProjects :+ RootProject(uri("renaissance-harness"))
+
+val subProjects = benchmarkProjects :+ renaissanceHarness
 
 // Do not assemble fat JARs in subprojects
 aggregate in assembly := false
-
-lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
-lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
   tasks.toList match {
@@ -57,9 +57,8 @@ def listBenchmarks(
 ): Seq[(String, String, String, String, Int)] = {
   val urls = classpath.map(_.toURI.toURL)
   val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
-  val baseName = "org.renaissance.RenaissanceBenchmark"
-  val dummyName = "org.renaissance.core.Dummy"
-  val benchBase = loader.loadClass(baseName)
+  val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
+  val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
   val result = new mutable.ArrayBuffer[(String, String, String, String, Int)]
   for (jar <- classpath) {
     val jarFile = new JarFile(jar)
@@ -68,14 +67,20 @@ def listBenchmarks(
       val entry = enumeration.nextElement()
       if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
         val name = entry.getName
-          .substring(0, entry.getName.length - 6)
+          .substring(0, entry.getName.length - ".class".length)
           .replace("/", ".")
         val clazz = loader.loadClass(name)
+
         val isEligible =
-          benchBase.isAssignableFrom(clazz) && clazz.getName != baseName &&
-            (clazz.getName != dummyName || project == "benchmarks/core")
+          !excludePattern.matcher(clazz.getPackage.getName).matches() &&
+            benchBase.isAssignableFrom(clazz)
         if (isEligible) {
-          val instance = clazz.newInstance
+          // Can we PLEASE have a reasonable logging support in SBT?
+          // And NOT the streams.value or sLog.value that cannot be used here?
+          // It's a turing-complete build system and we can't even log conveniently!
+          println("eligible benchmark: " + clazz.getName)
+
+          val instance = clazz.getDeclaredConstructor().newInstance()
           val distro = clazz.getMethod("distro").invoke(instance).toString
           val licenses = clazz
             .getMethod("licenses")
@@ -222,8 +227,8 @@ lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
       name := "renaissance",
-      version := renaissanceVersion,
-      organization := "org.renaissance",
+      version := (version in renaissanceCore).value,
+      organization := (organization in renaissanceCore).value,
       crossPaths := false,
       autoScalaLibrary := false,
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
@@ -236,12 +241,12 @@ lazy val renaissance: Project = {
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
       packageOptions := Seq(
         sbt.Package.ManifestAttributes(
-          ("Renaissance-Version", renaissanceVersion)
+          ("Renaissance-Version", (version in renaissanceCore).value)
         )
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
-      assemblyJarName in assembly := "renaissance-" + renaissanceVersion + ".jar",
+      assemblyJarName in assembly := "renaissance-" + (version in renaissanceCore).value + ".jar",
       mainClass in assembly := Some("org.renaissance.Launcher"),
       test in assembly := {},
       assemblyMergeStrategy in assembly := {

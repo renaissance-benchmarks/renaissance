@@ -101,14 +101,14 @@ The following is the complete list of benchmarks, separated into groups.
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
 
-#### core
-
-- `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
-
-
 #### database
 
 - `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
+
+
+#### dummy
+
+- `dummy` - A dummy benchmark, which does no work. It is used only to test the harness. (default repetitions: 20)
 
 
 #### jdk-concurrent
