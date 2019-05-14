@@ -6,17 +6,21 @@ import java.util.Date
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.twitter.finagle.ListeningServer
-import com.twitter.finagle._
-import com.twitter.finagle.http._
+import com.twitter.finagle.http.HttpMuxer
+import com.twitter.finagle.http.Request
+import com.twitter.finagle.http.Response
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.tracing.NullTracer
+import com.twitter.finagle.Service
+import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.http
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
+import org.renaissance.Benchmark._
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.Benchmark._
 
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))

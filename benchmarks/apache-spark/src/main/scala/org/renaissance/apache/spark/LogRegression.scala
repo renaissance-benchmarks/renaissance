@@ -12,10 +12,10 @@ import org.apache.spark.ml.classification.LogisticRegressionModel
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.renaissance.Benchmark._
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.Benchmark._
 
 @Summary("Runs the logistic regression workload from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))

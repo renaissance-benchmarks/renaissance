@@ -23,10 +23,10 @@ import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import org.apache.commons.io.IOUtils
+import org.renaissance.Benchmark._
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.Benchmark._
 
 import scala.collection._
 import scala.util.hashing.byteswap32
