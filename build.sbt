@@ -1,10 +1,13 @@
 import java.net.URLClassLoader
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, StandardCopyOption}
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.jar.JarFile
 import java.util.regex.Pattern
 
-import org.renaissance.{Launcher, License, RenaissanceBenchmark}
+import org.renaissance.Launcher
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 
 import scala.collection._
 
@@ -38,6 +41,14 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
+def printBenchmark(b: BenchmarkInfo) = {
+  println(s"class: ${b.className}")
+  println(s"\tbenchmark: ${b.group}/${b.name}")
+  println(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
+  println(s"\trepetitions: ${b.repetitions}")
+  println(s"\tsummary: ${b.summary}")
+}
+
 // Return tuples with (name, distro license, all licenses, description and default repetitions)
 def listBenchmarks(project: String, classpath: Seq[File]) = {
   //
@@ -70,7 +81,7 @@ def listBenchmarks(project: String, classpath: Seq[File]) = {
           // Print info to see what benchmarks are picked up by the build.
           val benchClass = clazz.asSubclass(benchBase)
           val info = new BenchmarkInfo(benchClass)
-          info.print()
+          printBenchmark(info)
 
           result += info
         }

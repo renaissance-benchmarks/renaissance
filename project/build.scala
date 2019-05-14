@@ -1,10 +1,10 @@
 import java.lang.annotation.Annotation
 import java.util.regex.Pattern
 
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{Benchmark, License, RenaissanceBenchmark}
-
-import scala.reflect.ClassTag
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 
 class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
 
@@ -26,6 +26,8 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
   private def getAnnotation[T <: Annotation](annotationClass: Class[T]) = {
     benchClass.getDeclaredAnnotation(annotationClass)
   }
+
+  def className = benchClass.getName
 
   def name(): String = {
     val annotation = getAnnotation(classOf[Name])
@@ -96,17 +98,9 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
 
   def distro(): License = distroFromLicenses(licenses())
 
-  def print(): Unit = {
-    println(s"class: ${benchClass.getName}")
-    println(s"\tbenchmark: ${group}/${name}")
-    println(s"\tlicensing: ${printableLicenses()} => ${distro}")
-    println(s"\trepetitions: ${repetitions}")
-    println(s"\tsummary: ${summary}")
-  }
-
   def toMap(): Map[String, String] = {
     Map(
-      "class" -> benchClass.getName,
+      "class" -> className,
       "name" -> name,
       "group" -> group,
       "summary" -> summary,
