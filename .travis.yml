@@ -1,22 +1,27 @@
 sudo: false
 dist: trusty
 
-# The version is actually determined by SBT but we want the
-# latest image anyway
-language: scala
-scala: 2.12.8
+language: java
 
 
 refs:
   - &bundle
     stage: bundle
     script:
+      - 'java -version'
+      - 'javac -version'
       - ./tools/sbt/bin/sbt assembly
+      - 'mkdir -p "$HOME/.prebuilt"'
+      - 'ls "$HOME/.prebuilt"'
+      - 'rm -rf "$HOME/.prebuilt"/*.jar'
+      - 'cp target/renaissance-0.9.0.jar "$HOME/.prebuilt/"`git rev-parse HEAD`.jar'
 
   - &bench
     stage: benchmark
     script:
-      - ./tools/sbt/bin/sbt assembly
+      - mkdir -p target
+      - CACHED_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`.jar; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" target/renaissance-0.9.0.jar; else ./tools/sbt/bin/sbt assembly; fi
+      - 'java -version'
       - 'java -jar ./target/renaissance-0.9.0.jar --raw-list >list.txt'
       - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-0.9.0.jar --functional-test -r 1 "$BENCH" || exit 1; done'
 
@@ -39,6 +44,13 @@ jobs:
       jdk: openjdk8
     - <<: *bundle
       jdk: oraclejdk8
+    - <<: *bundle
+      jdk: oraclejdk9
+    - <<: *bundle
+      jdk: oraclejdk11
+    - <<: *bundle
+      env:
+        - USE_JDK=OpenJ9
 
     - <<: *bench
       os: osx
@@ -46,6 +58,14 @@ jobs:
       jdk: openjdk8
     - <<: *bench
       jdk: oraclejdk8
+    - <<: *bench
+      jdk: oraclejdk9
+    - <<: *bench
+      jdk: oraclejdk11
+    # Disabled because of #131
+    #- <<: *bench
+    #  env:
+    #    - USE_JDK=OpenJ9
 
 stages:
   - "Basic checks"
@@ -56,11 +76,17 @@ before_script:
   # For us, the default options are broken as they pass "-v"
   # to the JVM instead after the sbt JAR.
   - unset SBT_OPTS
+  - "# Install custom JDK if needed"
+  - 'if [ -n "$USE_JDK" ]; then wget "https://github.com/sormuras/bach/raw/master/install-jdk.sh" && chmod +x install-jdk.sh; fi'
+  - 'if [ -n "$USE_JDK" ]; then export JAVA_HOME="$HOME/$USE_JDK"; fi'
+  - 'if [ "$USE_JDK" = "OpenJ9" ]; then ./install-jdk.sh --url "https://api.adoptopenjdk.net/v2/binary/releases/openjdk11?openjdk_impl=openj9&os=linux&arch=x64&release=latest&heap_size=normal&type=jdk" --target "$JAVA_HOME"; fi'
+  - 'if [ -n "$USE_JDK" ]; then export PATH="$JAVA_HOME/bin:$PATH"; fi'
 
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
+    - $HOME/.prebuilt
 
 before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
