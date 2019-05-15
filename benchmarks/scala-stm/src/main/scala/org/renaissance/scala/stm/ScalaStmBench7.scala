@@ -3,22 +3,21 @@ package org.renaissance.scala.stm
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import stmbench7.Benchmark
+import org.renaissance.Benchmark._
 
+@Name("scala-stm-bench7")
+@Group("scala-stm")
+@Summary("Runs the stmbench7 benchmark using ScalaSTM.")
+@Licenses(Array(License.BSD3, License.GPL2))
+@Repetitions(60)
 class ScalaStmBench7 extends RenaissanceBenchmark {
-  def description = "Runs the stmbench7 benchmark using ScalaSTM."
-
-  override def defaultRepetitions = 60
-
-  def licenses = License.create(License.BSD3, License.GPL2)
 
   // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   override def runIteration(c: Config): Unit = {
-    // TODO: Consolidate benchmark parameters across the suite.
-    //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
     // The following is the description of STMBench7's arguments.
     // -s -- the initializer class for the STM implementation
     // -g -- the type of synchronization that the benchmark should use
@@ -37,6 +36,7 @@ class ScalaStmBench7 extends RenaissanceBenchmark {
       "-t",
       THREAD_COUNT.toString
     )
-    Benchmark.main(args)
+
+    stmbench7.Benchmark.main(args)
   }
 }

@@ -1,24 +1,35 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
+
 import scala.collection.immutable.StringOps
 
+@Name("page-rank")
+@Group("apache-spark")
+@Summary("Runs a number of PageRank iterations, using RDDs.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(20)
 class PageRank extends RenaissanceBenchmark with SparkUtil {
-  def description = "Runs a number of PageRank iterations, using RDDs."
 
-  override def defaultRepetitions = 20
-
-  override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   var ITERATIONS = 2
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val pageRankPath = Paths.get("target", "page-rank")
 

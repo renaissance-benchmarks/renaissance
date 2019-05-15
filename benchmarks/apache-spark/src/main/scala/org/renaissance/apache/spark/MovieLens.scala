@@ -2,38 +2,40 @@ package org.renaissance.apache.spark
 
 import java.io.InputStream
 import java.net.URL
-import java.net.URI
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
-import scala.io.Source
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
-import org.apache.log4j.Logger
 import org.apache.log4j.Level
-import org.apache.spark.SparkConf
+import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
+import org.apache.spark.mllib.recommendation.ALS
+import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
+import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd._
-import org.apache.spark.mllib.recommendation.{ALS, MatrixFactorizationModel, Rating}
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
+import scala.io.Source
+
+@Name("movie-lens")
+@Group("apache-spark")
+@Summary("Recommends movies using the ALS algorithm.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(20)
 class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
-  /* TODO Implement changes regarding how to declare and pass
-  benchmark-specific parameters
-  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
-   */
-
-  def description = "Recommends movies using the ALS algorithm."
-
-  override def defaultRepetitions = 20
-
-  override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   var sc: SparkContext = null
 

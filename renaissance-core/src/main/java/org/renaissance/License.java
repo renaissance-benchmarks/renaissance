@@ -24,18 +24,4 @@ public enum License {
     return licenses;
   }
 
-  public static License distro(License[] licenses) {
-    for (License license : licenses) {
-      switch(license) {
-        case GPL2:
-        case GPL3:
-        case EPL1:
-        case MPL2:
-          return GPL3;
-        default:
-          continue;
-      }
-    }
-    return MIT;
-  }
 }

@@ -1,31 +1,37 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
-import org.apache.commons.io.IOUtils
 import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
+import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.NaiveBayesModel
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
+@Name("naive-bayes")
+@Group("apache-spark")
+@Summary("Runs the multinomial naive Bayes algorithm from the Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(30)
 class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
-  override def description(): String =
-    "Runs the multinomial naive Bayes algorithm from the Spark MLlib."
 
-  override def defaultRepetitions = 30
-
-  override def licenses(): Array[License] = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val SMOOTHING = 1.0
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
-
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val naiveBayesPath = Paths.get("target", "naive-bayes")
 

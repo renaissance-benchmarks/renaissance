@@ -1,8 +1,10 @@
 package org.renaissance.scala.stdlib
 
-import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Config
 import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
+
 import scala.collection._
 import scala.util.Random
 
@@ -113,12 +115,15 @@ trait KmeansUtilities {
   }
 }
 
+@Name("scala-kmeans")
+@Group("scala-stdlib")
+@Summary("Runs the K-Means algorithm using Scala collections.")
+@Licenses(Array(License.MIT))
+@Repetitions(50)
 class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
-  def description = "Runs the K-Means algorithm using Scala collections."
 
-  override def defaultRepetitions = 50
-
-  def licenses = License.create(License.MIT)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   var numPoints = 500000
 

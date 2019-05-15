@@ -1,5 +1,13 @@
 package org.renaissance.twitter.finagle
 
+import java.io.File
+import java.net.InetSocketAddress
+import java.net.URLEncoder
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+import java.util.Comparator
+import java.util.concurrent.atomic.AtomicReference
+
 import com.google.common.collect.ConcurrentHashMultiset
 import com.google.common.collect.Multiset.Entry
 import com.twitter.finagle.Http
@@ -14,28 +22,21 @@ import com.twitter.io.BufReader
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
-import java.net.InetSocketAddress
-import java.net.URLEncoder
-import java.io.File
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-import java.util.Comparator
-import java.util.concurrent.atomic.AtomicReference
 import org.apache.commons.io.IOUtils
-import scala.collection._
-import scala.util.hashing.byteswap32
-import scala.io.Source
+import org.renaissance.Benchmark._
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
+import scala.collection._
+import scala.util.hashing.byteswap32
+
+@Name("finagle-chirper")
+@Group("twitter-finagle")
+@Summary("Simulates a microblogging service using Twitter Finagle.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(90)
 class FinagleChirper extends RenaissanceBenchmark {
-
-  def description = "Simulates a microblogging service using Twitter Finagle."
-
-  def licenses = License.create(License.APACHE2)
-
-  override def defaultRepetitions = 90
 
   class Master extends Service[Request, Response] {
     val lock = new AnyRef

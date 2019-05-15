@@ -1,34 +1,31 @@
 package org.renaissance.apache.spark
 
-import java.io._
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
-import java.util.zip._
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
-import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.clustering.GaussianMixture
 import org.apache.spark.mllib.clustering.GaussianMixtureModel
+import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
 import scala.util.Random
-import org.renaissance.{Config, License, RenaissanceBenchmark}
 
+@Name("gauss-mix")
+@Group("apache-spark")
+@Summary("Computes a Gaussian mixture model using expectation-maximization.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(40)
 class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
-  /* TODO Implement changes regarding how to declare and pass
-  benchmark-specific parameters
-  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
-   */
-
-  def description = "Computes a Gaussian mixture model using expectation-maximization."
-
-  override def defaultRepetitions = 40
-
-  override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val DISTRIBUTION_COUNT = 6
 
@@ -39,6 +36,9 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
   var SIZE = 15000
 
   var NUM_GMM_ITERATIONS = 15
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val gaussMixPath = Paths.get("target", "gauss-mix")
 

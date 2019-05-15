@@ -7,8 +7,8 @@ lazy val scalaStm = (project in file("."))
     name := "scala-stm",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalaVersion := "2.12.3",
-    scalafmtConfig := Some(file(".scalafmt.conf"))
+    scalafmtConfig := Some(file(".scalafmt.conf")),
+    scalaVersion := "2.12.3"
   )
   .dependsOn(
     renaissanceCore,

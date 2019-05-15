@@ -5,18 +5,21 @@ import edu.rice.habanero.benchmarks.uct.UctAkkaActorBenchmark
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
+@Name("akka-uct")
+@Group("actors")
+@Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
+@Licenses(Array(License.MIT))
+@Repetitions(24)
 class AkkaUct extends RenaissanceBenchmark {
-  override def description(): String =
-    "Runs the Unbalanced Cobwebbed Tree actor workload in Akka."
 
-  override def licenses(): Array[License] = License.create(License.MIT)
-
-  override def defaultRepetitions = 24
-
-  private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   private var numIterations: Int = 10
+
+  private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
 
   override def setUpBeforeAll(c: Config): Unit = {
     bench = new UctAkkaActorBenchmark.UctAkkaActorBenchmark

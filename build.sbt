@@ -4,6 +4,11 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.jar.JarFile
 import java.util.regex.Pattern
+
+import org.renaissance.Launcher
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+
 import scala.collection._
 
 val renaissanceScalaVersion = "2.12.8"
@@ -22,6 +27,7 @@ val benchmarkProjects = for {
 }
 
 val subProjects = benchmarkProjects :+ renaissanceHarness
+val allProjects = subProjects :+ renaissanceCore
 
 // Do not assemble fat JARs in subprojects
 aggregate in assembly := false
@@ -35,67 +41,54 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def kebabCase(s: String): String = {
-  // This functionality is duplicated in the RenaissanceBenchmark class.
-  val camelCaseName = if (s.last == '$') s.init else s
-  val pattern = Pattern.compile("([A-Za-z])([A-Z])")
-  var result = camelCaseName
-  do {
-    val last = result
-    result = pattern.matcher(result).replaceFirst("$1-$2")
-    if (last == result) {
-      return result.toLowerCase()
-    }
-  } while (true)
-  sys.error("unreachable")
+def printBenchmark(b: BenchmarkInfo) = {
+  println(s"class: ${b.className}")
+  println(s"\tbenchmark: ${b.group}/${b.name}")
+  println(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
+  println(s"\trepetitions: ${b.repetitions}")
+  println(s"\tsummary: ${b.summary}")
 }
 
 // Return tuples with (name, distro license, all licenses, description and default repetitions)
-def listBenchmarks(
-  project: String,
-  classpath: Seq[File]
-): Seq[(String, String, String, String, Int)] = {
-  val urls = classpath.map(_.toURI.toURL)
-  val loader = new URLClassLoader(urls.toArray, ClassLoader.getSystemClassLoader.getParent)
-  val benchBase = loader.loadClass("org.renaissance.RenaissanceBenchmark")
+def listBenchmarks(project: String, classpath: Seq[File]) = {
+  //
+  // Load the benchmark base class and create a class loader for the project
+  // with the class loader of the base class as its parent. This will allow
+  // us to use core classes here.
+  //
+  val benchBase = classOf[RenaissanceBenchmark]
+  val urls = classpath.map(_.toURI.toURL).toArray
+  val loader = new URLClassLoader(urls, benchBase.getClassLoader)
   val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
-  val result = new mutable.ArrayBuffer[(String, String, String, String, Int)]
-  for (jar <- classpath) {
-    val jarFile = new JarFile(jar)
-    val enumeration = jarFile.entries()
-    while (enumeration.hasMoreElements) {
-      val entry = enumeration.nextElement()
+
+  //
+  // Scan all JAR files for classes in the org.renaissance package implementing
+  // the benchmark interface and collect metadata from class annotations.
+  //
+  val result = new mutable.ArrayBuffer[BenchmarkInfo]
+  for (jarFile <- classpath.map(jar => new JarFile(jar))) {
+    for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
       if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
-        val name = entry.getName
+        val benchClassName = entry.getName
           .substring(0, entry.getName.length - ".class".length)
           .replace("/", ".")
-        val clazz = loader.loadClass(name)
+        val clazz = loader.loadClass(benchClassName)
 
         val isEligible =
           !excludePattern.matcher(clazz.getPackage.getName).matches() &&
             benchBase.isAssignableFrom(clazz)
         if (isEligible) {
-          // Can we PLEASE have a reasonable logging support in SBT?
-          // And NOT the streams.value or sLog.value that cannot be used here?
-          // It's a turing-complete build system and we can't even log conveniently!
-          println("eligible benchmark: " + clazz.getName)
+          // Print info to see what benchmarks are picked up by the build.
+          val benchClass = clazz.asSubclass(benchBase)
+          val info = new BenchmarkInfo(benchClass)
+          printBenchmark(info)
 
-          val instance = clazz.getDeclaredConstructor().newInstance()
-          val distro = clazz.getMethod("distro").invoke(instance).toString
-          val licenses = clazz
-            .getMethod("licenses")
-            .invoke(instance)
-            .asInstanceOf[Array[Object]]
-            .map(x => x.toString)
-            .mkString(",")
-          val description = clazz.getMethod("description").invoke(instance).toString
-          val reps =
-            Integer.parseInt(clazz.getMethod("defaultRepetitions").invoke(instance).toString)
-          result += ((kebabCase(clazz.getSimpleName), distro, licenses, description, reps))
+          result += info
         }
       }
     }
   }
+
   result
 }
 
@@ -122,82 +115,45 @@ def jarsAndListGenerator = Def.taskDyn {
       (project, jarFiles, loadedJarFiles)
     }
 
-  // Add the built-in benchmarks.
-  val coreJarTask = Def.task {
-    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
-    val coreJarDest =
-      (resourceManaged in Compile).value / "benchmarks" / "core" / coreJar.getName
-    coreJarDest.getParentFile.mkdirs()
-    Files.copy(coreJar.toPath, coreJarDest.toPath, StandardCopyOption.REPLACE_EXISTING)
-    ("benchmarks/core", Seq(coreJarDest), Seq(coreJarDest))
-  }
-  val jarTasks = coreJarTask +: projectJarTasks
   val nonGpl = nonGplOnly.value
 
-  // Flatten list, create a groups-jars file, and a benchmark-group file.
-  flattenTasks(jarTasks).map { groupJars =>
-    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
+  // Flatten list and create a groups-jars file and the benchmark-details file.
+  flattenTasks(projectJarTasks).map { groupJars =>
+    // Add the benchmarks from the different project groups.
     val jarListContent = new StringBuilder
-    val benchGroupFile = (resourceManaged in Compile).value / "benchmark-group.txt"
-    val benchGroupContent = new StringBuilder
-    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
-    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
     val benchDetails = new java.util.Properties
 
-    // Add the benchmarks from the different project groups.
     for ((project, allJars, loadedJars) <- groupJars) {
-      val jarLine = loadedJars
-        .map(jar => project + "/" + jar.getName)
-        .mkString(",")
+      val jarLine = loadedJars.map(jar => project + "/" + jar.getName).mkString(",")
       val projectShort = project.stripPrefix("benchmarks/")
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
-      for ((name, distroLicense, licenses, description, repetitions) <- listBenchmarks(
-             project,
-             allJars
-           )) {
-        if (!nonGpl || distroLicense == "MIT") {
-          benchGroupContent.append(name).append("=").append(projectShort).append("\n")
-          benchDetails.setProperty("benchmark." + name + ".description", description)
-          benchDetails.setProperty("benchmark." + name + ".repetitions", repetitions.toString)
-          benchDetails.setProperty("benchmark." + name + ".distro", distroLicense.toString)
-          benchDetails.setProperty("benchmark." + name + ".licenses", licenses.toString)
+
+      // Scan project jars for benchmarks and fill the property file.
+      for (benchInfo <- listBenchmarks(project, allJars)) {
+        if (!nonGpl || benchInfo.distro() == License.MIT) {
+          for ((k, v) <- benchInfo.toMap()) {
+            benchDetails.setProperty(s"benchmark.${benchInfo.name}.$k", v);
+          }
         }
       }
     }
+
+    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
     IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
-    IO.write(benchGroupFile, benchGroupContent.toString, StandardCharsets.UTF_8)
+
+    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
+    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
     benchDetails.store(benchDetailsStream, "Benchmark details")
-    benchGroupFile +: benchDetailsFile +: jarListFile +: groupJars.flatMap {
+
+    benchDetailsFile +: jarListFile +: groupJars.flatMap {
       case (_, jars, _) => jars
     }
   }
 }
 
-val renaissanceFormat = taskKey[Unit](
-  "Reformat source code with scalafmt."
-)
+addCommandAlias("renaissanceFormat", ";scalafmt;scalafmtSbt")
 
-def createRenaissanceFormatTask = Def.taskDyn {
-  val formatTasks = for (p <- subProjects) yield scalafmt in (p, Compile)
-  val testFormatTasks = for (p <- subProjects) yield scalafmt in (p, Test)
-  val buildFormatTasks = for (p <- subProjects) yield scalafmtSbt in (p, Compile)
-  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
-}
-
-val renaissanceFormatTask = renaissanceFormat := createRenaissanceFormatTask.value
-
-val renaissanceFormatCheck = taskKey[Unit](
-  "Check formatting via scalafmt."
-)
-
-def createRenaissanceFormatCheckTask = Def.taskDyn {
-  val formatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Compile)
-  val testFormatTasks = for (p <- subProjects) yield scalafmtCheck in (p, Test)
-  val buildFormatTasks = for (p <- subProjects) yield scalafmtSbtCheck in (p, Compile)
-  flattenTasks(formatTasks ++ testFormatTasks ++ buildFormatTasks)
-}
-
-val renaissanceFormatCheckTask = renaissanceFormatCheck := createRenaissanceFormatCheckTask.value
+addCommandAlias("renaissanceFormatCheck", ";scalafmtCheck;scalafmtSbtCheck")
 
 lazy val remoteDebug = SettingKey[Boolean](
   "remoteDebug",
@@ -217,9 +173,27 @@ def startupTransition(state: State): State = {
   "setupPrePush" :: state
 }
 
-def addLink(source: File, dest: File): Unit = {
-  if (!Files.exists(dest.toPath)) {
-    Files.createSymbolicLink(dest.toPath, source.toPath.toAbsolutePath)
+// Installs a symlink to local pre-push hook.
+def addLink(scriptFile: File, linkFile: File): Unit = {
+  val linkPath = linkFile.toPath
+  if (Files.isSymbolicLink(linkPath)) {
+    // If the link can be read/executed, ensure that
+    // it points to the desired pre-push hook script.
+    val scriptPath = scriptFile.toPath
+    if (Files.isExecutable(linkPath)) {
+      if (Files.isSameFile(linkPath.toRealPath(), scriptPath)) {
+        return
+      }
+    }
+
+    // Otherwise just force a new relative symlink.
+    val scriptRelPath = linkPath.getParent.relativize(scriptPath)
+    println(s"Setting pre-push hook link to ${scriptRelPath}")
+    Files.delete(linkPath)
+    Files.createSymbolicLink(linkPath, scriptRelPath)
+
+  } else {
+    println("Not installing pre-push hook link over existing regular file!")
   }
 }
 
@@ -232,8 +206,6 @@ lazy val renaissance: Project = {
       crossPaths := false,
       autoScalaLibrary := false,
       resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      renaissanceFormatTask,
-      renaissanceFormatCheckTask,
       fork in run := true,
       cancelable in Global := true,
       remoteDebug := false,
@@ -241,13 +213,14 @@ lazy val renaissance: Project = {
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
       packageOptions := Seq(
         sbt.Package.ManifestAttributes(
-          ("Renaissance-Version", (version in renaissanceCore).value)
+          ("Specification-Title", "Renaissance Benchmark Suite")
+          // Consider Specification-Version to mark sets of active benchmarks
         )
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
       assemblyJarName in assembly := "renaissance-" + (version in renaissanceCore).value + ".jar",
-      mainClass in assembly := Some("org.renaissance.Launcher"),
+      mainClass in assembly := Some(classOf[Launcher].getName),
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
@@ -268,5 +241,5 @@ lazy val renaissance: Project = {
     .dependsOn(
       renaissanceCore
     )
-  subProjects.foldLeft(p)(_ aggregate _)
+  allProjects.foldLeft(p)(_ aggregate _)
 }

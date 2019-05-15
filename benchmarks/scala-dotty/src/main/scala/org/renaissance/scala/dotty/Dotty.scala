@@ -1,21 +1,28 @@
 package org.renaissance.scala.dotty
 
-import java.io.{FileOutputStream, _}
+import java.io.FileOutputStream
+import java.io._
 import java.net.URLClassLoader
 import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.IOUtils
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
 import scala.collection._
 
+@Name("dotty")
+@Group("scala-dotty")
+@Summary("Runs the Dotty compiler on a set of source code files.")
+@Licenses(Array(License.BSD3))
+@Repetitions(50)
 class Dotty extends RenaissanceBenchmark {
-  def description = "Runs the Dotty compiler on a set of source code files."
 
-  override def defaultRepetitions = 50
-
-  def licenses = License.create(License.BSD3)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   private val zipPath = "sources.zip"
 

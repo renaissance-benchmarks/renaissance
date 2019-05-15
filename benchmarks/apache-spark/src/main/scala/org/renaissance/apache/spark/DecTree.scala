@@ -1,13 +1,12 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
-import java.util.zip.ZipInputStream
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.PipelineStage
@@ -15,38 +14,35 @@ import org.apache.spark.ml.classification.DecisionTreeClassificationModel
 import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.VectorIndexer
-import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
+import org.renaissance.Benchmark._
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
-import scala.util.Random
-
+@Name("dec-tree")
+@Group("apache-spark")
+@Summary("Runs the Random Forest algorithm from Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(40)
 class DecTree extends RenaissanceBenchmark with SparkUtil {
 
-  /* TODO Implement changes regarding how to declare and pass
-  benchmark-specific parameters
-  ( see https://github.com/D-iii-S/renaissance-benchmarks/issues/27)
-   */
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  def description = "Runs the Random Forest algorithm from Spark MLlib."
-
-  override def defaultRepetitions = 40
-
-  override def licenses = License.create(License.APACHE2)
+  var numCopies = 100
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val decisionTreePath = Paths.get("target", "dec-tree")
 
   val outputPath = decisionTreePath.resolve("output")
 
   val inputFile = "/sample_libsvm_data.txt"
-
-  var numCopies = 100
 
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
 

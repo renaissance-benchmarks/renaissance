@@ -34,10 +34,6 @@ public abstract class Policy {
     // TODO Get rid of this dummy. Policies need to be loaded differently.
     final RenaissanceBenchmark dummy = new RenaissanceBenchmark() {
       @Override
-      public String description() { return null; }
-      @Override
-      public License[] licenses() { return new License[0]; }
-      @Override
       protected void runIteration(Config config) {}
     };
 

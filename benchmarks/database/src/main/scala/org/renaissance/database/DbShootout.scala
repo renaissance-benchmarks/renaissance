@@ -2,9 +2,20 @@ package org.renaissance.database
 
 import java.nio.file.Path
 
-import org.lmdbjava.bench.{Chronicle, LevelDb, MapDb, MvStore}
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.lmdbjava.bench.Chronicle
+import org.lmdbjava.bench.LevelDb
+import org.lmdbjava.bench.MapDb
+import org.lmdbjava.bench.MvStore
+import org.renaissance.Benchmark._
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 
+@Name("db-shootout")
+@Group("database")
+@Summary("Executes a shootout test using several in-memory databases.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(16)
 class DbShootout extends RenaissanceBenchmark {
 
   /**
@@ -14,12 +25,13 @@ class DbShootout extends RenaissanceBenchmark {
    * the benchmark writes on disk has been updated to match the rest of the
    * renaissance suite.
    */
-  override def description(): String =
-    "Executes a shootout test using several in-memory databases."
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  def licenses = License.create(License.APACHE2)
+  var numEntriesToReadWrite: Int = 500000
 
-  override def defaultRepetitions = 16
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   var tempDirPath: Path = null
 
@@ -46,8 +58,6 @@ class DbShootout extends RenaissanceBenchmark {
   var mvStoreReader: MvStore.Reader = null
 
   var mvStoreWriter: MvStore.Writer = null
-
-  var numEntriesToReadWrite: Int = 500000
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")

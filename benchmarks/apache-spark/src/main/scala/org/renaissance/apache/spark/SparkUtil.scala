@@ -1,10 +1,13 @@
 package org.renaissance.apache.spark
 
 import java.io.FileOutputStream
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.IOUtils
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
 import org.renaissance.RenaissanceBenchmark
 
 trait SparkUtil {

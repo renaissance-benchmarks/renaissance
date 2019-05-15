@@ -1,36 +1,41 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.mllib.stat.test.ChiSqTestResult
 import org.apache.spark.rdd.RDD
-import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Config
 import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
 import scala.util.Random
 
+@Name("chi-square")
+@Group("apache-spark")
+@Summary("Runs the chi-square test from Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(60)
 class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
-  def description = "Runs the chi-square test from Spark MLlib."
-
-  override def defaultRepetitions = 60
-
-  override def licenses = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val COMPONENTS = 5
 
   var SIZE = 1500000
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val chiSquarePath = Paths.get("target", "chi-square")
 

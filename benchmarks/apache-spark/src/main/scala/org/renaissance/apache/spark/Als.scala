@@ -1,40 +1,42 @@
 package org.renaissance.apache.spark
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
-import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd.RDD
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
 import scala.util.Random
 
+@Name("als")
+@Group("apache-spark")
+@Summary("Runs the ALS algorithm from the Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(60)
 class Als extends RenaissanceBenchmark with SparkUtil {
 
-  override def description(): String = "Runs the ALS algorithm from the Spark MLlib."
-
-  override def defaultRepetitions = 60
-
-  override def licenses(): Array[License] = License.create(License.APACHE2)
-
   // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
+  var numRatings = 20000
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  // TODO: Consolidate paths to avoid clashes between parallel executions
-  // https://github.com/D-iii-S/renaissance-benchmarks/issues/13
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val alsPath = Paths.get("target", "als")
 
   val outputPath = alsPath.resolve("output")
 
   val bigInputFile = alsPath.resolve("bigfile.txt")
-
-  var numRatings = 20000
 
   var sc: SparkContext = null
 

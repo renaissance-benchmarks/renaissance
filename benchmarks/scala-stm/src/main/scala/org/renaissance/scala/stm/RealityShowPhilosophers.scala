@@ -1,8 +1,8 @@
 package org.renaissance.scala.stm
 
+import scala.annotation.tailrec
 import scala.collection._
 import scala.concurrent.stm._
-import annotation.tailrec
 
 /**
  * This extends a solution to the dining philosopher's problem to include an

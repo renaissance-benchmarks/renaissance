@@ -1,18 +1,20 @@
 package org.renaissance.scala.stm
 
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark._
 
+@Name("philosophers")
+@Group("scala-stm")
+@Summary("Solves a variant of the dining philosophers problem using ScalaSTM.")
+@Licenses(Array(License.BSD3))
+@Repetitions(30)
 class Philosophers extends RenaissanceBenchmark {
 
-  override def description(): String =
-    "Solves a variant of the dining philosophers problem using ScalaSTM."
-
-  override def defaultRepetitions = 30
-
-  def licenses = License.create(License.BSD3)
-
   // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
   private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   /**

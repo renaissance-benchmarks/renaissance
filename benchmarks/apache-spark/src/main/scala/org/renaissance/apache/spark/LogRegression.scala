@@ -1,24 +1,31 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
-import org.apache.spark.ml.classification.{LogisticRegression, LogisticRegressionModel}
+import org.apache.spark.SparkContext
+import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.classification.LogisticRegressionModel
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.{SparkConf, SparkContext}
-import org.renaissance.{Config, License, RenaissanceBenchmark}
+import org.renaissance.Benchmark._
+import org.renaissance.Config
+import org.renaissance.License
+import org.renaissance.RenaissanceBenchmark
 
+@Name("log-regression")
+@Group("apache-spark")
+@Summary("Runs the logistic regression workload from the Spark MLlib.")
+@Licenses(Array(License.APACHE2))
+@Repetitions(20)
 class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
-  def description = "Runs the logistic regression workload from the Spark MLlib."
-
-  override def defaultRepetitions = 20
-
-  override def licenses(): Array[License] = License.create(License.APACHE2)
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val REGULARIZATION_PARAM = 0.1
 
@@ -28,18 +35,18 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   val CONVERGENCE_TOLERANCE = 0.0
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/27
-
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
+  var numCopies = 400
+
+  // TODO: Unify handling of scratch directories throughout the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
   val logisticRegressionPath = Paths.get("target", "logistic-regression");
 
   val outputPath = logisticRegressionPath.resolve("output")
 
   val inputFile = "/sample_libsvm_data.txt"
-
-  var numCopies = 400
 
   val bigInputFile = logisticRegressionPath.resolve("bigfile.txt")
 
