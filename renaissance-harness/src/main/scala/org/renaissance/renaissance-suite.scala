@@ -15,8 +15,41 @@ import scala.collection._
 import scala.collection.immutable.TreeMap
 
 object RenaissanceSuite {
+
+  class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
+    override def run(): Unit = {
+      results.storeResults(false)
+    }
+  }
+
+  /** Common functionality for JSON and CSV results writers.
+   *
+   * This class takes care of registering a shutdown hook so that the results
+   * are not lost when JVM is forcefully terminated.
+   *
+   * Descendants are expected to override only the store() method that
+   * actually stores the collected data.
+   */
   abstract class ResultWriter extends ResultObserver {
     val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+    val storeHook = new FlushOnShutdownThread(this)
+
+    Runtime.getRuntime.addShutdownHook(storeHook)
+
+    protected def store(normalTermination: Boolean): Unit
+
+    def storeResults(normalTermination: Boolean): Unit = this.synchronized {
+      // This method is synchronized to ensure we do not overwrite
+      // the results when user sends Ctrl-C when store() is already being
+      // called (i.e. shutdown hook is still registered but is *almost*
+      // no longer needed).
+      store(normalTermination)
+    }
+
+    def onExit(): Unit = {
+      storeResults(true)
+      Runtime.getRuntime.removeShutdownHook(storeHook)
+    }
 
     def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
       val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
@@ -50,7 +83,7 @@ object RenaissanceSuite {
 
   class CsvWriter(val filename: String) extends ResultWriter {
 
-    def onExit(): Unit = {
+    def store(normalTermination: Boolean): Unit = {
       val csv = new StringBuffer
       csv.append("benchmark")
       val columns = new mutable.ArrayBuffer[String]
@@ -84,7 +117,7 @@ object RenaissanceSuite {
 
   class JsonWriter(val filename: String) extends ResultWriter {
 
-    def getEnvironment(): JsValue = {
+    def getEnvironment(termination: String): JsValue = {
       val result = new mutable.HashMap[String, JsValue]
 
       val osInfo = new mutable.HashMap[String, JsValue]
@@ -101,18 +134,19 @@ object RenaissanceSuite {
       vmInfo.update("vm_version", System.getProperty("java.vm.version", "unknown").toJson)
       vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
       vmInfo.update("args", vmArgs.asScala.toList.toJson)
+      vmInfo.update("termination", termination.toJson)
       result.update("vm", vmInfo.toMap.toJson)
 
       return result.toMap.toJson
     }
 
-    def onExit(): Unit = {
+    def store(normalTermination: Boolean): Unit = {
       val columns = getColumns
 
       val tree = new mutable.HashMap[String, JsValue]
-      tree.update("format_version", 1.toJson)
+      tree.update("format_version", 2.toJson)
       tree.update("benchmarks", getBenchmarks.toList.toJson)
-      tree.update("environment", getEnvironment)
+      tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
 
       val resultTree = new mutable.HashMap[String, JsValue]
       for ((benchmark, results, repetitions) <- getResults) {
