@@ -323,6 +323,7 @@ class FinagleChirper extends RenaissanceBenchmark {
       for (feed <- feeds) {
         Await.ready(feed.close())
       }
+      Await.ready(master.close())
     }
   }
 
@@ -350,6 +351,7 @@ class FinagleChirper extends RenaissanceBenchmark {
   val batchSize = 4
   var master: ListeningServer = null
   var masterPort: Int = -1
+  var masterService: Service[Request, Response] = null
   val clientCount = Runtime.getRuntime.availableProcessors
   val cacheCount = Runtime.getRuntime.availableProcessors
   val caches = new mutable.ArrayBuffer[ListeningServer]
@@ -418,6 +420,7 @@ class FinagleChirper extends RenaissanceBenchmark {
     }
     println("Master port: " + masterPort)
     println("Cache ports: " + cachePorts.mkString(", "))
+    masterService = Http.newService(":" + masterPort)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -425,13 +428,13 @@ class FinagleChirper extends RenaissanceBenchmark {
       Await.ready(cache.close())
     }
     Await.ready(master.close())
+    Await.ready(masterService.close())
   }
 
   override def beforeIteration(c: Config): Unit = {
-    val master = Http.newService(":" + masterPort)
     val resetQuery = "/api/reset"
     val request = Request(Method.Get, resetQuery)
-    require(Await.result(master.apply(request)).status == Status.Ok)
+    require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
   override def runIteration(c: Config): Unit = {
