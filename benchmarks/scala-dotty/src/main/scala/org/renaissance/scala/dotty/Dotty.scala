@@ -83,7 +83,7 @@ class Dotty extends RenaissanceBenchmark {
       Thread.currentThread.getContextClassLoader
         .asInstanceOf[URLClassLoader]
         .getURLs
-        .mkString(":"),
+        .mkString(File.pathSeparator),
       DOTTY_ARG_TYPE_CONVERSION,
       DOTTY_ARG_CLASS_FILE_DESTINATION,
       outputPath.toString
