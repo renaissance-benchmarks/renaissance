@@ -15,7 +15,9 @@ import org.apache.spark.mllib.recommendation.ALS
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd._
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -277,7 +279,7 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
     )
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     var helper = new MovieLensHelper
     loadData(helper)
 
@@ -287,6 +289,9 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
     helper.trainModels(alsRanks, alsLambdas, alsNumIters)
     helper.recommendMovies()
+
+    // FIXME: add proper validation
+    return new EmptyResult
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

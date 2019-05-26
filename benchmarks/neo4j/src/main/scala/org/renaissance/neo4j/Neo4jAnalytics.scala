@@ -2,7 +2,9 @@ package org.renaissance.neo4j
 
 import java.nio.file.Paths
 
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -38,7 +40,9 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
     benchmark.tearAll()
   }
 
-  protected def runIteration(config: Config): Unit = {
+  protected def runIteration(config: Config): BenchmarkResult = {
     benchmark.run()
+    // FIXME: add proper validation
+    return new EmptyResult
   }
 }

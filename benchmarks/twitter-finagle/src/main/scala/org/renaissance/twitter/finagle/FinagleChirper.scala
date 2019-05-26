@@ -24,7 +24,9 @@ import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import org.apache.commons.io.IOUtils
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
@@ -437,10 +439,13 @@ class FinagleChirper extends RenaissanceBenchmark {
     require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     val clients = for (i <- 0 until clientCount)
       yield new Client(usernames(i % usernames.length) + i)
     clients.foreach(_.start())
     clients.foreach(_.join())
+
+    // FIXME: add proper validation
+    return new EmptyResult
   }
 }

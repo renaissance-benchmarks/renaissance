@@ -1,7 +1,9 @@
 package org.renaissance.actors
 
 import io.reactors._
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -44,7 +46,7 @@ class Reactors extends RenaissanceBenchmark {
     system.shutdown()
   }
 
-  def runIteration(c: Config): Unit = {
+  def runIteration(c: Config): BenchmarkResult = {
 
     // TODO Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 
@@ -68,6 +70,9 @@ class Reactors extends RenaissanceBenchmark {
     new Roundabout(system).run((750000 * scalingFactor).intValue())
     println("ThreadRing workload: Reactor ring forwarding performance")
     new ThreadRing(system).run((2500000 * scalingFactor).intValue())
+
+    // FIXME: add proper validation of the individual sub-benchmarks
+    return new EmptyResult
   }
 }
 

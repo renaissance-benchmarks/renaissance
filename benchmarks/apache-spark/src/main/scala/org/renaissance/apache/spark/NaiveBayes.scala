@@ -11,9 +11,12 @@ import org.apache.spark.mllib.classification.NaiveBayesModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.CompoundResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 @Name("naive-bayes")
@@ -102,11 +105,17 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
-  def runIteration(c: Config): Unit = {
+  def runIteration(c: Config): BenchmarkResult = {
     // Using full package name to avoid conflicting with the renaissance benchmark class name.
     val bayes = new org.apache.spark.mllib.classification.NaiveBayes()
       .setLambda(SMOOTHING)
       .setModelType("multinomial")
     bayesModel = bayes.run(data)
+    // FIXME: add more in-depth validation
+    val pi = bayesModel.pi
+    return new CompoundResult(
+      new SimpleResult("pi 0", -0.84397, pi(0), 0.001),
+      new SimpleResult("pi 0", -0.56212, bayesModel.pi(1), 0.001)
+    )
   }
 }

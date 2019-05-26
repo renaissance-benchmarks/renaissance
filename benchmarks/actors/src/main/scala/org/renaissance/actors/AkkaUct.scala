@@ -2,7 +2,9 @@ package org.renaissance.actors
 
 import edu.rice.habanero.actors.AkkaActorState
 import edu.rice.habanero.benchmarks.uct.UctAkkaActorBenchmark
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -37,9 +39,11 @@ class AkkaUct extends RenaissanceBenchmark {
     }
   }
 
-  protected override def runIteration(config: Config): Unit = {
+  protected override def runIteration(config: Config): BenchmarkResult = {
     for (i <- 0 until numIterations) {
       bench.runIteration()
     }
+    // FIXME: add proper validation
+    return new EmptyResult
   }
 }

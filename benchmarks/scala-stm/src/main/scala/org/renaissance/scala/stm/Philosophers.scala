@@ -1,6 +1,8 @@
 package org.renaissance.scala.stm
 
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -28,8 +30,10 @@ class Philosophers extends RenaissanceBenchmark {
     }
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     RealityShowPhilosophers.run(NUMBER_OF_MEALS, THREAD_COUNT)
+    // FIXME: add proper validation
+    return new EmptyResult
   }
 
 }
