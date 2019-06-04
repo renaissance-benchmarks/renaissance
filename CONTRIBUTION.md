@@ -169,7 +169,7 @@ The current members of the committee are:
 - Francois Farquet, Oracle Labs
 - Vojtech Horky, Charles University
 - David Leopoldseder, Johannes Kepler University Linz
-- Guillaume Martres, École Polytechnique Fédérale de Lausanne
+- Guillaume Martres, Ecole Polytechnique Federale de Lausanne
 - Aleksandar Prokopec, Oracle Labs
 - Andrea Rosa, Universita della Svizzera italiana
 - Petr Tuma, Charles University
