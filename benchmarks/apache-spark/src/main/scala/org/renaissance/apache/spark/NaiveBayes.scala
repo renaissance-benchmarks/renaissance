@@ -28,8 +28,6 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
 
   val SMOOTHING = 1.0
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
-
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
@@ -78,7 +76,7 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("naive_bayes")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc = setUpSparkContext(tempDirPath)
     prepareInput()
     loadData()
   }

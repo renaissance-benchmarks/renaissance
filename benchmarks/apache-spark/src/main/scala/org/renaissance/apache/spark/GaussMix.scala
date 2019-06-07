@@ -31,8 +31,6 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   val COMPONENTS = 10
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
-
   var SIZE = 15000
 
   var NUM_GMM_ITERATIONS = 15
@@ -56,7 +54,7 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("gauss_mix")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc = setUpSparkContext(tempDirPath)
     if (c.functionalTest) {
       SIZE /= 2000
       NUM_GMM_ITERATIONS = 3

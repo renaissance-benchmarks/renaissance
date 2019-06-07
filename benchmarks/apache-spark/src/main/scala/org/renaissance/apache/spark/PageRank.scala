@@ -26,8 +26,6 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   var ITERATIONS = 2
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
-
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
@@ -74,7 +72,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc = setUpSparkContext(tempDirPath)
     prepareInput(c)
     loadData()
   }
