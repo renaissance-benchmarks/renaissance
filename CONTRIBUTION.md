@@ -172,5 +172,6 @@ The current members of the committee are:
 - Guillaume Martres, Ecole Polytechnique Federale de Lausanne
 - Aleksandar Prokopec, Oracle Labs
 - Andrea Rosa, Universita della Svizzera italiana
+- Denys Shabalin, Ecole Polytechnique Federale de Lausanne
 - Petr Tuma, Charles University
 - Alex Villazon, Universidad Privada Boliviana
