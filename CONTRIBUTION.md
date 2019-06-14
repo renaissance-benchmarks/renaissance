@@ -35,7 +35,7 @@ final class MyJavaBenchmark extends RenaissanceBenchmark {
   override protected def runIteration(config: Config): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
-    // Return object for later validation of the iteration
+    // Return object for later validation of the iteration.
     return new MyJavaBenchmarkResult()
   }
 }
