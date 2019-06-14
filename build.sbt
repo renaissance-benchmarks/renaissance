@@ -330,6 +330,24 @@ def generateJmhWrapperBenchmarkClasses(
   perProjectBenchmarkClasses.flatten
 }
 
+// This project generates a custom JMH wrapper for each Renaissance benchmark.
+// Then, the project inserts JMH-specific functionality into the final JAR,
+// which can then be run in a JMH-compliant way.
+//
+// Here are several technical details.
+// First, to be able to generate the JMH wrapper classes, a project needs to "see"
+// all the projects that define the benchmarks.
+// Therefore, it was convenient to make the JMH project depend on the `renaissance` project.
+// Second, the sbt-jmh plugins adds some (unnecessary) extra functionality,
+// which forces this project to depend on the Scala library.
+// This is why we cannot set `autoScalaLibrary` to `false` here.
+// Third, the sbt-assembly plugin consequently automatically includes the Scala library
+// into the fat JAR, which breaks classloading in the benchmarks that have
+// a different Scala version (because the fat JAR is in the `AppClassLoader`).
+// To amend this, we forcefully remove the Scala library classfiles from the fat JAR
+// with a custom merge strategy -- this is fine, because the Scala library is only needed
+// by the extra functionality that the sbt-jmh inserts into the artifact, and we don't
+// need that anyway.
 lazy val renaissanceJmh = (project in file("renaissance-jmh"))
   .enablePlugins(JmhPlugin)
   .settings(
