@@ -1,10 +1,14 @@
+import java.io.File
 import java.lang.annotation.Annotation
+import java.net.URLClassLoader
+import java.util.jar.JarFile
 import java.util.regex.Pattern
-
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import sbt.util.Logger
+import scala.collection._
 
 class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
 
@@ -109,5 +113,60 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
       "repetitions" -> repetitions.toString,
       "distro" -> distro.toString
     )
+  }
+
+}
+
+object Benchmarks {
+
+  // Return tuples with (name, distro license, all licenses, description and default repetitions)
+  def listBenchmarks(classpath: Seq[File], logger: Option[Logger]): Seq[BenchmarkInfo] = {
+    //
+    // Load the benchmark base class and create a class loader for the project
+    // with the class loader of the base class as its parent. This will allow
+    // us to use core classes here.
+    //
+    val benchBase = classOf[RenaissanceBenchmark]
+    val urls = classpath.map(_.toURI.toURL).toArray
+    val loader = new URLClassLoader(urls, benchBase.getClassLoader)
+    val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
+
+    //
+    // Scan all JAR files for classes in the org.renaissance package implementing
+    // the benchmark interface and collect metadata from class annotations.
+    //
+    val result = new mutable.ArrayBuffer[BenchmarkInfo]
+    for (jarFile <- classpath.map(jar => new JarFile(jar))) {
+      for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
+        if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
+          val benchClassName = entry.getName
+            .substring(0, entry.getName.length - ".class".length)
+            .replace("/", ".")
+          val clazz = loader.loadClass(benchClassName)
+
+          val isEligible =
+            !excludePattern.matcher(clazz.getPackage.getName).matches() &&
+              benchBase.isAssignableFrom(clazz)
+          if (isEligible) {
+            // Print info to see what benchmarks are picked up by the build.
+            val benchClass = clazz.asSubclass(benchBase)
+            val info = new BenchmarkInfo(benchClass)
+            if (logger.nonEmpty) logBenchmark(info, logger.get)
+
+            result += info
+          }
+        }
+      }
+    }
+
+    result
+  }
+
+  def logBenchmark(b: BenchmarkInfo, logger: Logger) = {
+    logger.info(s"class: ${b.className}")
+    logger.info(s"\tbenchmark: ${b.group}/${b.name}")
+    logger.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
+    logger.info(s"\trepetitions: ${b.repetitions}")
+    logger.info(s"\tsummary: ${b.summary}")
   }
 }

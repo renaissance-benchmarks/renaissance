@@ -38,7 +38,6 @@ class AkkaUct extends RenaissanceBenchmark {
   }
 
   protected override def runIteration(config: Config): Unit = {
-    //sys.error(" --> " + Predef.getClass.getClassLoader + " --> " + this.getClass.getClassLoader)
     for (i <- 0 until numIterations) {
       bench.runIteration()
     }
