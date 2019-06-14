@@ -50,7 +50,7 @@ The following is a complete list of command-line options.
 Renaissance Benchmark Suite, version 0.9.0
 Usage: renaissance [options] [benchmark-specification]
 
-  --help                   Prints this usage text.
+  -h, --help               Prints this usage text.
   -r, --repetitions <value>
                            Number of repetitions used with the fixed-iterations policy.
   -w, --warmup-seconds <value>
