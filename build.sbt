@@ -256,50 +256,53 @@ def generateJmhWrapperBenchmarkClass(
   outputDir: File
 ): File = {
   val content = s"""
-     package $packageName
+     package $packageName;
 
-     import java.util.concurrent.TimeUnit
-     import org.openjdk.jmh.annotations._
-     import org.renaissance.JmhRenaissanceBenchmark
+     import java.util.concurrent.TimeUnit;
+     import org.openjdk.jmh.annotations.*;
+     import org.renaissance.RenaissanceBenchmark;
+     import org.renaissance.JmhRenaissanceBenchmark;
 
      @State(Scope.Benchmark)
      @OutputTimeUnit(TimeUnit.MILLISECONDS)
-     class Jmh_$name extends JmhRenaissanceBenchmark {
-       def benchmarkName: String = "$name"
+     public class Jmh_$name extends JmhRenaissanceBenchmark {
+       public String benchmarkName() {
+           return RenaissanceBenchmark.kebabCase("$name");
+       }
 
        @Setup(Level.Trial)
-       def setUpBeforeAll(): Unit = {
-         defaultSetUpBeforeAll()
+       public void setUpBeforeAll() {
+         defaultSetUpBeforeAll();
        }
 
        @Setup(Level.Iteration)
-       def setUp(): Unit = {
-         defaultSetUp()
+       public void setUp() {
+         defaultSetUp();
        }
 
        @TearDown(Level.Iteration)
-       def tearDown(): Unit = {
-         defaultTearDown()
+       public void tearDown() {
+         defaultTearDown();
        }
 
        @TearDown(Level.Trial)
-       def tearDownAfterAll(): Unit = {
-         defaultTearDownAfterAll()
+       public void tearDownAfterAll() {
+         defaultTearDownAfterAll();
        }
 
        @Benchmark
-       @BenchmarkMode(Array(Mode.AverageTime))
+       @BenchmarkMode(Mode.AverageTime)
        @OutputTimeUnit(TimeUnit.MILLISECONDS)
        @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-       def run(): Unit = {
-         defaultRun()
+       public void run() {
+         defaultRun();
        }
      }
    """
   val outputPackageDir =
     new File(outputDir.toString + "/" + packageName.split("\\.").mkString("/"))
   outputPackageDir.mkdirs()
-  val outputFile = new File(outputPackageDir, "Jmh_" + name + ".scala")
+  val outputFile = new File(outputPackageDir, "Jmh_" + name + ".java")
   IO.write(outputFile, content, StandardCharsets.UTF_8)
   outputFile
 }
@@ -333,7 +336,6 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
     name := "renaissance-jmh",
     version := (version in renaissance).value,
     organization := (organization in renaissance).value,
-    scalaVersion := renaissanceScalaVersion,
     scalafmtConfig := Some(file(".scalafmt.conf")),
     nonGplOnly := (nonGplOnly in renaissance).value,
     mainClass in assembly := Some("org.openjdk.jmh.Main"),
@@ -344,7 +346,15 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
       projectJars.map { groupJars =>
         generateJmhWrapperBenchmarkClasses(outputDir, log, nonGpl, groupJars)
       }
-    }.taskValue +: (sourceGenerators in Compile).value
+    }.taskValue +: (sourceGenerators in Compile).value,
+    assembly in Jmh := ((assembly in Jmh) dependsOn (compile in Jmh)).value,
+    assemblyMergeStrategy in assembly := {
+      case PathList("scala", xs @ _*) =>
+        MergeStrategy.discard
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
   )
   .dependsOn(
     renaissance
