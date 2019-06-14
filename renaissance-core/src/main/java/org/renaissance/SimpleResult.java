@@ -32,20 +32,10 @@ public class SimpleResult implements BenchmarkResult {
     if (epsilon != null) {
       double exp = (Double) expected;
       double act = (Double) actual;
-      if (act != exp) {
-        if (((exp + epsilon) < act) || ((exp - epsilon) > act)) {
-          throw new ValidationException(String.format(
-            "Validation failed: expected %.4f +- %.5f but got %.4f (%s)",
-            exp, act, name));
-        }
-        return;
-      }
+      ValidationException.throwIfNotEqual(exp, act, epsilon, name);
+      return;
     }
 
-    if (!expected.equals(actual)) {
-      throw new ValidationException(String.format(
-        "Validation failed: expected %s but got %s (%s)",
-        expected, actual, name));
-    }
+    ValidationException.throwIfNotEqual(expected, actual, name);
   }
 }
