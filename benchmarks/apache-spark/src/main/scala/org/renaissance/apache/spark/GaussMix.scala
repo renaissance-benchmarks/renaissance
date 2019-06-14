@@ -35,6 +35,8 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   var NUM_GMM_ITERATIONS = 15
 
+  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
@@ -54,7 +56,7 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("gauss_mix")
-    sc = setUpSparkContext(tempDirPath)
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     if (c.functionalTest) {
       SIZE /= 2000
       NUM_GMM_ITERATIONS = 3

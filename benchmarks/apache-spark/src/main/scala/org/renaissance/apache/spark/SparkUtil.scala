@@ -12,13 +12,11 @@ import org.renaissance.RenaissanceBenchmark
 
 trait SparkUtil {
 
-  val threadsPerExecutor: Int = 4
-
   val portAllocationMaxRetries: Int = 16
 
   val winUtils = "/winutils.exe"
 
-  def setUpSparkContext(dirPath: Path): SparkContext = {
+  def setUpSparkContext(dirPath: Path, threadsPerExecutor: Int): SparkContext = {
     setUpHadoop(dirPath)
     val conf = new SparkConf()
       .setAppName(RenaissanceBenchmark.kebabCase(this.getClass.getSimpleName))
@@ -26,6 +24,7 @@ trait SparkUtil {
       .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
       .set("spark.driver.bindAddress", "127.0.0.1")
+      .set("spark.executor.instances", "4")
       .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")

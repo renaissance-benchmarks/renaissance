@@ -29,6 +29,11 @@ import scala.io.Source
 @Repetitions(20)
 class MovieLens extends RenaissanceBenchmark with SparkUtil {
 
+  // TODO: Consolidate benchmark parameters across the suite.
+  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
+
+  val THREAD_COUNT = 4
+
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
@@ -240,7 +245,7 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("movie_lens")
     setUpLogger()
-    sc = setUpSparkContext(tempDirPath)
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     sc.setCheckpointDir(checkpointPath.toString)
     if (c.functionalTest) {
       ratingsInputFile = ratingsSmallInputFile

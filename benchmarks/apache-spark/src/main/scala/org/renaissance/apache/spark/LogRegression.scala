@@ -37,6 +37,8 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   var numCopies = 400
 
+  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
@@ -84,7 +86,7 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   override def setUpBeforeAll(c: Config): Unit = {
     tempDirPath = RenaissanceBenchmark.generateTempDir("log_regression")
-    sc = setUpSparkContext(tempDirPath)
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     if (c.functionalTest) {
       numCopies = 5
     }
