@@ -28,7 +28,7 @@ refs:
       - 'java -version'
       - 'java -jar ./target/renaissance-0.9.0.jar --raw-list >list.txt'
       - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-0.9.0.jar --functional-test -r 1 "$BENCH" || exit 1; done'
-      - 'java -Xms2500M -Xmx2500M ./target/renaissance-jmh-assembly-0.9.0.jar -wi 0 -i 1 -f 1'
+      - 'java -Xms2500M -Xmx2500M ./renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.9.0.jar -wi 0 -i 1 -f 1'
 
 jobs:
   include:
