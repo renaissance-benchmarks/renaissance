@@ -323,7 +323,8 @@ def generateJmhWrapperBenchmarkClasses(
       generateJmhWrapperBenchmarkClass(
         info.benchClass.getSimpleName,
         info.benchClass.getPackage.getName,
-        outputDir)
+        outputDir
+      )
     }
   }
 
