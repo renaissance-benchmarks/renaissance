@@ -49,7 +49,7 @@ class FjKmeans extends RenaissanceBenchmark {
     for (i <- 0 until LOOP_COUNT) {
       blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
     }
-    // FIXME: add proper validation of the individual sub-benchmarks
+    // TODO: add proper validation of the individual sub-benchmarks
     return new EmptyResult
   }
 

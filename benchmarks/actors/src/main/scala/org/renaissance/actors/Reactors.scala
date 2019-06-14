@@ -71,7 +71,7 @@ class Reactors extends RenaissanceBenchmark {
     println("ThreadRing workload: Reactor ring forwarding performance")
     new ThreadRing(system).run((2500000 * scalingFactor).intValue())
 
-    // FIXME: add proper validation of the individual sub-benchmarks
+    // TODO: add proper validation of the individual sub-benchmarks
     return new EmptyResult
   }
 }

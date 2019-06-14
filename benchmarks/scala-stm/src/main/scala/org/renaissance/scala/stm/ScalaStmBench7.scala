@@ -41,7 +41,7 @@ class ScalaStmBench7 extends RenaissanceBenchmark {
 
     stmbench7.Benchmark.main(args)
 
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }

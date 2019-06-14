@@ -122,7 +122,7 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
       true
     )
     iteration += 1
-    // FIXME: add more in-depth validation
+    // TODO: add more in-depth validation
     return new CompoundResult(
       new SimpleResult("tree depth", 2, treeModel.depth),
       new SimpleResult("node count", 5, treeModel.numNodes)

@@ -42,7 +42,7 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
 
   protected def runIteration(config: Config): BenchmarkResult = {
     benchmark.run()
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }

@@ -115,7 +115,7 @@ class DbShootout extends RenaissanceBenchmark {
     mvStore.parReadKey(mvStoreReader)
     mvStore.parWrite(mvStoreWriter)
 
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }

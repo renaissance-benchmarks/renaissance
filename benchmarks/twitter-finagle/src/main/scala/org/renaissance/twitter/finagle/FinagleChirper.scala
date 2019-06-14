@@ -445,7 +445,7 @@ class FinagleChirper extends RenaissanceBenchmark {
     clients.foreach(_.start())
     clients.foreach(_.join())
 
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }

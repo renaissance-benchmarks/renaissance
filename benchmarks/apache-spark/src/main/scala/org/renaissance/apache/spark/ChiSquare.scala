@@ -91,7 +91,7 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
   override def runIteration(c: Config): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
     blackHole(results)
-    // FIXME: add more sophisticated validation
+    // TODO: add more sophisticated validation
     return new SimpleResult("result count", COMPONENTS, results.size)
   }
 

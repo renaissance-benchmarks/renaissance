@@ -290,7 +290,7 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
     helper.trainModels(alsRanks, alsLambdas, alsNumIters)
     helper.recommendMovies()
 
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 

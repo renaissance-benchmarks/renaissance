@@ -57,7 +57,7 @@ class FutureGenetic extends RenaissanceBenchmark {
   override def runIteration(c: Config): BenchmarkResult = {
     val result = benchmark.runRepetition()
     blackHole(result)
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }
