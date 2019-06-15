@@ -35,9 +35,9 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
 
   val CONVERGENCE_TOLERANCE = 0.0
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
-
   var numCopies = 400
+
+  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13

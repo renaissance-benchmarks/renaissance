@@ -32,7 +32,7 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  val THREAD_COUNT = 4
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13

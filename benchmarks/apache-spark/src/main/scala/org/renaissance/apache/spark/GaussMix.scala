@@ -31,11 +31,11 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   val COMPONENTS = 10
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
-
   var SIZE = 15000
 
   var NUM_GMM_ITERATIONS = 15
+
+  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
