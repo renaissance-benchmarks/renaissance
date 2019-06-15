@@ -2,14 +2,12 @@ package org.renaissance
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.util.Properties
-
 import org.apache.commons.io.{FileUtils, IOUtils}
+import org.renaissance.util.BenchmarkLoader
 import org.renaissance.util.ModuleLoader
 import scopt._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-
 import scala.collection.JavaConverters._
 import scala.collection._
 import scala.collection.immutable.TreeMap
@@ -175,56 +173,9 @@ object RenaissanceSuite {
     }
   }
 
-  sealed class BenchmarkInfo(
-    val className: String,
-    val name: String,
-    val group: String,
-    val summary: String,
-    val description: String,
-    val repetitions: Int,
-    val licenses: Array[String],
-    val distro: String
-  ) {
-    def summaryWords() = summary.split("\\s+")
-    def printableLicenses() = licenses.mkString(", ")
-  }
+  val benchmarkLoader = new BenchmarkLoader
 
-  object BenchmarkInfo {
-
-    def fromProperties(p: Properties, mapper: (String) => String) = {
-      def get(name: String, defaultValue: String) = {
-        p.getProperty(mapper(name), defaultValue)
-      }
-
-      new BenchmarkInfo(
-        className = get("class", ""),
-        name = get("name", ""),
-        group = get("group", ""),
-        summary = get("summary", ""),
-        description = get("description", ""),
-        repetitions = get("repetitions", "20").toInt,
-        licenses = get("licenses", "").split(","),
-        distro = get("distro", "")
-      )
-    }
-  }
-
-  val benchmarksByName = {
-    val properties = new java.util.Properties
-    properties.load(getClass.getResourceAsStream("/benchmark-details.properties"))
-
-    val names = asScalaSet(properties.stringPropertyNames())
-      .filter(_.endsWith(".name"))
-      .map(properties.getProperty(_))
-      .toSeq
-
-    def makeInfo(name: String, p: Properties) = {
-      BenchmarkInfo.fromProperties(p, key => s"benchmark.${name}.${key}")
-    }
-
-    // Produce a Map ordered by benchmark name
-    TreeMap(names.map(name => (name, makeInfo(name, properties))).toArray: _*)
-  }
+  val benchmarksByName = mapAsScalaMap(benchmarkLoader.loadBenchmarkInfoByName)
 
   val benchmarksByGroup = {
     // Produce a Map ordered by group name
@@ -255,7 +206,7 @@ object RenaissanceSuite {
     new OptionParser[Config]("renaissance") {
       head(s"${renaissanceTitle}, version ${renaissanceVersion}")
 
-      help("help")
+      help('h', "help")
         .text("Prints this usage text.")
       opt[Int]('r', "repetitions")
         .text("Number of repetitions used with the fixed-iterations policy.")
@@ -268,8 +219,7 @@ object RenaissanceSuite {
         .action((v, c) => c.withRunSeconds(v))
       opt[String]("policy")
         .text(
-          "Execution policy, one of: " +
-            Policy.descriptions.asScala.keys.mkString(", ")
+          "Execution policy, one of: " + Policy.descriptions.asScala.keys.mkString(", ")
         )
         .action((v, c) => c.withPolicy(v))
       opt[String]("plugins")
@@ -344,7 +294,7 @@ object RenaissanceSuite {
       for (plugin <- config.plugins.asScala) plugin.onCreation()
       try {
         for (benchName <- benchmarks) {
-          val bench = loadBenchmark(benchName)
+          val bench = benchmarkLoader.loadBenchmark(benchName)
           val exception = bench.runBenchmark(config)
           if (exception != null) {
             failedBenchmarks += benchName
@@ -407,19 +357,6 @@ object RenaissanceSuite {
     return result
   }
 
-  private def loadBenchmark(name: String): RenaissanceBenchmark = {
-    val bench = benchmarksByName(name)
-
-    // Use separate classloader for this benchmark
-    val loader = ModuleLoader.getForGroup(bench.group)
-    val benchClass = loader.loadClass(bench.className)
-    val result = benchClass.getDeclaredConstructor().newInstance()
-
-    // Make current thread as independent of the harness as possible
-    Thread.currentThread.setContextClassLoader(loader)
-    result.asInstanceOf[RenaissanceBenchmark]
-  }
-
   private def formatRawBenchmarkList(): String = benchmarksByName.keys.mkString("\n")
 
   private def formatBenchmarkList(): String = {
@@ -438,7 +375,7 @@ object RenaissanceSuite {
   private def formatGroupList(): String = benchmarksByGroup.keys.toSeq.sorted.mkString("\n")
 
   private def formatBenchmarkListMarkdown = {
-    def formatItem(b: BenchmarkInfo) = {
+    def formatItem(b: BenchmarkLoader.Info) = {
       s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
     }
 
@@ -454,7 +391,7 @@ object RenaissanceSuite {
   }
 
   def formatBenchmarkTableMarkdown = {
-    def formatRow(b: BenchmarkInfo) = {
+    def formatRow(b: BenchmarkLoader.Info) = {
       s"| ${b.name} | ${b.printableLicenses} | ${b.distro} |"
     }
 
@@ -500,7 +437,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/renaissance-${renaissanceVersion}.jar' <benchmarks>
+$$ java -jar '<renaissance-home>/target/renaissance-${renaissanceVersion}.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -557,6 +494,21 @@ class MyPlugin extends ${classOf[Plugin].getSimpleName} {
 
 Here, the ${classOf[Policy].getSimpleName} argument describes
 the current state of the benchmark.
+
+
+### JMH support
+
+You can also build and run Renaissance with JMH. To build a JMH-enabled JAR, run:
+
+```
+$$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
+```
+
+To run the benchmarks using JMH, you can execute the following `java` command:
+
+```
+$$ java -jar 'renaissance-jmh/target/renaissance-jmh-assembly-${renaissanceVersion}.jar'
+```
 
 
 ### Contributing

@@ -34,7 +34,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/renaissance-0.9.0.jar' <benchmarks>
+$ java -jar '<renaissance-home>/target/renaissance-0.9.0.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -50,7 +50,7 @@ The following is a complete list of command-line options.
 Renaissance Benchmark Suite, version 0.9.0
 Usage: renaissance [options] [benchmark-specification]
 
-  --help                   Prints this usage text.
+  -h, --help               Prints this usage text.
   -r, --repetitions <value>
                            Number of repetitions used with the fixed-iterations policy.
   -w, --warmup-seconds <value>
@@ -187,6 +187,21 @@ class MyPlugin extends Plugin {
 
 Here, the Policy argument describes
 the current state of the benchmark.
+
+
+### JMH support
+
+You can also build and run Renaissance with JMH. To build a JMH-enabled JAR, run:
+
+```
+$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
+```
+
+To run the benchmarks using JMH, you can execute the following `java` command:
+
+```
+$ java -jar 'renaissance-jmh/target/renaissance-jmh-assembly-0.9.0.jar'
+```
 
 
 ### Contributing
