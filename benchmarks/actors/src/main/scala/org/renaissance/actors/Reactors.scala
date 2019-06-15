@@ -1,15 +1,10 @@
 package org.renaissance.actors
 
 import io.reactors._
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.EmptyResult
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
+import org.renaissance._
 
-import scala.concurrent.Await
-import scala.concurrent.Promise
+import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -30,7 +25,9 @@ class Reactors extends RenaissanceBenchmark {
 
   private var scalingFactor: Double = 1
 
-  private var system: ReactorSystem = null
+  private var system: ReactorSystem = _
+
+  private var expectedFibonacci: Int = _
 
   override def setUpBeforeAll(c: Config): Unit = {
     // Instantiate the default reactor system used throughout the benchmark.
@@ -39,6 +36,8 @@ class Reactors extends RenaissanceBenchmark {
     if (c.functionalTest) {
       scalingFactor = 0.1
     }
+
+    expectedFibonacci = Fibonacci.computeExpected((28 * scalingFactor).intValue())
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -48,31 +47,22 @@ class Reactors extends RenaissanceBenchmark {
 
   def runIteration(c: Config): BenchmarkResult = {
 
-    // TODO Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
+    // TODO: Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 
-    println("Baseline workload: Reactor scheduling events")
-    new Baseline(system).run((1000000 * scalingFactor).intValue())
-    println("BigBench workload: Many-to-many message ping pong")
-    new BigBench(system).run((4000 * scalingFactor).intValue())
-    println("CountingActor workload: Single reactor event processing")
-    new CountingActor(system).run((8000000 * scalingFactor).intValue())
-    println("Fibonacci workload: Dynamic reactor mix with varying lifetimes")
-    new Fibonacci(system).run((28 * scalingFactor).intValue())
-    println("ForkJoinCreation workload: Reactor creation performance")
-    new ForkJoinCreation(system).run((250000 * scalingFactor).intValue())
-    println("ForkJoinThroughput workload: Reactor processing performance")
-    new ForkJoinThroughput(system).run((21000 * scalingFactor).intValue())
-    println("PingPong workload: Reactor pair sequential ping pong performance")
-    new PingPong(system).run((1500000 * scalingFactor).intValue())
-    println("StreamingPingPong workload: Reactor pair overlapping ping pong performance")
-    new StreamingPingPong(system).run((5000000 * scalingFactor).intValue())
-    println("Roundabout workload: Many channels reactor performance")
-    new Roundabout(system).run((750000 * scalingFactor).intValue())
-    println("ThreadRing workload: Reactor ring forwarding performance")
-    new ThreadRing(system).run((2500000 * scalingFactor).intValue())
+    // TODO: The use of scaling factor is not strictly correct with Fibonacci and Roundabout. For these benchmarks, the work done is not a linear function of the input argument.
 
-    // FIXME: add proper validation of the individual sub-benchmarks
-    return new EmptyResult
+    new CompoundResult(
+      Baseline.run(system, (1000000 * scalingFactor).intValue()),
+      BigBench.run(system, (4000 * scalingFactor).intValue()),
+      CountingActor.run(system, (8000000 * scalingFactor).intValue()),
+      Fibonacci.run(system, (28 * scalingFactor).intValue(), expectedFibonacci),
+      ForkJoinCreation.run(system, (250000 * scalingFactor).intValue()),
+      ForkJoinThroughput.run(system, (21000 * scalingFactor).intValue()),
+      PingPong.run(system, (1500000 * scalingFactor).intValue()),
+      StreamingPingPong.run(system, (5000000 * scalingFactor).intValue()),
+      Roundabout.run(system, (750000 * scalingFactor).intValue()),
+      ThreadRing.run(system, (2500000 * scalingFactor).intValue())
+    )
   }
 }
 
@@ -84,10 +74,12 @@ class Reactors extends RenaissanceBenchmark {
  *
  *  Messages exchanged: sz
  */
-class Baseline(val system: ReactorSystem) {
+object Baseline {
 
-  def run(sz: Int) = {
-    val done = Promise[Boolean]()
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("Baseline workload: Reactor scheduling events")
+
+    val done = Promise[Int]()
 
     system.spawn(Reactor[String] { self =>
       var left = sz
@@ -95,16 +87,16 @@ class Baseline(val system: ReactorSystem) {
         case ReactorPreempted =>
           self.main.channel ! "more"
       }
-      self.main.events onEvent { x =>
+      self.main.events onEvent { _ =>
         left -= 1
         if (left == 0) {
-          done.success(true)
+          done.success(left)
           self.main.seal()
         }
       }
     })
 
-    assert(Await.result(done.future, Duration.Inf))
+    new SimpleResult("Baseline", 0, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -117,31 +109,37 @@ class Baseline(val system: ReactorSystem) {
  *
  *  Messages exchanged: 2 * N * sz (ping, pong) + 2 * N (start, end)
  */
-class BigBench(val system: ReactorSystem) {
+object BigBench {
+
+  // The number of workers to create.
+  val NUM_WORKERS = 1280
+
   trait Cmd
   case class Ping(ch: Channel[String]) extends Cmd
   case class Start() extends Cmd
   case class End() extends Cmd
 
-  def run(sz: Int) = {
-    val done = Promise[Boolean]()
-    val workers = new Array[Channel[Cmd]](BigBench.N)
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("BigBench workload: Many-to-many message ping pong")
+
+    val done = Promise[Int]()
+    val workers = new Array[Channel[Cmd]](BigBench.NUM_WORKERS)
 
     // Coordinator reactor. Responsible for reaping workers at the end of the workload.
     val sink = system.spawn(Reactor[String] { self =>
-      var left = BigBench.N
+      var left = BigBench.NUM_WORKERS
       self.main.events.on {
         left -= 1
         if (left == 0) {
-          for (i <- 0 until BigBench.N) workers(i) ! End()
-          done.success(true)
+          for (i <- 0 until BigBench.NUM_WORKERS) workers(i) ! End()
+          done.success(left)
           self.main.seal()
         }
       }
     })
 
     // Worker reactors. Responsible for pinging and ponging.
-    for (i <- 0 until BigBench.N) workers(i) = system.spawn(Reactor[Cmd] { self =>
+    for (i <- 0 until BigBench.NUM_WORKERS) workers(i) = system.spawn(Reactor[Cmd] { self =>
       val random = new Random
       var left = sz
       val responses = system.channels.open[String]
@@ -162,15 +160,10 @@ class BigBench(val system: ReactorSystem) {
           responses.seal()
       }
     })
-    for (i <- 0 until BigBench.N) workers(i) ! Start()
+    for (i <- 0 until BigBench.NUM_WORKERS) workers(i) ! Start()
 
-    assert(Await.result(done.future, Duration.Inf))
+    new SimpleResult("BigBench", 0, Await.result(done.future, Duration.Inf).longValue())
   }
-}
-
-object BigBench {
-  // The number of workers to create.
-  val N = 1280
 }
 
 /** CountingActor benchmark workload.
@@ -183,12 +176,14 @@ object BigBench {
  *
  *  Messages exchanged: sz (inc) + 1 (get)
  */
-class CountingActor(val system: ReactorSystem) {
+object CountingActor {
   trait Cmd
   case class Increment() extends Cmd
   case class Get() extends Cmd
 
-  def run(sz: Int) = {
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("CountingActor workload: Single reactor event processing")
+
     val done = Promise[Int]()
 
     val counting = system.spawn(Reactor[Cmd] { self =>
@@ -202,7 +197,7 @@ class CountingActor(val system: ReactorSystem) {
       }
     })
 
-    val producer = system.spawn(Reactor[Unit] { self =>
+    system.spawn(Reactor[Unit] { self =>
       val inc = new Increment
       var i = 0
       while (i < sz) {
@@ -213,7 +208,7 @@ class CountingActor(val system: ReactorSystem) {
       self.main.seal()
     })
 
-    assert(Await.result(done.future, Duration.Inf) == sz)
+    new SimpleResult ("CountingActor", sz, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -223,31 +218,37 @@ class CountingActor(val system: ReactorSystem) {
  *
  *  Amazing how often people use an absolutely crazy algorithm to compute an absolutely useless result.
  *
- *  Messages exchanged: O(2 ^ sz)
+ *  Messages exchanged: O(2 ** sz)
  */
-class Fibonacci(val system: ReactorSystem) {
+object Fibonacci {
 
-  def run(sz: Int) = {
+  def run(system: ReactorSystem, sz: Int, exp: Int): SimpleResult = {
+    println("Fibonacci workload: Dynamic reactor mix with varying lifetimes")
+
     val done = Promise[Int]()
 
     def fib(parent: Channel[Int], n: Int): Unit = {
       system.spawn(Reactor[Int] { self =>
-        if (n < 2) {
-          parent ! 1
-          self.main.seal()
-        } else {
-          var sum = 0
-          var recv = 0
-          self.main.events.onEvent { x =>
-            sum += x
-            recv += 1
-            if (recv == 2) {
-              parent ! sum
-              self.main.seal()
-            }
-          }
-          fib(self.main.channel, n - 1)
-          fib(self.main.channel, n - 2)
+        n match {
+          case 0 =>
+            parent ! 0
+            self.main.seal()
+          case 1 =>
+            parent ! 1
+            self.main.seal()
+          case _ =>
+            var sum = 0
+              var recv = 0
+              self.main.events.onEvent { x =>
+                sum += x
+                recv += 1
+                if (recv == 2) {
+                  parent ! sum
+                  self.main.seal()
+                }
+              }
+            fib(self.main.channel, n - 1)
+            fib(self.main.channel, n - 2)
         }
       })
     }
@@ -259,7 +260,17 @@ class Fibonacci(val system: ReactorSystem) {
       fib(self.main.channel, sz)
     })
 
-    Await.ready(done.future, Duration.Inf)
+    new SimpleResult("Fibonacci", exp, Await.result(done.future, Duration.Inf).longValue())
+  }
+
+  def computeExpected(sz: Int): Int = {
+    def computeWithTail(n: Int, one: Int, two: Int): Int = {
+      n match {
+        case 0 => one
+        case _ => computeWithTail(n - 1, two, one + two)
+      }
+    }
+    computeWithTail(sz, 0, 1)
   }
 }
 
@@ -271,16 +282,18 @@ class Fibonacci(val system: ReactorSystem) {
  *
  *  Messages exchanged: sz
  */
-class ForkJoinCreation(val system: ReactorSystem) {
+object ForkJoinCreation {
 
-  def run(sz: Int) = {
-    val done = new Array[Promise[Boolean]](sz)
-    for (i <- 0 until sz) done(i) = Promise[Boolean]()
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("ForkJoinCreation workload: Reactor creation performance")
+
+    val done = new Array[Promise[Int]](sz)
+    for (i <- 0 until sz) done(i) = Promise[Int]()
 
     val workers: Array[Channel[String]] = (for (i <- 0 until sz) yield {
       system.spawn(Reactor[String] { self =>
         self.main.events.on {
-          done(i).success(true)
+          done(i).success(1)
           self.main.seal()
         }
       })
@@ -292,9 +305,12 @@ class ForkJoinCreation(val system: ReactorSystem) {
       i += 1
     }
 
+    var res: Int = 0
     for (i <- 0 until sz) {
-      Await.result(done(i).future, Duration.Inf)
+      res += Await.result(done(i).future, Duration.Inf)
     }
+
+    new SimpleResult("ForkJoinCreation", sz, res.longValue())
   }
 }
 
@@ -306,30 +322,35 @@ class ForkJoinCreation(val system: ReactorSystem) {
  *
  *  Messages exchanged: K * sz
  */
-class ForkJoinThroughput(val system: ReactorSystem) {
+object ForkJoinThroughput {
 
-  def run(sz: Int) = {
-    val done = new Array[Promise[Boolean]](ForkJoinThroughput.K)
-    for (i <- 0 until ForkJoinThroughput.K) done(i) = Promise[Boolean]()
+  // The number of workers to create.
+  val NUM_WORKERS = 256
 
-    val workers: Array[Channel[String]] = (for (i <- 0 until ForkJoinThroughput.K) yield {
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("ForkJoinThroughput workload: Reactor processing performance")
+
+    val done = new Array[Promise[Int]](ForkJoinThroughput.NUM_WORKERS)
+    for (i <- 0 until ForkJoinThroughput.NUM_WORKERS) done(i) = Promise[Int]()
+
+    val workers: Array[Channel[String]] = (for (i <- 0 until ForkJoinThroughput.NUM_WORKERS) yield {
       system.spawn(Reactor[String] { self =>
         var count = 0
         self.main.events.on {
           count += 1
           if (count == sz) {
-            done(i).success(true)
+            done(i).success(count)
             self.main.seal()
           }
         }
       })
     }).toArray
 
-    val producer = system.spawn(Reactor[String] { self =>
+    system.spawn(Reactor[String] { _ =>
       var j = 0
       while (j < sz) {
         var i = 0
-        while (i < ForkJoinThroughput.K) {
+        while (i < ForkJoinThroughput.NUM_WORKERS) {
           workers(i) ! "event"
           i += 1
         }
@@ -337,15 +358,13 @@ class ForkJoinThroughput(val system: ReactorSystem) {
       }
     })
 
-    for (i <- 0 until ForkJoinThroughput.K) {
-      Await.result(done(i).future, Duration.Inf)
+    var res: Int = 0
+    for (i <- 0 until ForkJoinThroughput.NUM_WORKERS) {
+      res += Await.result(done(i).future, Duration.Inf)
     }
-  }
-}
 
-object ForkJoinThroughput {
-  // The number of workers to create.
-  val K = 256
+    new SimpleResult("ForkJoinThroughput", ForkJoinThroughput.NUM_WORKERS * sz, res.longValue())
+  }
 }
 
 /** PingPong benchmark workload.
@@ -356,17 +375,19 @@ object ForkJoinThroughput {
  *
  *  Messages exchanged: 2 * sz (ping, pong)
  */
-class PingPong(val system: ReactorSystem) {
+object PingPong {
 
-  def run(sz: Int) {
-    val done = Promise[Boolean]()
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("PingPong workload: Reactor pair sequential ping pong performance")
+
+    val done = Promise[Int]()
 
     // Inner class to handle circular reference between ping and pong.
     class PingPongInner {
-      val ping: Channel[String] = system.spawn(Reactor { (self: Reactor[String]) =>
-        val pong: Channel[String] = system.spawn(Reactor { (self: Reactor[String]) =>
+      val ping: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
+        val pong: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
           var left = sz
-          self.main.events onEvent { x =>
+          self.main.events onEvent { _ =>
             ping ! "pong"
             left -= 1
             if (left == 0) self.main.seal()
@@ -374,12 +395,12 @@ class PingPong(val system: ReactorSystem) {
         })
         var left = sz
         pong ! "ping"
-        self.main.events onEvent { x =>
+        self.main.events onEvent { _ =>
           left -= 1
           if (left > 0) {
             pong ! "ping"
           } else {
-            done.success(true)
+            done.success(left)
             self.main.seal()
           }
         }
@@ -387,7 +408,7 @@ class PingPong(val system: ReactorSystem) {
     }
     new PingPongInner
 
-    Await.result(done.future, Duration.Inf)
+    new SimpleResult("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -399,30 +420,35 @@ class PingPong(val system: ReactorSystem) {
  *
  *  Messages exchanged: 2 * sz (ping, pong)
  */
-class StreamingPingPong(val system: ReactorSystem) {
+object StreamingPingPong {
 
-  def run(sz: Int) {
-    val done = Promise[Boolean]()
+  // How many ping pong exchanges to overlap.
+  val WINDOW_SIZE = 128
+
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("StreamingPingPong workload: Reactor pair overlapping ping pong performance")
+
+    val done = Promise[Int]()
 
     // Inner class to handle circular reference between ping and pong.
     class PingPongInner {
-      val ping: Channel[String] = system.spawn(Reactor { (self: Reactor[String]) =>
-        val pong: Channel[String] = system.spawn(Reactor { (self: Reactor[String]) =>
+      val ping: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
+        val pong: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
           var left = sz
-          self.main.events onEvent { x =>
+          self.main.events onEvent { _ =>
             ping ! "pong"
             left -= 1
             if (left == 0) self.main.seal()
           }
         })
         var left = sz
-        for (i <- 0 until StreamingPingPong.WINDOW_SIZE) pong ! "ping"
-        self.main.events onEvent { x =>
+        for (_ <- 0 until StreamingPingPong.WINDOW_SIZE) pong ! "ping"
+        self.main.events onEvent { _ =>
           left -= 1
           if (left > 0) {
             pong ! "ping"
           } else {
-            done.success(true)
+            done.success(left)
             self.main.seal()
           }
         }
@@ -430,13 +456,8 @@ class StreamingPingPong(val system: ReactorSystem) {
     }
     new PingPongInner
 
-    Await.result(done.future, Duration.Inf)
+    new SimpleResult("StreamingPingPong", 0, Await.result(done.future, Duration.Inf).longValue())
   }
-}
-
-object StreamingPingPong {
-  // How many ping pong exchanges to overlap.
-  val WINDOW_SIZE = 128
 }
 
 /** Roundabout benchmark workload.
@@ -445,21 +466,26 @@ object StreamingPingPong {
  *
  *  Messages exchanged: N
  */
-class Roundabout(val system: ReactorSystem) {
+object Roundabout {
 
-  def run(sz: Int) = {
-    val done = Promise[Boolean]()
+  // How many messages to send.
+  val NUM_MESSAGES = 500000
+
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("Roundabout workload: Many channels reactor performance")
+
+    val done = Promise[Int]()
 
     val roundabout = system.spawn(Reactor[Channel[Array[Channel[Int]]]] { self =>
-      val connectors = (for (i <- 0 until sz) yield {
+      val connectors = (for (_ <- 0 until sz) yield {
         system.channels.open[Int]
       }).toArray
       var count = 0
       for (c <- connectors) c.events.on {
         count += 1
-        if (count == Roundabout.N) {
+        if (count == Roundabout.NUM_MESSAGES) {
           connectors.foreach(_.seal())
-          done.success(true)
+          done.success(count)
         }
       }
       self.main.events.onEvent { ch =>
@@ -468,11 +494,11 @@ class Roundabout(val system: ReactorSystem) {
       }
     })
 
-    val producer = system.spawn(Reactor[Array[Channel[Int]]] { self =>
+    system.spawn(Reactor[Array[Channel[Int]]] { self =>
       roundabout ! self.main.channel
       self.main.events.onEvent { chs =>
         var i = 0
-        while (i < Roundabout.N) {
+        while (i < Roundabout.NUM_MESSAGES) {
           chs(i % sz) ! i
           i += 1
         }
@@ -480,13 +506,8 @@ class Roundabout(val system: ReactorSystem) {
       }
     })
 
-    Await.result(done.future, Duration.Inf)
+    new SimpleResult("Roundabout", Roundabout.NUM_MESSAGES, Await.result(done.future, Duration.Inf).longValue())
   }
-}
-
-object Roundabout {
-  // How many messages to send.
-  val N = 500000
 }
 
 /** ThreadRing benchmark workload.
@@ -497,10 +518,15 @@ object Roundabout {
  *
  *  Messages exchanged: sz (rounded to multiple of RING_SIZE)
  */
-class ThreadRing(val system: ReactorSystem) {
+object ThreadRing {
 
-  def run(sz: Int) {
-    val done = Promise[Boolean]()
+  // Size of worker ring.
+  val RING_SIZE = 1000
+
+  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+    println("ThreadRing workload: Reactor ring forwarding performance")
+
+    val done = Promise[Int]()
 
     // Inner class to handle references to ring array.
     class RingInner {
@@ -511,7 +537,7 @@ class ThreadRing(val system: ReactorSystem) {
             rounds -= 1
             if (rounds == 0) {
               self.main.seal()
-              if (i == ring.length - 1) done.success(true)
+              if (i == ring.length - 1) done.success(rounds)
             }
             ring((i + 1) % ring.length) ! x
           }
@@ -521,11 +547,6 @@ class ThreadRing(val system: ReactorSystem) {
     }
     new RingInner
 
-    Await.result(done.future, Duration.Inf)
+    new SimpleResult("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue())
   }
-}
-
-object ThreadRing {
-  // Size of worker ring.
-  val RING_SIZE = 1000
 }
