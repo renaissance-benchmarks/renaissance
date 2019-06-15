@@ -208,7 +208,7 @@ object CountingActor {
       self.main.seal()
     })
 
-    new SimpleResult ("CountingActor", sz, Await.result(done.future, Duration.Inf).longValue())
+    new SimpleResult("CountingActor", sz, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -238,15 +238,15 @@ object Fibonacci {
             self.main.seal()
           case _ =>
             var sum = 0
-              var recv = 0
-              self.main.events.onEvent { x =>
-                sum += x
-                recv += 1
-                if (recv == 2) {
-                  parent ! sum
-                  self.main.seal()
-                }
+            var recv = 0
+            self.main.events.onEvent { x =>
+              sum += x
+              recv += 1
+              if (recv == 2) {
+                parent ! sum
+                self.main.seal()
               }
+            }
             fib(self.main.channel, n - 1)
             fib(self.main.channel, n - 2)
         }
@@ -333,18 +333,19 @@ object ForkJoinThroughput {
     val done = new Array[Promise[Int]](ForkJoinThroughput.NUM_WORKERS)
     for (i <- 0 until ForkJoinThroughput.NUM_WORKERS) done(i) = Promise[Int]()
 
-    val workers: Array[Channel[String]] = (for (i <- 0 until ForkJoinThroughput.NUM_WORKERS) yield {
-      system.spawn(Reactor[String] { self =>
-        var count = 0
-        self.main.events.on {
-          count += 1
-          if (count == sz) {
-            done(i).success(count)
-            self.main.seal()
+    val workers: Array[Channel[String]] =
+      (for (i <- 0 until ForkJoinThroughput.NUM_WORKERS) yield {
+        system.spawn(Reactor[String] { self =>
+          var count = 0
+          self.main.events.on {
+            count += 1
+            if (count == sz) {
+              done(i).success(count)
+              self.main.seal()
+            }
           }
-        }
-      })
-    }).toArray
+        })
+      }).toArray
 
     system.spawn(Reactor[String] { _ =>
       var j = 0
@@ -456,7 +457,11 @@ object StreamingPingPong {
     }
     new PingPongInner
 
-    new SimpleResult("StreamingPingPong", 0, Await.result(done.future, Duration.Inf).longValue())
+    new SimpleResult(
+      "StreamingPingPong",
+      0,
+      Await.result(done.future, Duration.Inf).longValue()
+    )
   }
 }
 
@@ -506,7 +511,11 @@ object Roundabout {
       }
     })
 
-    new SimpleResult("Roundabout", Roundabout.NUM_MESSAGES, Await.result(done.future, Duration.Inf).longValue())
+    new SimpleResult(
+      "Roundabout",
+      Roundabout.NUM_MESSAGES,
+      Await.result(done.future, Duration.Inf).longValue()
+    )
   }
 }
 
