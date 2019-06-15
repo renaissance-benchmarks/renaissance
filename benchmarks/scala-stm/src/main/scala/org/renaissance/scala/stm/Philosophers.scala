@@ -32,7 +32,7 @@ class Philosophers extends RenaissanceBenchmark {
 
   override def runIteration(c: Config): BenchmarkResult = {
     RealityShowPhilosophers.run(NUMBER_OF_MEALS, THREAD_COUNT)
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 

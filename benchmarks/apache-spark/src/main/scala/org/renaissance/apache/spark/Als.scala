@@ -96,7 +96,7 @@ class Als extends RenaissanceBenchmark with SparkUtil {
     val als = new org.apache.spark.mllib.recommendation.ALS()
     factModel = als.run(ratings)
     blackHole(factModel)
-    // FIXME: add proper validation of the generated model
+    // TODO: add proper validation of the generated model
     return new EmptyResult
   }
 }

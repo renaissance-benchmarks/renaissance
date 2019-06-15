@@ -694,7 +694,7 @@ final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleNam
   override protected def runIteration(config: ${classOf[Config].getSimpleName}): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
-    // Return object for later validation of the iteration
+    // Return object for later validation of the iteration.
     return new MyJavaBenchmarkResult()
   }
 }

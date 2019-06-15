@@ -39,11 +39,7 @@ public class HashingResult implements BenchmarkResult {
 
     String actual = String.format("%16x", hash);
     
-    if (!expected.equals(actual)) {
-      throw new ValidationException(String.format(
-        "Validation failed: expected hash %s but got %s",
-        expected, actual));
-    }
+    ValidationException.throwIfNotEqual(expected, actual, "object hash");
   }
 
   private List<String> getSortedValues() {

@@ -103,7 +103,7 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
       .setK(DISTRIBUTION_COUNT)
       .setMaxIterations(NUM_GMM_ITERATIONS)
       .run(input)
-    // FIXME: add more in-depth validation
+    // TODO: add more in-depth validation
     return new SimpleResult("number of gaussians", 6, gmm.k)
   }
 

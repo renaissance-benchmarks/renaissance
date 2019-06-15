@@ -43,7 +43,7 @@ class AkkaUct extends RenaissanceBenchmark {
     for (i <- 0 until numIterations) {
       bench.runIteration()
     }
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }

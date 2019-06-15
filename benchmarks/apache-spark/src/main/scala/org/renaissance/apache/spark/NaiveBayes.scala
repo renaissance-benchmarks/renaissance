@@ -111,11 +111,10 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
       .setLambda(SMOOTHING)
       .setModelType("multinomial")
     bayesModel = bayes.run(data)
-    // FIXME: add more in-depth validation
-    val pi = bayesModel.pi
+    // TODO: add more in-depth validation
     return new CompoundResult(
-      new SimpleResult("pi 0", -0.84397, pi(0), 0.001),
-      new SimpleResult("pi 0", -0.56212, bayesModel.pi(1), 0.001)
+      new SimpleResult("pi 0", -0.84397, bayesModel.pi(0), 0.001),
+      new SimpleResult("pi 1", -0.56212, bayesModel.pi(1), 0.001)
     )
   }
 }

@@ -106,7 +106,7 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
     import sqlContext.implicits._
     mlModel = lor.fit(rdd.toDF("label", "features"))
     blackHole(mlModel)
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 

@@ -41,6 +41,8 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   val bigInputFile = pageRankPath.resolve("bigfile.txt")
 
+  var expectedRanksCount = 598652
+
   var sc: SparkContext = null
 
   var links: RDD[(String, Iterable[String])] = null
@@ -57,6 +59,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
       val sublist =
         for ((line, num) <- new StringOps(text).lines.zipWithIndex if num < MAX_LINE) yield line
       text = sublist.toList.mkString("\n")
+      expectedRanksCount = 1661
     }
     FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
   }
@@ -90,13 +93,10 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
       }
       ranks = contributions.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
     }
-    blackHole(ranks.count())
+    blackHole(ranks)
 
-    return new SimpleResult(
-      "ranks count",
-      if (c.functionalTest) 1661 else 598652,
-      ranks.count()
-    )
+    // TODO: add more sophisticated validation
+    return new SimpleResult("ranks count", expectedRanksCount, ranks.count())
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

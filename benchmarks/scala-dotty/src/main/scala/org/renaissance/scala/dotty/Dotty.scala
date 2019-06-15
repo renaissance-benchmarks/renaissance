@@ -91,7 +91,7 @@ class Dotty extends RenaissanceBenchmark {
       outputPath.toString
     )
     sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
-    // FIXME: add proper validation
+    // TODO: add proper validation
     return new EmptyResult
   }
 }
