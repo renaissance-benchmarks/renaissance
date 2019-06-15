@@ -152,7 +152,6 @@ object Benchmarks {
             val benchClass = clazz.asSubclass(benchBase)
             val info = new BenchmarkInfo(benchClass)
             if (logger.nonEmpty) logBenchmark(info, logger.get)
-
             result += info
           }
         }
