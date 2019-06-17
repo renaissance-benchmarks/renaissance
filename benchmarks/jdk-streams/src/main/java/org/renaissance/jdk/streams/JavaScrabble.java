@@ -19,7 +19,9 @@ package org.renaissance.jdk.streams;
 
 
 import org.apache.commons.io.IOUtils;
+import org.renaissance.ValidationException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
@@ -67,7 +70,7 @@ public class JavaScrabble {
     }
   }
 
-  public int run() {
+  public List<Entry<Integer, List<String>>> run() {
     // Function to compute the score of a given word
     IntUnaryOperator scoreOfALetter = letter -> letterScores[letter - 'A'];
 
@@ -159,7 +162,7 @@ public class JavaScrabble {
         .limit(3)
         .collect(Collectors.toList());
 
-    return finalList.size();
+    return finalList;
   }
 
   private final static Pattern nonAlphabetRegex = Pattern.compile(".*[^A-Z].*");
@@ -175,5 +178,32 @@ public class JavaScrabble {
         return word.toUpperCase();
       })
       .filter(word -> isAlphabetical(word));
+  }
+  
+  public static List<String> prepareForValidation(List<Entry<Integer, List<String>>> bestWords) {
+    List<String> result = new ArrayList<>(bestWords.size());
+    for (Entry<Integer, List<String>> entry : bestWords) {
+        Integer score = entry.getKey();
+        String words = String.join("-", sortedUniqueWords(entry.getValue()));
+        result.add(String.format("%d--%s", score, words));
+    }
+    return result;
+  }
+  
+  private static List<String> sortedUniqueWords(List<String> words) {
+    return new ArrayList<String>(new TreeSet<String>(words));
+  }
+  
+  public static void validate(List<Entry<Integer, List<String>>> bestWords) {
+    ValidationException.throwIfNotEqual(3, bestWords.size(), "list length");
+
+    ValidationException.throwIfNotEqual(120, (int) bestWords.get(0).getKey(), "score of best word");
+    ValidationException.throwIfNotEqual("QUICKLY", String.join("-", sortedUniqueWords(bestWords.get(0).getValue())), "best scoring word");
+
+    ValidationException.throwIfNotEqual(118, (int) bestWords.get(1).getKey(), "score of second best word");
+    ValidationException.throwIfNotEqual("ZEPHYRS", String.join("-", sortedUniqueWords(bestWords.get(1).getValue())), "second best scoring word");
+
+    ValidationException.throwIfNotEqual(114, (int) bestWords.get(2).getKey(), "score of third best words");
+    ValidationException.throwIfNotEqual("QUALIFY-QUICKEN-QUICKER", String.join("-", sortedUniqueWords(bestWords.get(2).getValue())), "third best scoring words");
   }
 }

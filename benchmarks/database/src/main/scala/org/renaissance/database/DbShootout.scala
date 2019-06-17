@@ -7,7 +7,9 @@ import org.lmdbjava.bench.LevelDb
 import org.lmdbjava.bench.MapDb
 import org.lmdbjava.bench.MvStore
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
@@ -100,7 +102,7 @@ class DbShootout extends RenaissanceBenchmark {
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
-  def runIteration(c: Config): Unit = {
+  def runIteration(c: Config): BenchmarkResult = {
     mapDb.parReadKey(mapDbReader)
     mapDb.parWrite(mapDbWriter)
 
@@ -112,5 +114,8 @@ class DbShootout extends RenaissanceBenchmark {
 
     mvStore.parReadKey(mvStoreReader)
     mvStore.parWrite(mvStoreWriter)
+
+    // TODO: add proper validation
+    return new EmptyResult
   }
 }

@@ -10,9 +10,11 @@ import org.apache.spark.mllib.clustering.GaussianMixture
 import org.apache.spark.mllib.clustering.GaussianMixtureModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 import scala.util.Random
@@ -96,11 +98,13 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     gmm = new GaussianMixture()
       .setK(DISTRIBUTION_COUNT)
       .setMaxIterations(NUM_GMM_ITERATIONS)
       .run(input)
+    // TODO: add more in-depth validation
+    return new SimpleResult("number of gaussians", 6, gmm.k)
   }
 
 }
