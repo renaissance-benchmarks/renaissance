@@ -132,6 +132,7 @@ class FinagleHttp extends RenaissanceBenchmark {
     threadBarrier = new CountDownLatch(NUM_CLIENTS + 1)
     for (i <- 0 until NUM_CLIENTS) {
       threads(i) = new WorkerThread(port, threadBarrier, NUM_REQUESTS)
+      threads(i).setName(s"finagle-http-worker-$i")
       threads(i).start()
     }
   }
