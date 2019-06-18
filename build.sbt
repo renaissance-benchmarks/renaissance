@@ -250,21 +250,22 @@ lazy val renaissance: Project = {
   allProjects.foldLeft(p)(_ aggregate _)
 }
 
-def generateJmhWrapperBenchmarkClass(
-  name: String,
-  packageName: String,
-  outputDir: File
-): File = {
+def generateJmhWrapperBenchmarkClass(info: BenchmarkInfo, outputDir: File): File = {
+  val packageName = info.benchClass.getPackage.getName
+  val name = info.benchClass.getSimpleName
   val content = s"""
      package $packageName;
 
      import java.util.concurrent.TimeUnit;
+     import static java.util.concurrent.TimeUnit.MILLISECONDS;
      import org.openjdk.jmh.annotations.*;
      import org.renaissance.RenaissanceBenchmark;
      import org.renaissance.JmhRenaissanceBenchmark;
 
      @State(Scope.Benchmark)
      @OutputTimeUnit(TimeUnit.MILLISECONDS)
+     @Warmup(iterations = ${info.repetitions}, time = 1, timeUnit = MILLISECONDS)
+     @Measurement(iterations = ${info.repetitions / 4 + 1}, time = 1, timeUnit = MILLISECONDS)
      public class Jmh_$name extends JmhRenaissanceBenchmark {
        public String benchmarkName() {
            return RenaissanceBenchmark.kebabCase("$name");
@@ -320,10 +321,7 @@ def generateJmhWrapperBenchmarkClasses(
       info <- listBenchmarks(allJars, None)
       if !nonGpl || info.distro() == License.MIT
     } yield {
-      generateJmhWrapperBenchmarkClass(
-        info.benchClass.getSimpleName,
-        info.benchClass.getPackage.getName,
-        outputDir)
+      generateJmhWrapperBenchmarkClass(info, outputDir)
     }
   }
 
