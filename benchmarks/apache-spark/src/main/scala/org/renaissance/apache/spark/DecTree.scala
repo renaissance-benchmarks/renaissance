@@ -17,9 +17,12 @@ import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
+import org.renaissance.CompoundResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.SimpleResult
 
 @Name("dec-tree")
 @Group("apache-spark")
@@ -107,7 +110,7 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
     pipeline = constructPipeline()
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     pipelineModel = pipeline.fit(training)
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
@@ -119,7 +122,11 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
       true
     )
     iteration += 1
-
+    // TODO: add more in-depth validation
+    return new CompoundResult(
+      new SimpleResult("tree depth", 2, treeModel.depth),
+      new SimpleResult("node count", 5, treeModel.numNodes)
+    )
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

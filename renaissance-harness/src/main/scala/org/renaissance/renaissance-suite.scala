@@ -401,6 +401,10 @@ object RenaissanceSuite {
   val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
     "raw/master/website/resources/images/mona-lisa-round.png"
 
+  val jmhTargetPath = "renaissance-jmh/target/scala-2.12"
+
+  val jmhJarPrefix = "renaissance-jmh-assembly"
+
   lazy val readme = s"""
 
 ## Renaissance Benchmark Suite
@@ -507,7 +511,7 @@ $$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$$ java -jar 'renaissance-jmh/target/renaissance-jmh-assembly-${renaissanceVersion}.jar'
+$$ java -jar '${jmhTargetPath}/${jmhJarPrefix}-${renaissanceVersion}.jar'
 ```
 
 
@@ -643,9 +647,11 @@ import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
 final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleName} {
-  override protected def runIteration(config: ${classOf[Config].getSimpleName}): Unit = {
+  override protected def runIteration(config: ${classOf[Config].getSimpleName}): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
+    // Return object for later validation of the iteration.
+    return new MyJavaBenchmarkResult()
   }
 }
 ```

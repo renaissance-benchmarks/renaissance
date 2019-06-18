@@ -40,7 +40,7 @@ public class BenchmarkLoader {
             final Class<?> benchClass = loader.loadClass(bench.className);
             final Object result = benchClass.getDeclaredConstructor().newInstance();
 
-            // Make current thread as independent of the harness as possible
+            // Make current thread as independent of the harness as possible.
             Thread.currentThread().setContextClassLoader(loader);
             return (RenaissanceBenchmark) result;
         } catch (Exception e) {

@@ -18,9 +18,11 @@ import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.SimpleResult
 
 @Name("finagle-http")
 @Group("twitter-finagle")
@@ -39,6 +41,10 @@ class FinagleHttp extends RenaissanceBenchmark {
   /** Number of clients that are simultaneously sending the requests.
    */
   var NUM_CLIENTS = 20
+
+  /** Manually computed length of one request (see /json handler).
+   */
+  val REQUEST_CONTENT_SIZE = 27
 
   var server: ListeningServer = null
 
@@ -93,7 +99,7 @@ class FinagleHttp extends RenaissanceBenchmark {
     server.close()
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     var totalLength = 0L
     for (i <- 0 until NUM_CLIENTS) {
       val clientThread = new Thread {
@@ -114,6 +120,10 @@ class FinagleHttp extends RenaissanceBenchmark {
       clientThread.start()
       clientThread.join()
     }
-    blackHole(totalLength)
+    return new SimpleResult(
+      "total request length",
+      NUM_CLIENTS * NUM_REQUESTS * REQUEST_CONTENT_SIZE,
+      totalLength
+    )
   }
 }

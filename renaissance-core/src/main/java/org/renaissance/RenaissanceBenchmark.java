@@ -114,7 +114,7 @@ public abstract class RenaissanceBenchmark {
   /**
    * This method runs the functionality of the benchmark.
    */
-  protected abstract void runIteration(Config config);
+  protected abstract BenchmarkResult runIteration(Config config);
 
   long runIterationWithBeforeAndAfter(Policy policy, Config config) {
     long unixTsBefore = System.currentTimeMillis();
@@ -127,7 +127,7 @@ public abstract class RenaissanceBenchmark {
 
     long start = System.nanoTime();
 
-    runIteration(config);
+    BenchmarkResult result = runIteration(config);
 
     long end = System.nanoTime();
     long duration = end - start;
@@ -139,6 +139,8 @@ public abstract class RenaissanceBenchmark {
     afterIteration(config);
 
     long unixTsAfter = System.currentTimeMillis();
+
+    result.validate();
 
     for (ResultObserver observer : config.resultObservers()) {
       observer.onNewResult(name(), "nanos", duration);

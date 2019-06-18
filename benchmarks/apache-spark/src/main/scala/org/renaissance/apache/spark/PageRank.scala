@@ -7,9 +7,11 @@ import java.nio.file.Paths
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 import scala.collection.immutable.StringOps
@@ -39,6 +41,8 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   val bigInputFile = pageRankPath.resolve("bigfile.txt")
 
+  var expectedRanksCount = 598652
+
   var sc: SparkContext = null
 
   var links: RDD[(String, Iterable[String])] = null
@@ -55,6 +59,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
       val sublist =
         for ((line, num) <- new StringOps(text).lines.zipWithIndex if num < MAX_LINE) yield line
       text = sublist.toList.mkString("\n")
+      expectedRanksCount = 1661
     }
     FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
   }
@@ -79,7 +84,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
     loadData()
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     ranks = links.mapValues(v => 1.0)
     for (i <- 0 until ITERATIONS) {
       val contributions = links.join(ranks).values.flatMap {
@@ -88,7 +93,10 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
       }
       ranks = contributions.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
     }
-    blackHole(ranks.count())
+    blackHole(ranks)
+
+    // TODO: add more sophisticated validation
+    return new SimpleResult("ranks count", expectedRanksCount, ranks.count())
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

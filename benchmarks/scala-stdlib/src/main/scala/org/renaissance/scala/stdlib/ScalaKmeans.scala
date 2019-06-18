@@ -1,9 +1,11 @@
 package org.renaissance.scala.stdlib
 
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
+import org.renaissance.ValidationException
 
 import scala.collection._
 import scala.util.Random
@@ -122,6 +124,22 @@ trait KmeansUtilities {
 @Repetitions(50)
 class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
 
+  class ScalaKmeansResult(expected: Seq[Point], actual: GenSeq[Point]) extends BenchmarkResult {
+
+    val EPSILON = 0.01
+
+    override def validate(): Unit = {
+      ValidationException.throwIfNotEqual(expected.length, actual.length, "centers count")
+      var idx = 0
+      for ((exp, act) <- (expected zip actual)) {
+        ValidationException.throwIfNotEqual(exp.x, act.x, EPSILON, s"center $idx position at x")
+        ValidationException.throwIfNotEqual(exp.y, act.y, EPSILON, s"center $idx position at y")
+        ValidationException.throwIfNotEqual(exp.z, act.z, EPSILON, s"center $idx position at z")
+        idx = idx + 1
+      }
+    }
+  }
+
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
@@ -137,6 +155,52 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
 
   var means: GenSeq[Point] = null
 
+  val EXPECTED_RESULT_FULL = Seq(
+    new Point(0.69, 0.54, 0.76),
+    new Point(0.97, 1.09, 0.37),
+    new Point(0.89, 1.0, 0.75),
+    new Point(1.13, 0.18, 0.19),
+    new Point(0.34, 0.36, 0.68),
+    new Point(0.56, 0.88, 0.7),
+    new Point(0.46, 0.47, 0.36),
+    new Point(0.53, 0.72, 0.88),
+    new Point(0.38, 0.62, 0.77),
+    new Point(0.78, 0.75, 0.66),
+    new Point(0.26, 0.66, 0.57),
+    new Point(0.92, 0.81, 0.89),
+    new Point(0.79, 0.89, 1.22),
+    new Point(0.74, 0.71, 1.01),
+    new Point(0.32, 0.38, 0.45),
+    new Point(1.3, 0.41, 0.49),
+    new Point(0.16, 0.54, 0.36),
+    new Point(0.83, 1.11, 1.0),
+    new Point(0.73, 0.95, 0.88),
+    new Point(0.53, 0.56, 0.56),
+    new Point(1.04, 0.87, 1.16),
+    new Point(0.62, 0.98, 1.05),
+    new Point(0.17, 0.26, 0.42),
+    new Point(1.21, 0.15, 0.45),
+    new Point(1.01, 0.36, 0.41),
+    new Point(1.01, 1.16, 1.31),
+    new Point(1.09, 1.04, 0.99),
+    new Point(1.16, 1.24, 1.22),
+    new Point(0.84, 1.1, 1.22),
+    new Point(0.98, 1.26, 1.02),
+    new Point(1.25, 0.43, 0.22),
+    new Point(1.11, 1.23, 0.23)
+  )
+
+  val EXPECTED_RESULT_TEST = Seq(
+    new Point(0.91, 0.51, 0.66),
+    new Point(0.78, 0.34, 0.41),
+    new Point(1.18, 0.43, 0.71),
+    new Point(0.99, 0.48, 0.94),
+    new Point(0.75, 0.19, 0.61),
+    new Point(1.12, 0.74, 0.89),
+    new Point(0.31, 0.82, 1.06),
+    new Point(0.56, 1.05, 0.31)
+  )
+
   override def setUpBeforeAll(c: Config): Unit = {
     if (c.functionalTest) {
       numPoints = 5000
@@ -146,8 +210,12 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
     means = initializeMeans(k, points)
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     centers = kMeans(points, means, eta)
     blackHole(centers)
+    return new ScalaKmeansResult(
+      if (c.functionalTest) EXPECTED_RESULT_TEST else EXPECTED_RESULT_FULL,
+      centers
+    )
   }
 }

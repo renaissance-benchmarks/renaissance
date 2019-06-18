@@ -1,13 +1,9 @@
-import java.net.URLClassLoader
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import java.util.jar.JarFile
-import java.util.regex.Pattern
 
 import org.renaissance.Launcher
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 
 import scala.collection._
 
@@ -41,57 +37,6 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
         flattenTasks(xs) map (x.value +: _)
       }
   }
-
-def logBenchmark(b: BenchmarkInfo, logger: Logger) = {
-  logger.info(s"class: ${b.className}")
-  logger.info(s"\tbenchmark: ${b.group}/${b.name}")
-  logger.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
-  logger.info(s"\trepetitions: ${b.repetitions}")
-  logger.info(s"\tsummary: ${b.summary}")
-}
-
-// Return tuples with (name, distro license, all licenses, description and default repetitions)
-def listBenchmarks(classpath: Seq[File], logger: Option[Logger]): Seq[BenchmarkInfo] = {
-  //
-  // Load the benchmark base class and create a class loader for the project
-  // with the class loader of the base class as its parent. This will allow
-  // us to use core classes here.
-  //
-  val benchBase = classOf[RenaissanceBenchmark]
-  val urls = classpath.map(_.toURI.toURL).toArray
-  val loader = new URLClassLoader(urls, benchBase.getClassLoader)
-  val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
-
-  //
-  // Scan all JAR files for classes in the org.renaissance package implementing
-  // the benchmark interface and collect metadata from class annotations.
-  //
-  val result = new mutable.ArrayBuffer[BenchmarkInfo]
-  for (jarFile <- classpath.map(jar => new JarFile(jar))) {
-    for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
-      if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
-        val benchClassName = entry.getName
-          .substring(0, entry.getName.length - ".class".length)
-          .replace("/", ".")
-        val clazz = loader.loadClass(benchClassName)
-
-        val isEligible =
-          !excludePattern.matcher(clazz.getPackage.getName).matches() &&
-            benchBase.isAssignableFrom(clazz)
-        if (isEligible) {
-          // Print info to see what benchmarks are picked up by the build.
-          val benchClass = clazz.asSubclass(benchBase)
-          val info = new BenchmarkInfo(benchClass)
-          if (logger.nonEmpty) logBenchmark(info, logger.get)
-
-          result += info
-        }
-      }
-    }
-  }
-
-  result
-}
 
 def projectJars = Def.taskDyn {
   // Each generated task returns tuple of
@@ -134,7 +79,7 @@ def jarsAndListGenerator = Def.taskDyn {
       jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
 
       // Scan project jars for benchmarks and fill the property file.
-      for (benchInfo <- listBenchmarks(allJars, Some(logger))) {
+      for (benchInfo <- Benchmarks.listBenchmarks(allJars, Some(logger))) {
         if (!nonGpl || benchInfo.distro() == License.MIT) {
           for ((k, v) <- benchInfo.toMap()) {
             benchDetails.setProperty(s"benchmark.${benchInfo.name}.$k", v);
@@ -250,84 +195,6 @@ lazy val renaissance: Project = {
   allProjects.foldLeft(p)(_ aggregate _)
 }
 
-def generateJmhWrapperBenchmarkClass(info: BenchmarkInfo, outputDir: File): File = {
-  val packageName = info.benchClass.getPackage.getName
-  val name = info.benchClass.getSimpleName
-  val content = s"""
-     package $packageName;
-
-     import java.util.concurrent.TimeUnit;
-     import static java.util.concurrent.TimeUnit.MILLISECONDS;
-     import org.openjdk.jmh.annotations.*;
-     import org.renaissance.RenaissanceBenchmark;
-     import org.renaissance.JmhRenaissanceBenchmark;
-
-     @State(Scope.Benchmark)
-     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-     @Warmup(iterations = ${info.repetitions}, time = 1, timeUnit = MILLISECONDS)
-     @Measurement(iterations = ${info.repetitions / 4 + 1}, time = 1, timeUnit = MILLISECONDS)
-     public class Jmh_$name extends JmhRenaissanceBenchmark {
-       public String benchmarkName() {
-           return RenaissanceBenchmark.kebabCase("$name");
-       }
-
-       @Setup(Level.Trial)
-       public void setUpBeforeAll() {
-         defaultSetUpBeforeAll();
-       }
-
-       @Setup(Level.Iteration)
-       public void setUp() {
-         defaultSetUp();
-       }
-
-       @TearDown(Level.Iteration)
-       public void tearDown() {
-         defaultTearDown();
-       }
-
-       @TearDown(Level.Trial)
-       public void tearDownAfterAll() {
-         defaultTearDownAfterAll();
-       }
-
-       @Benchmark
-       @BenchmarkMode(Mode.AverageTime)
-       @OutputTimeUnit(TimeUnit.MILLISECONDS)
-       @Measurement(timeUnit = TimeUnit.MILLISECONDS)
-       public void run() {
-         defaultRun();
-       }
-     }
-   """
-  val outputPackageDir =
-    new File(outputDir.toString + "/" + packageName.split("\\.").mkString("/"))
-  outputPackageDir.mkdirs()
-  val outputFile = new File(outputPackageDir, "Jmh_" + name + ".java")
-  IO.write(outputFile, content, StandardCharsets.UTF_8)
-  outputFile
-}
-
-def generateJmhWrapperBenchmarkClasses(
-  outputDir: File,
-  logger: Logger,
-  nonGpl: Boolean,
-  groupJars: Seq[(String, Seq[File], Seq[File])]
-) = {
-  val perProjectBenchmarkClasses = for ((project, allJars, loadedJars) <- groupJars) yield {
-    // Scan project jars for benchmarks and fill the property file.
-    logger.info(s"Generating JMH wrappers for project $project")
-    for {
-      info <- listBenchmarks(allJars, None)
-      if !nonGpl || info.distro() == License.MIT
-    } yield {
-      generateJmhWrapperBenchmarkClass(info, outputDir)
-    }
-  }
-
-  perProjectBenchmarkClasses.flatten
-}
-
 // This project generates a custom JMH wrapper for each Renaissance benchmark.
 // Then, the project inserts JMH-specific functionality into the final JAR,
 // which can then be run in a JMH-compliant way.
@@ -360,7 +227,12 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
       val outputDir = sourceManaged.in(Compile).value
       val nonGpl = nonGplOnly.value
       projectJars.map { groupJars =>
-        generateJmhWrapperBenchmarkClasses(outputDir, log, nonGpl, groupJars)
+        RenaissanceJmh.generateJmhWrapperBenchmarkClasses(
+          outputDir,
+          log,
+          nonGpl,
+          groupJars
+        )
       }
     }.taskValue +: (sourceGenerators in Compile).value,
     assembly in Jmh := ((assembly in Jmh) dependsOn (compile in Jmh)).value,
