@@ -200,7 +200,7 @@ $ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/renaissance-jmh-assembly-0.9.0.jar'
+$ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.9.0.jar'
 ```
 
 
