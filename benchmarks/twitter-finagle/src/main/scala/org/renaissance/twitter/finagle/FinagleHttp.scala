@@ -63,7 +63,7 @@ class FinagleHttp extends RenaissanceBenchmark {
 
   /** Number of clients that are simultaneously sending the requests.
    */
-  var NUM_CLIENTS = 8
+  var NUM_CLIENTS = Runtime.getRuntime.availableProcessors
 
   /** Manually computed length of one request (see /json handler).
    */
