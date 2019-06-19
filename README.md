@@ -82,7 +82,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### apache-spark
 
-- `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 60)
+- `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 30)
 
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
