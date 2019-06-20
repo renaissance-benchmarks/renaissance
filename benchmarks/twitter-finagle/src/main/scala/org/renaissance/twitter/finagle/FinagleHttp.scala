@@ -119,6 +119,13 @@ class FinagleHttp extends RenaissanceBenchmark {
       .withTracer(NullTracer)
       .serve(s":0", serverAndDate.andThen(muxer))
     port = server.boundAddress.asInstanceOf[InetSocketAddress].getPort
+    println(
+      "finagle-http on :%d spawning %d client and %s server workers.".format(
+        port,
+        NUM_CLIENTS,
+        System.getProperty("com.twitter.finagle.netty4.numWorkers", "default number of")
+      )
+    )
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
