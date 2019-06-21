@@ -46,7 +46,9 @@ class FinagleHttp extends RenaissanceBenchmark {
         val request = http.Request(http.Method.Get, "/json")
         request.host = s"localhost:$port"
         val response: Future[http.Response] = client(request)
-        Await.result(response.onSuccess { rep: http.Response =>
+        // Need to use map() instead of onSuccess() as we actually need to
+        // wait for the side-effect, not the original response
+        Await.result(response.map { rep: http.Response =>
           totalContentLength += rep.content.length
         })
       }
