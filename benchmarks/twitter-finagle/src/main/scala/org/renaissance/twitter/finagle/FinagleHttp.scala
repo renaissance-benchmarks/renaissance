@@ -2,6 +2,7 @@ package org.renaissance.twitter.finagle
 
 import java.net.InetSocketAddress
 import java.util.Date
+import java.util.concurrent.CountDownLatch
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
@@ -31,16 +32,40 @@ import org.renaissance.SimpleResult
 @Repetitions(12)
 class FinagleHttp extends RenaissanceBenchmark {
 
+  class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {
+    var totalContentLength = 0L
+
+    override def run(): Unit = {
+      val client: Service[http.Request, http.Response] =
+        com.twitter.finagle.Http.newService(s"localhost:$port")
+
+      barrier.countDown
+      barrier.await
+
+      for (i <- 0 until requestCount) {
+        val request = http.Request(http.Method.Get, "/json")
+        request.host = s"localhost:$port"
+        val response: Future[http.Response] = client(request)
+        // Need to use map() instead of onSuccess() as we actually need to
+        // wait for the side-effect, not the original response
+        Await.result(response.map { rep: http.Response =>
+          totalContentLength += rep.content.length
+        })
+      }
+      client.close()
+    }
+  }
+
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   /** Number of requests sent during the execution of the benchmark.
    */
-  var NUM_REQUESTS = 2000000
+  var NUM_REQUESTS = 12000
 
   /** Number of clients that are simultaneously sending the requests.
    */
-  var NUM_CLIENTS = 20
+  var NUM_CLIENTS = Runtime.getRuntime.availableProcessors
 
   /** Manually computed length of one request (see /json handler).
    */
@@ -50,10 +75,13 @@ class FinagleHttp extends RenaissanceBenchmark {
 
   var port: Int = -1
 
+  var threads: Array[WorkerThread] = null
+  var threadBarrier: CountDownLatch = null
+
   override def setUpBeforeAll(c: Config): Unit = {
     if (c.functionalTest) {
-      NUM_REQUESTS = 1000
-      NUM_CLIENTS = 5
+      NUM_REQUESTS = 150
+      NUM_CLIENTS = 2
     }
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")
@@ -93,33 +121,41 @@ class FinagleHttp extends RenaissanceBenchmark {
       .withTracer(NullTracer)
       .serve(s":0", serverAndDate.andThen(muxer))
     port = server.boundAddress.asInstanceOf[InetSocketAddress].getPort
+    println(
+      "finagle-http on :%d spawning %d client and %s server workers.".format(
+        port,
+        NUM_CLIENTS,
+        System.getProperty("com.twitter.finagle.netty4.numWorkers", "default number of")
+      )
+    )
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
     server.close()
   }
 
+  // Start the threads outside of the measured loop (use count-down latch
+  // to start the work simultaneously)
+  override def beforeIteration(c: Config): Unit = {
+    threads = new Array[WorkerThread](NUM_CLIENTS)
+    threadBarrier = new CountDownLatch(NUM_CLIENTS + 1)
+    for (i <- 0 until NUM_CLIENTS) {
+      threads(i) = new WorkerThread(port, threadBarrier, NUM_REQUESTS)
+      threads(i).setName(s"finagle-http-worker-$i")
+      threads(i).start()
+    }
+  }
+
   override def runIteration(c: Config): BenchmarkResult = {
+    // This actually starts the threads (see beforeIteration)
+    threadBarrier.countDown
+
     var totalLength = 0L
     for (i <- 0 until NUM_CLIENTS) {
-      val clientThread = new Thread {
-        override def run(): Unit = {
-          val client: Service[http.Request, http.Response] =
-            com.twitter.finagle.Http.newService(s"localhost:$port")
-          val request = http.Request(http.Method.Get, "/json")
-          request.host = s"localhost:$port"
-          val response: Future[http.Response] = client(request)
-          for (i <- 0 until NUM_REQUESTS) {
-            Await.result(response.onSuccess { rep: http.Response =>
-              totalLength += rep.content.length
-            })
-          }
-          client.close()
-        }
-      }
-      clientThread.start()
-      clientThread.join()
+      threads(i).join()
+      totalLength += threads(i).totalContentLength
     }
+
     return new SimpleResult(
       "total request length",
       NUM_CLIENTS * NUM_REQUESTS * REQUEST_CONTENT_SIZE,
