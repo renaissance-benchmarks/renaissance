@@ -781,6 +781,7 @@ The new major release is then bundled and the binaries are made available public
 The current members of the committee are:
 
 - Walter Binder, Universita della Svizzera italiana
+- Steve Blackburn, Australian National University
 - Lubomir Bulej, Charles University
 - Gilles Duboscq, Oracle Labs
 - Francois Farquet, Oracle Labs
