@@ -225,7 +225,6 @@ class FinagleChirper extends RenaissanceBenchmark {
 
   class Cache(val index: Int, val service: Service[Request, Response])
     extends Service[Request, Response] {
-    val lock = new AnyRef
     val cache = new concurrent.TrieMap[String, Buf]
     val count = new AtomicInteger
 
