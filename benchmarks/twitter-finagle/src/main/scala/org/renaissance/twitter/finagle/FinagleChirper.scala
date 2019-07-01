@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Comparator
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicInteger
 
 import com.google.common.collect.ConcurrentHashMultiset
 import com.google.common.collect.Multiset.Entry
@@ -225,12 +226,11 @@ class FinagleChirper extends RenaissanceBenchmark {
   class Cache(val index: Int, val service: Service[Request, Response])
     extends Service[Request, Response] {
     val lock = new AnyRef
-    val cache = new mutable.HashMap[String, Buf]
-    var count = 0
+    val cache = new concurrent.TrieMap[String, Buf]
+    val count = new AtomicInteger
 
-    override def apply(req: Request): Future[Response] = lock.synchronized {
-      count += 1
-      val uid = math.abs((index * count).toDouble.hashCode)
+    override def apply(req: Request): Future[Response] = {
+      val uid = math.abs((index * count.incrementAndGet()).toDouble.hashCode)
       if (uid % invalidationPeriodicity == 0) {
         cache.clear()
       }
