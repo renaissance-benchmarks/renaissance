@@ -34,7 +34,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-$ java -jar '<renaissance-home>/target/renaissance-0.9.0.jar' <benchmarks>
+$ java -jar '<renaissance-home>/target/renaissance-gpl-0.9.0.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
