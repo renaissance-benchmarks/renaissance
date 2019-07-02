@@ -3,7 +3,6 @@ package org.renaissance.database
 import java.nio.file.Path
 
 import org.lmdbjava.bench.Chronicle
-import org.lmdbjava.bench.LevelDb
 import org.lmdbjava.bench.MapDb
 import org.lmdbjava.bench.MvStore
 import org.renaissance.Benchmark._
@@ -43,12 +42,6 @@ class DbShootout extends RenaissanceBenchmark {
 
   var mapDbWriter: MapDb.Writer = null
 
-  var levelDb: LevelDb = null
-
-  var levelDbReader: LevelDb.Reader = null
-
-  var levelDbWriter: LevelDb.Writer = null
-
   var chronicle: Chronicle = null
 
   var chronicleReader: Chronicle.Reader = null
@@ -74,12 +67,6 @@ class DbShootout extends RenaissanceBenchmark {
     mapDbReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
     mapDbWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
 
-    levelDb = new LevelDb
-    levelDbReader = new LevelDb.Reader
-    levelDbWriter = new LevelDb.Writer
-    levelDbReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
-    levelDbWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
-
     chronicle = new Chronicle
     chronicleReader = new Chronicle.Reader
     chronicleWriter = new Chronicle.Writer
@@ -95,7 +82,6 @@ class DbShootout extends RenaissanceBenchmark {
 
   override def tearDownAfterAll(c: Config): Unit = {
     mapDbReader.teardown()
-    levelDbReader.teardown()
     chronicleReader.teardown()
     mvStoreReader.teardown()
 
@@ -105,9 +91,6 @@ class DbShootout extends RenaissanceBenchmark {
   def runIteration(c: Config): BenchmarkResult = {
     mapDb.parReadKey(mapDbReader)
     mapDb.parWrite(mapDbWriter)
-
-    levelDb.parReadKey(levelDbReader)
-    levelDb.parWrite(levelDbWriter)
 
     chronicle.parReadKey(chronicleReader)
     chronicle.parWrite(chronicleWriter)
