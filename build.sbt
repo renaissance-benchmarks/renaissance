@@ -170,7 +170,8 @@ lazy val renaissance: Project = {
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
       assemblyJarName in assembly :=
-        "renaissance-" + (version in renaissanceCore).value + ".jar",
+        "renaissance-" + (if (nonGplOnly.value) "mit" else "gpl") +
+          "-" + (version in renaissanceCore).value + ".jar",
       mainClass in assembly := Some(classOf[Launcher].getName),
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
