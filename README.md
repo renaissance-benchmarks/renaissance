@@ -134,6 +134,8 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### scala-stdlib
 
+- `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 10)
+
 - `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
 #### scala-stm
@@ -243,6 +245,7 @@ The following table contains the licensing information of all the benchmarks:
 | philosophers | BSD3 | MIT |
 | reactors | MIT | MIT |
 | rx-scrabble | GPL2 | GPL3 |
+| scala-doku | MIT | MIT |
 | scala-kmeans | MIT | MIT |
 | scala-stm-bench7 | BSD3, GPL2 | GPL3 |
 | scrabble | GPL2 | GPL3 |
