@@ -11,19 +11,24 @@ refs:
       - 'java -version'
       - 'javac -version'
       - ./tools/sbt/bin/sbt assembly
+      - ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
       - 'mkdir -p "$HOME/.prebuilt"'
       - 'ls "$HOME/.prebuilt"'
       - 'rm -rf "$HOME/.prebuilt"/*.jar'
-      - 'cp target/renaissance-0.9.0.jar "$HOME/.prebuilt/"`git rev-parse HEAD`.jar'
+      - 'cp target/renaissance-gpl-0.9.0.jar "$HOME/.prebuilt/"`git rev-parse HEAD`.jar'
+      - 'cp renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.9.0.jar "$HOME/.prebuilt/"`git rev-parse HEAD`-jmh-assembly.jar'
 
   - &bench
     stage: benchmark
     script:
       - mkdir -p target
-      - CACHED_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`.jar; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" target/renaissance-0.9.0.jar; else ./tools/sbt/bin/sbt assembly; fi
+      - mkdir -p renaissance-jmh/target/scala-2.12
+      - CACHED_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`.jar; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" target/renaissance-gpl-0.9.0.jar; else ./tools/sbt/bin/sbt assembly; fi
+      - CACHED_JMH_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`-jmh-assembly.jar; if [ -e "$CACHED_JMH_JAR_NAME" ]; then cp "$CACHED_JMH_JAR_NAME" renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.9.0.jar; else ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly; fi
       - 'java -version'
-      - 'java -jar ./target/renaissance-0.9.0.jar --raw-list >list.txt'
-      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-0.9.0.jar --functional-test -r 1 "$BENCH" || exit 1; done'
+      - 'java -jar ./target/renaissance-gpl-0.9.0.jar --raw-list >list.txt'
+      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-gpl-0.9.0.jar --functional-test -r 1 "$BENCH" || exit 1; done'
+      - 'java -Xms2500M -Xmx2500M -jar ./renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.9.0.jar -wi 0 -i 1 -f 1'
 
 jobs:
   include:
@@ -36,7 +41,7 @@ jobs:
       name: "README.md is up to date"
       script:
         - ./tools/sbt/bin/sbt assembly
-        - java -jar ./target/renaissance-0.9.0.jar --readme && git diff --exit-code -- README.md CONTRIBUTION.md
+        - java -jar ./target/renaissance-gpl-0.9.0.jar --readme && git diff --exit-code -- README.md CONTRIBUTION.md
 
     - <<: *bundle
       os: osx
@@ -47,7 +52,8 @@ jobs:
     - <<: *bundle
       jdk: oraclejdk9
     - <<: *bundle
-      jdk: oraclejdk11
+      env:
+       - USE_JDK=openjdk11
     - <<: *bundle
       env:
         - USE_JDK=OpenJ9
@@ -61,7 +67,8 @@ jobs:
     - <<: *bench
       jdk: oraclejdk9
     - <<: *bench
-      jdk: oraclejdk11
+      env:
+       - USE_JDK=openjdk11
     # Disabled because of #131
     #- <<: *bench
     #  env:
@@ -80,6 +87,7 @@ before_script:
   - 'if [ -n "$USE_JDK" ]; then wget "https://github.com/sormuras/bach/raw/master/install-jdk.sh" && chmod +x install-jdk.sh; fi'
   - 'if [ -n "$USE_JDK" ]; then export JAVA_HOME="$HOME/$USE_JDK"; fi'
   - 'if [ "$USE_JDK" = "OpenJ9" ]; then ./install-jdk.sh --url "https://api.adoptopenjdk.net/v2/binary/releases/openjdk11?openjdk_impl=openj9&os=linux&arch=x64&release=latest&heap_size=normal&type=jdk" --target "$JAVA_HOME"; fi'
+  - 'if [ "$USE_JDK" = "openjdk11" ]; then ./install-jdk.sh -f 11 --target "$JAVA_HOME"; fi'
   - 'if [ -n "$USE_JDK" ]; then export PATH="$JAVA_HOME/bin:$PATH"; fi'
 
 cache:

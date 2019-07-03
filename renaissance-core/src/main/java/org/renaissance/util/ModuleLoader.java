@@ -18,6 +18,7 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 import org.renaissance.Launcher;
+import org.renaissance.Pair;
 
 public class ModuleLoader {
   private static final URL[] URL_ARRAY_TYPE = new URL[0];
@@ -34,16 +35,16 @@ public class ModuleLoader {
       throw new ModuleLoadingException(message);
     }
 
-    List<InputStream> jarStreams = new ArrayList<>();
+    List<Pair<String, InputStream>> jarStreams = new ArrayList<>();
     for (String path : jarNames) {
-      jarStreams.add(Launcher.class.getResourceAsStream("/" + path));
+      jarStreams.add(new Pair<>(path, Launcher.class.getResourceAsStream("/" + path)));
     }
 
     try {
       ClassLoader parent = ModuleLoader.class.getClassLoader();
       URL[] extractedUrls = extractAndGetUrls(jarStreams);
-      for (InputStream is : jarStreams) {
-        is.close();
+      for (Pair<String, InputStream> stream: jarStreams) {
+        stream.second().close();
       }
 
       return new URLClassLoader(extractedUrls, parent);
@@ -81,7 +82,7 @@ public class ModuleLoader {
     return result;
   }
 
-  private static URL[] extractAndGetUrls(List<InputStream> streams) throws IOException {
+  private static URL[] extractAndGetUrls(List<Pair<String, InputStream>> streams) throws IOException {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "extractAndGetUrls");
 
     Path baseDir = Paths.get(".");
@@ -89,17 +90,20 @@ public class ModuleLoader {
     baseUnpackDir.toFile().deleteOnExit();
     List<URL> resultUrls = new ArrayList<>();
 
-    for (InputStream inputJar : streams) {
-      Path unpackedTargetPath = Files.createTempFile(baseUnpackDir, "cp-", ".jar");
+    for (Pair<String, InputStream> stream : streams) {
+      String path = stream.first();
+      String name = new File(path).getName();
+      InputStream is = stream.second();
+      Path unpackedTargetPath = Files.createTempFile(baseUnpackDir, "cp-" + name, ".jar");
       File unpackedTarget = unpackedTargetPath.toFile();
       unpackedTarget.deleteOnExit();
       OutputStream unpackedOutStream = new FileOutputStream(unpackedTarget);
 
-      logger.fine(String.format("Extracting %s into %s", inputJar, unpackedTargetPath));
+      logger.fine(String.format("Extracting %s into %s", is, unpackedTargetPath));
 
       byte[] buffer = new byte[8 * 1024];
       int bytesRead;
-      while ((bytesRead = inputJar.read(buffer)) != -1) {
+      while ((bytesRead = is.read(buffer)) != -1) {
         unpackedOutStream.write(buffer, 0, bytesRead);
       }
 

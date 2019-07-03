@@ -32,9 +32,11 @@ import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
 final class MyJavaBenchmark extends RenaissanceBenchmark {
-  override protected def runIteration(config: Config): Unit = {
+  override protected def runIteration(config: Config): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
+    // Return object for later validation of the iteration.
+    return new MyJavaBenchmarkResult()
   }
 }
 ```
@@ -164,12 +166,15 @@ The new major release is then bundled and the binaries are made available public
 The current members of the committee are:
 
 - Walter Binder, Universita della Svizzera italiana
+- Steve Blackburn, Australian National University
 - Lubomir Bulej, Charles University
 - Gilles Duboscq, Oracle Labs
 - Francois Farquet, Oracle Labs
 - Vojtech Horky, Charles University
 - David Leopoldseder, Johannes Kepler University Linz
+- Guillaume Martres, Ecole Polytechnique Federale de Lausanne
 - Aleksandar Prokopec, Oracle Labs
 - Andrea Rosa, Universita della Svizzera italiana
+- Denys Shabalin, Ecole Polytechnique Federale de Lausanne
 - Petr Tuma, Charles University
 - Alex Villazon, Universidad Privada Boliviana

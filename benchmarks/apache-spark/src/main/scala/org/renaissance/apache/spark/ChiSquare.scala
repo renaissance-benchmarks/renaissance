@@ -11,9 +11,11 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.mllib.stat.test.ChiSqTestResult
 import org.apache.spark.rdd.RDD
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
+import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 import scala.util.Random
@@ -86,9 +88,11 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
     loadData()
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
     blackHole(results)
+    // TODO: add more sophisticated validation
+    return new SimpleResult("result count", COMPONENTS, results.size)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

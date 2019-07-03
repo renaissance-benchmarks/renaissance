@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Comparator
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicInteger
 
 import com.google.common.collect.ConcurrentHashMultiset
 import com.google.common.collect.Multiset.Entry
@@ -24,7 +25,9 @@ import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import org.apache.commons.io.IOUtils
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
@@ -222,13 +225,11 @@ class FinagleChirper extends RenaissanceBenchmark {
 
   class Cache(val index: Int, val service: Service[Request, Response])
     extends Service[Request, Response] {
-    val lock = new AnyRef
-    val cache = new mutable.HashMap[String, Buf]
-    var count = 0
+    val cache = new concurrent.TrieMap[String, Buf]
+    val count = new AtomicInteger
 
-    override def apply(req: Request): Future[Response] = lock.synchronized {
-      count += 1
-      val uid = math.abs((index * count).toDouble.hashCode)
+    override def apply(req: Request): Future[Response] = {
+      val uid = math.abs((index * count.incrementAndGet()).toDouble.hashCode)
       if (uid % invalidationPeriodicity == 0) {
         cache.clear()
       }
@@ -323,6 +324,7 @@ class FinagleChirper extends RenaissanceBenchmark {
       for (feed <- feeds) {
         Await.ready(feed.close())
       }
+      Await.ready(master.close())
     }
   }
 
@@ -350,6 +352,7 @@ class FinagleChirper extends RenaissanceBenchmark {
   val batchSize = 4
   var master: ListeningServer = null
   var masterPort: Int = -1
+  var masterService: Service[Request, Response] = null
   val clientCount = Runtime.getRuntime.availableProcessors
   val cacheCount = Runtime.getRuntime.availableProcessors
   val caches = new mutable.ArrayBuffer[ListeningServer]
@@ -418,6 +421,7 @@ class FinagleChirper extends RenaissanceBenchmark {
     }
     println("Master port: " + masterPort)
     println("Cache ports: " + cachePorts.mkString(", "))
+    masterService = Http.newService(":" + masterPort)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -425,19 +429,22 @@ class FinagleChirper extends RenaissanceBenchmark {
       Await.ready(cache.close())
     }
     Await.ready(master.close())
+    Await.ready(masterService.close())
   }
 
   override def beforeIteration(c: Config): Unit = {
-    val master = Http.newService(":" + masterPort)
     val resetQuery = "/api/reset"
     val request = Request(Method.Get, resetQuery)
-    require(Await.result(master.apply(request)).status == Status.Ok)
+    require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     val clients = for (i <- 0 until clientCount)
       yield new Client(usernames(i % usernames.length) + i)
     clients.foreach(_.start())
     clients.foreach(_.join())
+
+    // TODO: add proper validation
+    return new EmptyResult
   }
 }

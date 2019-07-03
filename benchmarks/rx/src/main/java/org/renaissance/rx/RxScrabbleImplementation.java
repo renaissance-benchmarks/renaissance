@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 
 
@@ -167,4 +168,19 @@ public class RxScrabbleImplementation extends Scrabble {
 
     return finalList2;
   }
+
+  public static List<String> prepareForValidation(List<Entry<Integer, List<String>>> allWords) {
+    List<String> result = new ArrayList<>(allWords.size());
+    for (Entry<Integer, List<String>> entry : allWords) {
+      Integer score = entry.getKey();
+      String words = String.join("-", sortedUniqueWords(entry.getValue()));
+      result.add(String.format("%d--%s", score, words));
+    }
+    return result;
+  }
+
+  private static List<String> sortedUniqueWords(List<String> words) {
+    return new ArrayList<String>(new TreeSet<String>(words));
+  }
+
 }

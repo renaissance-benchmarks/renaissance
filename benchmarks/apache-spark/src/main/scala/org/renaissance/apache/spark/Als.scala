@@ -8,7 +8,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd.RDD
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -19,7 +21,7 @@ import scala.util.Random
 @Group("apache-spark")
 @Summary("Runs the ALS algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
-@Repetitions(60)
+@Repetitions(30)
 class Als extends RenaissanceBenchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
@@ -27,7 +29,7 @@ class Als extends RenaissanceBenchmark with SparkUtil {
 
   var numRatings = 20000
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  val THREAD_COUNT = 4
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -90,8 +92,11 @@ class Als extends RenaissanceBenchmark with SparkUtil {
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
 
-  def runIteration(c: Config): Unit = {
+  def runIteration(c: Config): BenchmarkResult = {
     val als = new org.apache.spark.mllib.recommendation.ALS()
     factModel = als.run(ratings)
+    blackHole(factModel)
+    // TODO: add proper validation of the generated model
+    return new EmptyResult
   }
 }

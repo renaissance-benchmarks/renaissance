@@ -4,6 +4,8 @@ import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
+import org.renaissance.HashingResult
 
 @Name("par-mnemonics")
 @Group("jdk-streams")
@@ -63,7 +65,11 @@ class ParMnemonics extends RenaissanceBenchmark {
     )
   }
 
-  override def runIteration(c: Config): Unit = {
-    blackHole(coder.parallelTranslate(testInput))
+  override def runIteration(c: Config): BenchmarkResult = {
+    val result = coder.parallelTranslate(testInput)
+    return new HashingResult(
+      if (c.functionalTest) "b789f159108bb450" else "72b6f7d83bc807c0",
+      result
+    )
   }
 }

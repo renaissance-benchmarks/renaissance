@@ -1,6 +1,8 @@
 package org.renaissance.scala.stm
 
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -17,7 +19,7 @@ class ScalaStmBench7 extends RenaissanceBenchmark {
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     // The following is the description of STMBench7's arguments.
     // -s -- the initializer class for the STM implementation
     // -g -- the type of synchronization that the benchmark should use
@@ -38,5 +40,8 @@ class ScalaStmBench7 extends RenaissanceBenchmark {
     )
 
     stmbench7.Benchmark.main(args)
+
+    // TODO: add proper validation
+    return new EmptyResult
   }
 }

@@ -7,7 +7,9 @@ import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.IOUtils
+import org.renaissance.BenchmarkResult
 import org.renaissance.Config
+import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -77,17 +79,19 @@ class Dotty extends RenaissanceBenchmark {
    */
   private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
 
-  override def runIteration(c: Config): Unit = {
+  override def runIteration(c: Config): BenchmarkResult = {
     val args = Seq[String](
       DOTTY_ARG_CLASS_PATH,
       Thread.currentThread.getContextClassLoader
         .asInstanceOf[URLClassLoader]
         .getURLs
-        .mkString(":"),
+        .mkString(File.pathSeparator),
       DOTTY_ARG_TYPE_CONVERSION,
       DOTTY_ARG_CLASS_FILE_DESTINATION,
       outputPath.toString
     )
     sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
+    // TODO: add proper validation
+    return new EmptyResult
   }
 }

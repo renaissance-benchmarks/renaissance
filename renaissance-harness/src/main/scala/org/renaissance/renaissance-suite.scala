@@ -2,21 +2,52 @@ package org.renaissance
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.util.Properties
-
 import org.apache.commons.io.{FileUtils, IOUtils}
+import org.renaissance.util.BenchmarkLoader
 import org.renaissance.util.ModuleLoader
 import scopt._
 import spray.json.DefaultJsonProtocol._
 import spray.json._
-
 import scala.collection.JavaConverters._
 import scala.collection._
 import scala.collection.immutable.TreeMap
 
 object RenaissanceSuite {
+
+  class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
+    override def run(): Unit = {
+      results.storeResults(false)
+    }
+  }
+
+  /** Common functionality for JSON and CSV results writers.
+   *
+   * This class takes care of registering a shutdown hook so that the results
+   * are not lost when JVM is forcefully terminated.
+   *
+   * Descendants are expected to override only the store() method that
+   * actually stores the collected data.
+   */
   abstract class ResultWriter extends ResultObserver {
     val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+    val storeHook = new FlushOnShutdownThread(this)
+
+    Runtime.getRuntime.addShutdownHook(storeHook)
+
+    protected def store(normalTermination: Boolean): Unit
+
+    def storeResults(normalTermination: Boolean): Unit = this.synchronized {
+      // This method is synchronized to ensure we do not overwrite
+      // the results when user sends Ctrl-C when store() is already being
+      // called (i.e. shutdown hook is still registered but is *almost*
+      // no longer needed).
+      store(normalTermination)
+    }
+
+    def onExit(): Unit = {
+      storeResults(true)
+      Runtime.getRuntime.removeShutdownHook(storeHook)
+    }
 
     def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
       val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
@@ -50,7 +81,7 @@ object RenaissanceSuite {
 
   class CsvWriter(val filename: String) extends ResultWriter {
 
-    def onExit(): Unit = {
+    def store(normalTermination: Boolean): Unit = {
       val csv = new StringBuffer
       csv.append("benchmark")
       val columns = new mutable.ArrayBuffer[String]
@@ -84,7 +115,7 @@ object RenaissanceSuite {
 
   class JsonWriter(val filename: String) extends ResultWriter {
 
-    def getEnvironment(): JsValue = {
+    def getEnvironment(termination: String): JsValue = {
       val result = new mutable.HashMap[String, JsValue]
 
       val osInfo = new mutable.HashMap[String, JsValue]
@@ -101,18 +132,19 @@ object RenaissanceSuite {
       vmInfo.update("vm_version", System.getProperty("java.vm.version", "unknown").toJson)
       vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
       vmInfo.update("args", vmArgs.asScala.toList.toJson)
+      vmInfo.update("termination", termination.toJson)
       result.update("vm", vmInfo.toMap.toJson)
 
       return result.toMap.toJson
     }
 
-    def onExit(): Unit = {
+    def store(normalTermination: Boolean): Unit = {
       val columns = getColumns
 
       val tree = new mutable.HashMap[String, JsValue]
-      tree.update("format_version", 1.toJson)
+      tree.update("format_version", 2.toJson)
       tree.update("benchmarks", getBenchmarks.toList.toJson)
-      tree.update("environment", getEnvironment)
+      tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
 
       val resultTree = new mutable.HashMap[String, JsValue]
       for ((benchmark, results, repetitions) <- getResults) {
@@ -141,56 +173,9 @@ object RenaissanceSuite {
     }
   }
 
-  sealed class BenchmarkInfo(
-    val className: String,
-    val name: String,
-    val group: String,
-    val summary: String,
-    val description: String,
-    val repetitions: Int,
-    val licenses: Array[String],
-    val distro: String
-  ) {
-    def summaryWords() = summary.split("\\s+")
-    def printableLicenses() = licenses.mkString(", ")
-  }
+  val benchmarkLoader = new BenchmarkLoader
 
-  object BenchmarkInfo {
-
-    def fromProperties(p: Properties, mapper: (String) => String) = {
-      def get(name: String, defaultValue: String) = {
-        p.getProperty(mapper(name), defaultValue)
-      }
-
-      new BenchmarkInfo(
-        className = get("class", ""),
-        name = get("name", ""),
-        group = get("group", ""),
-        summary = get("summary", ""),
-        description = get("description", ""),
-        repetitions = get("repetitions", "20").toInt,
-        licenses = get("licenses", "").split(","),
-        distro = get("distro", "")
-      )
-    }
-  }
-
-  val benchmarksByName = {
-    val properties = new java.util.Properties
-    properties.load(getClass.getResourceAsStream("/benchmark-details.properties"))
-
-    val names = asScalaSet(properties.stringPropertyNames())
-      .filter(_.endsWith(".name"))
-      .map(properties.getProperty(_))
-      .toSeq
-
-    def makeInfo(name: String, p: Properties) = {
-      BenchmarkInfo.fromProperties(p, key => s"benchmark.${name}.${key}")
-    }
-
-    // Produce a Map ordered by benchmark name
-    TreeMap(names.map(name => (name, makeInfo(name, properties))).toArray: _*)
-  }
+  val benchmarksByName = mapAsScalaMap(benchmarkLoader.loadBenchmarkInfoByName)
 
   val benchmarksByGroup = {
     // Produce a Map ordered by group name
@@ -221,7 +206,7 @@ object RenaissanceSuite {
     new OptionParser[Config]("renaissance") {
       head(s"${renaissanceTitle}, version ${renaissanceVersion}")
 
-      help("help")
+      help('h', "help")
         .text("Prints this usage text.")
       opt[Int]('r', "repetitions")
         .text("Number of repetitions used with the fixed-iterations policy.")
@@ -234,8 +219,7 @@ object RenaissanceSuite {
         .action((v, c) => c.withRunSeconds(v))
       opt[String]("policy")
         .text(
-          "Execution policy, one of: " +
-            Policy.descriptions.asScala.keys.mkString(", ")
+          "Execution policy, one of: " + Policy.descriptions.asScala.keys.mkString(", ")
         )
         .action((v, c) => c.withPolicy(v))
       opt[String]("plugins")
@@ -310,7 +294,7 @@ object RenaissanceSuite {
       for (plugin <- config.plugins.asScala) plugin.onCreation()
       try {
         for (benchName <- benchmarks) {
-          val bench = loadBenchmark(benchName)
+          val bench = benchmarkLoader.loadBenchmark(benchName)
           val exception = bench.runBenchmark(config)
           if (exception != null) {
             failedBenchmarks += benchName
@@ -373,19 +357,6 @@ object RenaissanceSuite {
     return result
   }
 
-  private def loadBenchmark(name: String): RenaissanceBenchmark = {
-    val bench = benchmarksByName(name)
-
-    // Use separate classloader for this benchmark
-    val loader = ModuleLoader.getForGroup(bench.group)
-    val benchClass = loader.loadClass(bench.className)
-    val result = benchClass.getDeclaredConstructor().newInstance()
-
-    // Make current thread as independent of the harness as possible
-    Thread.currentThread.setContextClassLoader(loader)
-    result.asInstanceOf[RenaissanceBenchmark]
-  }
-
   private def formatRawBenchmarkList(): String = benchmarksByName.keys.mkString("\n")
 
   private def formatBenchmarkList(): String = {
@@ -404,7 +375,7 @@ object RenaissanceSuite {
   private def formatGroupList(): String = benchmarksByGroup.keys.toSeq.sorted.mkString("\n")
 
   private def formatBenchmarkListMarkdown = {
-    def formatItem(b: BenchmarkInfo) = {
+    def formatItem(b: BenchmarkLoader.Info) = {
       s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
     }
 
@@ -420,7 +391,7 @@ object RenaissanceSuite {
   }
 
   def formatBenchmarkTableMarkdown = {
-    def formatRow(b: BenchmarkInfo) = {
+    def formatRow(b: BenchmarkLoader.Info) = {
       s"| ${b.name} | ${b.printableLicenses} | ${b.distro} |"
     }
 
@@ -429,6 +400,10 @@ object RenaissanceSuite {
 
   val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
     "raw/master/website/resources/images/mona-lisa-round.png"
+
+  val jmhTargetPath = "renaissance-jmh/target/scala-2.12"
+
+  val jmhJarPrefix = "renaissance-jmh-assembly"
 
   lazy val readme = s"""
 
@@ -466,7 +441,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-java -jar '<renaissance-home>/target/renaissance-${renaissanceVersion}.jar' <benchmarks>
+$$ java -jar '<renaissance-home>/target/renaissance-gpl-${renaissanceVersion}.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -523,6 +498,21 @@ class MyPlugin extends ${classOf[Plugin].getSimpleName} {
 
 Here, the ${classOf[Policy].getSimpleName} argument describes
 the current state of the benchmark.
+
+
+### JMH support
+
+You can also build and run Renaissance with JMH. To build a JMH-enabled JAR, run:
+
+```
+$$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
+```
+
+To run the benchmarks using JMH, you can execute the following `java` command:
+
+```
+$$ java -jar '${jmhTargetPath}/${jmhJarPrefix}-${renaissanceVersion}.jar'
+```
 
 
 ### Contributing
@@ -657,9 +647,11 @@ import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
 final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleName} {
-  override protected def runIteration(config: ${classOf[Config].getSimpleName}): Unit = {
+  override protected def runIteration(config: ${classOf[Config].getSimpleName}): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
+    // Return object for later validation of the iteration.
+    return new MyJavaBenchmarkResult()
   }
 }
 ```
@@ -789,13 +781,16 @@ The new major release is then bundled and the binaries are made available public
 The current members of the committee are:
 
 - Walter Binder, Universita della Svizzera italiana
+- Steve Blackburn, Australian National University
 - Lubomir Bulej, Charles University
 - Gilles Duboscq, Oracle Labs
 - Francois Farquet, Oracle Labs
 - Vojtech Horky, Charles University
 - David Leopoldseder, Johannes Kepler University Linz
+- Guillaume Martres, Ecole Polytechnique Federale de Lausanne
 - Aleksandar Prokopec, Oracle Labs
 - Andrea Rosa, Universita della Svizzera italiana
+- Denys Shabalin, Ecole Polytechnique Federale de Lausanne
 - Petr Tuma, Charles University
 - Alex Villazon, Universidad Privada Boliviana
 """

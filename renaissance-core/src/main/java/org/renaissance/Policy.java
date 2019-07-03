@@ -34,7 +34,7 @@ public abstract class Policy {
     // TODO Get rid of this dummy. Policies need to be loaded differently.
     final RenaissanceBenchmark dummy = new RenaissanceBenchmark() {
       @Override
-      protected void runIteration(Config config) {}
+      protected BenchmarkResult runIteration(Config config) { return new EmptyResult(); }
     };
 
     return factories.entrySet().stream()
