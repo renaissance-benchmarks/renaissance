@@ -17,7 +17,7 @@ class Philosophers extends RenaissanceBenchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  private val THREAD_COUNT = 8
 
   /**
    * Number of meals consumed by each Philosopher thread.
