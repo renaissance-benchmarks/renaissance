@@ -132,6 +132,10 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
+#### scala-sat
+
+- `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 20)
+
 #### scala-stdlib
 
 - `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
@@ -243,6 +247,7 @@ The following table contains the licensing information of all the benchmarks:
 | philosophers | BSD3 | MIT |
 | reactors | MIT | MIT |
 | rx-scrabble | GPL2 | GPL3 |
+| scala-doku | MIT | MIT |
 | scala-kmeans | MIT | MIT |
 | scala-stm-bench7 | BSD3, GPL2 | GPL3 |
 | scrabble | GPL2 | GPL3 |
