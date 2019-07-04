@@ -132,9 +132,11 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
-#### scala-stdlib
+#### scala-sat
 
 - `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 10)
+
+#### scala-stdlib
 
 - `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
 
