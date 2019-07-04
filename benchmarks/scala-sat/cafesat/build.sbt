@@ -19,17 +19,17 @@ cafesat := {
   out
 }
 
-lazy val root = (project in file("."))
+lazy val root = (project in file(""))
   .settings(
     name := "CafeSat",
     version := "0.01",
-    scalaVersion := "2.12.8",
+    scalaVersion := "2.11.7",
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     javaOptions in IntegrationTest ++= Seq("-Xss10M"),
     fork in IntegrationTest := true,
     logBuffered in IntegrationTest := false,
     parallelExecution in Test := true,
-    libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
+    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test,it"
   )
   .configs(IntegrationTest)
   .settings(Defaults.itSettings: _*)

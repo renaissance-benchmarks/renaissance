@@ -1,4 +1,4 @@
-package org.renaissance.scala.stdlib.doku
+package org.renaissance.scala.sat.doku
 
 import cafesat.api.FormulaBuilder.{and, or, propVar}
 import cafesat.api.Solver.solveForSatisfiability
@@ -83,7 +83,7 @@ object Solver {
 }
 
 @Name("scala-doku")
-@Group("scala-stdlib")
+@Group("scala-sat")
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(10)

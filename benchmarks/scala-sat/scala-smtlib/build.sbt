@@ -2,7 +2,7 @@ name := "Scala SMT-LIB"
 
 version := "0.1"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.11.7"
 
 crossScalaVersions := Seq("2.10.4", "2.11.2")
 
