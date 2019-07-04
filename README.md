@@ -134,7 +134,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### scala-sat
 
-- `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 10)
+- `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 20)
 
 #### scala-stdlib
 

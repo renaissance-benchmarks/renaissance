@@ -86,7 +86,7 @@ object Solver {
 @Group("scala-sat")
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
-@Repetitions(10)
+@Repetitions(20)
 class ScalaDoku extends RenaissanceBenchmark {
 
   class DokuResult(actualResult: Array[Array[Int]], expectedResult: Array[Array[Int]])
