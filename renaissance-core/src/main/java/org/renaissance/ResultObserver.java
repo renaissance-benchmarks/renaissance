@@ -11,5 +11,13 @@ public interface ResultObserver {
    * @param value Actual value.
    */
   public void onNewResult(String benchmark, String metric, long value);
+
+  /** Callback when benchmark fails.
+   *
+   * Serves to e.g. invalidate previous results or marking the run as failed.
+   *
+   * @param benchmark Name of the benchmark.
+   */
+  public void onFailure(String benchmark);
   public void onExit();
 }
