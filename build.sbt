@@ -167,7 +167,7 @@ lazy val renaissance: Project = {
           // Consider Specification-Version to mark sets of active benchmarks
           ("Git-Head-Commit", git.gitHeadCommit.value.get),
           ("Git-Head-Commit-Date", git.gitHeadCommitDate.value.get),
-          ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString),
+          ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString)
         )
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
