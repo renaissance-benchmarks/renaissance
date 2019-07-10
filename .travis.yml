@@ -49,7 +49,7 @@ jobs:
     - stage: "Basic checks"
       name: "Content encoding of Java sources"
       script:
-        - "! grep --color -P -n -r '--include=*.java' -e '[^\x00-\x7F]' ."
+        - "! grep -P -nH -r '--include=*.java' -e '[^\x00-\x7F]' ."
 
     - <<: *bundle
       os: osx
