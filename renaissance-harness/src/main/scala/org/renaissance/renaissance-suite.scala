@@ -138,13 +138,41 @@ object RenaissanceSuite {
       return result.toMap.toJson
     }
 
+    def getMainManifest(): java.util.jar.Manifest = {
+      val klass = classOf[RenaissanceBenchmark]
+      val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
+      return new java.util.jar.Manifest(stream)
+    }
+
+    def getSuiteInfo(): JsValue = {
+      val result = new mutable.HashMap[String, JsValue]
+
+      val manifestAttrs = getMainManifest.getMainAttributes
+      val getManifestAttr = (key: String, defaultValue: String) => {
+        val tmp = manifestAttrs.getValue(key)
+        if (tmp == null) defaultValue.toJson else tmp.toJson
+      }
+
+      val git = new mutable.HashMap[String, JsValue]
+      git.update("commit_hash", getManifestAttr("Git-Head-Commit", "unknown"))
+      git.update("commit_date", getManifestAttr("Git-Head-Commit-Date", "unknown"))
+      git.update("dirty", getManifestAttr("Git-Uncommitted-Changes", "true"))
+
+      result.update("git", git.toMap.toJson)
+      result.update("name", renaissanceTitle.toJson)
+      result.update("version", renaissanceVersion.toJson)
+
+      return result.toMap.toJson
+    }
+
     def store(normalTermination: Boolean): Unit = {
       val columns = getColumns
 
       val tree = new mutable.HashMap[String, JsValue]
-      tree.update("format_version", 2.toJson)
+      tree.update("format_version", 3.toJson)
       tree.update("benchmarks", getBenchmarks.toList.toJson)
       tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
+      tree.update("suite", getSuiteInfo)
 
       val resultTree = new mutable.HashMap[String, JsValue]
       for ((benchmark, results, repetitions) <- getResults) {
