@@ -19,5 +19,6 @@ public interface ResultObserver {
    * @param benchmark Name of the benchmark.
    */
   public void onFailure(String benchmark);
+
   public void onExit();
 }
