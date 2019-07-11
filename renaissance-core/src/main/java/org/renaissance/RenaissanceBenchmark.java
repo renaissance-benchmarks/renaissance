@@ -109,6 +109,7 @@ public abstract class RenaissanceBenchmark {
         for (ResultObserver observer : config.resultObservers()) {
           observer.onFailure(name());
         }
+        return t;
       }
     }
   }
