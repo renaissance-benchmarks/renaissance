@@ -19,18 +19,12 @@ class AkkaUct extends RenaissanceBenchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var numIterations: Int = 10
-
   private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
 
   override def setUpBeforeAll(c: Config): Unit = {
     bench = new UctAkkaActorBenchmark.UctAkkaActorBenchmark
     bench.initialize(new Array[String](0))
     AkkaActorState.initialize()
-
-    if (c.functionalTest) {
-      numIterations = 2
-    }
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
@@ -40,9 +34,7 @@ class AkkaUct extends RenaissanceBenchmark {
   }
 
   protected override def runIteration(config: Config): BenchmarkResult = {
-    for (i <- 0 until numIterations) {
-      bench.runIteration()
-    }
+    bench.runIteration()
     // TODO: add proper validation
     return new EmptyResult
   }
