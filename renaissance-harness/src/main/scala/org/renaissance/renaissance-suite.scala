@@ -148,7 +148,7 @@ object RenaissanceSuite {
       val columns = getColumns
 
       val tree = new mutable.HashMap[String, JsValue]
-      tree.update("format_version", 3.toJson)
+      tree.update("format_version", 4.toJson)
       tree.update("benchmarks", getBenchmarks.toList.toJson)
       tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
 
