@@ -76,6 +76,7 @@ public abstract class RenaissanceBenchmark {
 
   public final Throwable runBenchmark(Config config) {
     try {
+      config = config.withBenchmark(name());
       setUpBeforeAll(config);
       if (!Policy.factories.containsKey(config.policy())) {
         System.err.println("Unknown policy " + config.policy() + ".");

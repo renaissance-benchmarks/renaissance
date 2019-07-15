@@ -77,6 +77,24 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
     if (annotation != null) annotation.value() else 20
   }
 
+  def parameters(): Map[String, String] = {
+    val configs = getAnnotation(classOf[Configurations])
+    if (configs == null) {
+      return Map.empty[String, String]
+    }
+    val flat = new mutable.HashMap[String, String]
+    for (config <- configs.value) {
+      for (params <- config.values) {
+        val paramsArr = params.split("=").map(x => x.trim)
+        assert(paramsArr.length == 2)
+        val name = paramsArr(0)
+        val value = paramsArr(1)
+        flat.put(s"parameters.${config.name}.${name}", value)
+      }
+    }
+    return flat.toMap
+  }
+
   def licenses(): Array[License] = {
     val annotation = getAnnotation(classOf[Licenses])
     if (annotation != null) annotation.value() else Array()
@@ -112,7 +130,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
       "distro" -> distro.toString
-    )
+    ) ++ parameters
   }
 
 }

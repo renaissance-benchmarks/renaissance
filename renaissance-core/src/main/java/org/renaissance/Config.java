@@ -18,6 +18,8 @@ public class Config {
   public boolean printRawList;
   public boolean printGroupList;
   public boolean functionalTest;
+  public String configuration;
+  private String currentBenchmark;
 
   public Config() {
     this.benchmarkSpecifiers = new ArrayList<>();
@@ -32,6 +34,8 @@ public class Config {
     this.printRawList = false;
     this.printGroupList = false;
     this.functionalTest = false;
+    this.configuration = "default";
+    this.currentBenchmark = null;
   }
 
   public List<String> benchmarkSpecifiers() {
@@ -70,6 +74,10 @@ public class Config {
     return functionalTest;
   }
 
+  public int parameter(String name) {
+    return BenchmarkParameters.get(currentBenchmark, configuration, name);
+  }
+
   public Config copy() {
     Config c = new Config();
     c.benchmarkSpecifiers = this.benchmarkSpecifiers;
@@ -84,6 +92,8 @@ public class Config {
     c.printRawList = this.printRawList;
     c.printGroupList = this.printGroupList;
     c.functionalTest = this.functionalTest;
+    c.configuration = this.configuration;
+    c.currentBenchmark = this.currentBenchmark;
     return c;
   }
 
@@ -164,6 +174,18 @@ public class Config {
   public Config withFunctionalTest() {
     Config c = copy();
     c.functionalTest = true;
+    return c;
+  }
+
+  public Config withConfiguration(String config) {
+    Config c = copy();
+    c.configuration = config;
+    return c;
+  }
+
+  public Config withBenchmark(String name) {
+    Config c = copy();
+    c.currentBenchmark = name;
     return c;
   }
 }

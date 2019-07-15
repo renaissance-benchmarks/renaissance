@@ -63,6 +63,7 @@ Usage: renaissance [options] [benchmark-specification]
   --json <value>           Output results to JSON file.
   --readme                 Regenerates the README file, and does not run anything.
   --functional-test        Reduce iteration times significantly for testing purposes.
+  --configuration <value>  Run with selected configuration.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks (each benchmark name on separate line).
   --group-list             Print list of benchmark groups (each group name on separate line).
@@ -107,6 +108,8 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
 
 - `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
+
+- `dummy-params` - A dummy benchmark for testing the harness (test parametrization). (default repetitions: 20)
 
 - `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
 
@@ -241,6 +244,7 @@ The following table contains the licensing information of all the benchmarks:
 | dotty | BSD3 | MIT |
 | dummy-empty | MIT | MIT |
 | dummy-failing | MIT | MIT |
+| dummy-params | MIT | MIT |
 | dummy-setup-failing | MIT | MIT |
 | dummy-teardown-failing | MIT | MIT |
 | dummy-validation-failing | MIT | MIT |

@@ -1,6 +1,7 @@
 package org.renaissance;
 
 import java.lang.annotation.Documented;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -87,4 +88,15 @@ public interface Benchmark {
 
   }
 
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Configurations {
+    Configuration[] value();
+  }
+
+  @Repeatable(Configurations.class)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Configuration {
+    String name();
+    String[] values();
+  }
 }
