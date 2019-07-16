@@ -34,7 +34,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-$ java -jar '<renaissance-home>/target/renaissance-gpl-0.9.0.jar' <benchmarks>
+$ java -jar '<renaissance-home>/target/renaissance-gpl-0.10.0.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -47,7 +47,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version 0.9.0
+Renaissance Benchmark Suite, version 0.10.0
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
@@ -104,7 +104,15 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### dummy
 
-- `dummy` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
+- `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
+
+- `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
+
+- `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
+
+- `dummy-teardown-failing` - A dummy benchmark for testing the harness (fails during teardown). (default repetitions: 20)
+
+- `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation). (default repetitions: 20)
 
 #### jdk-concurrent
 
@@ -131,6 +139,10 @@ The following is the complete list of benchmarks, separated into groups.
 #### scala-dotty
 
 - `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
+
+#### scala-sat
+
+- `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 20)
 
 #### scala-stdlib
 
@@ -200,7 +212,7 @@ $ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.9.0.jar'
+$ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.10.0.jar'
 ```
 
 
@@ -227,7 +239,11 @@ The following table contains the licensing information of all the benchmarks:
 | db-shootout | APACHE2 | MIT |
 | dec-tree | APACHE2 | MIT |
 | dotty | BSD3 | MIT |
-| dummy | MIT | MIT |
+| dummy-empty | MIT | MIT |
+| dummy-failing | MIT | MIT |
+| dummy-setup-failing | MIT | MIT |
+| dummy-teardown-failing | MIT | MIT |
+| dummy-validation-failing | MIT | MIT |
 | finagle-chirper | APACHE2 | MIT |
 | finagle-http | APACHE2 | MIT |
 | fj-kmeans | APACHE2 | MIT |
@@ -243,6 +259,7 @@ The following table contains the licensing information of all the benchmarks:
 | philosophers | BSD3 | MIT |
 | reactors | MIT | MIT |
 | rx-scrabble | GPL2 | GPL3 |
+| scala-doku | MIT | MIT |
 | scala-kmeans | MIT | MIT |
 | scala-stm-bench7 | BSD3, GPL2 | GPL3 |
 | scrabble | GPL2 | GPL3 |

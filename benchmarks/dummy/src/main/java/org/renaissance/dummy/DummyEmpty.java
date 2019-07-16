@@ -8,11 +8,11 @@ import org.renaissance.SimpleResult;
 
 import static org.renaissance.Benchmark.*;
 
-@Name("dummy")
+@Name("dummy-empty")
 @Group("dummy")
 @Summary("A dummy benchmark which only serves to test the harness.")
 @Licenses(License.MIT)
-public final class Dummy extends RenaissanceBenchmark {
+public final class DummyEmpty extends RenaissanceBenchmark {
   @Override
   protected BenchmarkResult runIteration(Config config) {
     return new SimpleResult("nothing", 0, 0);

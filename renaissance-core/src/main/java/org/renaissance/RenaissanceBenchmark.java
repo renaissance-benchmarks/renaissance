@@ -96,6 +96,9 @@ public abstract class RenaissanceBenchmark {
       }
       return null;
     } catch (Throwable t) {
+      for (ResultObserver observer : config.resultObservers()) {
+        observer.onFailure(name());
+      }
       return t;
     } finally {
       try {
@@ -103,6 +106,10 @@ public abstract class RenaissanceBenchmark {
       } catch (Throwable t) {
         System.err.println("Error during tear-down: " + t.getMessage());
         t.printStackTrace();
+        for (ResultObserver observer : config.resultObservers()) {
+          observer.onFailure(name());
+        }
+        return t;
       }
     }
   }
