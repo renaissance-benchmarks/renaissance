@@ -80,12 +80,34 @@ class Dotty extends RenaissanceBenchmark {
   private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
 
   override def runIteration(c: Config): BenchmarkResult = {
+    /*
+     * Construct the classpath for the compiler. Unfortunately, Dotty is
+     * unable to use current classloader (either of this class or this
+     * thread) and thus we have to explicitly pass it. Note that
+     * -usejavacp would not work here as that reads from java.class.path
+     * property and we do not want to modify global properties here.
+     *
+     * Therefore, we leverage the fact that we know that our classloader
+     * is actually a URLClassLoader that loads the benchmark JARs
+     * from temporary directory. And we convert all the URLs to
+     * plain file paths.
+     *
+     * Note that using URLs as-is is not possible as that prepends the
+     * "file:/" protocol that is not handled well on Windows when
+     * on classpath.
+     *
+     * Note that it would be best to pass the classloader to the compiler
+     * but that seems to be impossible with current API (see discussion
+     * at https://github.com/renaissance-benchmarks/renaissance/issues/176).
+     */
+    val cp = Thread.currentThread.getContextClassLoader
+      .asInstanceOf[URLClassLoader]
+      .getURLs
+      .map(url => (new java.io.File(url.toURI)).getPath)
+      .mkString(File.pathSeparator)
     val args = Seq[String](
       DOTTY_ARG_CLASS_PATH,
-      Thread.currentThread.getContextClassLoader
-        .asInstanceOf[URLClassLoader]
-        .getURLs
-        .mkString(File.pathSeparator),
+      cp,
       DOTTY_ARG_TYPE_CONVERSION,
       DOTTY_ARG_CLASS_FILE_DESTINATION,
       outputPath.toString
