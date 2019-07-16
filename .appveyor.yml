@@ -19,5 +19,5 @@ build_script:
   - java -jar target/renaissance-gpl-0.10.0.jar --functional-test -r 1 all
 
 cache:
-  - "%USERPROFILE%\.sbt"
-  - "%USERPROFILE%\.ivy2"
+  - '%USERPROFILE%\.sbt'
+  - '%USERPROFILE%\.ivy2'
