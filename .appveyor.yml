@@ -1,4 +1,4 @@
-version: 0.9.0-{build}
+version: 0.10.0-{build}
 
 environment:
   matrix:
@@ -17,3 +17,7 @@ build_script:
   - ./tools/sbt/bin/sbt assembly
   - java -jar target/renaissance-gpl-0.10.0.jar
   - java -jar target/renaissance-gpl-0.10.0.jar --functional-test -r 1 all
+
+cache:
+  - "%USERPROFILE%\.sbt"
+  - "%USERPROFILE%\.ivy2"
