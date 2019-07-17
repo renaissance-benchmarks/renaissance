@@ -30,6 +30,7 @@ object RenaissanceSuite {
    */
   abstract class ResultWriter extends ResultObserver {
     val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+    val failedBenchmarks = new mutable.ArrayBuffer[String]
     val storeHook = new FlushOnShutdownThread(this)
 
     Runtime.getRuntime.addShutdownHook(storeHook)
@@ -57,6 +58,10 @@ object RenaissanceSuite {
       metricStorage += value
     }
 
+    def onFailure(benchmark: String): Unit = {
+      failedBenchmarks += benchmark
+    }
+
     def getBenchmarks: Iterable[String] = {
       allResults.keys
     }
@@ -66,7 +71,7 @@ object RenaissanceSuite {
     }
 
     def getResults()
-      : Iterable[(String, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
+      : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
       for {
         benchName <- getBenchmarks
         benchResults = allResults(benchName)
@@ -74,6 +79,7 @@ object RenaissanceSuite {
       } yield
         (
           benchName,
+          !failedBenchmarks.contains(benchName),
           benchResults.toMap.asInstanceOf[Map[String, mutable.ArrayBuffer[Long]]],
           (0 to maxIndex)
         )
@@ -91,7 +97,7 @@ object RenaissanceSuite {
       }
       csv.append("\n")
 
-      for ((benchmark, results, repetitions) <- getResults) {
+      for ((benchmark, goodRuns, results, repetitions) <- getResults) {
         for (i <- repetitions) {
           val line = new StringBuffer
           line.append(benchmark)
@@ -138,16 +144,44 @@ object RenaissanceSuite {
       return result.toMap.toJson
     }
 
+    def getMainManifest(): java.util.jar.Manifest = {
+      val klass = classOf[RenaissanceBenchmark]
+      val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
+      return new java.util.jar.Manifest(stream)
+    }
+
+    def getSuiteInfo(): JsValue = {
+      val result = new mutable.HashMap[String, JsValue]
+
+      val manifestAttrs = getMainManifest.getMainAttributes
+      val getManifestAttr = (key: String, defaultValue: String) => {
+        val tmp = manifestAttrs.getValue(key)
+        if (tmp == null) defaultValue.toJson else tmp.toJson
+      }
+
+      val git = new mutable.HashMap[String, JsValue]
+      git.update("commit_hash", getManifestAttr("Git-Head-Commit", "unknown"))
+      git.update("commit_date", getManifestAttr("Git-Head-Commit-Date", "unknown"))
+      git.update("dirty", getManifestAttr("Git-Uncommitted-Changes", "true"))
+
+      result.update("git", git.toMap.toJson)
+      result.update("name", renaissanceTitle.toJson)
+      result.update("version", renaissanceVersion.toJson)
+
+      return result.toMap.toJson
+    }
+
     def store(normalTermination: Boolean): Unit = {
       val columns = getColumns
 
       val tree = new mutable.HashMap[String, JsValue]
-      tree.update("format_version", 2.toJson)
+      tree.update("format_version", 4.toJson)
       tree.update("benchmarks", getBenchmarks.toList.toJson)
       tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
+      tree.update("suite", getSuiteInfo)
 
-      val resultTree = new mutable.HashMap[String, JsValue]
-      for ((benchmark, results, repetitions) <- getResults) {
+      val dataTree = new mutable.HashMap[String, JsValue]
+      for ((benchmark, goodRuns, results, repetitions) <- getResults) {
         val subtree = new mutable.ArrayBuffer[JsValue]
         for (i <- repetitions) {
           val scores = new mutable.HashMap[String, JsValue]
@@ -159,10 +193,13 @@ object RenaissanceSuite {
           }
           subtree += scores.toMap.toJson
         }
-        resultTree.update(benchmark, subtree.toList.toJson)
+        val resultsTree = new mutable.HashMap[String, JsValue]
+        resultsTree.update("results", subtree.toList.toJson)
+        resultsTree.update("termination", (if (goodRuns) "normal" else "failure").toJson)
+        dataTree.update(benchmark, resultsTree.toMap.toJson)
       }
 
-      tree.update("results", resultTree.toMap.toJson)
+      tree.update("data", dataTree.toMap.toJson)
 
       FileUtils.write(
         new File(filename),
