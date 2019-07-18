@@ -4,24 +4,19 @@ import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.IOUtils
 import org.renaissance.util.BenchmarkLoader
-import org.renaissance.util.ModuleLoader
+import org.renaissance.util.BenchmarkRegistry
 import scopt._
 
 import scala.collection._
 import scala.collection.JavaConverters._
-import scala.collection.immutable.TreeMap
 
 object RenaissanceSuite {
 
-  val benchmarkLoader = new BenchmarkLoader
+  val benchmarks = BenchmarkRegistry.createUsingProperties(
+    getClass().getResourceAsStream("/benchmark-details.properties")
+  );
 
-  val benchmarksByName = mapAsScalaMap(benchmarkLoader.loadBenchmarkInfoByName)
-
-  val benchmarksByGroup = {
-    // Produce a Map ordered by group name
-    TreeMap(benchmarksByName.values.groupBy(_.group).toArray: _*)
-  }
-
+  val benchmarkLoader = new BenchmarkLoader (benchmarks)
 
   val renaissanceTitle = classOf[RenaissanceBenchmark].getPackage.getSpecificationTitle
 
@@ -124,15 +119,15 @@ object RenaissanceSuite {
   def generateBenchmarkList(config: Config): Seq[String] = {
     val result = new mutable.LinkedHashSet[String]
     for (specifier <- config.benchmarkSpecifiers.asScala) {
-      if (benchmarksByName.contains(specifier)) {
+      if (benchmarks.exists(specifier)) {
         // Add an individual benchmark
         result += specifier
-      } else if (benchmarksByGroup.contains(specifier)) {
+      } else if (benchmarks.groupExists(specifier)) {
         // Add benchmarks for a given group
-        result ++= benchmarksByGroup(specifier).map(_.name)
+        result ++= benchmarks.getGroup(specifier).asScala.map(_.name)
       } else if (specifier == "all") {
-        // Add all benchmarks except the dummy
-        result ++= benchmarksByName.filterKeys(_ != "dummy").keys
+        // Add all benchmarks except the dummy ones
+        result ++= benchmarks.byName().asScala.filter(_._2.group != "dummy").keys
       } else {
         println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
@@ -164,13 +159,13 @@ object RenaissanceSuite {
     return result
   }
 
-  private def formatRawBenchmarkList(): String = benchmarksByName.keys.mkString("\n")
+  private def formatRawBenchmarkList(): String = benchmarks.byName().asScala.keys.mkString("\n")
 
   private def formatBenchmarkList(): String = {
     val indent = "    "
 
     val result = new StringBuffer
-    for ((name, bench) <- benchmarksByName) {
+    for ((name, bench) <- benchmarks.byName().asScala) {
       result.append(name).append("\n")
       result.append(foldText(bench.summaryWords, 65, indent).mkString("\n")).append("\n")
       result.append(s"${indent}Default repetitions: ${bench.repetitions}").append("\n\n")
@@ -179,8 +174,7 @@ object RenaissanceSuite {
     return result.toString
   }
 
-  private def formatGroupList(): String = benchmarksByGroup.keys.toSeq.sorted.mkString("\n")
-
+  private def formatGroupList(): String = benchmarks.byGroup().asScala.keys.toSeq.sorted.mkString("\n")
 
   val jmhTargetPath = "renaissance-jmh/target/scala-2.12"
 
