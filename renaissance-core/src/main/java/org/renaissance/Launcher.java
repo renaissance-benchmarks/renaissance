@@ -12,11 +12,21 @@ import java.util.logging.Logger;
 
 public class Launcher {
   public static void main(String args[]) {
+    if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
+      // TODO Launch the generator from the build system
+      launchHarnessClass("org.renaissance.MarkdownGenerator", new String[0]);
+    } else {
+      launchHarnessClass("org.renaissance.RenaissanceSuite", args);
+    }
+  }
+
+
+  private static void launchHarnessClass(String className, String[] args) {
     final Logger logger = Logging.getMethodLogger(Launcher.class, "main");
 
     try {
       final ClassLoader loader = ModuleLoader.getForGroup("renaissance-harness");
-      final Class<?> suiteClass = loader.loadClass("org.renaissance.RenaissanceSuite");
+      final Class<?> suiteClass = loader.loadClass(className);
       final Method suiteMain = suiteClass.getMethod("main", String[].class);
       suiteMain.invoke(null, new Object[] { args });
 
