@@ -100,30 +100,43 @@ public final class BenchmarkRegistry {
     return benchmarksByName.get(name);
   }
 
-  public List<BenchmarkInfo> getGroup (final String groupName) {
+
+  public List<BenchmarkInfo> getAll() {
+    return new ArrayList(benchmarksByName.values());
+  }
+
+
+  public List<BenchmarkInfo> getGroup(final String groupName) {
     return Collections.unmodifiableList(benchmarksByGroup.get(groupName));
   }
 
-  public boolean exists (final String name) {
+
+  public boolean exists(final String name) {
     return benchmarksByName.containsKey(name);
   }
 
-  public boolean groupExists (final String groupName) {
+
+  public boolean groupExists(final String groupName) {
     return benchmarksByGroup.containsKey(groupName);
   }
 
-  public Map<String, BenchmarkInfo> byName() {
-    return Collections.unmodifiableMap(benchmarksByName);
-  }
 
   public Map<String, List<BenchmarkInfo>> byGroup() {
     return Collections.unmodifiableMap(benchmarksByGroup);
   }
 
-  public static void main (String... args) {
-    String name = "benchmark-details.properties";
-    File prefix = new File(new File ("target"), "classes");
-    System.out.println(prefix.getAbsolutePath());
+
+  public List<String> names() {
+    return new ArrayList(benchmarksByName.keySet());
+  }
+
+
+  public List<String> groupNames() {
+    return new ArrayList(benchmarksByGroup.keySet());
+  }
+
+
+
   public static void main(String... args) {
     String baseName = "benchmark-details.properties";
     File prefix = new File(new File("target"), "classes");
