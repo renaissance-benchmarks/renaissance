@@ -137,12 +137,6 @@ public class Config {
     return c;
   }
 
-  public Config withReadme(boolean readme) {
-    Config c = copy();
-    c.readme = readme;
-    return c;
-  }
-
   public Config withList() {
     Config c = copy();
     c.printList = true;
