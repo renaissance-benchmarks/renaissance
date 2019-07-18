@@ -25,7 +25,11 @@ public final class BenchmarkRegistry {
       ));
 
     this.benchmarksByGroup = benchmarksByName.values().stream()
-      .collect(Collectors.groupingBy(b -> b.group, Collectors.toList()));
+      .collect(Collectors.groupingBy(
+        b -> b.group,
+        () -> new TreeMap<>(),
+        Collectors.toList()
+      ));
   }
 
 
