@@ -8,7 +8,7 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public class BenchmarkLoader {
+public final class BenchmarkLoader {
     private final Properties properties;
     private final TreeMap<String, Info> benchmarksByName;
 

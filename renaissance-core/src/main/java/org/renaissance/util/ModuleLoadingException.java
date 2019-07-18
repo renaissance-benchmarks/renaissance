@@ -2,7 +2,7 @@ package org.renaissance.util;
 
 import java.io.IOException;
 
-public class ModuleLoadingException extends Exception {
+public final class ModuleLoadingException extends Exception {
   private static final long serialVersionUID = 1L;
 
   public ModuleLoadingException(String message) {
