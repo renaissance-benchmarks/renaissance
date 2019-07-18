@@ -24,21 +24,6 @@ object RenaissanceSuite {
     TreeMap(benchmarksByName.values.groupBy(_.group).toArray: _*)
   }
 
-  val groupJars = {
-    val map = new mutable.HashMap[String, List[String]]
-    val lines = IOUtils.lineIterator(
-      getClass.getResourceAsStream("/groups-jars.txt"),
-      StandardCharsets.UTF_8
-    )
-    while (lines.hasNext) {
-      val line = lines.next()
-      val parts = line.split("=")
-      val group = parts(0)
-      val jars = parts(1).split(",").toList
-      map(group) = jars
-    }
-    map
-  }
 
   val renaissanceTitle = classOf[RenaissanceBenchmark].getPackage.getSpecificationTitle
 
