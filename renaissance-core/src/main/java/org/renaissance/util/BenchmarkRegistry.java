@@ -20,6 +20,7 @@ public final class BenchmarkRegistry {
 
   private final Map<String, List<BenchmarkInfo>> benchmarksByGroup;
 
+  private static final String BENCHMARK_PROPERTIES = "benchmark-details.properties";
 
 
   private BenchmarkRegistry(final Properties properties) {
@@ -43,14 +44,36 @@ public final class BenchmarkRegistry {
   }
 
 
-  public static BenchmarkRegistry createUsingProperties (InputStream propertiesAsStream) {
+  public static BenchmarkRegistry createDefault() {
+    final String name = "/" + BENCHMARK_PROPERTIES;
+    final InputStream properties = BenchmarkRegistry.class.getResourceAsStream(name);
+    if (properties == null) {
+      throw new RuntimeException("could not find resource " + name);
+    }
+
+    return createFromProperties(properties);
+  }
+
+
+  public static BenchmarkRegistry createFromProperties(File file) {
     try {
-      final Properties properties = new Properties();
-      properties.load(propertiesAsStream);
-      return new BenchmarkRegistry (properties);
+      final InputStream stream = new FileInputStream(file);
+      return createFromProperties(stream);
 
     } catch (IOException e) {
-      throw new RuntimeException ("failed to create benchmark registry", e);
+      throw new RuntimeException("could not find propery file " + file);
+    }
+  }
+
+
+  public static BenchmarkRegistry createFromProperties(InputStream stream) {
+    try {
+      final Properties properties = new Properties();
+      properties.load(stream);
+      return new BenchmarkRegistry(properties);
+
+    } catch (IOException e) {
+      throw new RuntimeException("failed to create benchmark registry", e);
     }
   }
 
