@@ -8,13 +8,22 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+/**
+ * A registry of benchmark metadata. By default, this registry is initialized
+ * using a {@link Properties} file so that it does not need to have access to
+ * benchmark classes. The benchmarks and groups are kept sorted by name, both
+ * globally and within groups.
+ */
 public final class BenchmarkRegistry {
 
   private final Map<String, BenchmarkInfo> benchmarksByName;
+
   private final Map<String, List<BenchmarkInfo>> benchmarksByGroup;
 
 
+
   private BenchmarkRegistry(final Properties properties) {
+    // Keep benchmarks ordered by name.
     this.benchmarksByName = properties.stringPropertyNames().stream()
       .filter(p -> p.endsWith(".name"))
       .collect(Collectors.toMap(
@@ -24,6 +33,7 @@ public final class BenchmarkRegistry {
         () -> new TreeMap<>()
       ));
 
+    // Keep groups ordered by name (order within groups implied).
     this.benchmarksByGroup = benchmarksByName.values().stream()
       .collect(Collectors.groupingBy(
         b -> b.group,
