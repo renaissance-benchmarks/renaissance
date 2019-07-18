@@ -1,6 +1,7 @@
 package org.renaissance;
 
 import org.renaissance.util.BenchmarkLoader;
+import org.renaissance.util.BenchmarkRegistry;
 
 public abstract class JmhRenaissanceBenchmark {
   private Config config = new Config();
@@ -9,7 +10,8 @@ public abstract class JmhRenaissanceBenchmark {
   protected abstract String benchmarkName();
 
   protected void defaultSetUpBeforeAll() {
-    BenchmarkLoader loader = new BenchmarkLoader();
+    BenchmarkRegistry registry = BenchmarkRegistry.createDefault();
+    BenchmarkLoader loader = new BenchmarkLoader(registry);
     benchmark = loader.loadBenchmark(benchmarkName());
     benchmark.setUpBeforeAll(config);
   }
