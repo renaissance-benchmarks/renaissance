@@ -6,6 +6,8 @@ import org.apache.commons.io.FileUtils
 import org.renaissance.util.BenchmarkInfo
 import org.renaissance.util.BenchmarkRegistry
 import org.renaissance.util.ModuleLoader
+import org.renaissance.RenaissanceSuite.parser
+import org.renaissance.RenaissanceSuite.renaissanceVersion
 
 import scala.collection.JavaConverters._
 
@@ -17,21 +19,23 @@ import scala.collection.JavaConverters._
  */
 object MarkdownGenerator {
 
-  private val benchmarks = BenchmarkRegistry.createUsingProperties(
-    getClass.getResourceAsStream("/benchmark-details.properties")
-  )
-
   def main(args: Array[String]): Unit = {
+    val registry = createRegistry(args)
+    if (registry.isEmpty) {
+      System.err.println("error: failed to initialize benchmark registry")
+      System.exit(1)
+    }
+
     FileUtils.write(
       new File("README.md"),
-      readme,
+      formatReadme(registry.get),
       java.nio.charset.StandardCharsets.UTF_8,
       false
     )
 
     FileUtils.write(
       new File("CONTRIBUTION.md"),
-      contribution,
+      formatContribution(),
       java.nio.charset.StandardCharsets.UTF_8,
       false
     )
@@ -39,7 +43,26 @@ object MarkdownGenerator {
     println("README.md and CONTRIBUTION.md updated.")
   }
 
-  private def formatBenchmarkListMarkdown = {
+  private def createRegistry(args: Array[String]): Option[BenchmarkRegistry] = {
+    try {
+      if (args.length > 0) {
+        val fileName = args(0)
+        return Option(BenchmarkRegistry.createFromProperties(new File(fileName)))
+
+      } else {
+        return Option(BenchmarkRegistry.createDefault())
+      }
+
+    } catch {
+      case exception: Throwable => {
+        System.err.println(exception.getMessage())
+      }
+    }
+
+    return None
+  }
+
+  private def formatBenchmarkListMarkdown(benchmarks: BenchmarkRegistry) = {
     def formatItem(b: BenchmarkInfo) = {
       s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
     }
@@ -47,26 +70,29 @@ object MarkdownGenerator {
     val result = new StringBuffer
     for ((group, benches) <- benchmarks.byGroup().asScala) {
       result.append(s"#### ${group}").append("\n\n")
-
-      val sortedBenches = benches.asScala.toSeq.sortBy(_.name)
-      result.append(sortedBenches.map(b => formatItem(b)).mkString("\n\n")).append("\n\n")
+      result.append(benches.asScala.map(formatItem(_)).mkString("\n\n")).append("\n\n")
     }
 
     result.toString
   }
 
-  def formatBenchmarkTableMarkdown = {
+  private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
     def formatRow(b: BenchmarkInfo) = {
       s"| ${b.name} | ${b.printableLicenses} | ${b.distro} |"
     }
 
-    benchmarks.byName().asScala.values.map(b => formatRow(b)).mkString("\n")
+    benchmarks.getAll().asScala.map(formatRow(_)).mkString("\n")
   }
 
-  val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
+  private val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
     "raw/master/website/resources/images/mona-lisa-round.png"
 
-  lazy val readme = s"""
+  private val jmhTargetPath = "renaissance-jmh/target/scala-2.12"
+
+  private val jmhJarPrefix = "renaissance-jmh-assembly"
+
+  def formatReadme(benchmarks: BenchmarkRegistry): String = {
+    return s"""
 
 ## Renaissance Benchmark Suite
 
@@ -102,7 +128,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-$$ java -jar '<renaissance-home>/target/renaissance-gpl-${RenaissanceSuite.renaissanceVersion}.jar' <benchmarks>
+$$ java -jar '<renaissance-home>/target/renaissance-gpl-${renaissanceVersion}.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -115,7 +141,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-${RenaissanceSuite.parser.usage}
+${parser.usage}
 ```
 
 
@@ -123,7 +149,7 @@ ${RenaissanceSuite.parser.usage}
 
 The following is the complete list of benchmarks, separated into groups.
 
-${formatBenchmarkListMarkdown}
+${formatBenchmarkListMarkdown(benchmarks)}
 
 
 ### Run policies
@@ -172,7 +198,7 @@ $$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$$ java -jar '${RenaissanceSuite.jmhTargetPath}/${RenaissanceSuite.jmhJarPrefix}-${RenaissanceSuite.renaissanceVersion}.jar'
+$$ java -jar '${jmhTargetPath}/${jmhJarPrefix}-${renaissanceVersion}.jar'
 ```
 
 
@@ -193,7 +219,7 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
-${formatBenchmarkTableMarkdown}
+${formatBenchmarkTableMarkdown(benchmarks)}
 
 
 ### Design overview
@@ -273,8 +299,11 @@ in the `renaissance-suite.scala` file and in `${classOf[ModuleLoader].getSimpleN
 
 
 """
+  }
 
-  lazy val contribution = s"""
+  def formatContribution(): String = {
+
+    return s"""
 
 ## Contribution Guide
 
@@ -455,5 +484,5 @@ The current members of the committee are:
 - Petr Tuma, Charles University
 - Alex Villazon, Universidad Privada Boliviana
 """
-
+  }
 }
