@@ -1,8 +1,5 @@
 package org.renaissance
 
-import java.nio.charset.StandardCharsets
-
-import org.apache.commons.io.IOUtils
 import org.renaissance.util.BenchmarkLoader
 import org.renaissance.util.BenchmarkRegistry
 import scopt._
@@ -11,12 +8,6 @@ import scala.collection._
 import scala.collection.JavaConverters._
 
 object RenaissanceSuite {
-
-  val benchmarks = BenchmarkRegistry.createUsingProperties(
-    getClass().getResourceAsStream("/benchmark-details.properties")
-  );
-
-  val benchmarkLoader = new BenchmarkLoader (benchmarks)
 
   val renaissanceTitle = classOf[RenaissanceBenchmark].getPackage.getSpecificationTitle
 
@@ -79,23 +70,30 @@ object RenaissanceSuite {
       case None    => sys.exit(1)
     }
 
+    // Load info on available benchmarks
+    val benchmarks = BenchmarkRegistry.createDefault();
+
     if (config.printList) {
-      print(formatBenchmarkList)
+      print(formatBenchmarkList(benchmarks))
     } else if (config.printRawList) {
-      println(formatRawBenchmarkList)
+      println(formatRawBenchmarkList(benchmarks))
     } else if (config.printGroupList) {
-      println(formatGroupList)
+      println(formatGroupList(benchmarks))
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage)
     } else {
       // Check that all the benchmarks on the list really exist.
-      val benchmarks = generateBenchmarkList(config)
+      val selectedBenchmarks = getSelectedBenchmarks(config, benchmarks)
 
       // Run the main benchmark loop.
-      val failedBenchmarks = new mutable.ArrayBuffer[String](benchmarks.length)
       for (plugin <- config.plugins.asScala) plugin.onCreation()
+
+      val failedBenchmarks = new mutable.ArrayBuffer[String](selectedBenchmarks.length)
+
       try {
-        for (benchName <- benchmarks) {
+        val benchmarkLoader = new BenchmarkLoader(benchmarks)
+
+        for (benchName <- selectedBenchmarks) {
           val bench = benchmarkLoader.loadBenchmark(benchName)
           val exception = bench.runBenchmark(config)
           if (exception != null) {
@@ -104,6 +102,7 @@ object RenaissanceSuite {
             exception.printStackTrace()
           }
         }
+
       } finally {
         for (plugin <- config.plugins.asScala) plugin.onExit()
         for (observer <- config.resultObservers.asScala) observer.onExit()
@@ -116,7 +115,7 @@ object RenaissanceSuite {
     }
   }
 
-  def generateBenchmarkList(config: Config): Seq[String] = {
+  def getSelectedBenchmarks(config: Config, benchmarks: BenchmarkRegistry): Seq[String] = {
     val result = new mutable.LinkedHashSet[String]
     for (specifier <- config.benchmarkSpecifiers.asScala) {
       if (benchmarks.exists(specifier)) {
@@ -127,7 +126,7 @@ object RenaissanceSuite {
         result ++= benchmarks.getGroup(specifier).asScala.map(_.name)
       } else if (specifier == "all") {
         // Add all benchmarks except the dummy ones
-        result ++= benchmarks.byName().asScala.filter(_._2.group != "dummy").keys
+        result ++= benchmarks.getAll().asScala.filter(_.group != "dummy").map(_.name)
       } else {
         println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
@@ -159,25 +158,23 @@ object RenaissanceSuite {
     return result
   }
 
-  private def formatRawBenchmarkList(): String = benchmarks.byName().asScala.keys.mkString("\n")
+  private def formatRawBenchmarkList(benchmarks: BenchmarkRegistry) =
+    benchmarks.names().asScala.mkString("\n")
 
-  private def formatBenchmarkList(): String = {
+  private def formatBenchmarkList(benchmarks: BenchmarkRegistry) = {
     val indent = "    "
 
     val result = new StringBuffer
-    for ((name, bench) <- benchmarks.byName().asScala) {
-      result.append(name).append("\n")
+    for (bench <- benchmarks.getAll().asScala) {
+      result.append(bench.name).append("\n")
       result.append(foldText(bench.summaryWords, 65, indent).mkString("\n")).append("\n")
       result.append(s"${indent}Default repetitions: ${bench.repetitions}").append("\n\n")
     }
 
-    return result.toString
+    result.toString
   }
 
-  private def formatGroupList(): String = benchmarks.byGroup().asScala.keys.toSeq.sorted.mkString("\n")
-
-  val jmhTargetPath = "renaissance-jmh/target/scala-2.12"
-
-  val jmhJarPrefix = "renaissance-jmh-assembly"
+  private def formatGroupList(benchmarks: BenchmarkRegistry) =
+    benchmarks.groupNames().asScala.sorted.mkString("\n")
 
 }
