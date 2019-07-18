@@ -124,26 +124,26 @@ public final class BenchmarkRegistry {
     String name = "benchmark-details.properties";
     File prefix = new File(new File ("target"), "classes");
     System.out.println(prefix.getAbsolutePath());
+  public static void main(String... args) {
+    String baseName = "benchmark-details.properties";
+    File prefix = new File(new File("target"), "classes");
+    File detailsFile = new File(prefix, baseName);
 
     try {
-      InputStream details = new FileInputStream(new File (prefix, name));
-      BenchmarkRegistry benchmarks = createUsingProperties(details);
+      System.out.println("loading benchmarks from "+ detailsFile);
+      BenchmarkRegistry benchmarks = createFromProperties(detailsFile);
+
       for (Map.Entry<String, List<BenchmarkInfo>> group : benchmarks.byGroup().entrySet()) {
         System.out.println(group.getKey());
         for (BenchmarkInfo info : group.getValue()) {
-          System.out.println("\t"+ info.name);
+          System.out.println("\t" + info.name);
         }
       }
-    } catch (IOException e) {
-      fail(name);
+
+    } catch (Exception e) {
+      System.err.println("unable to find " + detailsFile);
+      System.exit(1);
     }
-
-  }
-
-
-  private static void fail(String name) {
-    System.err.println("unable to find resource " + name);
-    System.exit(1);
   }
 
 }
