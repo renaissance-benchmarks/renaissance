@@ -2,7 +2,6 @@ package org.renaissance.util;
 
 import org.renaissance.RenaissanceBenchmark;
 
-import java.io.IOException;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
