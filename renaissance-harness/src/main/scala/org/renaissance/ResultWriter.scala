@@ -3,6 +3,8 @@ package org.renaissance
 import java.io.File
 
 import org.apache.commons.io.FileUtils
+import org.renaissance.RenaissanceSuite.renaissanceTitle
+import org.renaissance.RenaissanceSuite.renaissanceVersion
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -161,8 +163,8 @@ class JsonWriter(val filename: String) extends ResultWriter {
     git.update("dirty", getManifestAttr("Git-Uncommitted-Changes", "true"))
 
     result.update("git", git.toMap.toJson)
-    result.update("name", RenaissanceSuite.renaissanceTitle.toJson)
-    result.update("version", RenaissanceSuite.renaissanceVersion.toJson)
+    result.update("name", renaissanceTitle.toJson)
+    result.update("version", renaissanceVersion.toJson)
 
     return result.toMap.toJson
   }
