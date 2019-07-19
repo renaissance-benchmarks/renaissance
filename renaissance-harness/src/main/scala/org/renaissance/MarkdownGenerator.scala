@@ -1,15 +1,21 @@
 package org.renaissance
 
 import java.io.File
+import java.io.IOException
+import java.io.PrintWriter
+import java.nio.charset.StandardCharsets
 
-import org.apache.commons.io.FileUtils
 import org.renaissance.util.BenchmarkInfo
-import org.renaissance.util.BenchmarkRegistry
 import org.renaissance.util.ModuleLoader
 import org.renaissance.RenaissanceSuite.parser
-import org.renaissance.RenaissanceSuite.renaissanceVersion
+import org.renaissance.util.BenchmarkRegistry
+import scopt.OptionParser
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * Generates README.md and CONTRIBUTION.md files for the suite.
@@ -19,47 +25,131 @@ import scala.collection.JavaConverters._
  */
 object MarkdownGenerator {
 
-  def main(args: Array[String]): Unit = {
-    val registry = createRegistry(args)
-    if (registry.isEmpty) {
-      System.err.println("error: failed to initialize benchmark registry")
-      System.exit(1)
+  private final class LocalConfig {
+    var metadata: File = null
+
+    val tags = mutable.Map[String, String](
+      "renaissanceTitle" -> classOf[Benchmark].getPackage.getImplementationTitle,
+      "renaissanceVersion" -> classOf[Benchmark].getPackage.getImplementationVersion
+    )
+
+    def setTag(key: String, value: String) = {
+      tags.put(key, value)
+      this
     }
 
-    FileUtils.write(
-      new File("README.md"),
-      formatReadme(registry.get),
-      java.nio.charset.StandardCharsets.UTF_8,
-      false
-    )
-
-    FileUtils.write(
-      new File("CONTRIBUTION.md"),
-      formatContribution(),
-      java.nio.charset.StandardCharsets.UTF_8,
-      false
-    )
-
-    println("README.md and CONTRIBUTION.md updated.")
+    def setMetadata(path: String) = {
+      this.metadata = new File(path)
+      this
+    }
   }
 
-  private def createRegistry(args: Array[String]): Option[BenchmarkRegistry] = {
-    try {
-      if (args.length > 0) {
-        val fileName = args(0)
-        return Option(BenchmarkRegistry.createFromProperties(new File(fileName)))
+  def main(args: Array[String]): Unit = {
+    val config = parseArgs(args)
+    val benchmarks = createRegistry(config.metadata)
+    val tags = initTagValues(benchmarks, config.tags)
 
-      } else {
-        return Option(BenchmarkRegistry.createDefault())
+    writeFile(() => formatReadme(tags), "README.md")
+    writeFile(() => formatContribution(tags), "CONTRIBUTION.md")
+  }
+
+  private def parseArgs(args: Array[String]) = {
+    val parser = new OptionParser[LocalConfig]("MarkdownGenerator") {
+      head("Markdown documentation generator")
+      opt[String]('t', "title")
+        .text("Sets the Renaissance suite title.")
+        .action((title, c) => c.setTag("renaissanceTitle", title))
+      opt[String]('v', "version")
+        .text("Sets the Renaissance suite version.")
+        .action((version, c) => c.setTag("renaissanceVersion", version))
+      opt[String]('m', "metadata")
+        .text("Sets the path to the property file with benchmark metadata.")
+        .action((path, c) => c.setMetadata(path))
+    }
+
+    parser.parse(args, new LocalConfig) match {
+      case Some(config) => config
+      case None         => sys.exit(1)
+    }
+  }
+
+  private def createRegistry(metadata: File) = {
+    var provider = Try(BenchmarkRegistry.createFromProperties(metadata))
+    if (metadata == null) {
+      provider = Try(BenchmarkRegistry.createDefault())
+    }
+
+    provider match {
+      case Success(registry) => registry
+      case Failure(exception) => {
+        Console.err.println("error: " + exception.getMessage)
+        Console.err.println("error: failed to initialize benchmark registry")
+        sys.exit(1)
       }
+    }
+  }
 
-    } catch {
-      case exception: Throwable => {
-        System.err.println(exception.getMessage())
+  private def initTagValues(
+    benchmarks: BenchmarkRegistry,
+    tags: mutable.Map[String, String]
+  ) = {
+    val githubUrl = "https://github.com/renaissance-benchmarks/renaissance/"
+    tags("logoUrl") = githubUrl + "raw/master/website/resources/images/mona-lisa-round.png"
+    tags("codeOfConductUrl") = githubUrl + "blob/master/CODE-OF-CONDUCT.md"
+
+    tags("jmhTargetPath") = "renaissance-jmh/target/scala-2.12"
+    tags("jmhJarPrefix") = "renaissance-jmh-assembly"
+
+    tags("benchmarksList") = formatBenchmarkListMarkdown(benchmarks)
+    tags("benchmarksTable") = formatBenchmarkTableMarkdown(benchmarks)
+    tags("benchmarkClass") = classOf[Benchmark].getSimpleName
+    tags("benchmarkResultClass") = classOf[BenchmarkResult].getSimpleName
+
+    tags("configClass") = classOf[Config].getSimpleName
+    tags("pluginClass") = classOf[Plugin].getSimpleName
+    tags("policyClass") = classOf[Policy].getSimpleName
+    tags("policyList") = formatPolicyList
+
+    tags("launcherClassFull") = classOf[Launcher].getName
+    tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
+
+    tags("renaissanceUsage") = parser.usage
+    tags("renaissanceBenchmarkClass") = classOf[RenaissanceBenchmark].getSimpleName
+
+    val exampleBenchmarkClass = "MyJavaBenchmark"
+    tags("exampleBenchmarkClass") = exampleBenchmarkClass
+    tags("exampleBenchmarkName") = RenaissanceBenchmark.kebabCase(exampleBenchmarkClass)
+
+    tags.toMap
+  }
+
+  private def writeFile(supplier: () => String, file: String) = {
+    val value = Try(supplier()) match {
+      case Success(value) => value
+      case Failure(exception) => {
+        Console.err.println("error: " + exception.getMessage)
+        Console.err.println("error: failed to format " + file)
+        sys.exit(1)
       }
     }
 
-    return None
+    try {
+      val writer = new PrintWriter(file, StandardCharsets.UTF_8.name)
+
+      try {
+        writer.write(value)
+        println(file + " updated.");
+
+      } finally {
+        writer.close()
+      }
+    } catch {
+      case exception: IOException => {
+        Console.err.println("error: " + exception.getMessage)
+        Console.err.println("error: failed to write " + file)
+        sys.exit(1)
+      }
+    }
   }
 
   private def formatBenchmarkListMarkdown(benchmarks: BenchmarkRegistry) = {
@@ -84,20 +174,17 @@ object MarkdownGenerator {
     benchmarks.getAll().asScala.map(formatRow(_)).mkString("\n")
   }
 
-  private val logoUrl = "https://github.com/renaissance-benchmarks/renaissance/" +
-    "raw/master/website/resources/images/mona-lisa-round.png"
+  private def formatPolicyList = {
+    Policy.descriptions.asScala.map { case (k, v) => s"- `$k` -- $v\n" }.mkString("\n")
+  }
 
-  private val jmhTargetPath = "renaissance-jmh/target/scala-2.12"
-
-  private val jmhJarPrefix = "renaissance-jmh-assembly"
-
-  def formatReadme(benchmarks: BenchmarkRegistry): String = {
+  def formatReadme(tags: Map[String, String]): String = {
     return s"""
 
 ## Renaissance Benchmark Suite
 
 <p align="center">
-  <img height="180px" src="${logoUrl}"/>
+  <img height="180px" src="${tags("logoUrl")}"/>
 </p>
 
 
@@ -128,7 +215,7 @@ To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
 ```
-$$ java -jar '<renaissance-home>/target/renaissance-gpl-${renaissanceVersion}.jar' <benchmarks>
+$$ java -jar '<renaissance-home>/target/renaissance-gpl-${tags("renaissanceVersion")}.jar' <benchmarks>
 ```
 
 Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
@@ -141,7 +228,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-${parser.usage}
+${tags("renaissanceUsage")}
 ```
 
 
@@ -149,7 +236,7 @@ ${parser.usage}
 
 The following is the complete list of benchmarks, separated into groups.
 
-${formatBenchmarkListMarkdown(benchmarks)}
+${tags("benchmarksList")}
 
 
 ### Run policies
@@ -158,7 +245,7 @@ The suite is designed to support multiple ways of executing a benchmark --
 for example, a fixed number of iterations, or a fixed amount of time.
 This logic is encapsulated in run policies. Current policies include:
 
-${Policy.descriptions.asScala.map { case (k, v) => s"- `$k` -- $v\n" }.mkString("\n")}
+${tags("policyList")}
 
 
 ### Plugins and interfacing with external tools
@@ -170,20 +257,20 @@ To allow this, the suite allows specifying custom plugins, which are notified wh
 Here is an example of how to implement a plugin:
 
 ```
-class MyPlugin extends ${classOf[Plugin].getSimpleName} {
+class MyPlugin extends ${tags("pluginClass")} {
   def onCreation() = {
     // Initialize the plugin after it has been created.
   }
-  def beforeIteration(policy: ${classOf[Policy].getSimpleName}) = {
+  def beforeIteration(policy: ${tags("policyClass")}) = {
     // Notify the tool that a benchmark iteration is about to start.
   }
-  def afterIteration(policy: ${classOf[Policy].getSimpleName}) = {
+  def afterIteration(policy: ${tags("policyClass")}) = {
     // Notify the tool that the benchmark iteration has ended.
   }
 }
 ```
 
-Here, the ${classOf[Policy].getSimpleName} argument describes
+Here, the ${tags("policyClass")} argument describes
 the current state of the benchmark.
 
 
@@ -198,7 +285,7 @@ $$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$$ java -jar '${jmhTargetPath}/${jmhJarPrefix}-${renaissanceVersion}.jar'
+$$ java -jar '${tags("jmhTargetPath")}/${tags("jmhJarPrefix")}-${tags("renaissanceVersion")}.jar'
 ```
 
 
@@ -219,7 +306,7 @@ The following table contains the licensing information of all the benchmarks:
 
 | Benchmark     | Licenses      | Renaissance Distro |
 | ------------- | ------------- |:------------------:|
-${formatBenchmarkTableMarkdown(benchmarks)}
+${tags("benchmarksTable")}
 
 
 ### Design overview
@@ -233,9 +320,9 @@ The Renaissance benchmark suite is organized into several `sbt` projects:
   for a specific domain (and having a separate set of dependencies)
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
-Its most important class is `${classOf[RenaissanceBenchmark].getSimpleName}`,
+Its most important class is `${tags("renaissanceBenchmarkClass")}`,
 which must be extended by a concrete benchmark implementation, and the
-annotations in the `${classOf[Benchmark].getSimpleName}` class, which are
+annotations in the `${tags("benchmarkClass")}` class, which are
 used to set static information about a benchmark, such as a summary or
 detailed description.
 Consequently, each *subproject* depends on the *core* project.
@@ -295,13 +382,13 @@ by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
 You can see the further details of the build system in the top-level `build.sbt` file,
-in the `renaissance-suite.scala` file and in `${classOf[ModuleLoader].getSimpleName}`.
+in the `renaissance-suite.scala` file and in `${tags("moduleLoaderClass")}`.
 
 
 """
   }
 
-  def formatContribution(): String = {
+  def formatContribution(tags: Map[String, String]): String = {
 
     return s"""
 
@@ -327,7 +414,7 @@ The code is organized into three main parts:
 
 To add a new benchmark to an existing group, identify the respective project
 in the `benchmarks` directory, and add a new top-level Scala class
-that extends the `${classOf[RenaissanceBenchmark].getSimpleName}` interface.
+that extends the `${tags("renaissanceBenchmarkClass")}` interface.
 
 Here is an example:
 
@@ -336,18 +423,20 @@ import org.renaissance._
 import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
-final class MyJavaBenchmark extends ${classOf[RenaissanceBenchmark].getSimpleName} {
-  override protected def runIteration(config: ${classOf[Config].getSimpleName}): BenchmarkResult = {
+final class ${tags("exampleBenchmarkClass")} extends ${tags("renaissanceBenchmarkClass")} {
+  override protected def runIteration(config: ${tags("configClass")}): ${tags(
+      "benchmarkResultClass"
+    )} = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
     // Return object for later validation of the iteration.
-    return new MyJavaBenchmarkResult()
+    return new ${tags("exampleBenchmarkClass")}Result()
   }
 }
 ```
 
 Above, the name of the benchmark will be automatically generated from the class name.
-In this case, the name will be `${RenaissanceBenchmark.kebabCase("MyJavaBenchmark")}`.
+In this case, the name will be `${tags("exampleBenchmarkName")}`.
 
 To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
 create an additional `sbt` project in the `benchmarks` directory,
@@ -370,7 +459,7 @@ $$ tools/sbt/bin/sbt renaissanceFormat
 Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
-$$ tools/sbt/bin/sbt runMain ${classOf[Launcher].getName} --readme
+$$ tools/sbt/bin/sbt runMain ${tags("launcherClassFull")} --readme
 ```
 
 ### IDE development
@@ -436,7 +525,7 @@ Here is some of the quality criteria that a new benchmark should satisfy:
 #### Code of Conduct
 
 We would also like to point you to the
-[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/blob/master/CODE-OF-CONDUCT.md). As a member
+[Renaissance Code of Conduct](${tags("codeOfConductUrl")}). As a member
 of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
 the community.
 
