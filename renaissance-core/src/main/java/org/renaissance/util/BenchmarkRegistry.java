@@ -1,9 +1,6 @@
 package org.renaissance.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -55,14 +52,9 @@ public final class BenchmarkRegistry {
   }
 
 
-  public static BenchmarkRegistry createFromProperties(File file) {
-    try {
-      final InputStream stream = new FileInputStream(file);
-      return createFromProperties(stream);
-
-    } catch (IOException e) {
-      throw new RuntimeException("could not find propery file " + file);
-    }
+  public static BenchmarkRegistry createFromProperties(File file) throws FileNotFoundException {
+    final InputStream stream = new FileInputStream(file);
+    return createFromProperties(stream);
   }
 
 
