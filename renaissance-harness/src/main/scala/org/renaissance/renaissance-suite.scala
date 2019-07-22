@@ -9,13 +9,13 @@ import scala.collection.JavaConverters._
 
 object RenaissanceSuite {
 
-  val renaissanceTitle = classOf[RenaissanceBenchmark].getPackage.getSpecificationTitle
-
-  val renaissanceVersion = classOf[RenaissanceBenchmark].getPackage.getImplementationVersion
-
   val parser: OptionParser[Config] =
     new OptionParser[Config]("renaissance") {
-      head(s"${renaissanceTitle}, version ${renaissanceVersion}")
+      val pkg = classOf[Benchmark].getPackage
+      val title = pkg.getSpecificationTitle
+      val version = pkg.getImplementationVersion
+
+      head(s"${title}, version ${version}")
 
       help('h', "help")
         .text("Prints this usage text.")
