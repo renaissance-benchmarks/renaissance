@@ -1,8 +1,12 @@
 package org.renaissance.util;
 
+import org.renaissance.RenaissanceBenchmark;
+
+import java.lang.reflect.Constructor;
+
 public final class BenchmarkInfo {
 
-    public final String className;
+    final String className;
 
     public final String name;
 
@@ -10,11 +14,11 @@ public final class BenchmarkInfo {
 
     public final String summary;
 
-    public final String description;
+    final String description;
 
     public final int repetitions;
 
-    public final String[] licenses;
+    final String[] licenses;
 
     public final String distro;
 
@@ -43,4 +47,20 @@ public final class BenchmarkInfo {
       return String.join(", ", licenses);
     }
 
-  }
+
+    public RenaissanceBenchmark loadBenchmark() {
+      try {
+        final ClassLoader loader = ModuleLoader.getForGroup(group);
+        final Class<?> benchClass = loader.loadClass(className);
+        final Constructor<?> benchCtor = benchClass.getDeclaredConstructor();
+
+        // Make current thread as independent of the harness as possible.
+        Thread.currentThread().setContextClassLoader(loader);
+        return (RenaissanceBenchmark) benchCtor.newInstance();
+
+      } catch (Exception e) {
+        throw new RuntimeException("failed to load benchmark " + name, e);
+      }
+    }
+
+}

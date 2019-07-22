@@ -1,6 +1,6 @@
 package org.renaissance
 
-import org.renaissance.util.BenchmarkLoader
+import org.renaissance.util.BenchmarkInfo
 import org.renaissance.util.BenchmarkRegistry
 import scopt._
 
@@ -88,16 +88,14 @@ object RenaissanceSuite {
       // Run the main benchmark loop.
       for (plugin <- config.plugins.asScala) plugin.onCreation()
 
-      val failedBenchmarks = new mutable.ArrayBuffer[String](selectedBenchmarks.length)
+      val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](selectedBenchmarks.length)
 
       try {
-        val benchmarkLoader = new BenchmarkLoader(benchmarks)
-
-        for (benchName <- selectedBenchmarks) {
-          val bench = benchmarkLoader.loadBenchmark(benchName)
+        for (benchInfo <- selectedBenchmarks) {
+          val bench = benchInfo.loadBenchmark()
           val exception = bench.runBenchmark(config)
           if (exception != null) {
-            failedBenchmarks += benchName
+            failedBenchmarks += benchInfo
             Console.err.println(s"Exception occurred in ${bench}: ${exception.getMessage}")
             exception.printStackTrace()
           }
@@ -115,18 +113,18 @@ object RenaissanceSuite {
     }
   }
 
-  def getSelectedBenchmarks(config: Config, benchmarks: BenchmarkRegistry): Seq[String] = {
-    val result = new mutable.LinkedHashSet[String]
+  def getSelectedBenchmarks(config: Config, benchmarks: BenchmarkRegistry) = {
+    val result = new mutable.LinkedHashSet[BenchmarkInfo]
     for (specifier <- config.benchmarkSpecifiers.asScala) {
       if (benchmarks.exists(specifier)) {
         // Add an individual benchmark
-        result += specifier
+        result += benchmarks.get(specifier)
       } else if (benchmarks.groupExists(specifier)) {
         // Add benchmarks for a given group
-        result ++= benchmarks.getGroup(specifier).asScala.map(_.name)
+        result ++= benchmarks.getGroup(specifier).asScala
       } else if (specifier == "all") {
         // Add all benchmarks except the dummy ones
-        result ++= benchmarks.getAll().asScala.filter(_.group != "dummy").map(_.name)
+        result ++= benchmarks.getAll().asScala.filter(_.group != "dummy")
       } else {
         println(s"Benchmark (or group) `${specifier}` does not exist.")
         sys.exit(1)
