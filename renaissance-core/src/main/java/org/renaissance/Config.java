@@ -13,7 +13,6 @@ public class Config {
   public List<Plugin> plugins;
   public String policy;
   public List<ResultObserver> resultObservers;
-  public boolean readme;
   public boolean printList;
   public boolean printRawList;
   public boolean printGroupList;
@@ -27,7 +26,6 @@ public class Config {
     this.plugins = new ArrayList<>();
     this.policy = Policy.kebabCasePolicy(FixedIterationsPolicy.class);
     this.resultObservers = new ArrayList<>();
-    this.readme = false;
     this.printList = false;
     this.printRawList = false;
     this.printGroupList = false;
@@ -46,16 +44,13 @@ public class Config {
     return plugins;
   }
 
+  // TODO Rename to executionPolicy
   public String policy() {
     return policy;
   }
 
   public List<ResultObserver> resultObservers() {
     return resultObservers;
-  }
-
-  public boolean readme() {
-    return readme;
   }
 
   public boolean printList() {
@@ -79,7 +74,6 @@ public class Config {
     c.plugins = this.plugins;
     c.policy = this.policy;
     c.resultObservers = new ArrayList<>(this.resultObservers);
-    c.readme = this.readme;
     c.printList = this.printList;
     c.printRawList = this.printRawList;
     c.printGroupList = this.printGroupList;
