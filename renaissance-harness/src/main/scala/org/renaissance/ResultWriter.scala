@@ -141,7 +141,7 @@ class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   def getMainManifest(): java.util.jar.Manifest = {
-    val klass = classOf[RenaissanceBenchmark]
+    val klass = classOf[Benchmark]
     val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
     return new java.util.jar.Manifest(stream)
   }
