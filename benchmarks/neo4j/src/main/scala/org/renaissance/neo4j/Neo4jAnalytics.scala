@@ -2,19 +2,19 @@ package org.renaissance.neo4j
 
 import java.nio.file.Paths
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
+import org.renaissance.Benchmark
+import org.renaissance.BenchmarkContext
 
 @Name("neo4j-analytics")
 @Group("neo4j")
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
 @Repetitions(20)
-class Neo4jAnalytics extends RenaissanceBenchmark {
+class Neo4jAnalytics extends Benchmark {
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -31,15 +31,15 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
     sys.props.get("renaissance.neo4j.mutator-query-count").map(_.toInt)
   )
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     benchmark.setupAll()
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     benchmark.tearAll()
   }
 
-  protected def runIteration(config: Config): BenchmarkResult = {
+  override def runIteration(config: BenchmarkContext): BenchmarkResult = {
     // TODO: Return something useful for validation
     benchmark.run()
 

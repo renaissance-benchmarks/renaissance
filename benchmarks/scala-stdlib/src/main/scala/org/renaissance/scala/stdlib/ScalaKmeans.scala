@@ -1,10 +1,10 @@
 package org.renaissance.scala.stdlib
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 import org.renaissance.ValidationException
 
 import scala.collection._
@@ -122,7 +122,7 @@ trait KmeansUtilities {
 @Summary("Runs the K-Means algorithm using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(50)
-class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
+class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -183,7 +183,7 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
     new Point(0.56, 1.05, 0.31)
   )
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext)= {
     if (c.functionalTest) {
       numPoints = 5000
       k = 8
@@ -193,7 +193,6 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
     means = initializeMeans(k, points)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
   private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
     val EPSILON = 0.01
 
@@ -208,6 +207,7 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
     }
   }
 
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val result = kMeans(points, means, eta)
     val expected = if (c.functionalTest) EXPECTED_RESULT_TEST else EXPECTED_RESULT_FULL
     () => validate(expected, result)

@@ -1,17 +1,17 @@
 package org.renaissance.jdk.concurrent
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 @Name("fj-kmeans")
 @Group("jdk-concurrent")
 @Summary("Runs the k-means algorithm using the fork/join framework.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
-class FjKmeans extends RenaissanceBenchmark {
+class FjKmeans extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -32,7 +32,7 @@ class FjKmeans extends RenaissanceBenchmark {
 
   private var data: java.util.List[Array[java.lang.Double]] = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     if (c.functionalTest) {
       DIMENSION = 5
       VECTOR_LENGTH = 500
@@ -40,20 +40,21 @@ class FjKmeans extends RenaissanceBenchmark {
       ITERATION_COUNT = 50
       LOOP_COUNT = 4
     }
+
     benchmark = new JavaKMeans(DIMENSION, THREAD_COUNT)
     data = JavaKMeans.generateData(VECTOR_LENGTH, DIMENSION, CLUSTER_COUNT)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     for (i <- 0 until LOOP_COUNT) {
-      blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
+      c.blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
     }
 
     // TODO: add proper validation of the individual sub-benchmarks
     BenchmarkResult.dummy()
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     benchmark.tearDown()
     benchmark = null
     data = null

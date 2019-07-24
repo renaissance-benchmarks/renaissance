@@ -1,21 +1,18 @@
 package org.renaissance.rx
 
+import org.renaissance.Benchmark
+import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
 import org.renaissance.HashingResult
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.Benchmark._
-
-import java.util.Map.Entry
-import java.util.List
 
 @Name("rx-scrabble")
 @Group("rx")
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(80)
-class RxScrabble extends RenaissanceBenchmark {
+class RxScrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -26,7 +23,7 @@ class RxScrabble extends RenaissanceBenchmark {
 
   var bench: RxScrabbleImplementation = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     if (c.functionalTest) {
       shakespearePath = "/shakespeare-truncated.txt"
     }
@@ -34,7 +31,7 @@ class RxScrabble extends RenaissanceBenchmark {
     bench = new RxScrabbleImplementation(scrabblePath, shakespearePath)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val result = bench.runScrabble()
     val expected = if (c.functionalTest) "a7b6836b27dbdf0f" else "7527985ec20d9aab"
 

@@ -16,10 +16,10 @@ trait SparkUtil {
 
   val winUtils = "/winutils.exe"
 
-  def setUpSparkContext(dirPath: Path, threadsPerExecutor: Int): SparkContext = {
+  def setUpSparkContext(dirPath: Path, threadsPerExecutor: Int, benchName : String): SparkContext = {
     setUpHadoop(dirPath)
     val conf = new SparkConf()
-      .setAppName(RenaissanceBenchmark.kebabCase(this.getClass.getSimpleName))
+      .setAppName(benchName)
       .setMaster(s"local[$threadsPerExecutor]")
       .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)

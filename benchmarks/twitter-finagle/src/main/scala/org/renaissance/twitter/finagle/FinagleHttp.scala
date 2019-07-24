@@ -18,18 +18,18 @@ import com.twitter.finagle.http
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 
 @Name("finagle-http")
 @Group("twitter-finagle")
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)
-class FinagleHttp extends RenaissanceBenchmark {
+class FinagleHttp extends Benchmark {
 
   class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {
     var totalContentLength = 0L
@@ -83,7 +83,7 @@ class FinagleHttp extends RenaissanceBenchmark {
   var threads: Array[WorkerThread] = null
   var threadBarrier: CountDownLatch = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     if (c.functionalTest) {
       NUM_REQUESTS = 150
       NUM_CLIENTS = 2
@@ -136,11 +136,11 @@ class FinagleHttp extends RenaissanceBenchmark {
     )
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     server.close()
   }
 
-  override def beforeIteration(c: Config): Unit = {
+  override def beforeIteration(c: BenchmarkContext): Unit = {
     //
     // Use a CountDownLatch initialized to NUM_CLIENTS + 1 to start the
     // threads (outside the measured loop) and make them block until the
@@ -158,7 +158,7 @@ class FinagleHttp extends RenaissanceBenchmark {
     }
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     // Let the threads do the work (see beforeIteration)
     threadBarrier.countDown
 

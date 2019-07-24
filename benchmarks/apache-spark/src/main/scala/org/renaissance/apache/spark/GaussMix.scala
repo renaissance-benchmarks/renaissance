@@ -10,11 +10,11 @@ import org.apache.spark.mllib.clustering.GaussianMixture
 import org.apache.spark.mllib.clustering.GaussianMixtureModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 import scala.util.Random
 
@@ -23,7 +23,7 @@ import scala.util.Random
 @Summary("Computes a Gaussian mixture model using expectation-maximization.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-class GaussMix extends RenaissanceBenchmark with SparkUtil {
+class GaussMix extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -55,9 +55,9 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
 
   var tempDirPath: Path = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("gauss_mix")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("gauss_mix")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     if (c.functionalTest) {
       SIZE /= 2000
       NUM_GMM_ITERATIONS = 3
@@ -90,14 +90,14 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
       .cache()
   }
 
-  override def tearDownAfterAll(c: Config) = {
+  override def tearDownAfterAll(c: BenchmarkContext) = {
     val output = gmm.gaussians.mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     gmm = new GaussianMixture()
       .setK(DISTRIBUTION_COUNT)
       .setMaxIterations(NUM_GMM_ITERATIONS)

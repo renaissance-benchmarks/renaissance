@@ -5,18 +5,18 @@ import java.nio.file.Path
 import org.lmdbjava.bench.Chronicle
 import org.lmdbjava.bench.MapDb
 import org.lmdbjava.bench.MvStore
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 
 @Name("db-shootout")
 @Group("database")
 @Summary("Executes a shootout test using several in-memory databases.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(16)
-class DbShootout extends RenaissanceBenchmark {
+class DbShootout extends Benchmark {
 
   /**
    * The original benchmarks are from https://github.com/lmdbjava/benchmarks
@@ -53,8 +53,8 @@ class DbShootout extends RenaissanceBenchmark {
 
   var mvStoreWriter: MvStore.Writer = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("db_shootout")
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("db_shootout")
 
     if (c.functionalTest) {
       numEntriesToReadWrite = 10000
@@ -79,15 +79,15 @@ class DbShootout extends RenaissanceBenchmark {
     mvStoreWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     mapDbReader.teardown()
     chronicleReader.teardown()
     mvStoreReader.teardown()
 
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
-  def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     mapDb.parReadKey(mapDbReader)
     mapDb.parWrite(mapDbWriter)
 

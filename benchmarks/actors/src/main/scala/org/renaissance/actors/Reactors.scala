@@ -1,10 +1,11 @@
 package org.renaissance.actors
 
 import io.reactors._
-import org.renaissance.Benchmark._
 import org.renaissance._
+import org.renaissance.Benchmark._
 
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.Await
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -15,7 +16,7 @@ import scala.util.Random
 )
 @Licenses(Array(License.MIT))
 @Repetitions(10)
-class Reactors extends RenaissanceBenchmark {
+class Reactors extends Benchmark {
 
   // Code based on https://github.com/reactors-io/reactors
   // The original uses BSD 3-clause license, the result is compatible with MIT license.
@@ -29,7 +30,7 @@ class Reactors extends RenaissanceBenchmark {
 
   private var expectedFibonacci: Int = _
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     // Instantiate the default reactor system used throughout the benchmark.
     system = ReactorSystem.default("bench-system")
 
@@ -40,12 +41,12 @@ class Reactors extends RenaissanceBenchmark {
     expectedFibonacci = Fibonacci.computeExpected((28 * scalingFactor).intValue())
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     // Shut down the reactor system.
     system.shutdown()
   }
 
-  def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext) = {
 
     // TODO: Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 

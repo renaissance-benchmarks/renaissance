@@ -15,11 +15,11 @@ import org.apache.spark.mllib.recommendation.ALS
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd._
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 import scala.io.Source
 
@@ -28,7 +28,7 @@ import scala.io.Source
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-class MovieLens extends RenaissanceBenchmark with SparkUtil {
+class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -245,10 +245,10 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
     Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("movie_lens")
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("movie_lens")
     setUpLogger()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     sc.setCheckpointDir(checkpointPath.toString)
     if (c.functionalTest) {
       ratingsInputFile = ratingsSmallInputFile
@@ -280,8 +280,8 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
     )
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
-    var helper = new MovieLensHelper
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+    val helper = new MovieLensHelper
     loadData(helper)
 
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
@@ -294,9 +294,9 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
     BenchmarkResult.dummy(recommendations)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
 }

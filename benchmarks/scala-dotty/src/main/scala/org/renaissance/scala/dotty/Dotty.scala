@@ -1,17 +1,17 @@
 package org.renaissance.scala.dotty
 
-import java.io.FileOutputStream
 import java.io._
+import java.io.FileOutputStream
 import java.net.URLClassLoader
 import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import org.apache.commons.io.IOUtils
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 import scala.collection._
 
@@ -20,7 +20,7 @@ import scala.collection._
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
-class Dotty extends RenaissanceBenchmark {
+class Dotty extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -62,7 +62,7 @@ class Dotty extends RenaissanceBenchmark {
     sourcePaths = sources.map(f => sourceCodePath.resolve(f).toString)
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     outputPath.toFile.mkdirs()
     unzipSources()
     setUpSourcePaths()
@@ -78,7 +78,7 @@ class Dotty extends RenaissanceBenchmark {
    */
   private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     /*
      * Construct the classpath for the compiler. Unfortunately, Dotty is
      * unable to use current classloader (either of this class or this

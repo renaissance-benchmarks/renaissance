@@ -1,9 +1,9 @@
 package org.renaissance.dummy;
 
-import org.renaissance.Config;
-import org.renaissance.License;
-import org.renaissance.RenaissanceBenchmark;
+import org.renaissance.Benchmark;
+import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
+import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
 
@@ -11,11 +11,11 @@ import static org.renaissance.Benchmark.*;
 @Group("dummy")
 @Summary("A dummy benchmark for testing the harness (fails during iteration).")
 @Licenses(License.MIT)
-public final class DummyFailing extends RenaissanceBenchmark {
+public final class DummyFailing implements Benchmark {
   private int counter = 0;
 
   @Override
-  protected BenchmarkResult runIteration(Config config) {
+  public BenchmarkResult runIteration(BenchmarkContext c) {
     counter++;
     if (counter > 1) {
       throw new AssertionError("Intentionally failing");

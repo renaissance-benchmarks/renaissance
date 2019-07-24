@@ -11,19 +11,18 @@ import org.apache.spark.mllib.classification.NaiveBayesModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 @Name("naive-bayes")
 @Group("apache-spark")
 @Summary("Runs the multinomial naive Bayes algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
-class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
+class NaiveBayes extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -78,14 +77,14 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("naive_bayes")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("naive_bayes")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     prepareInput()
     loadData()
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     // Dump output.
     FileUtils.write(
       outputPath.toFile, bayesModel.labels.mkString("labels: ", ", ", "\n"), StandardCharsets.UTF_8, true
@@ -108,10 +107,10 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
     )
 
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
-  def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     // Using full package name to avoid conflicting with the renaissance benchmark class name.
     val bayes = new org.apache.spark.mllib.classification.NaiveBayes()
       .setLambda(SMOOTHING)

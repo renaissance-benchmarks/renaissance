@@ -16,19 +16,18 @@ import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 
 @Name("dec-tree")
 @Group("apache-spark")
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-class DecTree extends RenaissanceBenchmark with SparkUtil {
+class DecTree extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -99,9 +98,9 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
     )
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("dec_tree")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("dec_tree")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     if (c.functionalTest) {
       numCopies = 5
     }
@@ -109,7 +108,7 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
     pipeline = constructPipeline()
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     pipelineModel = pipeline.fit(training)
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
@@ -129,8 +128,8 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
     )
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 }

@@ -1,17 +1,17 @@
 package org.renaissance.jdk.concurrent
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 @Name("future-genetic")
 @Group("jdk-concurrent")
 @Summary("Runs a genetic algorithm using the Jenetics library and futures.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(50)
-class FutureGenetic extends RenaissanceBenchmark {
+class FutureGenetic extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -32,11 +32,12 @@ class FutureGenetic extends RenaissanceBenchmark {
 
   var benchmark: JavaJenetics = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     if (c.functionalTest) {
       chromosomeCount = 10
       generationCount = 200
     }
+
     benchmark = new JavaJenetics(
       geneMinValue,
       geneMaxValue,
@@ -46,14 +47,15 @@ class FutureGenetic extends RenaissanceBenchmark {
       threadCount,
       randomSeed
     )
+
     benchmark.setupBeforeAll()
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     benchmark.tearDownAfterAll()
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val result = benchmark.runRepetition()
 
     // TODO: add proper validation

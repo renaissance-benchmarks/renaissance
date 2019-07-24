@@ -1,10 +1,6 @@
 package org.renaissance.dummy;
 
-import org.renaissance.Config;
-import org.renaissance.License;
-import org.renaissance.RenaissanceBenchmark;
-import org.renaissance.BenchmarkResult;
-import org.renaissance.ValidationException;
+import org.renaissance.*;
 
 import static org.renaissance.Benchmark.*;
 
@@ -12,11 +8,11 @@ import static org.renaissance.Benchmark.*;
 @Group("dummy")
 @Summary("A dummy benchmark for testing the harness (fails during validation).")
 @Licenses(License.MIT)
-public final class DummyValidationFailing extends RenaissanceBenchmark {
+public final class DummyValidationFailing implements Benchmark {
   private int counter = 0;
 
   @Override
-  protected BenchmarkResult runIteration(Config config) {
+  public BenchmarkResult runIteration(BenchmarkContext c) {
     counter++;
     if (counter > 1) {
       return () -> {

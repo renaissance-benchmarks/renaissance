@@ -87,4 +87,52 @@ public interface Benchmark {
 
   }
 
+  //
+
+  /**
+   * Called once before the first execution of a benchmark. This should be
+   * used to initialize the part of benchmark state that remains unchanged
+   * between repeated executions of the benchmark operation.
+   */
+  // TODO: void setUp(BenchmarkContext context)
+  default void setUpBeforeAll(BenchmarkContext context) {}
+
+
+  /**
+   * Called before each (repeated) execution of a benchmark operation. This
+   * should be used to initialize the part of benchmark state that is specific
+   * to each execution of the benchmark operation.
+   */
+  // TODO: void beforeOperation(BenchmarkContext context);
+  default void beforeIteration(BenchmarkContext context) {}
+
+
+  /**
+   * Executes the benchmark operation.
+   *
+   * @return instance of {@link BenchmarkResult} which supports validation
+   */
+  // TODO: BenchmarkResult operation(BenchmarkContext context);
+  BenchmarkResult runIteration(BenchmarkContext context);
+
+
+  /**
+   * Called after each (repeated) execution of a benchmark operation. A dual
+   * method to {@link #beforeOperation(BenchmarkContext)}, which should be used to
+   * clean-up state changes due to execution of the benchmark operation. In
+   * particular, the benchmark must ensure that resources are not leaked during
+   * repeated execution of the benchmark operation.
+   */
+  // TODO void afterOperation(BenchmarkContext context);
+  default void afterIteration(BenchmarkContext context) {}
+
+
+  /**
+   * Called once after the last execution of a benchmark. A dual method to
+   * {@link #tearDown(BenchmarkContext)}, which should be used to clean up parts
+   * of benchmark state that could leak resources.
+   */
+  // TODO: void tearDown(BenchmarkContext context);
+  default void tearDownAfterAll(BenchmarkContext context) {}
+
 }

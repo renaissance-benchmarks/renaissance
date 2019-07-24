@@ -6,8 +6,8 @@ import java.net.URLEncoder
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Comparator
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 import com.google.common.collect.ConcurrentHashMultiset
 import com.google.common.collect.Multiset.Entry
@@ -24,11 +24,11 @@ import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import org.apache.commons.io.IOUtils
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 
 import scala.collection._
 import scala.util.hashing.byteswap32
@@ -38,7 +38,7 @@ import scala.util.hashing.byteswap32
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(90)
-class FinagleChirper extends RenaissanceBenchmark {
+class FinagleChirper extends Benchmark {
 
   class Master extends Service[Request, Response] {
     val lock = new AnyRef
@@ -403,7 +403,7 @@ class FinagleChirper extends RenaissanceBenchmark {
   lazy val usernames = for (i <- 0 until userCount)
     yield usernameBases(i % usernameBases.length) + i
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     if (c.functionalTest) {
       requestCount = 10
       userCount = 10
@@ -423,7 +423,7 @@ class FinagleChirper extends RenaissanceBenchmark {
     masterService = Http.newService(":" + masterPort)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     for (cache <- caches) {
       Await.ready(cache.close())
     }
@@ -431,13 +431,13 @@ class FinagleChirper extends RenaissanceBenchmark {
     Await.ready(masterService.close())
   }
 
-  override def beforeIteration(c: Config): Unit = {
+  override def beforeIteration(c: BenchmarkContext): Unit = {
     val resetQuery = "/api/reset"
     val request = Request(Method.Get, resetQuery)
     require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val clients = for (i <- 0 until clientCount)
       yield new Client(usernames(i % usernames.length) + i)
     clients.foreach(_.start())

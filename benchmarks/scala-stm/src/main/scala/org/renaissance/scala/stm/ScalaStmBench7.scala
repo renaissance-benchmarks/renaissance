@@ -1,24 +1,24 @@
 package org.renaissance.scala.stm
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 @Name("scala-stm-bench7")
 @Group("scala-stm")
 @Summary("Runs the stmbench7 benchmark using ScalaSTM.")
 @Licenses(Array(License.BSD3, License.GPL2))
 @Repetitions(60)
-class ScalaStmBench7 extends RenaissanceBenchmark {
+class ScalaStmBench7 extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     // The following is the description of STMBench7's arguments.
     // -s -- the initializer class for the STM implementation
     // -g -- the type of synchronization that the benchmark should use

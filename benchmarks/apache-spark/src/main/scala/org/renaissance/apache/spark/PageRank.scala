@@ -7,11 +7,11 @@ import java.nio.file.Paths
 import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 import scala.collection.immutable.StringOps
 
@@ -20,7 +20,7 @@ import scala.collection.immutable.StringOps
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-class PageRank extends RenaissanceBenchmark with SparkUtil {
+class PageRank extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -50,7 +50,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
 
   var tempDirPath: Path = null
 
-  def prepareInput(c: Config) = {
+  def prepareInput(c: BenchmarkContext) = {
     FileUtils.deleteDirectory(pageRankPath.toFile)
     var text = ZipResourceUtil.readZipFromResourceToText(inputFile)
     if (c.functionalTest) {
@@ -76,14 +76,14 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
     ranks = links.mapValues(v => 1.0)
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("page_rank")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("page_rank")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     prepareInput(c)
     loadData()
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     ranks = links.mapValues(v => 1.0)
     for (i <- 0 until ITERATIONS) {
       val contributions = links.join(ranks).values.flatMap {
@@ -97,7 +97,7 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
     BenchmarkResult.simple("ranks count", expectedRanksCount, ranks.count())
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     val output = ranks
       .collect()
       .map {
@@ -105,7 +105,8 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
       }
       .mkString("\n")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
+
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 }

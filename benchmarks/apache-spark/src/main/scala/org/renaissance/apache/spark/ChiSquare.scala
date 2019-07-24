@@ -11,11 +11,11 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.mllib.stat.test.ChiSqTestResult
 import org.apache.spark.rdd.RDD
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 import scala.util.Random
 
@@ -24,7 +24,7 @@ import scala.util.Random
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)
-class ChiSquare extends RenaissanceBenchmark with SparkUtil {
+class ChiSquare extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -79,9 +79,9 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("chi_square")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("chi_square")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     if (c.functionalTest) {
       SIZE = 10000
     }
@@ -89,18 +89,18 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
     loadData()
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
 
     // TODO: add more sophisticated validation
     BenchmarkResult.simple("component count", COMPONENTS, results.size)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     val output = results.map(_.statistic).mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
 }

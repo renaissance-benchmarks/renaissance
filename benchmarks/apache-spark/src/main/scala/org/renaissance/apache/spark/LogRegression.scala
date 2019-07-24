@@ -12,18 +12,18 @@ import org.apache.spark.ml.classification.LogisticRegressionModel
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 
 @Name("log-regression")
 @Group("apache-spark")
 @Summary("Runs the logistic regression workload from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-class LogRegression extends RenaissanceBenchmark with SparkUtil {
+class LogRegression extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -85,9 +85,9 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
       }
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("log_regression")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    tempDirPath = c.generateTempDir("log_regression")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
     if (c.functionalTest) {
       numCopies = 5
     }
@@ -95,7 +95,7 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
     loadData()
   }
 
-  protected override def runIteration(config: Config): BenchmarkResult = {
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val lor = new LogisticRegression()
       .setElasticNetParam(ELASTIC_NET_PARAM)
       .setRegParam(REGULARIZATION_PARAM)
@@ -109,10 +109,10 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
     return BenchmarkResult.dummy(mlModel)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", StandardCharsets.UTF_8, true)
     FileUtils.write(outputPath.toFile, mlModel.intercept.toString, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 }

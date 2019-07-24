@@ -1,17 +1,15 @@
 package org.renaissance.scala.sat.doku
 
-import cafesat.api.FormulaBuilder.{and, or, propVar}
+import cafesat.api.FormulaBuilder.and
+import cafesat.api.FormulaBuilder.or
+import cafesat.api.FormulaBuilder.propVar
 import cafesat.api.Solver.solveForSatisfiability
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{
-  BenchmarkResult,
-  CompoundResult,
-  Config,
-  EmptyResult,
-  License,
-  RenaissanceBenchmark,
-  ValidationException
-}
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
+import org.renaissance.ValidationException
 
 object Solver {
 
@@ -87,7 +85,7 @@ object Solver {
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(20)
-class ScalaDoku extends RenaissanceBenchmark {
+class ScalaDoku extends Benchmark {
 
   /*
    * An arbitrary solved sudoku puzzle. The puzzle is copied and some entries
@@ -123,11 +121,12 @@ class ScalaDoku extends RenaissanceBenchmark {
     result
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     puzzleWithAFewHoles = preparePuzzleWithAFewHoles()
     puzzleWithOneHole = preparePuzzleWithOneHole()
   }
 
+  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     BenchmarkResult.compound(
       new DokuResult(Solver.solve(puzzleWithAFewHoles), SOLVED_PUZZLE),
       new DokuResult(Solver.solve(puzzleWithOneHole), SOLVED_PUZZLE)
@@ -145,5 +144,4 @@ class ScalaDoku extends RenaissanceBenchmark {
     }
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
 }
