@@ -8,7 +8,6 @@ import org.lmdbjava.bench.MvStore
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
@@ -99,6 +98,6 @@ class DbShootout extends RenaissanceBenchmark {
     mvStore.parWrite(mvStoreWriter)
 
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 }

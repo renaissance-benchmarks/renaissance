@@ -124,22 +124,6 @@ trait KmeansUtilities {
 @Repetitions(50)
 class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
 
-  class ScalaKmeansResult(expected: Seq[Point], actual: GenSeq[Point]) extends BenchmarkResult {
-
-    val EPSILON = 0.01
-
-    override def validate(): Unit = {
-      ValidationException.throwIfNotEqual(expected.length, actual.length, "centers count")
-      var idx = 0
-      for ((exp, act) <- (expected zip actual)) {
-        ValidationException.throwIfNotEqual(exp.x, act.x, EPSILON, s"center $idx position at x")
-        ValidationException.throwIfNotEqual(exp.y, act.y, EPSILON, s"center $idx position at y")
-        ValidationException.throwIfNotEqual(exp.z, act.z, EPSILON, s"center $idx position at z")
-        idx = idx + 1
-      }
-    }
-  }
-
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
@@ -148,8 +132,6 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
   var k = 32
 
   val eta = 0.01
-
-  var centers: GenSeq[Point] = null
 
   var points: Seq[Point] = null
 
@@ -206,16 +188,28 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
       numPoints = 5000
       k = 8
     }
+
     points = generatePoints(k, numPoints)
     means = initializeMeans(k, points)
   }
 
   override def runIteration(c: Config): BenchmarkResult = {
-    centers = kMeans(points, means, eta)
-    blackHole(centers)
-    return new ScalaKmeansResult(
-      if (c.functionalTest) EXPECTED_RESULT_TEST else EXPECTED_RESULT_FULL,
-      centers
-    )
+  private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
+    val EPSILON = 0.01
+
+    ValidationException.throwIfNotEqual(expected.length, actual.length, "centers count")
+
+    for (idx <- expected.indices) {
+      val (exp, act) = (expected(idx), actual(idx))
+
+      ValidationException.throwIfNotEqual(exp.x, act.x, EPSILON, s"center $idx position at x")
+      ValidationException.throwIfNotEqual(exp.y, act.y, EPSILON, s"center $idx position at y")
+      ValidationException.throwIfNotEqual(exp.z, act.z, EPSILON, s"center $idx position at z")
+    }
+  }
+
+    val result = kMeans(points, means, eta)
+    val expected = if (c.functionalTest) EXPECTED_RESULT_TEST else EXPECTED_RESULT_FULL
+    () => validate(expected, result)
   }
 }

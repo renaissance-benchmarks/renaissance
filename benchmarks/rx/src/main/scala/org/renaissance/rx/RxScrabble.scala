@@ -17,17 +17,6 @@ import java.util.List
 @Repetitions(80)
 class RxScrabble extends RenaissanceBenchmark {
 
-  class RxScrabbleResult(actualResult: List[Entry[Integer, List[String]]], expectedHash: String)
-    extends BenchmarkResult {
-
-    override def validate(): Unit = {
-      val actualWords = RxScrabbleImplementation.prepareForValidation(actualResult)
-
-      val hasher = new HashingResult(expectedHash, actualWords)
-      hasher.validate()
-    }
-  }
-
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
@@ -41,14 +30,20 @@ class RxScrabble extends RenaissanceBenchmark {
     if (c.functionalTest) {
       shakespearePath = "/shakespeare-truncated.txt"
     }
+
     bench = new RxScrabbleImplementation(scrabblePath, shakespearePath)
   }
 
   override def runIteration(c: Config): BenchmarkResult = {
     val result = bench.runScrabble()
-    return new RxScrabbleResult(
-      result,
-      if (c.functionalTest) "a7b6836b27dbdf0f" else "7527985ec20d9aab"
-    )
+    val expected = if (c.functionalTest) "a7b6836b27dbdf0f" else "7527985ec20d9aab"
+
+    new BenchmarkResult {
+      override def validate() = {
+        val actualWords = RxScrabbleImplementation.prepareForValidation(result)
+        val hasher = new HashingResult(expected, actualWords)
+        hasher.validate()
+      }
+    }
   }
 }

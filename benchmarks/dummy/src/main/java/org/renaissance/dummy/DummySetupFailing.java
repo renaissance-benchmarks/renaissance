@@ -4,7 +4,6 @@ import org.renaissance.Config;
 import org.renaissance.License;
 import org.renaissance.RenaissanceBenchmark;
 import org.renaissance.BenchmarkResult;
-import org.renaissance.SimpleResult;
 
 import static org.renaissance.Benchmark.*;
 
@@ -20,6 +19,6 @@ public final class DummySetupFailing extends RenaissanceBenchmark {
 
   @Override
   protected BenchmarkResult runIteration(Config config) {
-    return new SimpleResult("nothing", 0, 0);
+    return BenchmarkResult.simple("nothing", 0, 0);
   }
 }

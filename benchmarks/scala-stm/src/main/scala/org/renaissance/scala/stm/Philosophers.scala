@@ -2,7 +2,6 @@ package org.renaissance.scala.stm
 
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -31,9 +30,11 @@ class Philosophers extends RenaissanceBenchmark {
   }
 
   override def runIteration(c: Config): BenchmarkResult = {
+    // TODO: Return something useful, not elapsed time
     RealityShowPhilosophers.run(NUMBER_OF_MEALS, THREAD_COUNT)
+
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 
 }

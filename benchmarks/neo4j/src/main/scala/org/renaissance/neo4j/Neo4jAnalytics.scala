@@ -4,7 +4,6 @@ import java.nio.file.Paths
 
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -41,8 +40,10 @@ class Neo4jAnalytics extends RenaissanceBenchmark {
   }
 
   protected def runIteration(config: Config): BenchmarkResult = {
+    // TODO: Return something useful for validation
     benchmark.run()
+
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy(benchmark)
   }
 }

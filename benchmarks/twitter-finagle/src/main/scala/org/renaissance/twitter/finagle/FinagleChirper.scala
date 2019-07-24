@@ -27,7 +27,6 @@ import org.apache.commons.io.IOUtils
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
@@ -445,6 +444,6 @@ class FinagleChirper extends RenaissanceBenchmark {
     clients.foreach(_.join())
 
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 }

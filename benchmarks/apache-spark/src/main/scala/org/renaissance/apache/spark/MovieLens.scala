@@ -17,7 +17,6 @@ import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd._
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -225,6 +224,8 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
         println("%2d".format(i) + ": " + movies(r.product))
         i += 1
       }
+
+      recommendations
     }
 
     /** Compute RMSE (Root Mean Squared Error). */
@@ -286,12 +287,11 @@ class MovieLens extends RenaissanceBenchmark with SparkUtil {
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
     // last digit of the timestamp, add myRatings to train, and cache them.
     helper.splitRatings(4, 6, 8)
-
     helper.trainModels(alsRanks, alsLambdas, alsNumIters)
-    helper.recommendMovies()
+    val recommendations = helper.recommendMovies()
 
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy(recommendations)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

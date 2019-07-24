@@ -18,7 +18,6 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkResult
-import org.renaissance.CompoundResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
@@ -122,10 +121,11 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
       true
     )
     iteration += 1
+
     // TODO: add more in-depth validation
-    return new CompoundResult(
-      new SimpleResult("tree depth", 2, treeModel.depth),
-      new SimpleResult("node count", 5, treeModel.numNodes)
+    BenchmarkResult.compound(
+      BenchmarkResult.simple("tree depth", 2, treeModel.depth),
+      BenchmarkResult.simple("node count", 5, treeModel.numNodes)
     )
   }
 

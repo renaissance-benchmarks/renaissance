@@ -11,7 +11,6 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 import scala.collection.immutable.StringOps
@@ -93,10 +92,9 @@ class PageRank extends RenaissanceBenchmark with SparkUtil {
       }
       ranks = contributions.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
     }
-    blackHole(ranks)
 
     // TODO: add more sophisticated validation
-    return new SimpleResult("ranks count", expectedRanksCount, ranks.count())
+    BenchmarkResult.simple("ranks count", expectedRanksCount, ranks.count())
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

@@ -23,7 +23,6 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 
 @Name("finagle-http")
 @Group("twitter-finagle")
@@ -83,6 +82,7 @@ class FinagleHttp extends RenaissanceBenchmark {
       NUM_REQUESTS = 150
       NUM_CLIENTS = 2
     }
+
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")
     val muxer: HttpMuxer = new HttpMuxer()
@@ -156,7 +156,7 @@ class FinagleHttp extends RenaissanceBenchmark {
       totalLength += threads(i).totalContentLength
     }
 
-    return new SimpleResult(
+    BenchmarkResult.simple(
       "total request length",
       NUM_CLIENTS * NUM_REQUESTS * REQUEST_CONTENT_SIZE,
       totalLength

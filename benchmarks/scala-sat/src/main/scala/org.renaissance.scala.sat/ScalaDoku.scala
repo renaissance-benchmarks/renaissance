@@ -89,14 +89,6 @@ object Solver {
 @Repetitions(20)
 class ScalaDoku extends RenaissanceBenchmark {
 
-  class DokuResult(actualResult: Array[Array[Int]], expectedResult: Array[Array[Int]])
-    extends BenchmarkResult {
-    override def validate(): Unit = {
-      if (expectedResult.deep != actualResult.deep)
-        throw new ValidationException("Result array differs from expected solution.")
-    }
-  }
-
   /*
    * An arbitrary solved sudoku puzzle. The puzzle is copied and some entries
    * are changed to have an unsolved version for the algorithm to solve it again.
@@ -113,45 +105,45 @@ class ScalaDoku extends RenaissanceBenchmark {
     Array(4, 9, 1, 6, 3, 2, 7, 8, 5)
   )
 
-  var puzzle1: Array[Array[Option[Int]]] = null
+  var puzzleWithAFewHoles: Array[Array[Option[Int]]] = null
 
-  var puzzle2: Array[Array[Option[Int]]] = null
+  var puzzleWithOneHole: Array[Array[Option[Int]]] = null
 
-  private def preparePuzzleWithAFewHoles(): Unit = {
-    puzzle1 = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
-    puzzle1(0)(0) = None
-    puzzle1(4)(8) = None
-    puzzle1(7)(7) = None
+  private def preparePuzzleWithAFewHoles() = {
+    val result = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
+    result(0)(0) = None
+    result(4)(8) = None
+    result(7)(7) = None
+    result
   }
 
-  private def preparePuzzleWithOneHole(): Unit = {
-    puzzle2 = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
-    puzzle2(2)(7) = None
+  private def preparePuzzleWithOneHole() = {
+    val result = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
+    result(2)(7) = None
+    result
   }
 
   override def setUpBeforeAll(c: Config): Unit = {
-    preparePuzzleWithAFewHoles()
-    preparePuzzleWithOneHole()
+    puzzleWithAFewHoles = preparePuzzleWithAFewHoles()
+    puzzleWithOneHole = preparePuzzleWithOneHole()
   }
 
-  private def validateResultExists(result: Option[Array[Array[Int]]]): Array[Array[Int]] = {
-    if (result == None)
-      throw new ValidationException("Result array does not exist.")
-    return result.get
+    BenchmarkResult.compound(
+      new DokuResult(Solver.solve(puzzleWithAFewHoles), SOLVED_PUZZLE),
+      new DokuResult(Solver.solve(puzzleWithOneHole), SOLVED_PUZZLE)
+    )
   }
 
-  private def solvePuzzleWithAFewHoles(): Array[Array[Int]] = {
-    return validateResultExists(Solver.solve(puzzle1))
-  }
+  final class DokuResult(actual: Option[Array[Array[Int]]], expected: Array[Array[Int]])
+    extends BenchmarkResult {
+    override def validate(): Unit = {
+      if (actual == None)
+        throw new ValidationException("Result array does not exist.")
 
-  private def solvePuzzleWithOneHole(): Array[Array[Int]] = {
-    return validateResultExists(Solver.solve(puzzle2))
+      if (expected.deep != actual.get.deep)
+        throw new ValidationException("Result array differs from expected solution.")
+    }
   }
 
   override def runIteration(c: Config): BenchmarkResult = {
-    return new CompoundResult(
-      new DokuResult(solvePuzzleWithAFewHoles(), SOLVED_PUZZLE),
-      new DokuResult(solvePuzzleWithOneHole(), SOLVED_PUZZLE)
-    )
-  }
 }

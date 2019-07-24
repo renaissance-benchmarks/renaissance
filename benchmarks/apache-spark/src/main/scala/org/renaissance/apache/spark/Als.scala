@@ -11,7 +11,6 @@ import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd.RDD
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -96,8 +95,8 @@ class Als extends RenaissanceBenchmark with SparkUtil {
   def runIteration(c: Config): BenchmarkResult = {
     val als = new org.apache.spark.mllib.recommendation.ALS()
     factModel = als.run(ratings)
-    blackHole(factModel)
+
     // TODO: add proper validation of the generated model
-    return new EmptyResult
+    BenchmarkResult.dummy(factModel)
   }
 }

@@ -4,7 +4,6 @@ import edu.rice.habanero.actors.AkkaActorState
 import edu.rice.habanero.benchmarks.uct.UctAkkaActorBenchmark
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -43,7 +42,8 @@ class AkkaUct extends RenaissanceBenchmark {
     for (i <- 0 until numIterations) {
       bench.runIteration()
     }
+
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 }

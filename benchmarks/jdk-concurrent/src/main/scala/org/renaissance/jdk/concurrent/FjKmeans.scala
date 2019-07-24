@@ -2,7 +2,6 @@ package org.renaissance.jdk.concurrent
 
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -49,8 +48,9 @@ class FjKmeans extends RenaissanceBenchmark {
     for (i <- 0 until LOOP_COUNT) {
       blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
     }
+
     // TODO: add proper validation of the individual sub-benchmarks
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

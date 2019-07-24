@@ -13,7 +13,6 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.CompoundResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.SimpleResult
@@ -111,10 +110,10 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
       .setLambda(SMOOTHING)
       .setModelType("multinomial")
     bayesModel = bayes.run(data)
-    // TODO: add more in-depth validation
-    return new CompoundResult(
-      new SimpleResult("pi 0", -0.84397, bayesModel.pi(0), 0.001),
-      new SimpleResult("pi 1", -0.56212, bayesModel.pi(1), 0.001)
+
+    BenchmarkResult.compound(
+      BenchmarkResult.simple("pi 0", -0.84397, bayesModel.pi(0), 0.001),
+      BenchmarkResult.simple("pi 1", -0.56212, bayesModel.pi(1), 0.001)
     )
   }
 }

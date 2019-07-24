@@ -2,7 +2,6 @@ package org.renaissance.jdk.concurrent
 
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -56,8 +55,8 @@ class FutureGenetic extends RenaissanceBenchmark {
 
   override def runIteration(c: Config): BenchmarkResult = {
     val result = benchmark.runRepetition()
-    blackHole(result)
+
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy(result)
   }
 }

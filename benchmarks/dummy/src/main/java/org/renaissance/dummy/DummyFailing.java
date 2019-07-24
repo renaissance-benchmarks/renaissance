@@ -4,7 +4,6 @@ import org.renaissance.Config;
 import org.renaissance.License;
 import org.renaissance.RenaissanceBenchmark;
 import org.renaissance.BenchmarkResult;
-import org.renaissance.SimpleResult;
 
 import static org.renaissance.Benchmark.*;
 
@@ -21,7 +20,7 @@ public final class DummyFailing extends RenaissanceBenchmark {
     if (counter > 1) {
       throw new AssertionError("Intentionally failing");
     } else {
-      return new SimpleResult("nothing", 0, 0);
+      return BenchmarkResult.simple("nothing", 0, 0);
     }
   }
 }

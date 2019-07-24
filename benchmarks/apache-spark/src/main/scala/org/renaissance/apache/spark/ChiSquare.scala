@@ -15,7 +15,6 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 import scala.util.Random
@@ -55,6 +54,7 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
   def prepareInput() = {
     FileUtils.deleteDirectory(chiSquarePath.toFile)
+
     val rand = new Random(0L)
     val content = new StringBuilder
     for (i <- 0 until SIZE) {
@@ -65,6 +65,7 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
       content.append((0 until COMPONENTS).map(_ => randDouble()).mkString(" "))
       content.append("\n")
     }
+
     FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
   }
 
@@ -90,9 +91,9 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
   override def runIteration(c: Config): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
-    blackHole(results)
+
     // TODO: add more sophisticated validation
-    return new SimpleResult("result count", COMPONENTS, results.size)
+    BenchmarkResult.simple("component count", COMPONENTS, results.size)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

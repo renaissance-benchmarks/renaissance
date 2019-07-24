@@ -14,7 +14,6 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.Config
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 import org.renaissance.Benchmark._
 
 import scala.util.Random
@@ -103,8 +102,9 @@ class GaussMix extends RenaissanceBenchmark with SparkUtil {
       .setK(DISTRIBUTION_COUNT)
       .setMaxIterations(NUM_GMM_ITERATIONS)
       .run(input)
+
     // TODO: add more in-depth validation
-    return new SimpleResult("number of gaussians", 6, gmm.k)
+    BenchmarkResult.simple("number of gaussians", 6, gmm.k)
   }
 
 }

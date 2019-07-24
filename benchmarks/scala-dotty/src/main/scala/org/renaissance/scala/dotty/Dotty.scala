@@ -9,7 +9,6 @@ import java.util.zip.ZipInputStream
 import org.apache.commons.io.IOUtils
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -112,8 +111,10 @@ class Dotty extends RenaissanceBenchmark {
       DOTTY_ARG_CLASS_FILE_DESTINATION,
       outputPath.toString
     )
+
     sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
+
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 }

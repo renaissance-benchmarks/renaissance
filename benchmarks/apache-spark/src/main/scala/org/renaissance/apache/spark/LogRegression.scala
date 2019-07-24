@@ -15,7 +15,6 @@ import org.apache.spark.sql._
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 
@@ -105,9 +104,9 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
     val sqlContext = new SQLContext(rdd.context)
     import sqlContext.implicits._
     mlModel = lor.fit(rdd.toDF("label", "features"))
-    blackHole(mlModel)
+
     // TODO: add proper validation
-    return new EmptyResult
+    return BenchmarkResult.dummy(mlModel)
   }
 
   override def tearDownAfterAll(c: Config): Unit = {

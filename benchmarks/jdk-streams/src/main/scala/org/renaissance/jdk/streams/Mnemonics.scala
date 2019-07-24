@@ -68,9 +68,7 @@ class Mnemonics extends RenaissanceBenchmark {
 
   override def runIteration(c: Config): BenchmarkResult = {
     val stringSet = coder.translate(testInput)
-    return new HashingResult(
-      if (c.functionalTest) "b789f159108bb450" else "72b6f7d83bc807c0",
-      stringSet
-    )
+    val expected = if (c.functionalTest) "b789f159108bb450" else "72b6f7d83bc807c0"
+    return new HashingResult(expected, stringSet)
   }
 }

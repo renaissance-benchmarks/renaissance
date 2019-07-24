@@ -2,7 +2,6 @@ package org.renaissance.scala.stm
 
 import org.renaissance.BenchmarkResult
 import org.renaissance.Config
-import org.renaissance.EmptyResult
 import org.renaissance.License
 import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
@@ -39,9 +38,10 @@ class ScalaStmBench7 extends RenaissanceBenchmark {
       THREAD_COUNT.toString
     )
 
+    // TODO: Make the benchmark return something useful
     stmbench7.Benchmark.main(args)
 
     // TODO: add proper validation
-    return new EmptyResult
+    BenchmarkResult.dummy()
   }
 }
