@@ -115,9 +115,8 @@ object MarkdownGenerator {
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
 
-    val suiteConfigParser = new ConfigParser(tags.toMap)
-    tags("renaissanceUsage") = suiteConfigParser.usage
-    tags("renaissanceBenchmarkClass") = classOf[RenaissanceBenchmark].getSimpleName
+    val harnessConfigParser = new ConfigParser(tags.toMap)
+    tags("harnessUsage") = harnessConfigParser.usage
 
     val exampleBenchmarkClass = "MyJavaBenchmark"
     tags("exampleBenchmarkClass") = exampleBenchmarkClass
@@ -231,7 +230,7 @@ For example, you can specify `scala-kmeans` as the benchmark.
 The following is a complete list of command-line options.
 
 ```
-${tags("renaissanceUsage")}
+${tags("harnessUsage")}
 ```
 
 
@@ -323,18 +322,17 @@ The Renaissance benchmark suite is organized into several `sbt` projects:
   for a specific domain (and having a separate set of dependencies)
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
-Its most important class is `${tags("renaissanceBenchmarkClass")}`,
-which must be extended by a concrete benchmark implementation, and the
-annotations in the `${tags("benchmarkClass")}` class, which are
-used to set static information about a benchmark, such as a summary or
-detailed description.
+Its most important elements are the `${tags("benchmarkClass")}` interface,
+which must be implemented by each benchmark, and the annotations in the
+`${tags("benchmarkClass")}` interface name space, which are used to provide
+benchmark meta data, such as a summary or a detailed description.
 Consequently, each *subproject* depends on the *core* project.
 
-Interfaces of *core* are loaded (when Renaissance is started) by the default
-classloader. Every other class (including harness and individual benchmarks)
-is loaded by a separate classloader. This separation was done so that there
-are never clashes between the different dependencies of the different projects.
-Because each benchmark may depend on different versions of external libraries.
+Classes from the *core* are loaded (when Renaissance is started) by the default
+classloader. Classes from other projects (including the harness and individual benchmarks)
+are loaded by separate classloaders. This separation helps ensure that there
+are no clashes between dependencies of different projects (each benchmark may
+depend on different versions of external libraries).
 
 The *harness* project implements the functionality that is necessary
 to parse the input arguments, to run the benchmarks, to generate documentation,
@@ -416,8 +414,8 @@ The code is organized into three main parts:
 ### Adding a new benchmark
 
 To add a new benchmark to an existing group, identify the respective project
-in the `benchmarks` directory, and add a new top-level Scala class
-that extends the `${tags("renaissanceBenchmarkClass")}` interface.
+in the `benchmarks` directory, and add a new top-level Scala (Java) class
+that extends (implements) the `${tags("benchmarkClass")}` interface.
 
 Here is an example:
 
@@ -426,7 +424,7 @@ import org.renaissance._
 import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
-final class ${tags("exampleBenchmarkClass")} extends ${tags("renaissanceBenchmarkClass")} {
+final class ${tags("exampleBenchmarkClass")} extends ${tags("benchmarkClass")} {
   override protected def runIteration(config: ${tags("configClass")}): ${tags(
       "benchmarkResultClass"
     )} = {
@@ -447,8 +445,8 @@ using an existing project, such as `scala-stdlib`, as an example.
 The project will be automatically picked up by the build system
 and included into the Renaissance distribution.
 
-Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project
-(rules defined in `.scalafmt.conf`).
+Once the benchmark has been added, one needs to make sure to be compliant with the code
+formatting of the project (rules defined in `.scalafmt.conf`).
 A convenient sbt task can do that check:
 ```
 $$ tools/sbt/bin/sbt renaissanceFormatCheck
@@ -459,7 +457,7 @@ Another one can directly update the source files to match the desired format:
 $$ tools/sbt/bin/sbt renaissanceFormat
 ```
 
-Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
+Moreover, the contents of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
 $$ tools/sbt/bin/sbt runMain ${tags("launcherClassFull")} --readme
