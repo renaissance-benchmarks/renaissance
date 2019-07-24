@@ -6,17 +6,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Config {
-  public List<String> benchmarkSpecifiers;
-  public int repetitions;
-  public int warmupSeconds;
-  public int runSeconds;
-  public List<Plugin> plugins;
-  public String policy;
-  public List<ResultObserver> resultObservers;
-  public boolean printList;
-  public boolean printRawList;
-  public boolean printGroupList;
-  public boolean functionalTest;
+  List<String> benchmarkSpecifiers;
+  int repetitions;
+  int warmupSeconds;
+  int runSeconds;
+  List<Plugin> plugins;
+  String policy;
+  List<ResultObserver> resultObservers;
+  boolean printList;
+  boolean printRawList;
+  boolean printGroupList;
+  boolean functionalTest;
+
 
   public Config() {
     this.benchmarkSpecifiers = new ArrayList<>();
