@@ -38,20 +38,26 @@ class FinagleHttp extends RenaissanceBenchmark {
       val client: Service[http.Request, http.Response] =
         com.twitter.finagle.Http.newService(s"localhost:$port")
 
-      barrier.countDown
-      barrier.await
+      try {
+        barrier.countDown
+        barrier.await
 
-      for (i <- 0 until requestCount) {
-        val request = http.Request(http.Method.Get, "/json")
-        request.host = s"localhost:$port"
-        val response: Future[http.Response] = client(request)
-        // Need to use map() instead of onSuccess() as we actually need to
-        // wait for the side-effect, not the original response
-        Await.result(response.map { rep: http.Response =>
-          totalContentLength += rep.content.length
-        })
+        for (i <- 0 until requestCount) {
+          val request = http.Request(http.Method.Get, "/json")
+          request.host = s"localhost:$port"
+
+          val response: Future[http.Response] = client(request)
+
+          // Need to use map() instead of onSuccess() as we actually need to
+          // wait for the side-effect, not the original response
+          Await.result(response.map { rep: http.Response =>
+            totalContentLength += rep.content.length
+          })
+        }
+
+      } finally {
+        client.close()
       }
-      client.close()
     }
   }
 
