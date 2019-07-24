@@ -121,7 +121,7 @@ object MarkdownGenerator {
 
     val exampleBenchmarkClass = "MyJavaBenchmark"
     tags("exampleBenchmarkClass") = exampleBenchmarkClass
-    tags("exampleBenchmarkName") = RenaissanceBenchmark.kebabCase(exampleBenchmarkClass)
+    tags("exampleBenchmarkName") = "my-java-benchmark"
 
     tags.toMap
   }
