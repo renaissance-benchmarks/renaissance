@@ -141,7 +141,6 @@ class FinagleHttp extends RenaissanceBenchmark {
   }
 
   override def beforeIteration(c: Config): Unit = {
-    threads = new Array[WorkerThread](NUM_CLIENTS)
     //
     // Use a CountDownLatch initialized to NUM_CLIENTS + 1 to start the
     // threads (outside the measured loop) and make them block until the
@@ -150,7 +149,9 @@ class FinagleHttp extends RenaissanceBenchmark {
     // and lets the start working simultaneously.
     //
     threadBarrier = new CountDownLatch(NUM_CLIENTS + 1)
-    for (i <- 0 until NUM_CLIENTS) {
+
+    threads = new Array[WorkerThread](NUM_CLIENTS)
+    for (i <- threads.indices) {
       threads(i) = new WorkerThread(port, threadBarrier, NUM_REQUESTS)
       threads(i).setName(s"finagle-http-worker-$i")
       threads(i).start()
@@ -162,9 +163,9 @@ class FinagleHttp extends RenaissanceBenchmark {
     threadBarrier.countDown
 
     var totalLength = 0L
-    for (i <- 0 until NUM_CLIENTS) {
-      threads(i).join()
-      totalLength += threads(i).totalContentLength
+    for (thread <- threads) {
+      thread.join()
+      totalLength += thread.totalContentLength
     }
 
     BenchmarkResult.simple(
