@@ -87,8 +87,14 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
 
   override def tearDownAfterAll(c: Config): Unit = {
     // Dump output.
-    FileUtils.write(outputPath.toFile, bayesModel.labels.mkString("labels: ", ", ", "\n"), true)
-    FileUtils.write(outputPath.toFile, bayesModel.pi.mkString("a priori: ", ", ", "\n"), true)
+    FileUtils.write(
+      outputPath.toFile, bayesModel.labels.mkString("labels: ", ", ", "\n"), StandardCharsets.UTF_8, true
+    )
+
+    FileUtils.write(
+      outputPath.toFile, bayesModel.pi.mkString("a priori: ", ", ", "\n"), StandardCharsets.UTF_8, true
+    )
+
     FileUtils.write(
       outputPath.toFile,
       bayesModel.theta.zipWithIndex
@@ -97,6 +103,7 @@ class NaiveBayes extends RenaissanceBenchmark with SparkUtil {
             cls.mkString(s"class $i: ", ", ", "")
         }
         .mkString("thetas:\n", "\n", ""),
+      StandardCharsets.UTF_8,
       true
     )
 

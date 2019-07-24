@@ -110,8 +110,8 @@ class LogRegression extends RenaissanceBenchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(c: Config): Unit = {
-    FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", true)
-    FileUtils.write(outputPath.toFile, mlModel.intercept.toString, true)
+    FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", StandardCharsets.UTF_8, true)
+    FileUtils.write(outputPath.toFile, mlModel.intercept.toString, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
     RenaissanceBenchmark.deleteTempDir(tempDirPath)
   }
