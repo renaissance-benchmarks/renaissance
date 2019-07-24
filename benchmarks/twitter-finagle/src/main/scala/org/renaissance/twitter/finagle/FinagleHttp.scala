@@ -140,10 +140,15 @@ class FinagleHttp extends RenaissanceBenchmark {
     server.close()
   }
 
-  // Start the threads outside of the measured loop (use count-down latch
-  // to start the work simultaneously)
   override def beforeIteration(c: Config): Unit = {
     threads = new Array[WorkerThread](NUM_CLIENTS)
+    //
+    // Use a CountDownLatch initialized to NUM_CLIENTS + 1 to start the
+    // threads (outside the measured loop) and make them block until the
+    // measured operation is executed. In the measured operation, we provide
+    // the one last countDown() invocation which unblocks all the threads
+    // and lets the start working simultaneously.
+    //
     threadBarrier = new CountDownLatch(NUM_CLIENTS + 1)
     for (i <- 0 until NUM_CLIENTS) {
       threads(i) = new WorkerThread(port, threadBarrier, NUM_REQUESTS)
@@ -153,7 +158,7 @@ class FinagleHttp extends RenaissanceBenchmark {
   }
 
   override def runIteration(c: Config): BenchmarkResult = {
-    // This actually starts the threads (see beforeIteration)
+    // Let the threads do the work (see beforeIteration)
     threadBarrier.countDown
 
     var totalLength = 0L
