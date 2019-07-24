@@ -35,17 +35,23 @@ object RenaissanceSuite {
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage)
     } else {
-      // Check that all the benchmarks on the list really exist.
-      val selectedBenchmarks = getSelectedBenchmarks(config, benchmarks)
+      // Select the desired benchmarks and check that they really exist.
+      val specifiers = config.benchmarkSpecifiers.asScala
+      val selectedBenchmarks = selectBenchmarks(specifiers, benchmarks)
+      runBenchmarks(selectedBenchmarks, config)
+    }
+  }
+
+  private def runBenchmarks(benchmarks: Seq[BenchmarkInfo], config: Config): Unit = {
+    val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
       // Run the main benchmark loop.
       for (plugin <- config.plugins.asScala) plugin.onCreation()
 
-      val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](selectedBenchmarks.length)
+    try {
+      for (benchInfo <- benchmarks) {
+        val bench = benchInfo.loadBenchmark()
 
-      try {
-        for (benchInfo <- selectedBenchmarks) {
-          val bench = benchInfo.loadBenchmark()
           val exception = bench.runBenchmark(config)
           if (exception != null) {
             failedBenchmarks += benchInfo
@@ -53,11 +59,11 @@ object RenaissanceSuite {
             exception.printStackTrace()
           }
         }
-
-      } finally {
         for (plugin <- config.plugins.asScala) plugin.onExit()
         for (observer <- config.resultObservers.asScala) observer.onExit()
       }
+
+    } finally {
 
       if (failedBenchmarks.nonEmpty) {
         println(s"The following benchmarks failed: ${failedBenchmarks.mkString(", ")}")
@@ -66,9 +72,12 @@ object RenaissanceSuite {
     }
   }
 
-  def getSelectedBenchmarks(config: Config, benchmarks: BenchmarkRegistry) = {
+  def selectBenchmarks(
+    specifiers: Seq[String],
+    benchmarks: BenchmarkRegistry
+  ): Seq[BenchmarkInfo] = {
     val result = new mutable.LinkedHashSet[BenchmarkInfo]
-    for (specifier <- config.benchmarkSpecifiers.asScala) {
+    for (specifier <- specifiers) {
       if (benchmarks.exists(specifier)) {
         // Add an individual benchmark
         result += benchmarks.get(specifier)
