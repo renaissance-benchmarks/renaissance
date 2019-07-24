@@ -6,9 +6,8 @@ import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 
 import org.renaissance.util.BenchmarkInfo
-import org.renaissance.util.ModuleLoader
-import org.renaissance.RenaissanceSuite.parser
 import org.renaissance.util.BenchmarkRegistry
+import org.renaissance.util.ModuleLoader
 import scopt.OptionParser
 
 import scala.collection.JavaConverters._
@@ -28,10 +27,13 @@ object MarkdownGenerator {
   private final class LocalConfig {
     var metadata: File = null
 
-    val tags = mutable.Map[String, String](
-      "renaissanceTitle" -> classOf[Benchmark].getPackage.getImplementationTitle,
-      "renaissanceVersion" -> classOf[Benchmark].getPackage.getImplementationVersion
-    )
+    val tags = {
+      val benchmarkPkg = classOf[Benchmark].getPackage
+      mutable.Map[String, String](
+        "renaissanceTitle" -> benchmarkPkg.getImplementationTitle,
+        "renaissanceVersion" -> benchmarkPkg.getImplementationVersion
+      )
+    }
 
     def setTag(key: String, value: String) = {
       tags.put(key, value)
@@ -113,7 +115,8 @@ object MarkdownGenerator {
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
 
-    tags("renaissanceUsage") = parser.usage
+    val suiteConfigParser = new ConfigParser(tags.toMap)
+    tags("renaissanceUsage") = suiteConfigParser.usage
     tags("renaissanceBenchmarkClass") = classOf[RenaissanceBenchmark].getSimpleName
 
     val exampleBenchmarkClass = "MyJavaBenchmark"
