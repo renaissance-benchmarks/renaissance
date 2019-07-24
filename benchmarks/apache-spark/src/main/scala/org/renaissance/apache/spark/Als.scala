@@ -1,5 +1,6 @@
 package org.renaissance.apache.spark
 
+import java.nio.charset.Charset
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -57,7 +58,7 @@ class Als extends RenaissanceBenchmark with SparkUtil {
         s"$user::$product::$score"
       }
     }
-    FileUtils.write(bigInputFile.toFile, lines.mkString("\n"), true)
+    FileUtils.write(bigInputFile.toFile, lines.mkString("\n"), Charset.defaultCharset(), true)
   }
 
   def loadData() = {
