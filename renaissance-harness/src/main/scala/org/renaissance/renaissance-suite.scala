@@ -1,5 +1,7 @@
 package org.renaissance
 
+import org.renaissance.harness.Plugin.HarnessInitListener
+import org.renaissance.harness.Plugin.HarnessShutdownListener
 import org.renaissance.util.BenchmarkInfo
 import org.renaissance.util.BenchmarkRegistry
 
@@ -7,7 +9,6 @@ import scala.collection._
 import scala.collection.JavaConverters._
 
 object RenaissanceSuite {
-
 
   def main(args: Array[String]): Unit = {
     val benchmarkPkg = classOf[Benchmark].getPackage
@@ -45,31 +46,43 @@ object RenaissanceSuite {
   private def runBenchmarks(benchmarks: Seq[BenchmarkInfo], config: Config): Unit = {
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
-      // Run the main benchmark loop.
-      for (plugin <- config.plugins.asScala) plugin.onCreation()
+    // Notify observers that the suite is set up.
+    notifyAfterHarnessInit(config.harnessInitListeners.asScala);
 
     try {
       for (benchInfo <- benchmarks) {
-        val bench = benchInfo.loadBenchmark()
+        val benchmark = benchInfo.loadBenchmark()
+        val driver = new ExecutionDriver(benchInfo, benchmark, config)
 
-          val exception = bench.runBenchmark(config)
-          if (exception != null) {
+        try {
+          driver.executeBenchmark()
+
+        } catch {
+          case exception: Throwable => {
             failedBenchmarks += benchInfo
-            Console.err.println(s"Exception occurred in ${bench}: ${exception.getMessage}")
-            exception.printStackTrace()
+            Console.err.println(s"Exception occurred in ${benchmark}: ${exception.getMessage}")
+            exception.printStackTrace(Console.err)
           }
         }
-        for (plugin <- config.plugins.asScala) plugin.onExit()
-        for (observer <- config.resultObservers.asScala) observer.onExit()
       }
 
     } finally {
+      // Notify listeners that the suite is shutting down.
+      notifyBeforeHarnessShutdown(config.harnessShutdownListeners.asScala)
 
       if (failedBenchmarks.nonEmpty) {
         println(s"The following benchmarks failed: ${failedBenchmarks.mkString(", ")}")
         sys.exit(1)
       }
     }
+  }
+
+  private def notifyAfterHarnessInit(listeners: Seq[HarnessInitListener]) = {
+    listeners.foreach(l => l.afterHarnessInit())
+  }
+
+  private def notifyBeforeHarnessShutdown(listeners: Seq[HarnessShutdownListener]) = {
+    listeners.foreach(l => l.beforeHarnessShutdown())
   }
 
   def selectBenchmarks(
