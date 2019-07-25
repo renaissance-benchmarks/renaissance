@@ -3,17 +3,17 @@ import java.lang.annotation.Annotation
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 import java.util.regex.Pattern
+
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 import sbt.util.Logger
+
 import scala.collection._
 
-class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
+class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 
   private def kebabCase(s: String): String = {
-    // This functionality is duplicated in the RenaissanceBenchmark class.
     val camelCaseName = if (s.last == '$') s.init else s
     val pattern = Pattern.compile("([A-Za-z])([A-Z])")
     var result = camelCaseName
@@ -126,7 +126,7 @@ object Benchmarks {
     // with the class loader of the base class as its parent. This will allow
     // us to use core classes here.
     //
-    val benchBase = classOf[RenaissanceBenchmark]
+    val benchBase = classOf[Benchmark]
     val urls = classpath.map(_.toURI.toURL).toArray
     val loader = new URLClassLoader(urls, benchBase.getClassLoader)
     val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
