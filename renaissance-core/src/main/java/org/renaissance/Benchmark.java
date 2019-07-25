@@ -60,8 +60,9 @@ public interface Benchmark {
 
 
   /**
-   * Benchmark licenses. These are used to determine to which Renaissance
-   * distro the benchmark belongs. Defaults to MIT if not set.
+   * Benchmark licenses. These are used to determine compatibility of a
+   * benchmark with Renaissance distributions. Defaults to
+   * {@link License#MIT MIT} if not set.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
@@ -75,8 +76,8 @@ public interface Benchmark {
   /**
    * Default number of benchmark repetitions. Determines how many times a
    * benchmark needs to be executes before a human can observe somewhat stable
-   * results. This number does not guarantee completion of the benchmark
-   * warmup phase and is not usually sufficient for heavy-duty statistical
+   * results. This number does <b>NOT</b> guarantee completion of the benchmark
+   * warmup phase and cannot be considered sufficient for heavy-duty statistical
    * evaluation. Defaults to 20 if not set.
    */
   @Documented
