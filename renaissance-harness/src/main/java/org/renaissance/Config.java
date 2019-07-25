@@ -1,18 +1,26 @@
 package org.renaissance;
 
+import org.renaissance.harness.Plugin;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Config {
+final class Config {
   List<String> benchmarkSpecifiers;
   int repetitions;
-  int warmupSeconds;
   int runSeconds;
   List<Plugin> plugins;
   String policy;
-  List<ResultObserver> resultObservers;
+
+  List<Plugin.HarnessInitListener> harnessInitListeners;
+  List<Plugin.HarnessShutdownListener> harnessShutdownListeners;
+  List<Plugin.BenchmarkSetUpListener> benchmarkSetUpListeners;
+  List<Plugin.BenchmarkTearDownListener> benchmarkTearDownListeners;
+  List<Plugin.ValidResultListener> validResultListeners;
+  List<Plugin.InvalidResultListener> invalidResultListeners;
+
   boolean printList;
   boolean printRawList;
   boolean printGroupList;
@@ -22,11 +30,17 @@ public class Config {
   public Config() {
     this.benchmarkSpecifiers = new ArrayList<>();
     this.repetitions = -1;
-    this.warmupSeconds = 180;
-    this.runSeconds = 60;
+    this.runSeconds = 240;
     this.plugins = new ArrayList<>();
-    this.policy = Policy.kebabCasePolicy(FixedIterationsPolicy.class);
-    this.resultObservers = new ArrayList<>();
+    this.policy = "fixed-count"; // !@$# Policy.kebabCasePolicy(FixedIterationsPolicy.class);
+
+    this.harnessInitListeners = new ArrayList<>();
+    this.harnessShutdownListeners = new ArrayList<>();
+    this.benchmarkSetUpListeners = new ArrayList<>();
+    this.benchmarkTearDownListeners = new ArrayList<>();
+    this.validResultListeners = new ArrayList<>();
+    this.invalidResultListeners = new ArrayList<>();
+
     this.printList = false;
     this.printRawList = false;
     this.printGroupList = false;
@@ -50,10 +64,6 @@ public class Config {
     return policy;
   }
 
-  public List<ResultObserver> resultObservers() {
-    return resultObservers;
-  }
-
   public boolean printList() {
     return printList;
   }
@@ -70,11 +80,17 @@ public class Config {
     Config c = new Config();
     c.benchmarkSpecifiers = this.benchmarkSpecifiers;
     c.repetitions = this.repetitions;
-    c.warmupSeconds = this.warmupSeconds;
     c.runSeconds = this.runSeconds;
     c.plugins = this.plugins;
     c.policy = this.policy;
-    c.resultObservers = new ArrayList<>(this.resultObservers);
+
+    c.harnessInitListeners = new ArrayList<>(this.harnessInitListeners);
+    c.harnessShutdownListeners = new ArrayList<>(this.harnessShutdownListeners);
+    c.benchmarkSetUpListeners = new ArrayList<>(this.benchmarkSetUpListeners);
+    c.benchmarkTearDownListeners = new ArrayList<>(this.benchmarkTearDownListeners);
+    c.validResultListeners = new ArrayList<>(this.validResultListeners);
+    c.invalidResultListeners = new ArrayList<>(this.invalidResultListeners);
+
     c.printList = this.printList;
     c.printRawList = this.printRawList;
     c.printGroupList = this.printGroupList;
@@ -108,12 +124,6 @@ public class Config {
     return c;
   }
 
-  public Config withWarmupSeconds(int seconds) {
-    Config c = copy();
-    c.warmupSeconds = seconds;
-    return c;
-  }
-
   public Config withRunSeconds(int seconds) {
     Config c = copy();
     c.runSeconds = seconds;
@@ -126,9 +136,11 @@ public class Config {
     return c;
   }
 
-  public Config withResultObserver(ResultObserver observer) {
+  public Config withResultWriter(ResultWriter writer) {
     Config c = copy();
-    c.resultObservers.add(observer);
+    c.harnessShutdownListeners.add(writer);
+    c.validResultListeners.add(writer);
+    c.invalidResultListeners.add(writer);
     return c;
   }
 
