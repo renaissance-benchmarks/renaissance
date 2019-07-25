@@ -47,15 +47,15 @@ object RenaissanceSuite {
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
     // Notify observers that the suite is set up.
-    notifyAfterHarnessInit(config.harnessInitListeners.asScala);
+    notifyAfterHarnessInit(config.harnessInitListeners.asScala)
 
     try {
       for (benchInfo <- benchmarks) {
-        val driver = new ExecutionDriver(benchInfo, benchmark, config)
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
+        val driver = new ExecutionDriver(benchInfo, config)
 
         try {
-          driver.executeBenchmark()
+          driver.executeBenchmark(benchmark)
 
         } catch {
           case exception: Throwable => {

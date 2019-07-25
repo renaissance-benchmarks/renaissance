@@ -2,13 +2,12 @@ package org.renaissance;
 
 import org.renaissance.harness.ExecutionPolicy;
 import org.renaissance.harness.Plugin;
-import org.renaissance.harness.Plugin.BenchmarkSetUpListener;
-import org.renaissance.harness.Plugin.BenchmarkTearDownListener;
-import org.renaissance.harness.Plugin.OperationSetUpListener;
-import org.renaissance.harness.Plugin.OperationTearDownListener;
+import org.renaissance.harness.Plugin.*;
 import org.renaissance.util.BenchmarkInfo;
 import org.renaissance.util.DirUtils;
 
+import java.awt.*;
+import java.beans.EventSetDescriptor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -17,56 +16,56 @@ final class ExecutionDriver implements BenchmarkContext {
 
   private final BenchmarkInfo benchInfo;
 
-  private final Benchmark benchmark;
-
   private final Config config;
 
   private int operationIndex;
 
 
   public ExecutionDriver(
-    final BenchmarkInfo benchInfo, final Benchmark benchmark, final Config config
+    final BenchmarkInfo benchInfo, final Config config
   ) {
     this.benchInfo = benchInfo;
-    this.benchmark = benchmark;
     this.config = config;
   }
 
 
-  public final void executeBenchmark() {
-    final ExecutionPolicy policy = getExecutionPolicy(config.policy);
-    final DaCapoStyleReporter reporter = new DaCapoStyleReporter();
+  public final void executeBenchmark(Benchmark benchmark) {
+    final ExecutionPolicy policy = getExecutionPolicy(config);
+    final EventDispatcher dispatcher = new EventDispatcher(config);
 
     //
 
     benchmark.setUpBeforeAll(this);
-    notifyAfterBenchmarkSetUp(benchInfo.name, config.benchmarkSetUpListeners);
+    dispatcher.notifyAfterBenchmarkSetUp(benchInfo.name());
 
     operationIndex = 0;
 
     do {
-      reporter.operationStart(this);
+      printStartInfo(operationIndex, benchInfo.name(), benchInfo.group());
 
-      final long durationNanos = executeOperation(benchInfo.name, benchmark);
+      final long durationNanos = executeOperation(
+        operationIndex, benchInfo.name(), benchmark, dispatcher
+      );
 
-      reporter.operationEnd(this, durationNanos);
-
+      printEndInfo(operationIndex, benchInfo.name(), benchInfo.group(), durationNanos);
       policy.registerOperation(operationIndex, durationNanos);
+
       operationIndex++;
     } while (policy.keepExecuting());
 
-    notifyBeforeBenchmarkTearDown(benchInfo.name, config.benchmarkTearDownListeners);
+    dispatcher.notifyBeforeBenchmarkTearDown(benchInfo.name());
     benchmark.tearDownAfterAll(this);
   }
 
 
   private long executeOperation(
-    final String benchName, final Benchmark bench
+    final int opIndex, final String benchName, final Benchmark bench,
+    final EventDispatcher dispatcher
   ) {
     // Call benchmark and notify listeners before operation
     final long unixTsBefore = System.currentTimeMillis();
     bench.beforeIteration(this);
-    notifyAfterOperationSetUp(benchName, operationIndex, config.operationSetUpListeners);
+    dispatcher.notifyAfterOperationSetUp(benchName, opIndex);
 
     // Execute measured operation
     final long startNanos = System.nanoTime();
@@ -74,26 +73,26 @@ final class ExecutionDriver implements BenchmarkContext {
     final long durationNanos = System.nanoTime() - startNanos;
 
     // Call benchmark and notify listeners after operation
-    notifyBeforeOperationTearDown(benchName, operationIndex, durationNanos, config.operationTearDownListeners);
+    dispatcher.notifyBeforeOperationTearDown(benchName, opIndex, durationNanos);
     bench.afterIteration(this);
     final long unixTsAfter = System.currentTimeMillis();
 
     result.validate();
 
-    for (final Plugin.ValidResultListener listener : config.validResultListeners) {
-      listener.onValidResult(benchName, "nanos", durationNanos);
-      listener.onValidResult(benchName, "unixts.before", unixTsBefore);
-      listener.onValidResult(benchName, "unixts.after", unixTsAfter);
-    }
+    // Provide basic results to listeners
+    dispatcher.notifyOnValidResult(benchName, "nanos", durationNanos);
+    dispatcher.notifyOnValidResult(benchName, "unixts.before", unixTsBefore);
+    dispatcher.notifyOnValidResult(benchName, "unixts.after", unixTsAfter);
 
     return durationNanos;
   }
 
 
-  private ExecutionPolicy getExecutionPolicy(final String policyName) {
+  private ExecutionPolicy getExecutionPolicy(Config config) {
+    String policyName = config.policy;
     if ("fixed-count".equalsIgnoreCase(policyName)) {
       return new CountedExecutionPolicy(
-        config.repetitions > 0 ? config.repetitions : benchInfo.repetitions
+        config.repetitions > 0 ? config.repetitions : benchInfo.repetitions()
       );
 
     } else if ("fixed-time".equalsIgnoreCase(policyName)) {
@@ -105,41 +104,19 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  private void notifyAfterBenchmarkSetUp(
-    final String benchName, final List<BenchmarkSetUpListener> listeners
-  ) {
-    for (BenchmarkSetUpListener l : listeners) {
-      l.afterBenchmarkSetUp(benchName);
-    }
+  void printStartInfo(int index, String name, String group) {
+    System.out.printf(
+      "====== %s (%s), iteration %d started ======\n",
+      name, group, index
+    );
   }
 
 
-  private void notifyAfterOperationSetUp(
-    final String benchName, final int operationIndex,
-    final List<OperationSetUpListener> listeners
-  ) {
-    for (OperationSetUpListener l : listeners) {
-      l.afterOperationSetup(benchName, operationIndex);
-    }
-  }
-
-
-  private void notifyBeforeOperationTearDown(
-    final String benchName, final int operationIndex, long duration,
-    final List<OperationTearDownListener> listeners
-  ) {
-    for (OperationTearDownListener l : listeners) {
-      l.beforeOperationTearDown(benchName, operationIndex, duration);
-    }
-  }
-
-
-  private void notifyBeforeBenchmarkTearDown(
-    final String benchName, final List<BenchmarkTearDownListener> listeners
-  ) {
-    for (BenchmarkTearDownListener l : listeners) {
-      l.beforeBenchmarkTearDown(benchName);
-    }
+  void printEndInfo(int index, String name, String group, long durationNanos) {
+    System.out.printf(
+      "====== %s (%s), iteration %d completed (%d ms) ======\n",
+      name, group, index, TimeUnit.NANOSECONDS.toMillis(durationNanos)
+    );
   }
 
   // BenchmarkContext methods
@@ -162,12 +139,12 @@ final class ExecutionDriver implements BenchmarkContext {
 
   @Override
   public String benchmarkName() {
-    return benchInfo.name;
+    return benchInfo.name();
   }
 
   @Override
   public String benchmarkGroup() {
-    return benchInfo.group;
+    return benchInfo.group();
   }
 
   @Override
@@ -192,6 +169,7 @@ final class ExecutionDriver implements BenchmarkContext {
     DirUtils.deleteTempDir(dir);
   }
 
+  // ExecutionPolicy implementations
 
   static class TimedExecutionPolicy implements ExecutionPolicy {
 
@@ -218,7 +196,6 @@ final class ExecutionDriver implements BenchmarkContext {
 
   }
 
-  // ExecutionPolicy implementations
 
   static class CountedExecutionPolicy implements ExecutionPolicy {
 
@@ -246,25 +223,74 @@ final class ExecutionDriver implements BenchmarkContext {
 
   //
 
-  static final class DaCapoStyleReporter {
+  private static final class EventDispatcher {
+    private final BenchmarkSetUpListener[] benchmarkSetUpListeners;
+    private final BenchmarkTearDownListener[] benchmarkTearDownListeners;
+    private final OperationSetUpListener[] operationSetUpListeners;
+    private final OperationTearDownListener[] operationTearDownListeners;
+    private final ValidResultListener[] validResultListeners;
 
-    void operationStart(BenchmarkContext context) {
-      System.out.printf(
-        "====== %s (%s), iteration %d started ======\n",
-        context.benchmarkName(), context.benchmarkGroup(), context.operationIndex()
+    EventDispatcher(Config config) {
+      benchmarkSetUpListeners = config.benchmarkSetUpListeners.toArray(
+        new BenchmarkSetUpListener[0]
+      );
+
+      benchmarkTearDownListeners = config.benchmarkTearDownListeners.toArray(
+        new BenchmarkTearDownListener[0]
+      );
+
+      operationSetUpListeners = config.operationSetUpListeners.toArray(
+        new OperationSetUpListener[0]
+      );
+
+      operationTearDownListeners = config.operationTearDownListeners.toArray(
+        new OperationTearDownListener[0]
+      );
+
+      validResultListeners = config.validResultListeners.toArray(
+        new ValidResultListener[0]
       );
     }
 
-
-    void operationEnd(BenchmarkContext context, long durationNanos) {
-      System.out.printf(
-        "====== %s (%s), iteration %d completed (%d ms) ======\n",
-        context.benchmarkName(), context.benchmarkGroup(), context.operationIndex(),
-        TimeUnit.NANOSECONDS.toMillis(durationNanos)
-      );
+    void notifyAfterBenchmarkSetUp(final String benchName) {
+      for (final BenchmarkSetUpListener l : benchmarkSetUpListeners) {
+        l.afterBenchmarkSetUp(benchName);
+      }
     }
 
+
+    void notifyBeforeBenchmarkTearDown(final String benchName) {
+      for (final BenchmarkTearDownListener l : benchmarkTearDownListeners) {
+        l.beforeBenchmarkTearDown(benchName);
+      }
+    }
+
+
+    void notifyAfterOperationSetUp(
+      final String benchName, final int operationIndex
+    ) {
+      for (final OperationSetUpListener l : operationSetUpListeners) {
+        l.afterOperationSetup(benchName, operationIndex);
+      }
+    }
+
+
+    void notifyBeforeOperationTearDown(
+      final String benchName, final int operationIndex, long duration
+    ) {
+      for (final OperationTearDownListener l : operationTearDownListeners) {
+        l.beforeOperationTearDown(benchName, operationIndex, duration);
+      }
+    }
+
+
+    void notifyOnValidResult(
+      final String benchName, final String metric, final long value
+    ) {
+      for (final ValidResultListener l : validResultListeners) {
+        l.onValidResult(benchName, metric, value);
+      }
+    }
   }
-
 }
 
