@@ -8,7 +8,6 @@ import java.nio.file.Paths
 import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
-import org.renaissance.RenaissanceBenchmark
 
 trait SparkUtil {
 
