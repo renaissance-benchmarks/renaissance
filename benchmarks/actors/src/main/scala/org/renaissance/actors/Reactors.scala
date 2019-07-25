@@ -97,7 +97,7 @@ object Baseline {
       }
     })
 
-    BenchmarkResult.simple("Baseline", 0, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("Baseline", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -163,7 +163,7 @@ object BigBench {
     })
     for (i <- 0 until BigBench.NUM_WORKERS) workers(i) ! Start()
 
-    BenchmarkResult.simple("BigBench", 0, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("BigBench", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -209,7 +209,7 @@ object CountingActor {
       self.main.seal()
     })
 
-    BenchmarkResult.simple("CountingActor", sz, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("CountingActor", sz, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -261,7 +261,7 @@ object Fibonacci {
       fib(self.main.channel, sz)
     })
 
-    BenchmarkResult.simple("Fibonacci", exp, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("Fibonacci", exp, Await.result(done.future, Duration.Inf).longValue)
   }
 
   def computeExpected(sz: Int): Int = {
@@ -410,7 +410,7 @@ object PingPong {
     }
     new PingPongInner
 
-    BenchmarkResult.simple("PingPong", 0, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -458,7 +458,7 @@ object StreamingPingPong {
     }
     new PingPongInner
 
-    BenchmarkResult.simple("StreamingPingPong", 0, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("StreamingPingPong", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -508,7 +508,7 @@ object Roundabout {
       }
     })
 
-    BenchmarkResult.simple("Roundabout", Roundabout.NUM_MESSAGES, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("Roundabout", Roundabout.NUM_MESSAGES, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -549,6 +549,6 @@ object ThreadRing {
     }
     new RingInner
 
-    BenchmarkResult.simple("ThreadRing", 0, Await.result(done.future, Duration.Inf))
+    BenchmarkResult.simple("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
