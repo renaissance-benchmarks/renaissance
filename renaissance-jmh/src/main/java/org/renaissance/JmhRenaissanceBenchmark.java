@@ -58,7 +58,7 @@ public abstract class JmhRenaissanceBenchmark {
 
 
       @Override
-      public int repetitionIndex() {
+      public int operationIndex() {
         return 0;
       }
 

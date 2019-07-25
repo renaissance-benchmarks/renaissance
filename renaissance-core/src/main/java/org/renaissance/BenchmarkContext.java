@@ -17,7 +17,7 @@ public interface BenchmarkContext {
 
   String benchmarkGroup();
 
-  int repetitionIndex();
+  int operationIndex();
 
   //
   // File system operations
