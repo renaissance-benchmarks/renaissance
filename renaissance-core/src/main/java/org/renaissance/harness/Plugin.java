@@ -20,6 +20,14 @@ public interface Plugin {
     void beforeBenchmarkTearDown(String benchmark);
   }
 
+  interface OperationSetUpListener {
+    void afterOperationSetup(String benchmark, int index);
+  }
+
+  interface OperationTearDownListener {
+    void beforeOperationTearDown(String benchmark, int index, long duration);
+  }
+
   interface ValidResultListener {
     /**
      * Called when a benchmark produces a new (valid) result. Will be called

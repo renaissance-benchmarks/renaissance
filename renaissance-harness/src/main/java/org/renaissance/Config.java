@@ -1,6 +1,7 @@
 package org.renaissance;
 
 import org.renaissance.harness.Plugin;
+import org.renaissance.harness.Plugin.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,12 +15,14 @@ final class Config {
   List<Plugin> plugins;
   String policy;
 
-  List<Plugin.HarnessInitListener> harnessInitListeners;
-  List<Plugin.HarnessShutdownListener> harnessShutdownListeners;
-  List<Plugin.BenchmarkSetUpListener> benchmarkSetUpListeners;
-  List<Plugin.BenchmarkTearDownListener> benchmarkTearDownListeners;
-  List<Plugin.ValidResultListener> validResultListeners;
-  List<Plugin.InvalidResultListener> invalidResultListeners;
+  List<HarnessInitListener> harnessInitListeners;
+  List<HarnessShutdownListener> harnessShutdownListeners;
+  List<BenchmarkSetUpListener> benchmarkSetUpListeners;
+  List<BenchmarkTearDownListener> benchmarkTearDownListeners;
+  List<OperationSetUpListener> operationSetUpListeners;
+  List<OperationTearDownListener> operationTearDownListeners;
+  List<ValidResultListener> validResultListeners;
+  List<InvalidResultListener> invalidResultListeners;
 
   boolean printList;
   boolean printRawList;
@@ -32,12 +35,14 @@ final class Config {
     this.repetitions = -1;
     this.runSeconds = 240;
     this.plugins = new ArrayList<>();
-    this.policy = "fixed-count"; // !@$# Policy.kebabCasePolicy(FixedIterationsPolicy.class);
+    this.policy = "fixed-count";
 
     this.harnessInitListeners = new ArrayList<>();
     this.harnessShutdownListeners = new ArrayList<>();
     this.benchmarkSetUpListeners = new ArrayList<>();
     this.benchmarkTearDownListeners = new ArrayList<>();
+    this.operationSetUpListeners = new ArrayList<>();
+    this.operationTearDownListeners = new ArrayList<>();
     this.validResultListeners = new ArrayList<>();
     this.invalidResultListeners = new ArrayList<>();
 
@@ -88,6 +93,8 @@ final class Config {
     c.harnessShutdownListeners = new ArrayList<>(this.harnessShutdownListeners);
     c.benchmarkSetUpListeners = new ArrayList<>(this.benchmarkSetUpListeners);
     c.benchmarkTearDownListeners = new ArrayList<>(this.benchmarkTearDownListeners);
+    c.operationSetUpListeners = new ArrayList<>(this.operationSetUpListeners);
+    c.operationTearDownListeners = new ArrayList<>(this.operationTearDownListeners);
     c.validResultListeners = new ArrayList<>(this.validResultListeners);
     c.invalidResultListeners = new ArrayList<>(this.invalidResultListeners);
 
