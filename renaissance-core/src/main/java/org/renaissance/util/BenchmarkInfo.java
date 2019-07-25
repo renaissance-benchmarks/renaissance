@@ -1,8 +1,9 @@
 package org.renaissance.util;
 
-import org.renaissance.RenaissanceBenchmark;
+import org.renaissance.Benchmark;
 
 import java.lang.reflect.Constructor;
+
 
 public final class BenchmarkInfo {
 
@@ -48,7 +49,7 @@ public final class BenchmarkInfo {
     }
 
 
-    public RenaissanceBenchmark loadBenchmark() {
+    public Benchmark loadBenchmark() {
       try {
         final ClassLoader loader = ModuleLoader.getForGroup(group);
         final Class<?> benchClass = loader.loadClass(className);
@@ -56,7 +57,7 @@ public final class BenchmarkInfo {
 
         // Make current thread as independent of the harness as possible.
         Thread.currentThread().setContextClassLoader(loader);
-        return (RenaissanceBenchmark) benchCtor.newInstance();
+        return (Benchmark) benchCtor.newInstance();
 
       } catch (Exception e) {
         throw new RuntimeException("failed to load benchmark " + name, e);
