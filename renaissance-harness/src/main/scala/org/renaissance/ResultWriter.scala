@@ -1,8 +1,12 @@
 package org.renaissance
 
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
+import org.renaissance.harness.Plugin.HarnessShutdownListener
+import org.renaissance.harness.Plugin.InvalidResultListener
+import org.renaissance.harness.Plugin.ValidResultListener
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -17,7 +21,7 @@ import scala.collection.mutable
  * Descendants are expected to override only the store() method that
  * actually stores the collected data.
  */
-abstract class ResultWriter extends ResultObserver {
+abstract class ResultWriter extends HarnessShutdownListener with ValidResultListener with InvalidResultListener {
 
   class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
     override def run(): Unit = {
@@ -41,12 +45,12 @@ abstract class ResultWriter extends ResultObserver {
     store(normalTermination)
   }
 
-  def onExit(): Unit = {
+  override def beforeHarnessShutdown(): Unit = {
     storeResults(true)
     Runtime.getRuntime.removeShutdownHook(storeHook)
   }
 
-  def onNewResult(benchmark: String, metric: String, value: Long): Unit = {
+  override def onValidResult(benchmark: String, metric: String, value: Long): Unit = {
     val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
     allResults.update(benchmark, benchStorage)
     val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
@@ -54,7 +58,7 @@ abstract class ResultWriter extends ResultObserver {
     metricStorage += value
   }
 
-  def onFailure(benchmark: String): Unit = {
+  override def onInvalidResult(benchmark: String): Unit = {
     failedBenchmarks += benchmark
   }
 
@@ -109,7 +113,7 @@ class CsvWriter(val filename: String) extends ResultWriter {
     FileUtils.write(
       new File(filename),
       csv.toString,
-      java.nio.charset.StandardCharsets.UTF_8,
+      StandardCharsets.UTF_8,
       false
     )
   }
