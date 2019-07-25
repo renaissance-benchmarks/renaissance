@@ -1,6 +1,7 @@
 package org.renaissance;
 
 import org.renaissance.util.BenchmarkRegistry;
+import org.renaissance.util.DirUtils;
 
 import java.nio.file.Path;
 

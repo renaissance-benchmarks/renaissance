@@ -1,10 +1,10 @@
-package org.renaissance;
+package org.renaissance.util;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
-final class DirUtils {
+public final class DirUtils {
 
   public static void deleteTempDir(Path dirPath) {
     try {
