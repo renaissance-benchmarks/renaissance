@@ -5,6 +5,9 @@ import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 
+import org.renaissance.harness.ExecutionPolicy
+import org.renaissance.harness.Plugin
+import org.renaissance.harness.Plugin._
 import org.renaissance.util.BenchmarkInfo
 import org.renaissance.util.BenchmarkRegistry
 import org.renaissance.util.ModuleLoader
@@ -109,8 +112,14 @@ object MarkdownGenerator {
 
     tags("configClass") = classOf[Config].getSimpleName
     tags("pluginClass") = classOf[Plugin].getSimpleName
-    tags("policyClass") = classOf[Policy].getSimpleName
-    tags("policyList") = formatPolicyList
+    tags("policyClass") = classOf[ExecutionPolicy].getSimpleName
+
+    tags("harnessInitListenerClass") = classOf[HarnessInitListener].getSimpleName
+    tags("harnessShutdownListenerClass") = classOf[HarnessShutdownListener].getSimpleName
+    tags("benchmarkSetUpListenerClass") = classOf[BenchmarkSetUpListener].getSimpleName
+    tags("benchmarkTearDownListenerClass") = classOf[BenchmarkTearDownListener].getSimpleName
+    tags("validResultListenerClass") = classOf[ValidResultListener].getSimpleName
+    tags("invalidResultListenerClass") = classOf[InvalidResultListener].getSimpleName
 
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
@@ -176,10 +185,6 @@ object MarkdownGenerator {
     benchmarks.getAll().asScala.map(formatRow(_)).mkString("\n")
   }
 
-  private def formatPolicyList = {
-    Policy.descriptions.asScala.map { case (k, v) => s"- `$k` -- $v\n" }.mkString("\n")
-  }
-
   def formatReadme(tags: Map[String, String]): String = {
     return s"""
 
@@ -241,13 +246,17 @@ The following is the complete list of benchmarks, separated into groups.
 ${tags("benchmarksList")}
 
 
-### Run policies
+### Execution policies
 
-The suite is designed to support multiple ways of executing a benchmark --
-for example, a fixed number of iterations, or a fixed amount of time.
-This logic is encapsulated in run policies. Current policies include:
+The suite generally executes the measured operation of a benchmark multiple times
+and uses an execution policy to determine how many time to repeat the execution.
+By default, the suite supports executing the operation a fixed number of times
+and a fixed amount of time. These policies are implicitly selected by setting
+the number of iterations or the execution time on the suite command line.
 
-${tags("policyList")}
+To provide additional control over execution of the measured operation, the
+suite also allows to specify a custom execution policy, which has to implement
+the ${tags("policyClass")} interface.
 
 
 ### Plugins and interfacing with external tools
@@ -256,25 +265,35 @@ If you are using an external tool to inspect a benchmark, such as an instrumenta
 or a profiler, then you will need to make this tool aware of when a benchmark iteration
 is starting and when it is ending.
 To allow this, the suite allows specifying custom plugins, which are notified when necessary.
-Here is an example of how to implement a plugin:
+Such a plugin needs to implement the `${tags("pluginClass")}` marker interface as well as
+interfaces from the `${tags("pluginClass")}` interface name space which indicate the events
+a plugin is interested in.
+
+Here is an example of a simple plugin:
 
 ```
-class MyPlugin extends ${tags("pluginClass")} {
-  def onCreation() = {
-    // Initialize the plugin after it has been created.
+class MyPlugin extends ${tags("pluginClass")} with ${tags("harnessInitListenerClass")} {
+  override def afterHarnessInit() = {
+    // Initialize the plugin after the harness finished initializing
   }
-  def beforeIteration(policy: ${tags("policyClass")}) = {
-    // Notify the tool that a benchmark iteration is about to start.
+
+  override def beforeOperation(index: Int, benchmark: String) = {
+    // Notify the tool that the measured operation is about to start.
   }
-  def afterIteration(policy: ${tags("policyClass")}) = {
-    // Notify the tool that the benchmark iteration has ended.
+
+  override def afterOperation(index: Int, benchmark: String) = {
+    // Notify the tool that the measured operations has finished.
   }
 }
 ```
 
-Here, the ${tags("policyClass")} argument describes
-the current state of the benchmark.
-
+The currently supported events are represented by the following interfaces:
+- `${tags("harnessInitListenerClass")}`
+- `${tags("harnessShutdownListenerClass")}`
+- `${tags("benchmarkSetUpListenerClass")}`
+- `${tags("benchmarkTearDownListenerClass")}`
+- `${tags("validResultListenerClass")}`
+- `${tags("invalidResultListenerClass")}`
 
 ### JMH support
 
@@ -425,7 +444,7 @@ import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
 final class ${tags("exampleBenchmarkClass")} extends ${tags("benchmarkClass")} {
-  override protected def runIteration(config: ${tags("configClass")}): ${tags(
+  override def runIteration(config: ${tags("configClass")}): ${tags(
       "benchmarkResultClass"
     )} = {
     // This is the benchmark body, which in this case calls some Java code.

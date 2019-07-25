@@ -52,13 +52,11 @@ Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
   -r, --repetitions <value>
-                           Number of repetitions used with the fixed-iterations policy.
-  -w, --warmup-seconds <value>
-                           Number of warmup seconds, when using time-based policies.
+                           Execute the measured operation a fixed number of times.
   -t, --run-seconds <value>
-                           Number of seconds to run after the warmup, when using time-based policies.
-  --policy <value>         Execution policy, one of: fixed-warmup, fixed-iterations
-  --plugins <value>        Comma-separated list of class names of plugin implementations.
+                           Execute the measured operation for a fixed number of seconds.
+  --policy <value>         Use policy to control repeated execution of measured operation, specified as <jar-file>!<class-name>.
+  --plugin <value>         Load harness plugin, specified as <jar-file>!<class-name>. Can appear multiple times.
   --csv <value>            Output results to CSV file.
   --json <value>           Output results to JSON file.
   --functional-test        Reduce iteration times significantly for testing purposes.
@@ -162,16 +160,17 @@ The following is the complete list of benchmarks, separated into groups.
 
 
 
-### Run policies
+### Execution policies
 
-The suite is designed to support multiple ways of executing a benchmark --
-for example, a fixed number of iterations, or a fixed amount of time.
-This logic is encapsulated in run policies. Current policies include:
+The suite generally executes the measured operation of a benchmark multiple times
+and uses an execution policy to determine how many time to repeat the execution.
+By default, the suite supports executing the operation a fixed number of times
+and a fixed amount of time. These policies are implicitly selected by setting
+the number of iterations or the execution time on the suite command line.
 
-- `fixed-warmup` -- Warms up the VM by running the benchmark a fixed amount of time, and then runs the benchmark again for some fixed amount of time (use `-w` and `-t`).
-
-- `fixed-iterations` -- Runs the benchmark for a fixed number of iterations (use `-r`).
-
+To provide additional control over execution of the measured operation, the
+suite also allows to specify a custom execution policy, which has to implement
+the ExecutionPolicy interface.
 
 
 ### Plugins and interfacing with external tools
@@ -180,25 +179,35 @@ If you are using an external tool to inspect a benchmark, such as an instrumenta
 or a profiler, then you will need to make this tool aware of when a benchmark iteration
 is starting and when it is ending.
 To allow this, the suite allows specifying custom plugins, which are notified when necessary.
-Here is an example of how to implement a plugin:
+Such a plugin needs to implement the `Plugin` marker interface as well as
+interfaces from the `Plugin` interface name space which indicate the events
+a plugin is interested in.
+
+Here is an example of a simple plugin:
 
 ```
-class MyPlugin extends Plugin {
-  def onCreation() = {
-    // Initialize the plugin after it has been created.
+class MyPlugin extends Plugin with HarnessInitListener {
+  override def afterHarnessInit() = {
+    // Initialize the plugin after the harness finished initializing
   }
-  def beforeIteration(policy: Policy) = {
-    // Notify the tool that a benchmark iteration is about to start.
+
+  override def beforeOperation(index: Int, benchmark: String) = {
+    // Notify the tool that the measured operation is about to start.
   }
-  def afterIteration(policy: Policy) = {
-    // Notify the tool that the benchmark iteration has ended.
+
+  override def afterOperation(index: Int, benchmark: String) = {
+    // Notify the tool that the measured operations has finished.
   }
 }
 ```
 
-Here, the Policy argument describes
-the current state of the benchmark.
-
+The currently supported events are represented by the following interfaces:
+- `HarnessInitListener`
+- `HarnessShutdownListener`
+- `BenchmarkSetUpListener`
+- `BenchmarkTearDownListener`
+- `ValidResultListener`
+- `InvalidResultListener`
 
 ### JMH support
 
@@ -275,18 +284,17 @@ The Renaissance benchmark suite is organized into several `sbt` projects:
   for a specific domain (and having a separate set of dependencies)
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
-Its most important class is `RenaissanceBenchmark`,
-which must be extended by a concrete benchmark implementation, and the
-annotations in the `Benchmark` class, which are
-used to set static information about a benchmark, such as a summary or
-detailed description.
+Its most important elements are the `Benchmark` interface,
+which must be implemented by each benchmark, and the annotations in the
+`Benchmark` interface name space, which are used to provide
+benchmark meta data, such as a summary or a detailed description.
 Consequently, each *subproject* depends on the *core* project.
 
-Interfaces of *core* are loaded (when Renaissance is started) by the default
-classloader. Every other class (including harness and individual benchmarks)
-is loaded by a separate classloader. This separation was done so that there
-are never clashes between the different dependencies of the different projects.
-Because each benchmark may depend on different versions of external libraries.
+Classes from the *core* are loaded (when Renaissance is started) by the default
+classloader. Classes from other projects (including the harness and individual benchmarks)
+are loaded by separate classloaders. This separation helps ensure that there
+are no clashes between dependencies of different projects (each benchmark may
+depend on different versions of external libraries).
 
 The *harness* project implements the functionality that is necessary
 to parse the input arguments, to run the benchmarks, to generate documentation,
