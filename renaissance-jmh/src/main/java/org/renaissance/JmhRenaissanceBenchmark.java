@@ -1,5 +1,6 @@
 package org.renaissance;
 
+import org.renaissance.util.BenchmarkInfo;
 import org.renaissance.util.BenchmarkRegistry;
 import org.renaissance.util.DirUtils;
 
@@ -14,7 +15,8 @@ public abstract class JmhRenaissanceBenchmark {
 
   protected void defaultSetUpBeforeAll() {
     BenchmarkRegistry benchmarks = BenchmarkRegistry.createDefault();
-    benchmark = benchmarks.get(benchmarkName()).loadBenchmark();
+    BenchmarkInfo benchInfo = benchmarks.get(benchmarkName());
+    benchmark = BenchmarkRegistry.loadBenchmark(benchInfo);
 
     context = createBenchmarkContext(benchmarkName());
     benchmark.setUpBeforeAll(context);

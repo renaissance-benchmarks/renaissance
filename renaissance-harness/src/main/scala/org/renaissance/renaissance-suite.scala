@@ -51,8 +51,8 @@ object RenaissanceSuite {
 
     try {
       for (benchInfo <- benchmarks) {
-        val benchmark = benchInfo.loadBenchmark()
         val driver = new ExecutionDriver(benchInfo, benchmark, config)
+        val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
 
         try {
           driver.executeBenchmark()

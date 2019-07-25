@@ -1,6 +1,9 @@
 package org.renaissance.util;
 
+import org.renaissance.Benchmark;
+
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -127,6 +130,26 @@ public final class BenchmarkRegistry {
     return new ArrayList(benchmarksByGroup.keySet());
   }
 
+
+  public static Benchmark loadBenchmark(BenchmarkInfo benchInfo) {
+    try {
+      final ClassLoader loader = ModuleLoader.getForGroup(benchInfo.group);
+
+      // Make the current thread as independent of the harness as possible.
+      // ClassLoader savedLoader = Thread.currentThread().getContextClassLoader();
+      Thread.currentThread().setContextClassLoader(loader);
+
+      final Class<?> benchClass = loader.loadClass(benchInfo.className);
+      final Constructor<?> benchCtor = benchClass.getDeclaredConstructor();
+      final Benchmark result = (Benchmark) benchCtor.newInstance();
+
+      // Thread.currentThread().setContextClassLoader(savedLoader);
+      return result;
+
+    } catch (Exception e) {
+      throw new RuntimeException("failed to load benchmark " + benchInfo.name, e);
+    }
+  }
 
 
   public static void main(String... args) {
