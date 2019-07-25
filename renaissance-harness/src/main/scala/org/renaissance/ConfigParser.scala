@@ -27,7 +27,7 @@ final class ConfigParser(tags: Map[String, String]) {
         .text(
           "Load harness plugin, specified as <jar-file>!<class-name>. Can appear multiple times."
         )
-        .action((v, c) => c.withPlugins(v))
+        .action((v, c) => c.withPlugin(v))
         .unbounded()
       opt[String]("csv")
         .text("Output results to CSV file.")
@@ -49,8 +49,9 @@ final class ConfigParser(tags: Map[String, String]) {
         .action((_, c) => c.withGroupList())
       arg[String]("benchmark-specification")
         .text("Comma-separated list of benchmarks (or groups) that must be executed (or all).")
-        .optional()
         .action((v, c) => c.withBenchmarkSpecification(v))
+        .unbounded()
+        .optional()
     }
   }
 

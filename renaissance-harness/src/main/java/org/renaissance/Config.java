@@ -9,111 +9,37 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 final class Config {
-  List<String> benchmarkSpecifiers;
-  int repetitions;
-  int runSeconds;
-  List<Plugin> plugins;
-  String policy;
+  final List<String> benchmarkSpecifiers = new ArrayList<>();
+  int repetitions = -1;
+  int runSeconds = 240;
+  final List<Plugin> plugins = new ArrayList<>();
+  String policy = "fixed-count";
 
-  List<HarnessInitListener> harnessInitListeners;
-  List<HarnessShutdownListener> harnessShutdownListeners;
-  List<BenchmarkSetUpListener> benchmarkSetUpListeners;
-  List<BenchmarkTearDownListener> benchmarkTearDownListeners;
-  List<OperationSetUpListener> operationSetUpListeners;
-  List<OperationTearDownListener> operationTearDownListeners;
-  List<ValidResultListener> validResultListeners;
-  List<InvalidResultListener> invalidResultListeners;
+  final List<HarnessInitListener> harnessInitListeners = new ArrayList<>();
+  final List<HarnessShutdownListener> harnessShutdownListeners = new ArrayList<>();
+  final List<BenchmarkSetUpListener> benchmarkSetUpListeners = new ArrayList<>();
+  final List<BenchmarkTearDownListener> benchmarkTearDownListeners = new ArrayList<>();
+  final List<OperationSetUpListener> operationSetUpListeners = new ArrayList<>();
+  final List<OperationTearDownListener> operationTearDownListeners = new ArrayList<>();
+  final List<ValidResultListener> validResultListeners = new ArrayList<>();
+  final List<InvalidResultListener> invalidResultListeners = new ArrayList<>();
 
-  boolean printList;
-  boolean printRawList;
-  boolean printGroupList;
-  boolean functionalTest;
+  boolean printList = false;
+  boolean printRawList = false;
+  boolean printGroupList = false;
+  boolean functionalTest = false;
 
-
-  public Config() {
-    this.benchmarkSpecifiers = new ArrayList<>();
-    this.repetitions = -1;
-    this.runSeconds = 240;
-    this.plugins = new ArrayList<>();
-    this.policy = "fixed-count";
-
-    this.harnessInitListeners = new ArrayList<>();
-    this.harnessShutdownListeners = new ArrayList<>();
-    this.benchmarkSetUpListeners = new ArrayList<>();
-    this.benchmarkTearDownListeners = new ArrayList<>();
-    this.operationSetUpListeners = new ArrayList<>();
-    this.operationTearDownListeners = new ArrayList<>();
-    this.validResultListeners = new ArrayList<>();
-    this.invalidResultListeners = new ArrayList<>();
-
-    this.printList = false;
-    this.printRawList = false;
-    this.printGroupList = false;
-    this.functionalTest = false;
-  }
-
-  public List<String> benchmarkSpecifiers() {
-    return benchmarkSpecifiers;
-  }
-
-  public int repetitions() {
-    return repetitions;
-  }
-
-  public List<Plugin> plugins() {
-    return plugins;
-  }
-
-  // TODO Rename to executionPolicy
-  public String policy() {
-    return policy;
-  }
-
-  public boolean printList() {
-    return printList;
-  }
-
-  public boolean printRawList() {
-    return printRawList;
-  }
-
-  public boolean functionalTest() {
-    return functionalTest;
-  }
-
-  public Config copy() {
-    Config c = new Config();
-    c.benchmarkSpecifiers = this.benchmarkSpecifiers;
-    c.repetitions = this.repetitions;
-    c.runSeconds = this.runSeconds;
-    c.plugins = this.plugins;
-    c.policy = this.policy;
-
-    c.harnessInitListeners = new ArrayList<>(this.harnessInitListeners);
-    c.harnessShutdownListeners = new ArrayList<>(this.harnessShutdownListeners);
-    c.benchmarkSetUpListeners = new ArrayList<>(this.benchmarkSetUpListeners);
-    c.benchmarkTearDownListeners = new ArrayList<>(this.benchmarkTearDownListeners);
-    c.operationSetUpListeners = new ArrayList<>(this.operationSetUpListeners);
-    c.operationTearDownListeners = new ArrayList<>(this.operationTearDownListeners);
-    c.validResultListeners = new ArrayList<>(this.validResultListeners);
-    c.invalidResultListeners = new ArrayList<>(this.invalidResultListeners);
-
-    c.printList = this.printList;
-    c.printRawList = this.printRawList;
-    c.printGroupList = this.printGroupList;
-    c.functionalTest = this.functionalTest;
-    return c;
-  }
 
   public Config withBenchmarkSpecification(String v) {
-    Config c = copy();
-    c.benchmarkSpecifiers = Arrays.stream(v.split(",")).collect(Collectors.toList());
-    return c;
+    benchmarkSpecifiers.addAll(
+      Arrays.stream(v.split(",")).collect(Collectors.toList())
+    );
+
+    return this;
   }
 
-  public Config withPlugins(String v) {
-    Config c = copy();
-    c.plugins = Arrays.stream(v.split(","))
+  public Config withPlugin(String v) {
+    plugins.addAll(Arrays.stream(v.split(","))
       .map(n -> {
         try {
           return (Plugin) Class.forName(v).newInstance();
@@ -121,57 +47,51 @@ final class Config {
           throw new RuntimeException(e);
         }
       })
-      .collect(Collectors.toList());
-    return c;
+      .collect(Collectors.toList())
+    );
+
+    return this;
   }
 
-  public Config withRepetitions(int x) {
-    Config c = copy();
-    c.repetitions = x;
-    return c;
+  public Config withRepetitions(int repetitions) {
+    this.repetitions = repetitions;
+    return this;
   }
 
-  public Config withRunSeconds(int seconds) {
-    Config c = copy();
-    c.runSeconds = seconds;
-    return c;
+  public Config withRunSeconds(int runSeconds) {
+    this.runSeconds = runSeconds;
+    return this;
   }
 
   public Config withPolicy(String policy) {
-    Config c = copy();
-    c.policy = policy;
-    return c;
+    this.policy = policy;
+    return this;
   }
 
   public Config withResultWriter(ResultWriter writer) {
-    Config c = copy();
-    c.harnessShutdownListeners.add(writer);
-    c.validResultListeners.add(writer);
-    c.invalidResultListeners.add(writer);
-    return c;
+    harnessShutdownListeners.add(writer);
+    validResultListeners.add(writer);
+    invalidResultListeners.add(writer);
+    return this;
   }
 
   public Config withList() {
-    Config c = copy();
-    c.printList = true;
-    return c;
+    printList = true;
+    return this;
   }
 
   public Config withRawList() {
-    Config c = copy();
-    c.printRawList = true;
-    return c;
+    printRawList = true;
+    return this;
   }
 
   public Config withGroupList() {
-    Config c = copy();
-    c.printGroupList = true;
-    return c;
+    printGroupList = true;
+    return this;
   }
 
   public Config withFunctionalTest() {
-    Config c = copy();
-    c.functionalTest = true;
-    return c;
+    functionalTest = true;
+    return this;
   }
 }
