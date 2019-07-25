@@ -104,7 +104,7 @@ public interface Benchmark {
    * should be used to initialize the part of benchmark state that is specific
    * to each execution of the benchmark operation.
    */
-  // TODO: void beforeOperation(BenchmarkContext context);
+  // TODO: void setUpOperation(BenchmarkContext context);
   default void beforeIteration(BenchmarkContext context) {}
 
 
@@ -124,7 +124,7 @@ public interface Benchmark {
    * particular, the benchmark must ensure that resources are not leaked during
    * repeated execution of the benchmark operation.
    */
-  // TODO void afterOperation(BenchmarkContext context);
+  // TODO void tearDownOperation(BenchmarkContext context);
   default void afterIteration(BenchmarkContext context) {}
 
 
