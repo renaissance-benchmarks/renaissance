@@ -21,7 +21,10 @@ import scala.collection.mutable
  * Descendants are expected to override only the store() method that
  * actually stores the collected data.
  */
-abstract class ResultWriter extends HarnessShutdownListener with ValidResultListener with InvalidResultListener {
+abstract class ResultWriter
+  extends HarnessShutdownListener
+  with ValidResultListener
+  with InvalidResultListener {
 
   class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
     override def run(): Unit = {

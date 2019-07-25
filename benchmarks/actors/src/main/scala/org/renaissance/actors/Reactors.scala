@@ -209,7 +209,11 @@ object CountingActor {
       self.main.seal()
     })
 
-    BenchmarkResult.simple("CountingActor", sz, Await.result(done.future, Duration.Inf).longValue)
+    BenchmarkResult.simple(
+      "CountingActor",
+      sz,
+      Await.result(done.future, Duration.Inf).longValue
+    )
   }
 }
 
@@ -427,7 +431,7 @@ object StreamingPingPong {
   // How many ping pong exchanges to overlap.
   val WINDOW_SIZE = 128
 
-  def run(system: ReactorSystem, sz: Int)= {
+  def run(system: ReactorSystem, sz: Int) = {
     println("StreamingPingPong workload: Reactor pair overlapping ping pong performance")
 
     val done = Promise[Int]()
@@ -458,7 +462,11 @@ object StreamingPingPong {
     }
     new PingPongInner
 
-    BenchmarkResult.simple("StreamingPingPong", 0, Await.result(done.future, Duration.Inf).longValue)
+    BenchmarkResult.simple(
+      "StreamingPingPong",
+      0,
+      Await.result(done.future, Duration.Inf).longValue
+    )
   }
 }
 
@@ -508,7 +516,11 @@ object Roundabout {
       }
     })
 
-    BenchmarkResult.simple("Roundabout", Roundabout.NUM_MESSAGES, Await.result(done.future, Duration.Inf).longValue)
+    BenchmarkResult.simple(
+      "Roundabout",
+      Roundabout.NUM_MESSAGES,
+      Await.result(done.future, Duration.Inf).longValue
+    )
   }
 }
 

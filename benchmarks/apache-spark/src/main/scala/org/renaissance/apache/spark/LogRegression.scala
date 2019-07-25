@@ -110,7 +110,12 @@ class LogRegression extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    FileUtils.write(outputPath.toFile, mlModel.coefficients.toString + "\n", StandardCharsets.UTF_8, true)
+    FileUtils.write(
+      outputPath.toFile,
+      mlModel.coefficients.toString + "\n",
+      StandardCharsets.UTF_8,
+      true
+    )
     FileUtils.write(outputPath.toFile, mlModel.intercept.toString, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
     c.deleteTempDir(tempDirPath)

@@ -15,7 +15,11 @@ trait SparkUtil {
 
   val winUtils = "/winutils.exe"
 
-  def setUpSparkContext(dirPath: Path, threadsPerExecutor: Int, benchName : String): SparkContext = {
+  def setUpSparkContext(
+    dirPath: Path,
+    threadsPerExecutor: Int,
+    benchName: String
+  ): SparkContext = {
     setUpHadoop(dirPath)
     val conf = new SparkConf()
       .setAppName(benchName)

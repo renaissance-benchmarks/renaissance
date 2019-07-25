@@ -183,7 +183,7 @@ class ScalaKmeans extends Benchmark with KmeansUtilities {
     new Point(0.56, 1.05, 0.31)
   )
 
-  override def setUpBeforeAll(c: BenchmarkContext)= {
+  override def setUpBeforeAll(c: BenchmarkContext) = {
     if (c.functionalTest) {
       numPoints = 5000
       k = 8

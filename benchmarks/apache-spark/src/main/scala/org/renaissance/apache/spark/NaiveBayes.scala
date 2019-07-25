@@ -87,11 +87,17 @@ class NaiveBayes extends Benchmark with SparkUtil {
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     // Dump output.
     FileUtils.write(
-      outputPath.toFile, bayesModel.labels.mkString("labels: ", ", ", "\n"), StandardCharsets.UTF_8, true
+      outputPath.toFile,
+      bayesModel.labels.mkString("labels: ", ", ", "\n"),
+      StandardCharsets.UTF_8,
+      true
     )
 
     FileUtils.write(
-      outputPath.toFile, bayesModel.pi.mkString("a priori: ", ", ", "\n"), StandardCharsets.UTF_8, true
+      outputPath.toFile,
+      bayesModel.pi.mkString("a priori: ", ", ", "\n"),
+      StandardCharsets.UTF_8,
+      true
     )
 
     FileUtils.write(
