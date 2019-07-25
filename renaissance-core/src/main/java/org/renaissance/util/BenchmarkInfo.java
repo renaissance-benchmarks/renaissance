@@ -9,23 +9,24 @@ public final class BenchmarkInfo {
 
     final String className;
 
-    public final String name;
+    final String name;
 
-    public final String group;
+    final String group;
 
-    public final String summary;
+    final String summary;
 
     final String description;
 
-    public final int repetitions;
+    final int repetitions;
 
     final String[] licenses;
 
-    public final String distro;
+    final String distro;
 
 
     BenchmarkInfo(
-      String className, String name, String group, String summary, String description,
+      String className, String name, String group,
+      String summary, String description,
       int repetitions, String[] licenses, String distro
     ) {
       this.className = className;
@@ -39,21 +40,20 @@ public final class BenchmarkInfo {
     }
 
 
-    public String[] summaryWords() {
-      return summary.split("\\s+");
-    }
+    public String name() { return name; }
 
+    public String group() { return group; }
 
-    public String printableLicenses() {
-      return String.join(", ", licenses);
-    }
+    public String summary() { return summary; }
 
+    public String distro() { return distro; }
 
     public Benchmark loadBenchmark() {
       try {
         final ClassLoader loader = ModuleLoader.getForGroup(group);
         final Class<?> benchClass = loader.loadClass(className);
         final Constructor<?> benchCtor = benchClass.getDeclaredConstructor();
+    public int repetitions() { return repetitions; }
 
         // Make current thread as independent of the harness as possible.
         Thread.currentThread().setContextClassLoader(loader);
@@ -62,6 +62,12 @@ public final class BenchmarkInfo {
       } catch (Exception e) {
         throw new RuntimeException("failed to load benchmark " + name, e);
       }
+    public String[] summaryWords() {
+      return summary.split("\\s+");
     }
 
+
+    public String printableLicenses() {
+      return String.join(", ", licenses);
+    }
 }
