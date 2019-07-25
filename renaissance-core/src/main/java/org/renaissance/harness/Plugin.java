@@ -21,7 +21,7 @@ public interface Plugin {
   }
 
   interface OperationSetUpListener {
-    void afterOperationSetup(String benchmark, int index);
+    void afterOperationSetUp(String benchmark, int index, boolean isLast);
   }
 
   interface OperationTearDownListener {

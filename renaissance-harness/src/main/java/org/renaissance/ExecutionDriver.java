@@ -1,15 +1,11 @@
 package org.renaissance;
 
 import org.renaissance.harness.ExecutionPolicy;
-import org.renaissance.harness.Plugin;
 import org.renaissance.harness.Plugin.*;
 import org.renaissance.util.BenchmarkInfo;
 import org.renaissance.util.DirUtils;
 
-import java.awt.*;
-import java.beans.EventSetDescriptor;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 final class ExecutionDriver implements BenchmarkContext {
@@ -44,7 +40,8 @@ final class ExecutionDriver implements BenchmarkContext {
       printStartInfo(operationIndex, benchInfo.name(), benchInfo.group());
 
       final long durationNanos = executeOperation(
-        operationIndex, benchInfo.name(), benchmark, dispatcher
+        operationIndex, benchInfo.name(), benchmark, dispatcher,
+        policy.isLastOperation()
       );
 
       printEndInfo(operationIndex, benchInfo.name(), benchInfo.group(), durationNanos);
@@ -60,12 +57,12 @@ final class ExecutionDriver implements BenchmarkContext {
 
   private long executeOperation(
     final int opIndex, final String benchName, final Benchmark bench,
-    final EventDispatcher dispatcher
+    final EventDispatcher dispatcher, final boolean isLast
   ) {
     // Call benchmark and notify listeners before operation
     final long unixTsBefore = System.currentTimeMillis();
     bench.beforeIteration(this);
-    dispatcher.notifyAfterOperationSetUp(benchName, opIndex);
+    dispatcher.notifyAfterOperationSetUp(benchName, opIndex, isLast);
 
     // Execute measured operation
     final long startNanos = System.nanoTime();
@@ -194,6 +191,10 @@ final class ExecutionDriver implements BenchmarkContext {
       elapsedMicros += TimeUnit.NANOSECONDS.toMicros(durationNanos);
     }
 
+
+    @Override
+    public boolean isLastOperation() { return false; }
+
   }
 
 
@@ -218,6 +219,10 @@ final class ExecutionDriver implements BenchmarkContext {
     public void registerOperation(int index, long duration) {
       lastIndex = index;
     }
+
+
+    @Override
+    public boolean isLastOperation() { return lastIndex + 1 >= limit; }
 
   }
 
@@ -267,10 +272,10 @@ final class ExecutionDriver implements BenchmarkContext {
 
 
     void notifyAfterOperationSetUp(
-      final String benchName, final int operationIndex
+      final String benchName, final int operationIndex, final boolean isLast
     ) {
       for (final OperationSetUpListener l : operationSetUpListeners) {
-        l.afterOperationSetup(benchName, operationIndex);
+        l.afterOperationSetUp(benchName, operationIndex, isLast);
       }
     }
 

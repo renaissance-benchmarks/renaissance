@@ -17,4 +17,10 @@ public interface ExecutionPolicy {
    */
   void registerOperation(int index, long durationNanos);
 
+  /**
+   * @return {@code true} if the last operation is executing, {@code false}
+   * otherwise (the policy might not know).
+   */
+  boolean isLastOperation();
+
 }
