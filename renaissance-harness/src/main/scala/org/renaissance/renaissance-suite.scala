@@ -15,7 +15,7 @@ object RenaissanceSuite {
     val benchmarkPkg = classOf[Benchmark].getPackage
     val parser = new ConfigParser(
       immutable.Map(
-        "renaissanceTitle" -> benchmarkPkg.getImplementationTitle,
+        "renaissanceTitle" -> benchmarkPkg.getSpecificationTitle,
         "renaissanceVersion" -> benchmarkPkg.getImplementationVersion
       )
     )
@@ -63,7 +63,7 @@ object RenaissanceSuite {
         } catch {
           case exception: Throwable => {
             // Notify observers that a benchmark failed.
-            dispatcher.notifyOnBenchmarkFailure(benchInfo.name);
+            dispatcher.notifyOnBenchmarkFailure(benchInfo.name)
             failedBenchmarks += benchInfo
 
             Console.err.println(s"Exception occurred in ${benchInfo.name()}:")
