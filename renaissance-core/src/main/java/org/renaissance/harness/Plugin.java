@@ -1,30 +1,69 @@
 package org.renaissance.harness;
 
 /**
- *  Plugin implementations must have a zero arguments constructor.
+ * Marker interface for harness plugins. Plugins are loaded dynamically and
+ * each {@link Plugin} implementation must have a zero arguments constructor.
  */
 public interface Plugin {
+
   interface HarnessInitListener {
+    /**
+     * Called before setting up the first benchmark (before calling its set up
+     * method), after initializing the harness.
+     */
     void afterHarnessInit();
   }
 
   interface HarnessShutdownListener {
+    /**
+     * Called after the last benchmark finished executing (after calling its
+     * tear down method), before the harness exits.
+     */
     void beforeHarnessShutdown();
   }
 
   interface BenchmarkSetUpListener {
+    /**
+     * Called before first execution of the measured operation, after calling
+     * the benchmark set up method.
+     *
+     * @param benchmark Name of the benchmark.
+     */
     void afterBenchmarkSetUp(String benchmark);
   }
 
   interface BenchmarkTearDownListener {
+    /**
+     * Called after last execution of the measured operation, before calling
+     * the benchmark tear down method.
+     *
+     * @param benchmark Name of the benchmark.
+     */
     void beforeBenchmarkTearDown(String benchmark);
   }
 
   interface OperationSetUpListener {
+    /**
+     * Called before executing the measured operation, after calling the
+     * operation set up method.
+     *
+     * @param benchmark Name of the benchmark.
+     * @param opIndex Index of the measured operation execution.
+     * @param isLastOp {@code true} if this is the last execution of the
+     *   measured operation, {@code false} otherwise (or if unknown).
+     */
     void afterOperationSetUp(String benchmark, int opIndex, boolean isLastOp);
   }
 
   interface OperationTearDownListener {
+    /**
+     * Called after the benchmark finished executing the measured operation,
+     * before calling the operation tear down method.
+     *
+     * @param benchmark Name of the benchmark.
+     * @param opIndex Index of the measured operation execution.
+     * @param durationNanos Duration of the measured operation in nanoseconds.
+     */
     void beforeOperationTearDown(String benchmark, int opIndex, long durationNanos);
   }
 
@@ -43,9 +82,9 @@ public interface Plugin {
 
   interface BenchmarkFailureListener {
     /**
-     * Called whenever a benchmark fails during set up, tear down, or
-     * operation (including operation set up and tear down). There will be
-     * no more results for the given benchmark after this event.
+     * Called whenever a benchmark fails during set up, tear down, or operation
+     * (including operation set up and tear down). There will be no more
+     * results for the given benchmark after this event.
      *
      * @param benchmark Name of the benchmark.
      */
