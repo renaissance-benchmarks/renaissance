@@ -32,9 +32,10 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  public final void executeBenchmark(Benchmark benchmark) {
+  public final void executeBenchmark(
+    Benchmark benchmark, EventDispatcher dispatcher
+  ) {
     final ExecutionPolicy policy = getExecutionPolicy(config);
-    final EventDispatcher dispatcher = new EventDispatcher(config);
 
     benchmark.setUpBeforeAll(this);
 
@@ -244,78 +245,6 @@ final class ExecutionDriver implements BenchmarkContext {
     @Override
     public boolean isLastOperation() { return lastIndex + 1 >= limit; }
 
-  }
-
-  //
-
-  private static final class EventDispatcher {
-    private final BenchmarkSetUpListener[] benchmarkSetUpListeners;
-    private final BenchmarkTearDownListener[] benchmarkTearDownListeners;
-    private final OperationSetUpListener[] operationSetUpListeners;
-    private final OperationTearDownListener[] operationTearDownListeners;
-    private final BenchmarkResultListener[] benchmarkResultListeners;
-
-    EventDispatcher(Config config) {
-      benchmarkSetUpListeners = config.benchmarkSetUpListeners.toArray(
-        new BenchmarkSetUpListener[0]
-      );
-
-      benchmarkTearDownListeners = config.benchmarkTearDownListeners.toArray(
-        new BenchmarkTearDownListener[0]
-      );
-
-      operationSetUpListeners = config.operationSetUpListeners.toArray(
-        new OperationSetUpListener[0]
-      );
-
-      operationTearDownListeners = config.operationTearDownListeners.toArray(
-        new OperationTearDownListener[0]
-      );
-
-      benchmarkResultListeners = config.benchmarkResultListeners.toArray(
-        new BenchmarkResultListener[0]
-      );
-    }
-
-    void notifyAfterBenchmarkSetUp(final String benchName) {
-      for (final BenchmarkSetUpListener l : benchmarkSetUpListeners) {
-        l.afterBenchmarkSetUp(benchName);
-      }
-    }
-
-
-    void notifyBeforeBenchmarkTearDown(final String benchName) {
-      for (final BenchmarkTearDownListener l : benchmarkTearDownListeners) {
-        l.beforeBenchmarkTearDown(benchName);
-      }
-    }
-
-
-    void notifyAfterOperationSetUp(
-      final String benchName, final int opIndex, final boolean isLastOp
-    ) {
-      for (final OperationSetUpListener l : operationSetUpListeners) {
-        l.afterOperationSetUp(benchName, opIndex, isLastOp);
-      }
-    }
-
-
-    void notifyBeforeOperationTearDown(
-      final String benchName, final int opIndex, long durationNanos
-    ) {
-      for (final OperationTearDownListener l : operationTearDownListeners) {
-        l.beforeOperationTearDown(benchName, opIndex, durationNanos);
-      }
-    }
-
-
-    void notifyOnBenchmarkResult(
-      final String benchName, final String metric, final long value
-    ) {
-      for (final BenchmarkResultListener l : benchmarkResultListeners) {
-        l.onBenchmarkResult(benchName, metric, value);
-      }
-    }
   }
 
 }
