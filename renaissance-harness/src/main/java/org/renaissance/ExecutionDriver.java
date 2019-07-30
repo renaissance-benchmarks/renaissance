@@ -9,6 +9,12 @@ import org.renaissance.util.DirUtils;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Benchmark execution driver. Captures the sequence of actions performed
+ * during benchmark execution (i.e., calling the sequencing methods on a
+ * benchmark and issuing notifications to event listeners) and maintains
+ * execution context.
+ */
 final class ExecutionDriver implements BenchmarkContext {
 
   private final BenchmarkInfo benchInfo;
@@ -30,29 +36,35 @@ final class ExecutionDriver implements BenchmarkContext {
     final ExecutionPolicy policy = getExecutionPolicy(config);
     final EventDispatcher dispatcher = new EventDispatcher(config);
 
-    //
-
     benchmark.setUpBeforeAll(this);
-    dispatcher.notifyAfterBenchmarkSetUp(benchInfo.name());
 
-    operationIndex = 0;
+    try {
+      dispatcher.notifyAfterBenchmarkSetUp(benchInfo.name());
 
-    do {
-      printStartInfo(operationIndex, benchInfo.name(), benchInfo.group());
+      try {
+        operationIndex = 0;
 
-      final long durationNanos = executeOperation(
-        operationIndex, benchInfo.name(), benchmark, dispatcher,
-        policy.isLastOperation()
-      );
+        do {
+          printStartInfo(operationIndex, benchInfo);
 
-      printEndInfo(operationIndex, benchInfo.name(), benchInfo.group(), durationNanos);
-      policy.registerOperation(operationIndex, durationNanos);
+          final long durationNanos = executeOperation(
+            operationIndex, benchInfo.name(), benchmark,
+            dispatcher, policy.isLastOperation()
+          );
 
-      operationIndex++;
-    } while (policy.keepExecuting());
+          printEndInfo(operationIndex, benchInfo, durationNanos);
+          policy.registerOperation(operationIndex, durationNanos);
 
-    dispatcher.notifyBeforeBenchmarkTearDown(benchInfo.name());
-    benchmark.tearDownAfterAll(this);
+          operationIndex++;
+        } while (policy.keepExecuting());
+
+      } finally {
+        dispatcher.notifyBeforeBenchmarkTearDown(benchInfo.name());
+      }
+
+    } finally {
+      benchmark.tearDownAfterAll(this);
+    }
   }
 
 
@@ -60,17 +72,23 @@ final class ExecutionDriver implements BenchmarkContext {
     final int opIndex, final String benchName, final Benchmark bench,
     final EventDispatcher dispatcher, final boolean isLast
   ) {
-    // Call benchmark and notify listeners before operation
+    //
+    // Call the benchmark and notify listeners before the measured operation.
+    // Nothing should go between the measured operation call and the timing
+    // calls. If everything goes well, we notify the listeners and call the
+    // benchmark after the measured operation and try to validate the result.
+    // If the result is valid, we notify listeners about basic result metrics
+    // and return the duration of the measured operation, otherwise an
+    // exception is thrown and the method terminates prematurely.
+    //
     final long unixTsBefore = System.currentTimeMillis();
     bench.beforeIteration(this);
     dispatcher.notifyAfterOperationSetUp(benchName, opIndex, isLast);
 
-    // Execute measured operation
     final long startNanos = System.nanoTime();
     final BenchmarkResult result = bench.runIteration(this);
     final long durationNanos = System.nanoTime() - startNanos;
 
-    // Call benchmark and notify listeners after operation
     dispatcher.notifyBeforeOperationTearDown(benchName, opIndex, durationNanos);
     bench.afterIteration(this);
     final long unixTsAfter = System.currentTimeMillis();
@@ -101,20 +119,20 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  void printStartInfo(int index, String name, String group) {
+  void printStartInfo(int index, BenchmarkInfo benchInfo) {
     System.out.printf(
       "====== %s (%s), iteration %d started ======\n",
-      name, group, index
+      benchInfo.name(), benchInfo.group(), index
     );
   }
 
 
-  void printEndInfo(int index, String name, String group, long durationNanos) {
+  void printEndInfo(int index, BenchmarkInfo benchInfo, long durationNanos) {
     final double durationMillis = durationNanos / 1e6;
 
     System.out.printf(
       "====== %s (%s), iteration %d completed (%.3f ms) ======\n",
-      name, group, index, durationMillis
+      benchInfo.name(), benchInfo.group(), index, durationMillis
     );
   }
 
@@ -274,19 +292,19 @@ final class ExecutionDriver implements BenchmarkContext {
 
 
     void notifyAfterOperationSetUp(
-      final String benchName, final int operationIndex, final boolean isLast
+      final String benchName, final int opIndex, final boolean isLastOp
     ) {
       for (final OperationSetUpListener l : operationSetUpListeners) {
-        l.afterOperationSetUp(benchName, operationIndex, isLast);
+        l.afterOperationSetUp(benchName, opIndex, isLastOp);
       }
     }
 
 
     void notifyBeforeOperationTearDown(
-      final String benchName, final int operationIndex, long duration
+      final String benchName, final int opIndex, long durationNanos
     ) {
       for (final OperationTearDownListener l : operationTearDownListeners) {
-        l.beforeOperationTearDown(benchName, operationIndex, duration);
+        l.beforeOperationTearDown(benchName, opIndex, durationNanos);
       }
     }
 
