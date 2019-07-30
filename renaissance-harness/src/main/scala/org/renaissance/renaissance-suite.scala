@@ -39,12 +39,13 @@ object RenaissanceSuite {
     } else {
       // Select the desired benchmarks and check that they really exist.
       val specifiers = config.benchmarkSpecifiers.asScala
-      val selectedBenchmarks = selectBenchmarks(specifiers, benchmarks)
+      val selectedBenchmarks = selectBenchmarks(benchmarks, specifiers)
       runBenchmarks(selectedBenchmarks, config)
     }
   }
 
   private def runBenchmarks(benchmarks: Seq[BenchmarkInfo], config: Config): Unit = {
+    // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
     // Notify observers that the suite is set up.
@@ -63,7 +64,8 @@ object RenaissanceSuite {
             // Notify observers that a benchmark failed.
             notifyOnBenchmarkFailure(benchInfo.name, config.benchmarkFailureListeners.asScala);
             failedBenchmarks += benchInfo
-            Console.err.println(s"Exception occurred in ${benchmark}: ${exception.getMessage}")
+
+            Console.err.println(s"Exception occurred in ${benchInfo.name()}:")
             exception.printStackTrace(Console.err)
           }
         }
@@ -74,27 +76,31 @@ object RenaissanceSuite {
       notifyBeforeHarnessShutdown(config.harnessShutdownListeners.asScala)
 
       if (failedBenchmarks.nonEmpty) {
-        println(s"The following benchmarks failed: ${failedBenchmarks.mkString(", ")}")
+        val failedBenchmarksList = failedBenchmarks.map(_.name()).mkString(", ")
+        println(s"The following benchmarks failed: ${failedBenchmarksList}")
         sys.exit(1)
       }
     }
   }
 
   private def notifyAfterHarnessInit(listeners: Seq[HarnessInitListener]) = {
+    // TODO: Handle exception gracefully, indicating the listener which caused it.
     listeners.foreach(l => l.afterHarnessInit())
   }
 
   private def notifyBeforeHarnessShutdown(listeners: Seq[HarnessShutdownListener]) = {
+    // TODO: Handle exception gracefully, indicating the listener which caused it.
     listeners.foreach(l => l.beforeHarnessShutdown())
   }
 
   private def notifyOnBenchmarkFailure(benchmark: String, listeners: Seq[BenchmarkFailureListener]): Unit = {
+    // TODO: Handle exception gracefully, indicating the listener which caused it.
     listeners.foreach(l => l.onBenchmarkFailure(benchmark))
   }
 
   def selectBenchmarks(
-    specifiers: Seq[String],
-    benchmarks: BenchmarkRegistry
+    benchmarks: BenchmarkRegistry,
+    specifiers: Seq[String]
   ): Seq[BenchmarkInfo] = {
     val result = new mutable.LinkedHashSet[BenchmarkInfo]
     for (specifier <- specifiers) {
@@ -144,7 +150,7 @@ object RenaissanceSuite {
   private def formatBenchmarkList(benchmarks: BenchmarkRegistry) = {
     val indent = "    "
 
-    val result = new StringBuffer
+    val result = new StringBuilder
     for (bench <- benchmarks.getAll().asScala) {
       result.append(bench.name).append("\n")
       result.append(foldText(bench.summaryWords, 65, indent).mkString("\n")).append("\n")
