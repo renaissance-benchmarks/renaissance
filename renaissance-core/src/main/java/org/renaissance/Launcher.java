@@ -13,9 +13,16 @@ import java.util.logging.Logger;
 public class Launcher {
   public static void main(String args[]) {
     if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
+      final Package benchmarkPkg = Benchmark.class.getPackage();
+      final String[] customArgs = new String[] {
+        "--title", benchmarkPkg.getSpecificationTitle(),
+        "--version", benchmarkPkg.getImplementationVersion()
+      };
+
       // TODO Launch the generator from the build system
-      launchHarnessClass("org.renaissance.MarkdownGenerator", new String[0]);
+      launchHarnessClass("org.renaissance.MarkdownGenerator", customArgs);
     } else {
+
       launchHarnessClass("org.renaissance.RenaissanceSuite", args);
     }
   }

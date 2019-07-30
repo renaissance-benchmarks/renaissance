@@ -30,13 +30,7 @@ object MarkdownGenerator {
   private final class LocalConfig {
     var metadata: File = null
 
-    val tags = {
-      val benchmarkPkg = classOf[Benchmark].getPackage
-      mutable.Map[String, String](
-        "renaissanceTitle" -> benchmarkPkg.getImplementationTitle,
-        "renaissanceVersion" -> benchmarkPkg.getImplementationVersion
-      )
-    }
+    val tags = mutable.Map[String, String]()
 
     def setTag(key: String, value: String) = {
       tags.put(key, value)
