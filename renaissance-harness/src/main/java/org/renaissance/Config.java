@@ -9,11 +9,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 final class Config {
+
+  enum ExecutionPolicyType {
+    FIXED_COUNT,
+    FIXED_TIME,
+    CUSTOM;
+  }
+
   final List<String> benchmarkSpecifiers = new ArrayList<>();
+
   int repetitions = -1;
   int runSeconds = 240;
   final List<Plugin> plugins = new ArrayList<>();
-  String policy = "fixed-count";
+
+  ExecutionPolicyType policyType = ExecutionPolicyType.FIXED_COUNT;
+  String customPolicy;
 
   final List<HarnessInitListener> harnessInitListeners = new ArrayList<>();
   final List<HarnessShutdownListener> harnessShutdownListeners = new ArrayList<>();
@@ -54,17 +64,20 @@ final class Config {
   }
 
   public Config withRepetitions(int repetitions) {
+    this.policyType = ExecutionPolicyType.FIXED_COUNT;
     this.repetitions = repetitions;
     return this;
   }
 
   public Config withRunSeconds(int runSeconds) {
+    this.policyType = ExecutionPolicyType.FIXED_TIME;
     this.runSeconds = runSeconds;
     return this;
   }
 
-  public Config withPolicy(String policy) {
-    this.policy = policy;
+  public Config withPolicy(String customPolicy) {
+    this.policyType = ExecutionPolicyType.CUSTOM;
+    this.customPolicy = customPolicy;
     return this;
   }
 

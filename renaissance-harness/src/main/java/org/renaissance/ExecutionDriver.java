@@ -86,17 +86,17 @@ final class ExecutionDriver implements BenchmarkContext {
 
 
   private ExecutionPolicy getExecutionPolicy(Config config) {
-    String policyName = config.policy;
-    if ("fixed-count".equalsIgnoreCase(policyName)) {
+    final ExecutionPolicyType policyType = config.policyType;
+    if (policyType == ExecutionPolicyType.FIXED_COUNT) {
       return new CountedExecutionPolicy(
         config.repetitions > 0 ? config.repetitions : benchInfo.repetitions()
       );
 
-    } else if ("fixed-time".equalsIgnoreCase(policyName)) {
+    } else if (policyType == ExecutionPolicyType.FIXED_TIME) {
       return new TimedExecutionPolicy(config.runSeconds, TimeUnit.SECONDS);
 
     } else {
-      throw new RuntimeException("unsupported execution policy: "+ policyName);
+      throw new RuntimeException("unsupported execution policy: "+ policyType);
     }
   }
 

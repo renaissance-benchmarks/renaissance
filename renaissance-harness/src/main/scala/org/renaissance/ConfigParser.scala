@@ -14,10 +14,10 @@ final class ConfigParser(tags: Map[String, String]) {
         .text("Prints this usage text.")
       opt[Int]('r', "repetitions")
         .text("Execute the measured operation a fixed number of times.")
-        .action((v, c) => c.withPolicy("fixed-count").withRepetitions(v))
+        .action((v, c) => c.withRepetitions(v))
       opt[Int]('t', "run-seconds")
         .text("Execute the measured operation for a fixed number of seconds.")
-        .action((v, c) => c.withPolicy("fixed-time").withRunSeconds(v))
+        .action((v, c) => c.withRunSeconds(v))
       opt[String]("policy")
         .text(
           "Use policy to control repeated execution of measured operation, specified as <jar-file>!<class-name>."
