@@ -1,8 +1,5 @@
 package org.renaissance
 
-import org.renaissance.harness.Plugin.BenchmarkFailureListener
-import org.renaissance.harness.Plugin.HarnessInitListener
-import org.renaissance.harness.Plugin.HarnessShutdownListener
 import org.renaissance.util.BenchmarkInfo
 import org.renaissance.util.BenchmarkRegistry
 
