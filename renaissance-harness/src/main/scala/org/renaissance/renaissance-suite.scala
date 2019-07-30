@@ -1,5 +1,6 @@
 package org.renaissance
 
+import org.renaissance.harness.Plugin.BenchmarkFailureListener
 import org.renaissance.harness.Plugin.HarnessInitListener
 import org.renaissance.harness.Plugin.HarnessShutdownListener
 import org.renaissance.util.BenchmarkInfo
@@ -59,6 +60,8 @@ object RenaissanceSuite {
 
         } catch {
           case exception: Throwable => {
+            // Notify observers that a benchmark failed.
+            notifyOnBenchmarkFailure(benchInfo.name, config.benchmarkFailureListeners.asScala);
             failedBenchmarks += benchInfo
             Console.err.println(s"Exception occurred in ${benchmark}: ${exception.getMessage}")
             exception.printStackTrace(Console.err)
@@ -83,6 +86,10 @@ object RenaissanceSuite {
 
   private def notifyBeforeHarnessShutdown(listeners: Seq[HarnessShutdownListener]) = {
     listeners.foreach(l => l.beforeHarnessShutdown())
+  }
+
+  private def notifyOnBenchmarkFailure(benchmark: String, listeners: Seq[BenchmarkFailureListener]): Unit = {
+    listeners.foreach(l => l.onBenchmarkFailure(benchmark))
   }
 
   def selectBenchmarks(
