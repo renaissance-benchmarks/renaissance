@@ -206,8 +206,10 @@ The currently supported events are represented by the following interfaces:
 - `HarnessShutdownListener`
 - `BenchmarkSetUpListener`
 - `BenchmarkTearDownListener`
-- `ValidResultListener`
-- `InvalidResultListener`
+- `BenchmarkResultListener`
+- `BenchmarkFailureListener`
+- `OperationSetUpListener`
+- `OperationTearDownListener`
 
 ### JMH support
 
