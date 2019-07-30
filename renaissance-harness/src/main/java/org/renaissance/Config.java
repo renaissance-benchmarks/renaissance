@@ -31,8 +31,8 @@ final class Config {
   final List<BenchmarkTearDownListener> benchmarkTearDownListeners = new ArrayList<>();
   final List<OperationSetUpListener> operationSetUpListeners = new ArrayList<>();
   final List<OperationTearDownListener> operationTearDownListeners = new ArrayList<>();
-  final List<ValidResultListener> validResultListeners = new ArrayList<>();
-  final List<InvalidResultListener> invalidResultListeners = new ArrayList<>();
+  final List<BenchmarkResultListener> benchmarkResultListeners = new ArrayList<>();
+  final List<BenchmarkFailureListener> benchmarkFailureListeners = new ArrayList<>();
 
   boolean printList = false;
   boolean printRawList = false;
@@ -83,8 +83,8 @@ final class Config {
 
   public Config withResultWriter(ResultWriter writer) {
     harnessShutdownListeners.add(writer);
-    validResultListeners.add(writer);
-    invalidResultListeners.add(writer);
+    benchmarkResultListeners.add(writer);
+    benchmarkFailureListeners.add(writer);
     return this;
   }
 

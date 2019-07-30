@@ -1,5 +1,6 @@
 package org.renaissance;
 
+import org.renaissance.Config.ExecutionPolicyType;
 import org.renaissance.harness.ExecutionPolicy;
 import org.renaissance.harness.Plugin.*;
 import org.renaissance.util.BenchmarkInfo;
@@ -76,10 +77,9 @@ final class ExecutionDriver implements BenchmarkContext {
 
     result.validate();
 
-    // Provide basic results to listeners
-    dispatcher.notifyOnValidResult(benchName, "nanos", durationNanos);
-    dispatcher.notifyOnValidResult(benchName, "unixts.before", unixTsBefore);
-    dispatcher.notifyOnValidResult(benchName, "unixts.after", unixTsAfter);
+    dispatcher.notifyOnBenchmarkResult(benchName, "nanos", durationNanos);
+    dispatcher.notifyOnBenchmarkResult(benchName, "unixts.before", unixTsBefore);
+    dispatcher.notifyOnBenchmarkResult(benchName, "unixts.after", unixTsAfter);
 
     return durationNanos;
   }
@@ -235,7 +235,7 @@ final class ExecutionDriver implements BenchmarkContext {
     private final BenchmarkTearDownListener[] benchmarkTearDownListeners;
     private final OperationSetUpListener[] operationSetUpListeners;
     private final OperationTearDownListener[] operationTearDownListeners;
-    private final ValidResultListener[] validResultListeners;
+    private final BenchmarkResultListener[] benchmarkResultListeners;
 
     EventDispatcher(Config config) {
       benchmarkSetUpListeners = config.benchmarkSetUpListeners.toArray(
@@ -254,8 +254,8 @@ final class ExecutionDriver implements BenchmarkContext {
         new OperationTearDownListener[0]
       );
 
-      validResultListeners = config.validResultListeners.toArray(
-        new ValidResultListener[0]
+      benchmarkResultListeners = config.benchmarkResultListeners.toArray(
+        new BenchmarkResultListener[0]
       );
     }
 
@@ -291,13 +291,14 @@ final class ExecutionDriver implements BenchmarkContext {
     }
 
 
-    void notifyOnValidResult(
+    void notifyOnBenchmarkResult(
       final String benchName, final String metric, final long value
     ) {
-      for (final ValidResultListener l : validResultListeners) {
-        l.onValidResult(benchName, metric, value);
+      for (final BenchmarkResultListener l : benchmarkResultListeners) {
+        l.onBenchmarkResult(benchName, metric, value);
       }
     }
   }
+
 }
 

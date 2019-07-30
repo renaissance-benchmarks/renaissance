@@ -118,8 +118,10 @@ object MarkdownGenerator {
     tags("harnessShutdownListenerClass") = classOf[HarnessShutdownListener].getSimpleName
     tags("benchmarkSetUpListenerClass") = classOf[BenchmarkSetUpListener].getSimpleName
     tags("benchmarkTearDownListenerClass") = classOf[BenchmarkTearDownListener].getSimpleName
-    tags("validResultListenerClass") = classOf[ValidResultListener].getSimpleName
-    tags("invalidResultListenerClass") = classOf[InvalidResultListener].getSimpleName
+    tags("benchmarkResultListenerClass") = classOf[BenchmarkResultListener].getSimpleName
+    tags("benchmarkFailureListenerClass") = classOf[BenchmarkFailureListener].getSimpleName
+    tags("operationSetUpListenerClass") = classOf[OperationSetUpListener].getSimpleName
+    tags("operationTearDownListenerClass") = classOf[OperationTearDownListener].getSimpleName
 
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
@@ -292,8 +294,10 @@ The currently supported events are represented by the following interfaces:
 - `${tags("harnessShutdownListenerClass")}`
 - `${tags("benchmarkSetUpListenerClass")}`
 - `${tags("benchmarkTearDownListenerClass")}`
-- `${tags("validResultListenerClass")}`
-- `${tags("invalidResultListenerClass")}`
+- `${tags("benchmarkResultListenerClass")}`
+- `${tags("benchmarkFailureListenerClass")}`
+- `${tags("operationSetUpListenerClass")}`
+- `${tags("operationTearDownListenerClass")}`
 
 ### JMH support
 

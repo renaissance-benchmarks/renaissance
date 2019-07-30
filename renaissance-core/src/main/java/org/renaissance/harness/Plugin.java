@@ -21,14 +21,14 @@ public interface Plugin {
   }
 
   interface OperationSetUpListener {
-    void afterOperationSetUp(String benchmark, int index, boolean isLast);
+    void afterOperationSetUp(String benchmark, int opIndex, boolean isLastOp);
   }
 
   interface OperationTearDownListener {
-    void beforeOperationTearDown(String benchmark, int index, long duration);
+    void beforeOperationTearDown(String benchmark, int opIndex, long durationNanos);
   }
 
-  interface ValidResultListener {
+  interface BenchmarkResultListener {
     /**
      * Called when a benchmark produces a new (valid) result. Will be called
      * after completion of the measured benchmark operation, i.e., never inside
@@ -38,16 +38,17 @@ public interface Plugin {
      * @param metric Result name (e.g. branch-misses).
      * @param value Actual value of the metric.
      */
-    void onValidResult(String benchmark, String metric, long value);
+    void onBenchmarkResult(String benchmark, String metric, long value);
   }
 
-  interface InvalidResultListener {
+  interface BenchmarkFailureListener {
     /**
-     * Called when a benchmark produces an invalid result. There will be
-     * no more results for the given benchmark.
+     * Called whenever a benchmark fails during set up, tear down, or
+     * operation (including operation set up and tear down). There will be
+     * no more results for the given benchmark after this event.
      *
      * @param benchmark Name of the benchmark.
      */
-    void onInvalidResult(String benchmark);
+    void onBenchmarkFailure(String benchmark);
   }
 }

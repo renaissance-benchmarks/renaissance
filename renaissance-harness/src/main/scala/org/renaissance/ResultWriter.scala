@@ -4,9 +4,9 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
+import org.renaissance.harness.Plugin.BenchmarkFailureListener
+import org.renaissance.harness.Plugin.BenchmarkResultListener
 import org.renaissance.harness.Plugin.HarnessShutdownListener
-import org.renaissance.harness.Plugin.InvalidResultListener
-import org.renaissance.harness.Plugin.ValidResultListener
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -23,8 +23,8 @@ import scala.collection.mutable
  */
 abstract class ResultWriter
   extends HarnessShutdownListener
-  with ValidResultListener
-  with InvalidResultListener {
+  with BenchmarkResultListener
+  with BenchmarkFailureListener {
 
   class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
     override def run(): Unit = {
@@ -53,7 +53,7 @@ abstract class ResultWriter
     Runtime.getRuntime.removeShutdownHook(storeHook)
   }
 
-  override def onValidResult(benchmark: String, metric: String, value: Long): Unit = {
+  override def onBenchmarkResult(benchmark: String, metric: String, value: Long): Unit = {
     val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
     allResults.update(benchmark, benchStorage)
     val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
@@ -61,7 +61,7 @@ abstract class ResultWriter
     metricStorage += value
   }
 
-  override def onInvalidResult(benchmark: String): Unit = {
+  override def onBenchmarkFailure(benchmark: String): Unit = {
     failedBenchmarks += benchmark
   }
 
