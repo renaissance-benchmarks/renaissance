@@ -110,9 +110,11 @@ final class ExecutionDriver implements BenchmarkContext {
 
 
   void printEndInfo(int index, String name, String group, long durationNanos) {
+    final double durationMillis = durationNanos / 1e6;
+
     System.out.printf(
-      "====== %s (%s), iteration %d completed (%d ms) ======\n",
-      name, group, index, TimeUnit.NANOSECONDS.toMillis(durationNanos)
+      "====== %s (%s), iteration %d completed (%.3f ms) ======\n",
+      name, group, index, durationMillis
     );
   }
 
