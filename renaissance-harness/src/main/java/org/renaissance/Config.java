@@ -10,20 +10,14 @@ import java.util.stream.Collectors;
 
 final class Config {
 
-  enum ExecutionPolicyType {
-    FIXED_COUNT,
-    FIXED_TIME,
-    CUSTOM;
-  }
-
   final List<String> benchmarkSpecifiers = new ArrayList<>();
 
   int repetitions = -1;
   int runSeconds = 240;
   final List<Plugin> plugins = new ArrayList<>();
 
-  ExecutionPolicyType policyType = ExecutionPolicyType.FIXED_COUNT;
-  String customPolicy;
+  ExecutionPolicyFactory policyFactory = ExecutionPolicyFactory.FIXED_OP_COUNT;
+  String policyModule;
 
   final List<HarnessInitListener> harnessInitListeners = new ArrayList<>();
   final List<HarnessShutdownListener> harnessShutdownListeners = new ArrayList<>();
@@ -50,11 +44,11 @@ final class Config {
     return this;
   }
 
-  public Config withPlugin(String v) {
-    plugins.addAll(Arrays.stream(v.split(","))
+  public Config withPlugin(String pluginModule) {
+    plugins.addAll(Arrays.stream(pluginModule.split(","))
       .map(n -> {
         try {
-          return (Plugin) Class.forName(v).newInstance();
+          return (Plugin) Class.forName(pluginModule).newInstance();
         } catch (Throwable e) {
           throw new RuntimeException(e);
         }
@@ -66,20 +60,26 @@ final class Config {
   }
 
   public Config withRepetitions(int repetitions) {
-    this.policyType = ExecutionPolicyType.FIXED_COUNT;
+    this.policyFactory = ExecutionPolicyFactory.FIXED_OP_COUNT;
     this.repetitions = repetitions;
     return this;
   }
 
-  public Config withRunSeconds(int runSeconds) {
-    this.policyType = ExecutionPolicyType.FIXED_TIME;
+  public Config withWallClockRunSeconds(int runSeconds) {
+    this.policyFactory = ExecutionPolicyFactory.FIXED_TIME;
     this.runSeconds = runSeconds;
     return this;
   }
 
-  public Config withPolicy(String customPolicy) {
-    this.policyType = ExecutionPolicyType.CUSTOM;
-    this.customPolicy = customPolicy;
+  public Config withOperationRunSeconds(int runSeconds) {
+    this.policyFactory = ExecutionPolicyFactory.FIXED_OP_TIME;
+    this.runSeconds = runSeconds;
+    return this;
+  }
+
+  public Config withPolicy(String policyModule) {
+    this.policyFactory = ExecutionPolicyFactory.CUSTOM;
+    this.policyModule = policyModule;
     return this;
   }
 

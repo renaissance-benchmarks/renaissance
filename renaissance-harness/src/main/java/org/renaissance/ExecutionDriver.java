@@ -1,13 +1,10 @@
 package org.renaissance;
 
-import org.renaissance.Config.ExecutionPolicyType;
 import org.renaissance.harness.ExecutionPolicy;
-import org.renaissance.harness.Plugin.*;
 import org.renaissance.util.BenchmarkInfo;
 import org.renaissance.util.DirUtils;
 
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Benchmark execution driver. Captures the sequence of actions performed
@@ -35,7 +32,7 @@ final class ExecutionDriver implements BenchmarkContext {
   public final void executeBenchmark(
     Benchmark benchmark, EventDispatcher dispatcher
   ) {
-    final ExecutionPolicy policy = getExecutionPolicy(config);
+    final ExecutionPolicy policy = config.policyFactory.create(config, benchInfo);
 
     benchmark.setUpBeforeAll(this);
 
@@ -104,22 +101,6 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  private ExecutionPolicy getExecutionPolicy(Config config) {
-    final ExecutionPolicyType policyType = config.policyType;
-    if (policyType == ExecutionPolicyType.FIXED_COUNT) {
-      return new CountedExecutionPolicy(
-        config.repetitions > 0 ? config.repetitions : benchInfo.repetitions()
-      );
-
-    } else if (policyType == ExecutionPolicyType.FIXED_TIME) {
-      return new TimedExecutionPolicy(config.runSeconds, TimeUnit.SECONDS);
-
-    } else {
-      throw new RuntimeException("unsupported execution policy: "+ policyType);
-    }
-  }
-
-
   void printStartInfo(int index, BenchmarkInfo benchInfo) {
     System.out.printf(
       "====== %s (%s), iteration %d started ======\n",
@@ -185,66 +166,6 @@ final class ExecutionDriver implements BenchmarkContext {
   @Override
   public void deleteTempDir(Path dir) {
     DirUtils.deleteTempDir(dir);
-  }
-
-  // ExecutionPolicy implementations
-
-  static class TimedExecutionPolicy implements ExecutionPolicy {
-
-    private long elapsedMicros = 0;
-
-    private final long elapsedLimitMicros;
-
-
-    TimedExecutionPolicy(long elapsedLimit, TimeUnit timeUnit) {
-      this.elapsedLimitMicros = timeUnit.toMicros(elapsedLimit);
-    }
-
-
-    @Override
-    public boolean keepExecuting() {
-      return elapsedMicros < elapsedLimitMicros;
-    }
-
-
-    @Override
-    public void registerOperation(int index, long durationNanos) {
-      elapsedMicros += TimeUnit.NANOSECONDS.toMicros(durationNanos);
-    }
-
-
-    @Override
-    public boolean isLastOperation() { return false; }
-
-  }
-
-
-  static class CountedExecutionPolicy implements ExecutionPolicy {
-
-    private final int limit;
-    private int lastIndex;
-
-    CountedExecutionPolicy(final int limit) {
-      this.lastIndex = 0;
-      this.limit = limit;
-    }
-
-
-    @Override
-    public boolean keepExecuting() {
-      return lastIndex + 1 < limit;
-    }
-
-
-    @Override
-    public void registerOperation(int index, long duration) {
-      lastIndex = index;
-    }
-
-
-    @Override
-    public boolean isLastOperation() { return lastIndex + 1 >= limit; }
-
   }
 
 }

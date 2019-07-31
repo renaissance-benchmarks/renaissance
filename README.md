@@ -54,7 +54,9 @@ Usage: renaissance [options] [benchmark-specification]
   -r, --repetitions <value>
                            Execute the measured operation a fixed number of times.
   -t, --run-seconds <value>
-                           Execute the measured operation for a fixed number of seconds.
+                           Execute the measured operation for a fixed number of seconds (wall-clock time).
+  --operation-run-seconds <value>
+                           Execute the measured operation for a fixed number of seconds (net operation time).
   --policy <value>         Use policy to control repeated execution of measured operation, specified as <jar-file>!<class-name>.
   --plugin <value>         Load harness plugin, specified as <jar-file>!<class-name>. Can appear multiple times.
   --csv <value>            Output results to CSV file.

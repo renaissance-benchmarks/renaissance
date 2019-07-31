@@ -16,8 +16,13 @@ final class ConfigParser(tags: Map[String, String]) {
         .text("Execute the measured operation a fixed number of times.")
         .action((v, c) => c.withRepetitions(v))
       opt[Int]('t', "run-seconds")
-        .text("Execute the measured operation for a fixed number of seconds.")
-        .action((v, c) => c.withRunSeconds(v))
+        .text("Execute the measured operation for a fixed number of seconds (wall-clock time).")
+        .action((v, c) => c.withWallClockRunSeconds(v))
+      opt[Int]("operation-run-seconds")
+        .text(
+          "Execute the measured operation for a fixed number of seconds (net operation time)."
+        )
+        .action((v, c) => c.withOperationRunSeconds(v))
       opt[String]("policy")
         .text(
           "Use policy to control repeated execution of measured operation, specified as <jar-file>!<class-name>."
