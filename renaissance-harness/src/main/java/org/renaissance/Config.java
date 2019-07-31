@@ -39,6 +39,8 @@ final class Config {
   boolean printGroupList = false;
   boolean functionalTest = false;
 
+  String configuration = "default";
+
 
   public Config withBenchmarkSpecification(String v) {
     benchmarkSpecifiers.addAll(
@@ -105,6 +107,11 @@ final class Config {
 
   public Config withFunctionalTest() {
     functionalTest = true;
+    return this;
+  }
+
+  public Config withConfiguration(String configuration) {
+    this.configuration = configuration;
     return this;
   }
 }

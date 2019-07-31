@@ -60,6 +60,8 @@ Usage: renaissance [options] [benchmark-specification]
   --csv <value>            Output results to CSV file.
   --json <value>           Output results to JSON file.
   --functional-test        Reduce iteration times significantly for testing purposes.
+  -c, --configuration <value>
+                           Run benchmarks with given named configuration.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks (each benchmark name on separate line).
   --group-list             Print list of benchmark groups (each group name on separate line).
