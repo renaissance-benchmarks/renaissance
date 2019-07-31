@@ -43,7 +43,7 @@ final class ConfigParser(tags: Map[String, String]) {
       opt[Unit]("functional-test")
         .text("Reduce iteration times significantly for testing purposes.")
         .action((_, c) => c.withFunctionalTest())
-      opt[String]('c',"configuration")
+      opt[String]('c', "configuration")
         .text("Run benchmarks with given named configuration.")
         .action((v, c) => c.withConfiguration(v))
       opt[Unit]("list")

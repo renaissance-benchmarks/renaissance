@@ -400,7 +400,7 @@ by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
 You can see the further details of the build system in the top-level `build.sbt` file,
-in the `renaissance-suite.scala` file and in `${tags("moduleLoaderClass")}`.
+in the `RenaissanceSuite.scala` file and in `${tags("moduleLoaderClass")}`.
 
 
 """
