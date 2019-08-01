@@ -11,6 +11,16 @@ import org.renaissance.License
 @Summary("Runs the k-means algorithm using the fork/join framework.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
+@Parameter(name = "threads", defaultValue = "$cpu.count")
+@Parameter(name = "dimension", defaultValue = "5")
+@Parameter(name = "vector_length", defaultValue = "500000")
+@Parameter(name = "cluster_count", defaultValue = "5")
+@Parameter(name = "iteration_count", defaultValue = "50")
+@Parameter(name = "loop_count", defaultValue = "4")
+@Configuration(name = "default")
+@Configuration(name = "test", settings = Array(
+  "vector_length = 500"
+))
 class FjKmeans extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
