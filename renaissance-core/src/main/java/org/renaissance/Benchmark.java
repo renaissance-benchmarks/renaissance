@@ -1,8 +1,6 @@
 package org.renaissance;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.*;
 
 public interface Benchmark {
 
@@ -12,6 +10,7 @@ public interface Benchmark {
    * a class named {@code LittleBigBench} will be {@code little-big-bench}.
    */
   @Documented
+  @Target(ElementType.TYPE)
   @Retention(RetentionPolicy.RUNTIME)
   @interface Name {
 
@@ -27,6 +26,7 @@ public interface Benchmark {
    * will default to {@code jdk-concurrent}.
    */
   @Documented
+  @Target(ElementType.TYPE)
   @Retention(RetentionPolicy.RUNTIME)
   @interface Group {
 
@@ -39,6 +39,7 @@ public interface Benchmark {
    * A brief (one-line) summary description of a benchmark. Default not set.
    */
   @Documented
+  @Target(ElementType.TYPE)
   @Retention(RetentionPolicy.RUNTIME)
   @interface Summary {
 
@@ -51,6 +52,7 @@ public interface Benchmark {
    * Long description of a benchmark. Default not set.
    */
   @Documented
+  @Target(ElementType.TYPE)
   @Retention(RetentionPolicy.RUNTIME)
   @interface Description {
 
@@ -65,6 +67,7 @@ public interface Benchmark {
    * {@link License#MIT MIT} if not set.
    */
   @Documented
+  @Target(ElementType.TYPE)
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Licenses {
 
@@ -81,12 +84,54 @@ public interface Benchmark {
    * evaluation. Defaults to 20 if not set.
    */
   @Documented
+  @Target(ElementType.TYPE)
   @Retention(RetentionPolicy.RUNTIME)
   public @interface Repetitions {
 
     int value();
 
   }
+
+
+  @Documented
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Configurations {
+
+    Configuration[] value() default {};
+
+  }
+
+
+  @Documented
+  @Target(ElementType.TYPE)
+  @Repeatable(Configurations.class)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Configuration {
+    String name();
+    String[] settings() default {};
+  }
+
+
+  @Documented
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Parameters {
+
+    Parameter[] value() default {};
+
+  }
+
+  @Documented
+  @Target(ElementType.TYPE)
+  @Repeatable(Parameters.class)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Parameter {
+    String name();
+    String defaultValue() default "";
+    String summary() default "";
+  }
+
 
   //
 

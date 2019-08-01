@@ -77,6 +77,46 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     if (annotation != null) annotation.value() else 20
   }
 
+  def parameters(): Map[String, String] = {
+    val result = new mutable.HashMap[String, String]
+
+    val configs = getAnnotation(classOf[Configurations])
+    if (configs != null) {
+      val params = getAnnotation(classOf[Parameters])
+
+      for (config <- configs.value) {
+        val confBase = s"parameters.${config.name}";
+
+        // Set default parameter values first
+        if (params != null) {
+          for (param <- params.value) {
+            val keyBase = s"${confBase}.${param.name}"
+            result.put(s"${keyBase}.value", param.defaultValue)
+            result.put(s"${keyBase}.summary", param.summary)
+          }
+        }
+
+        // Override with configuration-specific values, but only
+        // allow to update existing keys. This ensures that only
+        // known keys will be overridden.
+        for (setting  <- config.settings) {
+          val elements = setting.split("=").map(x => x.trim)
+          assert(elements.length == 2)
+
+          val (name, value) = (elements(0), elements(1))
+          val key = s"${confBase}.${name}.value"
+          if (!result.contains(key)) {
+            throw new AssertionError(s"undefined parameter: ${name}")
+          }
+
+          result.put(key, value)
+        }
+      }
+    }
+
+    result.toMap
+  }
+
   def licenses(): Array[License] = {
     val annotation = getAnnotation(classOf[Licenses])
     if (annotation != null) annotation.value() else Array()
@@ -112,7 +152,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
       "distro" -> distro.toString
-    )
+    ) ++ parameters
   }
 
 }
