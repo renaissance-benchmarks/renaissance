@@ -275,9 +275,9 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     inputFileParam = c.stringParameter("input_file")
-    alsRanksParam = c.stringParameter("als_ranks").split(",").map(_.toInt).toList
-    alsLambdasParam = c.stringParameter("als_lambdas").split(",").map(_.toDouble).toList
-    alsIterationsParam = c.stringParameter("als_iterations").split(",").map(_.toInt).toList
+    alsRanksParam = c.stringParameter("als_ranks").split(",").map(_.trim.toInt).toList
+    alsLambdasParam = c.stringParameter("als_lambdas").split(",").map(_.trim.toDouble).toList
+    alsIterationsParam = c.stringParameter("als_iterations").split(",").map(_.trim.toInt).toList
 
     tempDirPath = c.generateTempDir("movie_lens")
     setUpLogger()
