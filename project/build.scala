@@ -93,7 +93,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
       .toMap
   }
 
-  private def parameterDefaults(confName: String)= {
+  private def parameterDefaults(confName: String) = {
     getAnnotations(classOf[Parameter])
       .map(
         p => s"configuration.${confName}.${p.name}" -> p.defaultValue()
@@ -101,13 +101,13 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
       .toMap
   }
 
-  def configurations() : Map[String, String] = {
+  def configurations(): Map[String, String] = {
     //
     // Create default configuration and initialize each configuration
     // using the default values parameters. Then apply configuration-specific
     // settings that override the defaults, but only for known parameters.
     //
-    val result = mutable.Map[String,String]()
+    val result = mutable.Map[String, String]()
     result ++= parameterDefaults("default")
 
     for (conf <- getAnnotations(classOf[Configuration])) {
