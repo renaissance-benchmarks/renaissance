@@ -110,26 +110,21 @@ final class MovieLens extends Benchmark with SparkUtil {
     def loadPersonalRatings(inputFileURL: URL) = {
       val source = Source.fromURL(inputFileURL)
 
-      try {
-        val personalRatingsIter = source
-          .getLines()
-          .map { line =>
-            val fields = line.split(",")
-            Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
-          }
-          .filter(_.rating > 0.0)
-
-        if (personalRatingsIter.isEmpty) {
-          sys.error("No ratings provided.")
-        } else {
-          personalRatings = personalRatingsIter.toSeq
+      val personalRatingsIter = source
+        .getLines()
+        .map { line =>
+          val fields = line.split(",")
+          Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
         }
+        .filter(_.rating > 0.0)
 
-        personalRatingsRDD = sc.parallelize(personalRatings, 1)
-
-      } finally {
-        source.close()
+      if (personalRatingsIter.isEmpty) {
+        sys.error("No ratings provided.")
+      } else {
+        personalRatings = personalRatingsIter.toSeq
       }
+
+      personalRatingsRDD = sc.parallelize(personalRatings, 1)
     }
 
     def getFilteredRDDFromPath(inputPath: Path): RDD[String] = {
