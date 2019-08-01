@@ -99,7 +99,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
         // Override with configuration-specific values, but only
         // allow to update existing keys. This ensures that only
         // known keys will be overridden.
-        for (setting  <- config.settings) {
+        for (setting <- config.settings) {
           val elements = setting.split("=").map(x => x.trim)
           assert(elements.length == 2)
 
