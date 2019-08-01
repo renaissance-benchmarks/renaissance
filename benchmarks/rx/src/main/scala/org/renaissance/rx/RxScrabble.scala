@@ -12,7 +12,7 @@ import org.renaissance.License
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(80)
-class RxScrabble extends Benchmark {
+final class RxScrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

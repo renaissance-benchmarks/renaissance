@@ -19,7 +19,7 @@ import org.renaissance.License
 @Parameter(name = "loop_count", defaultValue = "4")
 @Configuration(name = "default")
 @Configuration(name = "test", settings = Array("vector_length = 500"))
-class FjKmeans extends Benchmark {
+final class FjKmeans extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

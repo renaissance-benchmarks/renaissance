@@ -22,7 +22,7 @@ import scala.util.Random
 @Summary("Runs the ALS algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
-class Als extends Benchmark with SparkUtil {
+final class Als extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

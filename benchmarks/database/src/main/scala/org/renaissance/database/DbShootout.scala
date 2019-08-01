@@ -16,7 +16,7 @@ import org.renaissance.License
 @Summary("Executes a shootout test using several in-memory databases.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(16)
-class DbShootout extends Benchmark {
+final class DbShootout extends Benchmark {
 
   /**
    * The original benchmarks are from https://github.com/lmdbjava/benchmarks

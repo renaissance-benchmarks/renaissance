@@ -11,7 +11,7 @@ import org.renaissance.License
 @Summary("Solves a variant of the dining philosophers problem using ScalaSTM.")
 @Licenses(Array(License.BSD3))
 @Repetitions(30)
-class Philosophers extends Benchmark {
+final class Philosophers extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

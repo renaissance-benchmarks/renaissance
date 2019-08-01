@@ -13,7 +13,7 @@ import org.renaissance.License
 @Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
 @Licenses(Array(License.MIT))
 @Repetitions(24)
-class AkkaUct extends Benchmark {
+final class AkkaUct extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

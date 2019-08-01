@@ -28,7 +28,7 @@ import scala.io.Source
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-class MovieLens extends Benchmark with SparkUtil {
+final class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

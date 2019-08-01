@@ -27,7 +27,7 @@ import org.renaissance.License
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-class DecTree extends Benchmark with SparkUtil {
+final class DecTree extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

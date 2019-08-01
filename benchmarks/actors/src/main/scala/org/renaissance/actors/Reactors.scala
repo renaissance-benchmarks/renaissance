@@ -16,7 +16,7 @@ import scala.util.Random
 )
 @Licenses(Array(License.MIT))
 @Repetitions(10)
-class Reactors extends Benchmark {
+final class Reactors extends Benchmark {
 
   // Code based on https://github.com/reactors-io/reactors
   // The original uses BSD 3-clause license, the result is compatible with MIT license.

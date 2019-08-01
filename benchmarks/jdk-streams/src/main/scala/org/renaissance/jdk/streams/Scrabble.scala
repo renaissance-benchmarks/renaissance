@@ -14,7 +14,7 @@ import scala.collection.JavaConverters
 @Summary("Solves the Scrabble puzzle using JDK Streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(50)
-class Scrabble extends Benchmark {
+final class Scrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

@@ -20,7 +20,7 @@ import scala.collection.immutable.StringOps
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-class PageRank extends Benchmark with SparkUtil {
+final class PageRank extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

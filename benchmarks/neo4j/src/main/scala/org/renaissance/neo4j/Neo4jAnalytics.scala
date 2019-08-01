@@ -14,7 +14,7 @@ import org.renaissance.BenchmarkContext
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
 @Repetitions(20)
-class Neo4jAnalytics extends Benchmark {
+final class Neo4jAnalytics extends Benchmark {
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13

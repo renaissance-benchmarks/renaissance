@@ -24,7 +24,7 @@ import scala.util.Random
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)
-class ChiSquare extends Benchmark with SparkUtil {
+final class ChiSquare extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

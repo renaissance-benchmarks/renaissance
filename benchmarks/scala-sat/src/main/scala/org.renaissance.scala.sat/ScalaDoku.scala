@@ -85,7 +85,7 @@ object Solver {
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(20)
-class ScalaDoku extends Benchmark {
+final class ScalaDoku extends Benchmark {
 
   /*
    * An arbitrary solved sudoku puzzle. The puzzle is copied and some entries

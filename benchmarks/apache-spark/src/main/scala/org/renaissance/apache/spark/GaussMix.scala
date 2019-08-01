@@ -23,7 +23,7 @@ import scala.util.Random
 @Summary("Computes a Gaussian mixture model using expectation-maximization.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-class GaussMix extends Benchmark with SparkUtil {
+final class GaussMix extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

@@ -11,7 +11,7 @@ import org.renaissance.License
 @Summary("Runs a genetic algorithm using the Jenetics library and futures.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(50)
-class FutureGenetic extends Benchmark {
+final class FutureGenetic extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

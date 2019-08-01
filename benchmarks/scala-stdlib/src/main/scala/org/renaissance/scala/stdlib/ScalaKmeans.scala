@@ -122,7 +122,7 @@ trait KmeansUtilities {
 @Summary("Runs the K-Means algorithm using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(50)
-class ScalaKmeans extends Benchmark with KmeansUtilities {
+final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

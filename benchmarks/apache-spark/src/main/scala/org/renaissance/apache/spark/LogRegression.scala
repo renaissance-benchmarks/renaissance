@@ -23,7 +23,7 @@ import org.renaissance.License
 @Summary("Runs the logistic regression workload from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-class LogRegression extends Benchmark with SparkUtil {
+final class LogRegression extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27

@@ -12,7 +12,7 @@ import org.renaissance.License
 @Summary("Solves the phone mnemonics problem using JDK streams.")
 @Licenses(Array(License.MIT))
 @Repetitions(16)
-class Mnemonics extends Benchmark {
+final class Mnemonics extends Benchmark {
 
   var testInput: String = null
 

@@ -38,7 +38,7 @@ import scala.util.hashing.byteswap32
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(90)
-class FinagleChirper extends Benchmark {
+final class FinagleChirper extends Benchmark {
 
   class Master extends Service[Request, Response] {
     val lock = new AnyRef

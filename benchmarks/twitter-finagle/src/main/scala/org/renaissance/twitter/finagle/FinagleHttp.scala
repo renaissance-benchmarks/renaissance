@@ -29,7 +29,7 @@ import org.renaissance.License
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)
-class FinagleHttp extends Benchmark {
+final class FinagleHttp extends Benchmark {
 
   class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {
     var totalContentLength = 0L

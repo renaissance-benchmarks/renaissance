@@ -11,7 +11,7 @@ import org.renaissance.License
 @Summary("Runs the stmbench7 benchmark using ScalaSTM.")
 @Licenses(Array(License.BSD3, License.GPL2))
 @Repetitions(60)
-class ScalaStmBench7 extends Benchmark {
+final class ScalaStmBench7 extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
