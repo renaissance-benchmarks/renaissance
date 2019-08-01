@@ -1,5 +1,7 @@
 package org.renaissance.util;
 
+import java.util.Map;
+
 public final class BenchmarkInfo {
 
     final String className;
@@ -18,11 +20,14 @@ public final class BenchmarkInfo {
 
     final String distro;
 
+    final Map<String, Map<String, String>> configurations;
+
 
     BenchmarkInfo(
       String className, String name, String group,
       String summary, String description,
-      int repetitions, String[] licenses, String distro
+      int repetitions, String[] licenses, String distro,
+      Map<String, Map<String, String>> configurations
     ) {
       this.className = className;
       this.name = name;
@@ -32,6 +37,7 @@ public final class BenchmarkInfo {
       this.repetitions = repetitions;
       this.licenses = licenses;
       this.distro = distro;
+      this.configurations = configurations;
     }
 
 
@@ -45,6 +51,27 @@ public final class BenchmarkInfo {
 
     public int repetitions() { return repetitions; }
 
+
+    public String[] configurationNames() {
+      return configurations.keySet().toArray(new String[0]);
+    }
+
+
+    public String[] parameterNames(String confName) {
+      if (configurations.containsKey(confName)) {
+        return configurations.get(confName).keySet().toArray(new String[0]);
+      } else {
+        return null;
+      }
+    }
+
+    public String parameter(String confName, String paramName) {
+      if (configurations.containsKey(confName)) {
+        return configurations.get(confName).get(paramName);
+      } else {
+        return null;
+      }
+    }
 
     public String[] summaryWords() {
       return summary.split("\\s+");

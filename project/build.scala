@@ -85,7 +85,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
       val params = getAnnotation(classOf[Parameters])
 
       for (config <- configs.value) {
-        val confBase = s"parameters.${config.name}";
+        val confBase = s"parameter.${config.name}";
 
         // Set default parameter values first
         if (params != null) {

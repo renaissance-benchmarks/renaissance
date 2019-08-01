@@ -6,7 +6,11 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.*;
 
 /**
  * A registry of benchmark metadata. By default, this registry is initialized
@@ -27,7 +31,7 @@ public final class BenchmarkRegistry {
     // Keep benchmarks ordered by name.
     this.benchmarksByName = properties.stringPropertyNames().stream()
       .filter(p -> p.endsWith(".name"))
-      .collect(Collectors.toMap(
+      .collect(toMap(
         p -> properties.getProperty(p),
         p -> createBenchmarkInfo(properties, properties.getProperty(p)),
         (x, y) -> y,
@@ -36,7 +40,7 @@ public final class BenchmarkRegistry {
 
     // Keep groups ordered by name (order within groups implied).
     this.benchmarksByGroup = benchmarksByName.values().stream()
-      .collect(Collectors.groupingBy(
+      .collect(groupingBy(
         b -> b.group,
         () -> new TreeMap<>(),
         Collectors.toList()
@@ -78,6 +82,17 @@ public final class BenchmarkRegistry {
       return properties.getProperty("benchmark." + name + "." + key, defaultValue);
     };
 
+    Function<String, String> mapper = value -> {
+      if (value.startsWith("$")) {
+        String tag = value.substring(1);
+        if ("cpu.count".equals(tag)) {
+          return Integer.toString(Runtime.getRuntime().availableProcessors());
+        }
+      }
+
+      return value;
+    };
+
     return new BenchmarkInfo(
       getter.apply("class", ""),
       getter.apply("name", ""),
@@ -86,8 +101,30 @@ public final class BenchmarkRegistry {
       getter.apply("description", ""),
       Integer.valueOf(getter.apply("repetitions", "20")),
       getter.apply("licenses", "").split(","),
-      getter.apply("distro", "")
+      getter.apply("distro", ""),
+      getConfigurations(name, mapper, properties)
     );
+  }
+
+
+  private Map<String, Map<String, String>> getConfigurations(
+    String name, Function<String, String> valueMapper, Properties properties
+  ) {
+    Pattern pattern = Pattern.compile(
+      // Match "benchmark.<name>.parameter.<configuration>.<parameter>.value
+      "^benchmark[.]" + name + "[.]parameter[.](?<conf>[^.]+)[.](?<param>[^.]+)[.]value"
+    );
+
+    return properties.stringPropertyNames().stream()
+      // Find matching parameter properties
+      .map(n -> pattern.matcher(n)).filter(m -> m.matches())
+      // Collect parameters in a map grouped by configuration name
+      .collect(groupingBy(
+        m -> m.group("conf"), toMap(
+          m -> m.group("param"),
+          // Map special parameter values to computed values
+          m -> valueMapper.apply(properties.getProperty(m.group())))
+      ));
   }
 
 
@@ -165,6 +202,12 @@ public final class BenchmarkRegistry {
         System.out.println(group.getKey());
         for (BenchmarkInfo info : group.getValue()) {
           System.out.println("\t" + info.name);
+          for (String conf : info.configurationNames()) {
+            System.out.println("\t\t" + conf);
+            for (String param : info.parameterNames(conf)) {
+              System.out.printf("\t\t\t%s: %s\n", param, info.parameter(conf, param));
+            }
+          }
         }
       }
 
