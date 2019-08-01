@@ -14,36 +14,52 @@ import scala.collection.JavaConverters
 @Summary("Solves the Scrabble puzzle using JDK Streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(50)
+@Parameter(name = "input_path", defaultValue = "/shakespeare.txt")
+@Parameter(
+  name = "expected_result",
+  defaultValue = "120--QUICKLY,118--ZEPHYRS,114--QUALIFY-QUICKEN-QUICKER"
+)
+@Configuration(
+  name = "test",
+  settings = Array(
+    "input_path = /shakespeare-truncated.txt",
+    "expected_result = 120--QUICKLY,114--QUICKEN-QUICKER,108--BLAZING-PRIZING"
+  )
+)
+@Configuration(name = "jmh")
 final class Scrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var shakespearePath = "/shakespeare.txt"
+  private var inputPathParam: String = _
 
-  var scrabblePath = "/scrabble.txt"
+  private var expectedResultParam: Seq[String] = _
 
-  var scrabble: JavaScrabble = null
+  private val scrabblePath = "/scrabble.txt"
 
-  val expectedResultFull = Seq("120--QUICKLY", "118--ZEPHYRS", "114--QUALIFY-QUICKEN-QUICKER")
-  val expectedResultTest = Seq("120--QUICKLY", "114--QUICKEN-QUICKER", "108--BLAZING-PRIZING")
+  private var scrabble: JavaScrabble = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    if (c.functionalTest) {
-      shakespearePath = "/shakespeare-truncated.txt"
-    }
-    scrabble = new JavaScrabble(shakespearePath, scrabblePath)
+    inputPathParam = c.stringParameter("input_path")
+    expectedResultParam = c.stringParameter("expected_result").split(",").map(_.trim).toSeq
+    scrabble = new JavaScrabble(inputPathParam, scrabblePath)
   }
 
   override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val result = scrabble.run()
-    val expected = if (c.functionalTest) expectedResultTest else expectedResultFull
 
     () => {
       val actualWords = JavaScrabble.prepareForValidation(result)
-      ValidationException.throwIfNotEqual(expected.size, actualWords.size, "best words count")
+      ValidationException.throwIfNotEqual(
+        expectedResultParam.size,
+        actualWords.size,
+        "best words count"
+      )
 
-      for ((expected, actual) <- expected zip JavaConverters.asScalaBuffer(actualWords)) {
+      for ((expected, actual) <- expectedResultParam zip JavaConverters.asScalaBuffer(
+             actualWords
+           )) {
         ValidationException.throwIfNotEqual(expected, actual, "best words")
       }
     }

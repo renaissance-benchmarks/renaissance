@@ -122,22 +122,34 @@ trait KmeansUtilities {
 @Summary("Runs the K-Means algorithm using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(50)
+@Parameter(
+  name = "point_count",
+  defaultValue = "500000",
+  summary = "Number of data points to generate"
+)
+@Parameter(
+  name = "cluster_count",
+  defaultValue = "32",
+  summary = "Number of clusters to create"
+)
+@Configuration(name = "test", settings = Array("point_count = 5000", "cluster_count = 8"))
+@Configuration(name = "jmh")
 final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var numPoints = 500000
+  private var pointCountParam: Int = _
 
-  var k = 32
+  private var clusterCountParam: Int = _
 
-  val eta = 0.01
+  private val eta = 0.01
 
-  var points: Seq[Point] = null
+  private var points: Seq[Point] = _
 
-  var means: GenSeq[Point] = null
+  private var means: GenSeq[Point] = _
 
-  val EXPECTED_RESULT_FULL = Seq(
+  private val EXPECTED_RESULT_FULL = Seq(
     new Point(0.69, 0.54, 0.76),
     new Point(0.97, 1.09, 0.37),
     new Point(0.89, 1.0, 0.75),
@@ -172,7 +184,7 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
     new Point(1.11, 1.23, 0.23)
   )
 
-  val EXPECTED_RESULT_TEST = Seq(
+  private val EXPECTED_RESULT_TEST = Seq(
     new Point(0.91, 0.51, 0.66),
     new Point(0.78, 0.34, 0.41),
     new Point(1.18, 0.43, 0.71),
@@ -183,14 +195,22 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
     new Point(0.56, 1.05, 0.31)
   )
 
+  private var expectedResult: Seq[Point] = _
+
   override def setUpBeforeAll(c: BenchmarkContext) = {
-    if (c.functionalTest) {
-      numPoints = 5000
-      k = 8
+    pointCountParam = c.intParameter("point_count")
+    clusterCountParam = c.intParameter("cluster_count")
+
+    if (EXPECTED_RESULT_FULL.length == clusterCountParam) {
+      expectedResult = EXPECTED_RESULT_FULL
+    } else if (EXPECTED_RESULT_TEST.length == clusterCountParam) {
+      expectedResult = EXPECTED_RESULT_TEST
+    } else {
+      throw new AssertionError(s"no expected result for ${clusterCountParam} clusters")
     }
 
-    points = generatePoints(k, numPoints)
-    means = initializeMeans(k, points)
+    points = generatePoints(clusterCountParam, pointCountParam)
+    means = initializeMeans(clusterCountParam, points)
   }
 
   private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
@@ -209,7 +229,6 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val result = kMeans(points, means, eta)
-    val expected = if (c.functionalTest) EXPECTED_RESULT_TEST else EXPECTED_RESULT_FULL
-    () => validate(expected, result)
+    () => validate(expectedResult, result)
   }
 }

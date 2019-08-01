@@ -22,14 +22,22 @@ import scala.util.Random
 @Summary("Runs the ALS algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
+@Parameter(name = "rating_count", defaultValue = "20000")
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("rating_count = 500")),
+    new Configuration(name = "jmh")
+  )
+)
 final class Als extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var numRatings = 20000
+  private var ratingCountParam: Int = _
 
-  val THREAD_COUNT = 4
+  private val THREAD_COUNT = 4
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -40,18 +48,18 @@ final class Als extends Benchmark with SparkUtil {
 
   val bigInputFile = alsPath.resolve("bigfile.txt")
 
-  var sc: SparkContext = null
+  var sc: SparkContext = _
 
-  var factModel: MatrixFactorizationModel = null
+  var factModel: MatrixFactorizationModel = _
 
-  var ratings: RDD[Rating] = null
+  var ratings: RDD[Rating] = _
 
-  var tempDirPath: Path = null
+  var tempDirPath: Path = _
 
   def prepareInput() = {
     FileUtils.deleteDirectory(alsPath.toFile)
     val rand = new Random
-    val lines = (0 until numRatings).flatMap { user =>
+    val lines = (0 until ratingCountParam).flatMap { user =>
       (0 until 100).map { product =>
         val score = 1 + rand.nextInt(3) + rand.nextInt(3)
         s"$user::$product::$score"
@@ -71,11 +79,10 @@ final class Als extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    ratingCountParam = c.intParameter("rating_count")
+
     tempDirPath = c.generateTempDir("als")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
-    if (c.functionalTest) {
-      numRatings = 500
-    }
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
     prepareInput()
     loadData()
   }

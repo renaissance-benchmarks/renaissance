@@ -85,6 +85,8 @@ object Solver {
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(20)
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
 final class ScalaDoku extends Benchmark {
 
   /*
@@ -103,12 +105,12 @@ final class ScalaDoku extends Benchmark {
     Array(4, 9, 1, 6, 3, 2, 7, 8, 5)
   )
 
-  var puzzleWithAFewHoles: Array[Array[Option[Int]]] = null
+  var puzzleWithAFewHoles: Array[Array[Option[Int]]] = _
 
-  var puzzleWithOneHole: Array[Array[Option[Int]]] = null
+  var puzzleWithOneHole: Array[Array[Option[Int]]] = _
 
   private def preparePuzzleWithAFewHoles() = {
-    val result = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
+    val result = SOLVED_PUZZLE.map(row => row.map(i => Some(i): Option[Int]))
     result(0)(0) = None
     result(4)(8) = None
     result(7)(7) = None
@@ -116,7 +118,7 @@ final class ScalaDoku extends Benchmark {
   }
 
   private def preparePuzzleWithOneHole() = {
-    val result = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
+    val result = SOLVED_PUZZLE.map(row => row.map(i => Some(i): Option[Int]))
     result(2)(7) = None
     result
   }
@@ -136,7 +138,7 @@ final class ScalaDoku extends Benchmark {
   final class DokuResult(actual: Option[Array[Array[Int]]], expected: Array[Array[Int]])
     extends BenchmarkResult {
     override def validate(): Unit = {
-      if (actual == None)
+      if (actual.isEmpty)
         throw new ValidationException("Result array does not exist.")
 
       if (expected.deep != actual.get.deep)

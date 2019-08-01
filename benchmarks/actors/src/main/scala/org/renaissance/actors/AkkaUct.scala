@@ -13,23 +13,29 @@ import org.renaissance.License
 @Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
 @Licenses(Array(License.MIT))
 @Repetitions(24)
+@Parameter(name = "loop_count", defaultValue = "10")
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("loop_count = 2")),
+    new Configuration(name = "jmh", settings = Array("loop_count = 1"))
+  )
+)
 final class AkkaUct extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var numIterations: Int = 10
+  private var loopCountParam: Int = _
 
   private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    loopCountParam = c.intParameter("loop_count")
+
     bench = new UctAkkaActorBenchmark.UctAkkaActorBenchmark
     bench.initialize(new Array[String](0))
     AkkaActorState.initialize()
-
-    if (c.functionalTest) {
-      numIterations = 2
-    }
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
@@ -39,7 +45,7 @@ final class AkkaUct extends Benchmark {
   }
 
   override def runIteration(c: BenchmarkContext): BenchmarkResult = {
-    for (i <- 0 until numIterations) {
+    for (i <- 0 until loopCountParam) {
       bench.runIteration()
     }
 

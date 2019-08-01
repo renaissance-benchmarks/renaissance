@@ -13,21 +13,40 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.License
 
-import scala.collection.immutable.StringOps
-
 @Name("page-rank")
 @Group("apache-spark")
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
+    new Parameter(name = "input_line_count", defaultValue = "-1"),
+    new Parameter(name = "expected_rank_count", defaultValue = "598652")
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(
+      name = "test",
+      settings = Array("input_line_count = 5000", "expected_rank_count = 1661")
+    ),
+    new Configuration(name = "jmh")
+  )
+)
 final class PageRank extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var ITERATIONS = 2
+  private var threadCountParam: Int = _
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  private var inputLineCountParam: Int = _
+
+  private var expectedRankCountParam: Int = _
+
+  private val ITERATIONS = 2
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -36,35 +55,30 @@ final class PageRank extends Benchmark with SparkUtil {
 
   val outputPath = pageRankPath.resolve("output")
 
-  val inputFile = "web-berkstan.txt.zip"
+  val inputZipFile = "web-berkstan.txt.zip"
 
   val bigInputFile = pageRankPath.resolve("bigfile.txt")
 
-  var expectedRanksCount = 598652
+  var sc: SparkContext = _
 
-  var sc: SparkContext = null
+  var links: RDD[(String, Iterable[String])] = _
 
-  var links: RDD[(String, Iterable[String])] = null
+  var ranks: RDD[(String, Double)] = _
 
-  var ranks: RDD[(String, Double)] = null
-
-  var tempDirPath: Path = null
+  var tempDirPath: Path = _
 
   def prepareInput(c: BenchmarkContext) = {
     FileUtils.deleteDirectory(pageRankPath.toFile)
-    var text = ZipResourceUtil.readZipFromResourceToText(inputFile)
-    if (c.functionalTest) {
-      val MAX_LINE = 5000
-      val sublist =
-        for ((line, num) <- new StringOps(text).lines.zipWithIndex if num < MAX_LINE) yield line
-      text = sublist.toList.mkString("\n")
-      expectedRanksCount = 1661
+    var inputText = ZipResourceUtil.readZipFromResourceToText(inputZipFile)
+    if (inputLineCountParam >= 0) {
+      inputText = inputText.linesWithSeparators.take(inputLineCountParam).mkString
     }
-    FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
+
+    FileUtils.write(bigInputFile.toFile, inputText, StandardCharsets.UTF_8, true)
   }
 
   def loadData() = {
-    var lines = sc.textFile(bigInputFile.toString)
+    val lines = sc.textFile(bigInputFile.toString)
     links = lines
       .map { line =>
         val parts = line.split("\\s+")
@@ -73,12 +87,17 @@ final class PageRank extends Benchmark with SparkUtil {
       .distinct()
       .groupByKey()
       .cache()
-    ranks = links.mapValues(v => 1.0)
+
+//    ranks = links.mapValues(v => 1.0)
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    threadCountParam = c.intParameter("thread_count")
+    expectedRankCountParam = c.intParameter("expected_rank_count")
+    inputLineCountParam = c.intParameter("input_line_count")
+
     tempDirPath = c.generateTempDir("page_rank")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
+    sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
     prepareInput(c)
     loadData()
   }
@@ -94,7 +113,7 @@ final class PageRank extends Benchmark with SparkUtil {
     }
 
     // TODO: add more sophisticated validation
-    BenchmarkResult.simple("ranks count", expectedRanksCount, ranks.count())
+    BenchmarkResult.simple("ranks count", expectedRankCountParam, ranks.count())
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

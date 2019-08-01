@@ -12,19 +12,26 @@ import org.renaissance.License
 @Summary("Solves the phone mnemonics problem using JDK streams.")
 @Licenses(Array(License.MIT))
 @Repetitions(16)
+@Parameter(name = "coder_input", defaultValue = "72252762577225276257528249849874238824")
+@Parameter(name = "expected_hash", defaultValue = "72b6f7d83bc807c0")
+@Configuration(
+  name = "test",
+  settings = Array("coder_input = 7225276257722527", "expected_hash = b789f159108bb450")
+)
+@Configuration(name = "jmh")
 final class Mnemonics extends Benchmark {
 
-  var testInput: String = null
+  private var coderInputParam: String = _
 
-  var coder: MnemonicsCoderWithStream = null
+  private var expectedHashParam: String = _
+
+  private var coder: MnemonicsCoderWithStream = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    // TODO Unify Mnemonics and ParMnemonics setup
-    testInput = "72252762577225276257528249849874238824"
-    if (c.functionalTest) {
-      testInput = "7225276257722527"
-    }
+    coderInputParam = c.stringParameter("coder_input")
+    expectedHashParam = c.stringParameter("expected_hash")
 
+    // TODO Unify Mnemonics and ParMnemonics setup
     coder = new MnemonicsCoderWithStream(
       java.util.Arrays.asList(
         "Scala",
@@ -68,8 +75,7 @@ final class Mnemonics extends Benchmark {
   }
 
   override def runIteration(c: BenchmarkContext): BenchmarkResult = {
-    val stringSet = coder.translate(testInput)
-    val expected = if (c.functionalTest) "b789f159108bb450" else "72b6f7d83bc807c0"
-    return new HashingResult(expected, stringSet)
+    val result = coder.translate(coderInputParam)
+    new HashingResult(expectedHashParam, result)
   }
 }

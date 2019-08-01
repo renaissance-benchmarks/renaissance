@@ -79,7 +79,7 @@ class NaiveBayes extends Benchmark with SparkUtil {
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     tempDirPath = c.generateTempDir("naive_bayes")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "naive-bayes")
     prepareInput()
     loadData()
   }

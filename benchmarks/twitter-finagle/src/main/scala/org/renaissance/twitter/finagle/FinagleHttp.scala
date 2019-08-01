@@ -29,6 +29,30 @@ import org.renaissance.License
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(
+      name = "request_count",
+      defaultValue = "12000",
+      summary = "Number of requests sent during the execution of the benchmark"
+    ),
+    new Parameter(
+      name = "client_count",
+      defaultValue = "$cpu.count",
+      summary = "Number of clients that are simultaneously sending the requests"
+    )
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(
+      name = "test",
+      settings = Array("request_count = 150", "client_count = 2")
+    ),
+    new Configuration(name = "jmh")
+  )
+)
 final class FinagleHttp extends Benchmark {
 
   class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {
@@ -66,17 +90,17 @@ final class FinagleHttp extends Benchmark {
 
   /** Number of requests sent during the execution of the benchmark.
    */
-  var NUM_REQUESTS = 12000
+  private var requestCountParam: Int = _
 
   /** Number of clients that are simultaneously sending the requests.
    */
-  var NUM_CLIENTS = Runtime.getRuntime.availableProcessors
+  private var clientCountParam: Int = _
 
   /** Manually computed length of one request (see /json handler).
    */
-  val REQUEST_CONTENT_SIZE = 27
+  private val REQUEST_CONTENT_SIZE = 27
 
-  var server: ListeningServer = null
+  private var server: ListeningServer = _
 
   var port: Int = -1
 
@@ -84,10 +108,8 @@ final class FinagleHttp extends Benchmark {
   var threadBarrier: CountDownLatch = null
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    if (c.functionalTest) {
-      NUM_REQUESTS = 150
-      NUM_CLIENTS = 2
-    }
+    requestCountParam = c.intParameter("request_count")
+    clientCountParam = c.intParameter("client_count")
 
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")
@@ -130,7 +152,7 @@ final class FinagleHttp extends Benchmark {
     println(
       "finagle-http on :%d spawning %d client and %s server workers.".format(
         port,
-        NUM_CLIENTS,
+        clientCountParam,
         System.getProperty("com.twitter.finagle.netty4.numWorkers", "default number of")
       )
     )
@@ -142,17 +164,17 @@ final class FinagleHttp extends Benchmark {
 
   override def beforeIteration(c: BenchmarkContext): Unit = {
     //
-    // Use a CountDownLatch initialized to NUM_CLIENTS + 1 to start the
+    // Use a CountDownLatch initialized to (clientCount + 1) to start the
     // threads (outside the measured loop) and make them block until the
     // measured operation is executed. In the measured operation, we provide
     // the one last countDown() invocation which unblocks all the threads
     // and lets the start working simultaneously.
     //
-    threadBarrier = new CountDownLatch(NUM_CLIENTS + 1)
+    threadBarrier = new CountDownLatch(clientCountParam + 1)
 
-    threads = new Array[WorkerThread](NUM_CLIENTS)
+    threads = new Array[WorkerThread](clientCountParam)
     for (i <- threads.indices) {
-      threads(i) = new WorkerThread(port, threadBarrier, NUM_REQUESTS)
+      threads(i) = new WorkerThread(port, threadBarrier, requestCountParam)
       threads(i).setName(s"finagle-http-worker-$i")
       threads(i).start()
     }
@@ -170,7 +192,7 @@ final class FinagleHttp extends Benchmark {
 
     BenchmarkResult.simple(
       "total request length",
-      NUM_CLIENTS * NUM_REQUESTS * REQUEST_CONTENT_SIZE,
+      clientCountParam * requestCountParam * REQUEST_CONTENT_SIZE,
       totalLength
     )
   }

@@ -28,17 +28,48 @@ import scala.io.Source
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(name = "input_file", defaultValue = "/ratings.csv"),
+    new Parameter(name = "als_ranks", defaultValue = "8, 12"),
+    new Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0"),
+    new Parameter(name = "als_iterations", defaultValue = "10, 20")
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(
+      name = "test",
+      settings = Array(
+        "input_file = /ratings-small.csv",
+        "als_ranks = 12",
+        "als_lambdas = 10.0",
+        "als_iterations = 10"
+      )
+    ),
+    new Configuration(name = "jmh")
+  )
+)
 final class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  val THREAD_COUNT = 4
+  private val THREAD_COUNT = 4
+
+  private var inputFileParam: String = _
+
+  private var alsRanksParam: List[Int] = _
+
+  private var alsLambdasParam: List[Double] = _
+
+  private var alsIterationsParam: List[Int] = _
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  var sc: SparkContext = null
+  var sc: SparkContext = _
 
   val movieLensPath = Paths.get("target", "movie-lens")
 
@@ -48,36 +79,26 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   val moviesInputFile = "/movies.csv"
 
-  var ratingsInputFile = "/ratings.csv"
-
-  val ratingsSmallInputFile = "/ratings-small.csv"
-
   val bigFilesPath = movieLensPath.resolve("bigfiles")
 
   val moviesBigFile = bigFilesPath.resolve("movies.txt")
 
   val ratingsBigFile = bigFilesPath.resolve("ratings.txt")
 
-  var tempDirPath: Path = null
-
-  var alsRanks = List(8, 12)
-
-  var alsLambdas = List(0.1, 10.0)
-
-  var alsNumIters = List(10, 20)
+  var tempDirPath: Path = _
 
   class MovieLensHelper {
-    var movies: Map[Int, String] = null
-    var ratings: RDD[(Long, Rating)] = null
-    var personalRatings: Seq[Rating] = null
-    var personalRatingsRDD: RDD[Rating] = null
-    var training: RDD[Rating] = null
-    var validation: RDD[Rating] = null
-    var test: RDD[Rating] = null
+    var movies: Map[Int, String] = _
+    var ratings: RDD[(Long, Rating)] = _
+    var personalRatings: Seq[Rating] = _
+    var personalRatingsRDD: RDD[Rating] = _
+    var training: RDD[Rating] = _
+    var validation: RDD[Rating] = _
+    var test: RDD[Rating] = _
     var numTraining: Long = 0
     var numValidation: Long = 0
     var numTest: Long = 0
-    var bestModel: Option[MatrixFactorizationModel] = null
+    var bestModel: Option[MatrixFactorizationModel] = _
     var bestRank = 0
     var bestLambda = -1.0
     var bestNumIter = -1
@@ -87,21 +108,28 @@ final class MovieLens extends Benchmark with SparkUtil {
     var numMovies: Long = 0
 
     def loadPersonalRatings(inputFileURL: URL) = {
-      val lines = Source.fromURL(inputFileURL).getLines()
+      val source = Source.fromURL(inputFileURL)
 
-      val personalRatingsIter = lines
-        .map { line =>
-          val fields = line.split(",")
-          Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
+      try {
+        val personalRatingsIter = source
+          .getLines()
+          .map { line =>
+            val fields = line.split(",")
+            Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
+          }
+          .filter(_.rating > 0.0)
+
+        if (personalRatingsIter.isEmpty) {
+          sys.error("No ratings provided.")
+        } else {
+          personalRatings = personalRatingsIter.toSeq
         }
-        .filter(_.rating > 0.0)
-      if (personalRatingsIter.isEmpty) {
-        sys.error("No ratings provided.")
-      } else {
-        personalRatings = personalRatingsIter.toSeq
-      }
 
-      personalRatingsRDD = sc.parallelize(personalRatings, 1)
+        personalRatingsRDD = sc.parallelize(personalRatings, 1)
+
+      } finally {
+        source.close()
+      }
     }
 
     def getFilteredRDDFromPath(inputPath: Path): RDD[String] = {
@@ -246,16 +274,15 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    inputFileParam = c.stringParameter("input_file")
+    alsRanksParam = c.stringParameter("als_ranks").split(",").map(_.toInt).toList
+    alsLambdasParam = c.stringParameter("als_lambdas").split(",").map(_.toDouble).toList
+    alsIterationsParam = c.stringParameter("als_iterations").split(",").map(_.toInt).toList
+
     tempDirPath = c.generateTempDir("movie_lens")
     setUpLogger()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, c.benchmarkName())
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "movie-lens")
     sc.setCheckpointDir(checkpointPath.toString)
-    if (c.functionalTest) {
-      ratingsInputFile = ratingsSmallInputFile
-      alsRanks = List(12)
-      alsLambdas = List(10.0)
-      alsNumIters = List(10)
-    }
   }
 
   def writeResourceToFile(resourceStream: InputStream, outputPath: Path) = {
@@ -268,7 +295,7 @@ final class MovieLens extends Benchmark with SparkUtil {
 
     helper.loadPersonalRatings(this.getClass.getResource(personalRatingsInputFile))
 
-    writeResourceToFile(this.getClass.getResourceAsStream(ratingsInputFile), ratingsBigFile)
+    writeResourceToFile(this.getClass.getResourceAsStream(inputFileParam), ratingsBigFile)
     helper.loadRatings(ratingsBigFile)
 
     writeResourceToFile(this.getClass.getResourceAsStream(moviesInputFile), moviesBigFile)
@@ -287,7 +314,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
     // last digit of the timestamp, add myRatings to train, and cache them.
     helper.splitRatings(4, 6, 8)
-    helper.trainModels(alsRanks, alsLambdas, alsNumIters)
+    helper.trainModels(alsRanksParam, alsLambdasParam, alsIterationsParam)
     val recommendations = helper.recommendMovies()
 
     // TODO: add proper validation

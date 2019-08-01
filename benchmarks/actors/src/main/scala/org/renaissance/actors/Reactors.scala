@@ -1,8 +1,14 @@
 package org.renaissance.actors
 
-import io.reactors._
-import org.renaissance._
+import io.reactors.Channel
+import io.reactors.Reactor
+import io.reactors.ReactorPreempted
+import io.reactors.ReactorSystem
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 
 import scala.concurrent.Await
 import scala.concurrent.Promise
@@ -16,6 +22,14 @@ import scala.util.Random
 )
 @Licenses(Array(License.MIT))
 @Repetitions(10)
+@Parameter(name = "scaling_factor", defaultValue = "1.0")
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("scaling_factor = 0.1")),
+    new Configuration(name = "jmh")
+  )
+)
 final class Reactors extends Benchmark {
 
   // Code based on https://github.com/reactors-io/reactors
@@ -24,21 +38,18 @@ final class Reactors extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var scalingFactor: Double = 1
+  private var scalingFactorParam: Double = _
 
   private var system: ReactorSystem = _
 
   private var expectedFibonacci: Int = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    scalingFactorParam = c.doubleParameter("scaling_factor")
+
     // Instantiate the default reactor system used throughout the benchmark.
     system = ReactorSystem.default("bench-system")
-
-    if (c.functionalTest) {
-      scalingFactor = 0.1
-    }
-
-    expectedFibonacci = Fibonacci.computeExpected((28 * scalingFactor).intValue())
+    expectedFibonacci = Fibonacci.computeExpected((28 * scalingFactorParam).intValue())
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
@@ -53,16 +64,16 @@ final class Reactors extends Benchmark {
     // TODO: The use of scaling factor is not strictly correct with Fibonacci and Roundabout. For these benchmarks, the work done is not a linear function of the input argument.
 
     BenchmarkResult.compound(
-      Baseline.run(system, (1000000 * scalingFactor).intValue()),
-      BigBench.run(system, (4000 * scalingFactor).intValue()),
-      CountingActor.run(system, (8000000 * scalingFactor).intValue()),
-      Fibonacci.run(system, (28 * scalingFactor).intValue(), expectedFibonacci),
-      ForkJoinCreation.run(system, (250000 * scalingFactor).intValue()),
-      ForkJoinThroughput.run(system, (21000 * scalingFactor).intValue()),
-      PingPong.run(system, (1500000 * scalingFactor).intValue()),
-      StreamingPingPong.run(system, (5000000 * scalingFactor).intValue()),
-      Roundabout.run(system, (750000 * scalingFactor).intValue()),
-      ThreadRing.run(system, (2500000 * scalingFactor).intValue())
+      Baseline.run(system, (1000000 * scalingFactorParam).intValue()),
+      BigBench.run(system, (4000 * scalingFactorParam).intValue()),
+      CountingActor.run(system, (8000000 * scalingFactorParam).intValue()),
+      Fibonacci.run(system, (28 * scalingFactorParam).intValue(), expectedFibonacci),
+      ForkJoinCreation.run(system, (250000 * scalingFactorParam).intValue()),
+      ForkJoinThroughput.run(system, (21000 * scalingFactorParam).intValue()),
+      PingPong.run(system, (1500000 * scalingFactorParam).intValue()),
+      StreamingPingPong.run(system, (5000000 * scalingFactorParam).intValue()),
+      Roundabout.run(system, (750000 * scalingFactorParam).intValue()),
+      ThreadRing.run(system, (2500000 * scalingFactorParam).intValue())
     )
   }
 }

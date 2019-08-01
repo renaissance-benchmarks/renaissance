@@ -11,41 +11,46 @@ import org.renaissance.License
 @Summary("Runs a genetic algorithm using the Jenetics library and futures.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(50)
+@Parameter(name = "chromosome_count", defaultValue = "50")
+@Parameter(name = "generation_count", defaultValue = "5000")
+@Configuration(
+  name = "test",
+  settings = Array("chromosome_count = 10", "generation_count = 200")
+)
+@Configuration(name = "jmh")
 final class FutureGenetic extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  val threadCount = 2
+  private var chromosomeCountParam: Int = _
 
-  val randomSeed = 7
+  private var generationCountParam: Int = _
 
-  var geneMinValue = -2000
+  private val THREAD_COUNT = 2
 
-  var geneMaxValue = 2000
+  private val RANDOM_SEED = 7
 
-  var geneCount = 200
+  private val GENE_MIN_VALUE = -2000
 
-  var chromosomeCount = 50
+  private val GENE_MAX_VALUE = 2000
 
-  var generationCount = 5000
+  private val GENE_COUNT = 200
 
-  var benchmark: JavaJenetics = null
+  private var benchmark: JavaJenetics = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    if (c.functionalTest) {
-      chromosomeCount = 10
-      generationCount = 200
-    }
+    chromosomeCountParam = c.intParameter("chromosome_count")
+    generationCountParam = c.intParameter("generation_count")
 
     benchmark = new JavaJenetics(
-      geneMinValue,
-      geneMaxValue,
-      geneCount,
-      chromosomeCount,
-      generationCount,
-      threadCount,
-      randomSeed
+      GENE_MIN_VALUE,
+      GENE_MAX_VALUE,
+      GENE_COUNT,
+      chromosomeCountParam,
+      generationCountParam,
+      THREAD_COUNT,
+      RANDOM_SEED
     )
 
     benchmark.setupBeforeAll()

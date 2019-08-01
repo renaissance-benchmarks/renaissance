@@ -38,6 +38,19 @@ import scala.util.hashing.byteswap32
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(90)
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(name = "request_count", defaultValue = "1250"),
+    new Parameter(name = "user_count", defaultValue = "5000")
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("request_count = 10", "user_count = 10")),
+    new Configuration(name = "jmh")
+  )
+)
 final class FinagleChirper extends Benchmark {
 
   class Master extends Service[Request, Response] {
@@ -209,7 +222,7 @@ final class FinagleChirper extends Benchmark {
           }
         case "/api/reset" =>
           feeds.clear()
-          for (username <- usernames) {
+          for (username <- userNames) {
             val hash = byteswap32(username.length + username.charAt(0))
             val offset = math.abs(hash) % (messages.length - startingFeedSize)
             val startingMessages = messages.slice(offset, offset + startingFeedSize)
@@ -289,7 +302,7 @@ final class FinagleChirper extends Benchmark {
       val feedQuery = "/api/feed?username=" + username
       val offset = byteswap32(username.charAt(username.length - 1))
       var i = 0
-      while (i < requestCount) {
+      while (i < requestCountParam) {
         val uid = math.abs(byteswap32(offset * i))
         if (uid % postPeriodicity == 0) {
           postCount += 1
@@ -357,8 +370,9 @@ final class FinagleChirper extends Benchmark {
   val caches = new mutable.ArrayBuffer[ListeningServer]
   var cachePorts = new mutable.ArrayBuffer[Int]
   val startingFeedSize = 80
-  var requestCount: Int = 1250
-  var userCount: Int = 5000
+
+  private var requestCountParam: Int = _
+  private var userCountParam: Int = _
 
   val usernameBases = Seq(
     "johnny",
@@ -400,14 +414,16 @@ final class FinagleChirper extends Benchmark {
     "kunglao",
     "yvette"
   )
-  lazy val usernames = for (i <- 0 until userCount)
-    yield usernameBases(i % usernameBases.length) + i
+
+  private var userNames: Seq[String] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    if (c.functionalTest) {
-      requestCount = 10
-      userCount = 10
-    }
+    requestCountParam = c.intParameter("request_count")
+    userCountParam = c.intParameter("user_count")
+
+    userNames = for (i <- 0 until userCountParam)
+      yield usernameBases(i % usernameBases.length) + i
+
     master = Http.serve(":0", new Master)
     /* TODO
     Implement an unified mechanism of assigning ports to benchmarks.
@@ -439,7 +455,7 @@ final class FinagleChirper extends Benchmark {
 
   override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val clients = for (i <- 0 until clientCount)
-      yield new Client(usernames(i % usernames.length) + i)
+      yield new Client(userNames(i % userNames.length) + i)
     clients.foreach(_.start())
     clients.foreach(_.join())
 

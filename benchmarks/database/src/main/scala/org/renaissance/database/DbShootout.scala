@@ -16,6 +16,14 @@ import org.renaissance.License
 @Summary("Executes a shootout test using several in-memory databases.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(16)
+@Parameter(name = "rw_entry_count", defaultValue = "500000")
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("rw_entry_count = 10000")),
+    new Configuration(name = "jmh")
+  )
+)
 final class DbShootout extends Benchmark {
 
   /**
@@ -28,7 +36,7 @@ final class DbShootout extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var numEntriesToReadWrite: Int = 500000
+  private var readWriteEntryCountParam: Int = _
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -55,28 +63,25 @@ final class DbShootout extends Benchmark {
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     tempDirPath = c.generateTempDir("db_shootout")
-
-    if (c.functionalTest) {
-      numEntriesToReadWrite = 10000
-    }
+    readWriteEntryCountParam = c.intParameter("rw_entry_count")
 
     mapDb = new MapDb
     mapDbReader = new MapDb.Reader
     mapDbWriter = new MapDb.Writer
-    mapDbReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
-    mapDbWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    mapDbReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
+    mapDbWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
 
     chronicle = new Chronicle
     chronicleReader = new Chronicle.Reader
     chronicleWriter = new Chronicle.Writer
-    chronicleReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
-    chronicleWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    chronicleReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
+    chronicleWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
 
     mvStore = new MvStore
     mvStoreReader = new MvStore.Reader
     mvStoreWriter = new MvStore.Writer
-    mvStoreReader.setup(tempDirPath.toFile, numEntriesToReadWrite)
-    mvStoreWriter.setup(tempDirPath.toFile, numEntriesToReadWrite)
+    mvStoreReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
+    mvStoreWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
