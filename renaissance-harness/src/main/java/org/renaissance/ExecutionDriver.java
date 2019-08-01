@@ -30,6 +30,7 @@ final class ExecutionDriver implements BenchmarkContext {
     Benchmark benchmark, EventDispatcher dispatcher
   ) {
     final ExecutionPolicy policy = config.policyFactory.create(config, benchInfo);
+    final String configuration = config.configuration;
 
     benchmark.setUpBeforeAll(this);
 
@@ -40,14 +41,14 @@ final class ExecutionDriver implements BenchmarkContext {
         operationIndex = 0;
 
         do {
-          printStartInfo(operationIndex, benchInfo);
+          printStartInfo(operationIndex, benchInfo, configuration);
 
           final long durationNanos = executeOperation(
             operationIndex, benchInfo.name(), benchmark,
             dispatcher, policy.isLastOperation()
           );
 
-          printEndInfo(operationIndex, benchInfo, durationNanos);
+          printEndInfo(operationIndex, benchInfo, configuration, durationNanos);
           policy.registerOperation(operationIndex, durationNanos);
 
           operationIndex++;
@@ -98,34 +99,40 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  void printStartInfo(int index, BenchmarkInfo benchInfo) {
+  void printStartInfo(int index, BenchmarkInfo benchInfo, String confName) {
     System.out.printf(
-      "====== %s (%s), iteration %d started ======\n",
-      benchInfo.name(), benchInfo.group(), index
+      "====== %s (%s) [%s], iteration %d started ======\n",
+      benchInfo.name(), benchInfo.group(), confName ,index
     );
   }
 
 
-  void printEndInfo(int index, BenchmarkInfo benchInfo, long durationNanos) {
+  void printEndInfo(int index, BenchmarkInfo benchInfo, String confName, long durationNanos) {
     final double durationMillis = durationNanos / 1e6;
 
     System.out.printf(
-      "====== %s (%s), iteration %d completed (%.3f ms) ======\n",
-      benchInfo.name(), benchInfo.group(), index, durationMillis
+      "====== %s (%s) [%s], iteration %d completed (%.3f ms) ======\n",
+      benchInfo.name(), benchInfo.group(), confName, index, durationMillis
     );
   }
 
   // BenchmarkContext methods
 
   @Override
+  public int intParameter(String name) {
+    return Integer.parseInt(stringParameter(name));
   }
 
 
   @Override
+  public double doubleParameter(String name) {
+    return Double.parseDouble(stringParameter(name));
   }
 
 
   @Override
+  public String stringParameter(String name) {
+    return benchInfo.parameter(config.configuration, name);
   }
 
 }

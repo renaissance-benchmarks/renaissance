@@ -78,15 +78,16 @@ public final class BenchmarkRegistry {
 
 
   private BenchmarkInfo createBenchmarkInfo(final Properties properties, String name) {
-    BiFunction<String, String, String> getter = (key, defaultValue) -> {
-      return properties.getProperty("benchmark." + name + "." + key, defaultValue);
-    };
+    BiFunction<String, String, String> getter = (key, defaultValue) ->
+      properties.getProperty("benchmark." + name + "." + key, defaultValue);
 
     Function<String, String> mapper = value -> {
       if (value.startsWith("$")) {
         String tag = value.substring(1);
         if ("cpu.count".equals(tag)) {
           return Integer.toString(Runtime.getRuntime().availableProcessors());
+        } else {
+          throw new NoSuchElementException("unknown computed-value tag: "+ value);
         }
       }
 
@@ -112,7 +113,7 @@ public final class BenchmarkRegistry {
   ) {
     Pattern pattern = Pattern.compile(
       // Match "benchmark.<name>.parameter.<configuration>.<parameter>.value
-      "^benchmark[.]" + name + "[.]parameter[.](?<conf>[^.]+)[.](?<param>[^.]+)[.]value"
+      "^benchmark[.]" + name + "[.]configuration[.](?<conf>[^.]+)[.](?<param>[^.]+)"
     );
 
     return properties.stringPropertyNames().stream()

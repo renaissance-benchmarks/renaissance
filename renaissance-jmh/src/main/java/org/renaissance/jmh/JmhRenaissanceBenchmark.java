@@ -56,14 +56,20 @@ public abstract class JmhRenaissanceBenchmark {
   private BenchmarkContext createBenchmarkContext(BenchmarkInfo benchInfo) {
     return new BenchmarkContext() {
       @Override
+      public int intParameter(String name) {
+        return Integer.parseInt(stringParameter(name));
       }
 
 
       @Override
+      public double doubleParameter(String name) {
+        return Double.parseDouble(stringParameter(name));
       }
 
 
       @Override
+      public String stringParameter(String name) {
+        return benchInfo.parameter("jmh", name);
       }
 
     };

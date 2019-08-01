@@ -1,6 +1,7 @@
 package org.renaissance.util;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 public final class BenchmarkInfo {
 
@@ -52,26 +53,44 @@ public final class BenchmarkInfo {
     public int repetitions() { return repetitions; }
 
 
+    public boolean hasConfiguration(String name) {
+      return configurations.containsKey(name);
+    }
+
+
     public String[] configurationNames() {
       return configurations.keySet().toArray(new String[0]);
     }
 
 
     public String[] parameterNames(String confName) {
+      return getConfiguration(confName).keySet().toArray(new String[0]);
+    }
+
+
+    private Map<String, String> getConfiguration(String confName) {
       if (configurations.containsKey(confName)) {
-        return configurations.get(confName).keySet().toArray(new String[0]);
+        return configurations.get(confName);
       } else {
-        return null;
+        throw new NoSuchElementException(String.format(
+          "no such configuration in benchmark %s: %s", name, confName
+        ));
       }
     }
 
+
     public String parameter(String confName, String paramName) {
-      if (configurations.containsKey(confName)) {
-        return configurations.get(confName).get(paramName);
+      final Map<String, String> conf = getConfiguration(confName);
+      if (conf.containsKey(paramName)) {
+        return conf.get(paramName);
       } else {
-        return null;
+        throw new NoSuchElementException(String.format(
+          "no such parameter in benchmark %s configuration %s: %s",
+          name, confName, paramName
+        ));
       }
     }
+
 
     public String[] summaryWords() {
       return summary.split("\\s+");
@@ -81,4 +100,5 @@ public final class BenchmarkInfo {
     public String printableLicenses() {
       return String.join(", ", licenses);
     }
+
 }

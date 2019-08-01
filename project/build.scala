@@ -27,8 +27,12 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     sys.error("unreachable")
   }
 
-  private def getAnnotation[T <: Annotation](annotationClass: Class[T]) = {
+  private def getAnnotation[A <: Annotation](annotationClass: Class[A]) = {
     benchClass.getDeclaredAnnotation(annotationClass)
+  }
+
+  private def getAnnotations[A <: Annotation](annotationClass: Class[A]) = {
+    benchClass.getDeclaredAnnotationsByType(annotationClass)
   }
 
   def className = benchClass.getName
@@ -78,39 +82,54 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
   }
 
   def parameters(): Map[String, String] = {
-    val result = new mutable.HashMap[String, String]
+    getAnnotations(classOf[Parameter])
+      .flatMap(
+        p =>
+          Array(
+            (s"parameter.${p.name}.default" -> p.defaultValue),
+            (s"parameter.${p.name}.summary" -> p.summary)
+          )
+      )
+      .toMap
+  }
 
-    val configs = getAnnotation(classOf[Configurations])
-    if (configs != null) {
-      val params = getAnnotation(classOf[Parameters])
+  private def parameterDefaults(confName: String)= {
+    getAnnotations(classOf[Parameter])
+      .map(
+        p => s"configuration.${confName}.${p.name}" -> p.defaultValue()
+      )
+      .toMap
+  }
 
-      for (config <- configs.value) {
-        val confBase = s"parameter.${config.name}";
+  def configurations() : Map[String, String] = {
+    //
+    // Create default configuration and initialize each configuration
+    // using the default values parameters. Then apply configuration-specific
+    // settings that override the defaults, but only for known parameters.
+    //
+    val result = mutable.Map[String,String]()
+    result ++= parameterDefaults("default")
 
-        // Set default parameter values first
-        if (params != null) {
-          for (param <- params.value) {
-            val keyBase = s"${confBase}.${param.name}"
-            result.put(s"${keyBase}.value", param.defaultValue)
-            result.put(s"${keyBase}.summary", param.summary)
-          }
+    for (conf <- getAnnotations(classOf[Configuration])) {
+      result ++= parameterDefaults(conf.name())
+
+      for (setting <- conf.settings) {
+        val elements = setting.split("=").map(x => x.trim)
+        if (elements.length != 2) {
+          throw new IllegalArgumentException(
+            s"malformed setting in configuration '${conf.name}': ${setting}"
+          )
         }
 
-        // Override with configuration-specific values, but only
-        // allow to update existing keys. This ensures that only
-        // known keys will be overridden.
-        for (setting <- config.settings) {
-          val elements = setting.split("=").map(x => x.trim)
-          assert(elements.length == 2)
-
-          val (name, value) = (elements(0), elements(1))
-          val key = s"${confBase}.${name}.value"
-          if (!result.contains(key)) {
-            throw new AssertionError(s"undefined parameter: ${name}")
-          }
-
-          result.put(key, value)
+        val (name, value) = (elements(0), elements(1))
+        val paramKey = s"configuration.${conf.name}.${name}"
+        if (!result.contains(paramKey)) {
+          throw new NoSuchElementException(
+            s"unknown parameter in configuration '${conf.name}': ${name}"
+          )
         }
+
+        result.put(paramKey, value)
       }
     }
 
@@ -152,7 +171,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
       "distro" -> distro.toString
-    ) ++ parameters
+    ) ++ parameters ++ configurations()
   }
 
 }
