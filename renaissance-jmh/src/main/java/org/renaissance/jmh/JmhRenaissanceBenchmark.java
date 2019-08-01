@@ -6,9 +6,6 @@ import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.util.BenchmarkInfo;
 import org.renaissance.util.BenchmarkRegistry;
-import org.renaissance.util.DirUtils;
-
-import java.nio.file.Path;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -59,54 +56,16 @@ public abstract class JmhRenaissanceBenchmark {
   private BenchmarkContext createBenchmarkContext(BenchmarkInfo benchInfo) {
     return new BenchmarkContext() {
       @Override
-      public boolean functionalTest() {
-        return false;
-      }
-
-      @Override
-      public String benchmarkName() {
-        return benchInfo.name();
       }
 
 
       @Override
-      public String benchmarkGroup() {
-        return benchInfo.group();
       }
 
 
       @Override
-      public int operationIndex() {
-        return 0;
       }
 
-
-      @Override
-      public Path getTempDir(String name) {
-        throw new UnsupportedOperationException("not implemented yet");
-      }
-
-
-      @Override
-      public Path generateTempDir(String name) {
-        return DirUtils.generateTempDir(name);
-      }
-
-
-      @Override
-      public void deleteTempDir(Path dir) {
-        DirUtils.deleteTempDir(dir);
-      }
-
-
-      volatile Object blackHole;
-
-      @Override
-      public <T> T blackHole(T value) {
-        blackHole = value;
-        blackHole = null;
-        return value;
-      }
     };
   }
 

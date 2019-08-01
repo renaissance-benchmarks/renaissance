@@ -1,5 +1,7 @@
 package org.renaissance;
 
+import org.renaissance.util.DirUtils;
+
 import java.nio.file.Path;
 
 /**
@@ -9,15 +11,7 @@ import java.nio.file.Path;
  */
 public interface BenchmarkContext {
 
-  // TODO Remove when we get configurations working.
-  @Deprecated
-  boolean functionalTest();
 
-  String benchmarkName();
-
-  String benchmarkGroup();
-
-  int operationIndex();
 
   //
   // File system operations
@@ -25,16 +19,18 @@ public interface BenchmarkContext {
   // TODO: Allow benchmarks to ask for per-bench/per-operation temp directories
   // TODO: Delete temp directories automatically after bench/operation finishes
   //
-  Path getTempDir(String name);
+  default Path getTempDir(String name) {
+    throw new UnsupportedOperationException("not implemented yet");
+  }
 
   @Deprecated
-  Path generateTempDir(String name);
+  default Path generateTempDir(String name) {
+    return DirUtils.generateTempDir(name);
+  }
 
   @Deprecated
-  void deleteTempDir(Path dir);
-
-  @Deprecated
-  // TODO: Remove when all benchmarks return proper results
-  <T> T blackHole(final T value);
+  default void deleteTempDir(Path dir) {
+    DirUtils.deleteTempDir(dir);
+  }
 
 }

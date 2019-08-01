@@ -2,9 +2,6 @@ package org.renaissance;
 
 import org.renaissance.harness.ExecutionPolicy;
 import org.renaissance.util.BenchmarkInfo;
-import org.renaissance.util.DirUtils;
-
-import java.nio.file.Path;
 
 /**
  * Benchmark execution driver. Captures the sequence of actions performed
@@ -121,52 +118,14 @@ final class ExecutionDriver implements BenchmarkContext {
   // BenchmarkContext methods
 
   @Override
-  public boolean functionalTest() {
-    return config.functionalTest;
-  }
-
-
-  volatile Object blackHole;
-
-  @Override
-  public <T> T blackHole(final T value) {
-    blackHole = value;
-    blackHole = null;
-    return value;
   }
 
 
   @Override
-  public String benchmarkName() {
-    return benchInfo.name();
-  }
-
-  @Override
-  public String benchmarkGroup() {
-    return benchInfo.group();
-  }
-
-  @Override
-  public int operationIndex() {
-    return operationIndex;
-  }
-
-  @Override
-  public Path getTempDir(String name) {
-    return DirUtils.generateTempDir(name);
   }
 
 
   @Override
-  public Path generateTempDir(String name) {
-    return DirUtils.generateTempDir(name);
-  }
-
-
-  @Override
-  public void deleteTempDir(Path dir) {
-    DirUtils.deleteTempDir(dir);
   }
 
 }
-
