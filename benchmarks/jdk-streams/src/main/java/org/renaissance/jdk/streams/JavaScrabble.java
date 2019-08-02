@@ -17,24 +17,13 @@
  */
 package org.renaissance.jdk.streams;
 
-
 import org.apache.commons.io.IOUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.function.Function;
-import java.util.function.IntUnaryOperator;
-import java.util.function.Predicate;
-import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
+import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,32 +31,40 @@ import java.util.stream.Stream;
 
 
 public class JavaScrabble {
-  public static final int[] letterScores = {
+  private static final int[] letterScores = {
     1, 3, 3, 2, 1, 4, 2, 4, 1, 8, 5, 1, 3, 1, 1, 3, 10, 1, 1, 1, 1, 4, 4, 8, 4, 10
   };
 
-  public static final int[] scrabbleAvailableLetters = {
+  private static final int[] scrabbleAvailableLetters = {
     9, 2, 2, 1, 12, 2, 3, 2, 9, 1, 1, 4, 2, 6, 8, 2, 1, 6, 4, 6, 4, 2, 2, 1, 2, 1
   };
 
-  public static String[] allWords;
+  private static String[] allWords;
 
-  public static Set<String> scrabbleWords;
+  private static Set<String> scrabbleWords;
 
-  public JavaScrabble(String shakespearePath, String scrabblePath) throws RuntimeException {
+  public JavaScrabble(
+    String shakespearePath, String scrabblePath
+  ) throws RuntimeException {
     try {
-      byte[] shakespeareBytes =
-        IOUtils.toByteArray(JavaScrabble.class.getResourceAsStream(shakespearePath));
-      allWords = new String(shakespeareBytes).split("\\s+");
+      allWords = resourceAsWords(shakespearePath);
+      scrabbleWords = new HashSet<>(Arrays.asList(
+        resourceAsWords(scrabblePath)
+      ));
 
-      byte[] scrabbleBytes =
-        IOUtils.toByteArray(JavaScrabble.class.getResourceAsStream(scrabblePath));
-      String[] scrabbleWordArray = new String(scrabbleBytes).split("\\s+");
-      scrabbleWords = new HashSet<>(Arrays.asList(scrabbleWordArray));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
+
+
+  private String[] resourceAsWords(String resource) throws IOException {
+    return IOUtils.toString(
+      JavaScrabble.class.getResourceAsStream(resource),
+      StandardCharsets.UTF_8
+    ).split("\\s+");
+  }
+
 
   public List<Entry<Integer, List<String>>> run() {
     // Function to compute the score of a given word
@@ -93,14 +90,9 @@ public class JavaScrabble {
         );
 
     // number of blanks for a given letter
-    ToLongFunction<Entry<Integer, Long>> blank =
-      entry -> {
-        return Long.max(
-          0L,
-          entry.getValue() -
-            scrabbleAvailableLetters[entry.getKey() - 'A']
-        );
-      };
+    ToLongFunction<Entry<Integer, Long>> blank = entry -> Long.max(
+      0L,entry.getValue() - scrabbleAvailableLetters[entry.getKey() - 'A']
+    );
 
     // number of blanks for a given word
     Function<String, Long> nBlanks =
@@ -155,13 +147,9 @@ public class JavaScrabble {
         );
 
     // best key / value pairs
-    List<Entry<Integer, List<String>>> finalList =
-      buildHistoOnScore.apply(score3).entrySet()
-        .stream()
-        .limit(3)
-        .collect(Collectors.toList());
-
-    return finalList;
+    return buildHistoOnScore.apply(score3).entrySet().stream()
+      .limit(3)
+      .collect(Collectors.toList());
   }
 
   private final static Pattern nonAlphabetRegex = Pattern.compile(".*[^A-Z].*");
@@ -170,13 +158,11 @@ public class JavaScrabble {
     return !nonAlphabetRegex.matcher(word).find();
   }
 
-  public static Stream<String> shakespeareWordStream() {
+  private static Stream<String> shakespeareWordStream() {
     return Arrays.stream(allWords)
       .parallel()
-      .map(word -> {
-        return word.toUpperCase();
-      })
-      .filter(word -> isAlphabetical(word));
+      .map(String::toUpperCase)
+      .filter(JavaScrabble::isAlphabetical);
   }
   
   public static List<String> prepareForValidation(List<Entry<Integer, List<String>>> bestWords) {
@@ -190,6 +176,6 @@ public class JavaScrabble {
   }
   
   private static List<String> sortedUniqueWords(List<String> words) {
-    return new ArrayList<String>(new TreeSet<String>(words));
+    return new ArrayList<>(new TreeSet<>(words));
   }
 }
