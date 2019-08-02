@@ -34,6 +34,16 @@ public interface BenchmarkResult {
   }
 
 
+  static BenchmarkResult simple(
+    final String name, final long expected, final long actual
+  ) {
+      return () -> assertEquals(expected, actual, name);
+  }
+  static BenchmarkResult simple(
+    final String name, final double expected, final double actual, final double epsilon
+  ) {
+    return () -> assertEquals(expected, actual, epsilon, name);
+  }
   static BenchmarkResult compound(final BenchmarkResult... results) {
     assert results != null;
 
@@ -44,18 +54,50 @@ public interface BenchmarkResult {
     };
   }
 
+  //
 
-  static BenchmarkResult simple(
-    final String name, final long expected, final long actual
-  ) {
-      return () -> ValidationException.throwIfNotEqual(expected, actual, name);
+  static void assertEquals(
+    int expected, int actual, String subject
+  ) throws ValidationException {
+    if (expected != actual) {
+      throw new ValidationException(String.format(
+        "%s: expected %d but got %d", subject, expected, actual
+      ));
+    }
   }
 
 
-  static BenchmarkResult simple(
-    final String name, final double expected, final double actual, final double epsilon
-  ) {
-    return () -> ValidationException.throwIfNotEqual(expected, actual, epsilon, name);
+  static void assertEquals(
+    double expected, double actual, double epsilon, String subject
+  ) throws ValidationException {
+    if (((expected + epsilon) < actual) || ((expected - epsilon) > actual)) {
+      throw new ValidationException(String.format(
+        "%s: expected %.5f +- %.5f but got %.5f",
+        subject, expected, epsilon, actual
+      ));
+    }
+  }
+
+
+  static void assertEquals(
+    Object expected, Object actual, String subject
+  ) throws ValidationException {
+    if (!expected.equals(actual)) {
+      throw new ValidationException(String.format(
+        "%s: expected %s but got %s", subject, expected, actual
+      ));
+    }
+  }
+
+  //
+
+  /**
+   * Indicates that a benchmark result failed to validate.
+   */
+  final class ValidationException extends Exception {
+    public ValidationException(String message) {
+        super(message);
+    }
   }
 
 }

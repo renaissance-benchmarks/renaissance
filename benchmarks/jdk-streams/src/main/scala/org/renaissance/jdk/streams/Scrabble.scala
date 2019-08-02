@@ -5,7 +5,6 @@ import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.License
-import org.renaissance.ValidationException
 
 import scala.collection.JavaConverters
 
@@ -51,7 +50,7 @@ final class Scrabble extends Benchmark {
 
     () => {
       val actualWords = JavaScrabble.prepareForValidation(result)
-      ValidationException.throwIfNotEqual(
+      BenchmarkResult.assertEquals(
         expectedResultParam.size,
         actualWords.size,
         "best words count"
@@ -60,7 +59,7 @@ final class Scrabble extends Benchmark {
       for ((expected, actual) <- expectedResultParam zip JavaConverters.asScalaBuffer(
              actualWords
            )) {
-        ValidationException.throwIfNotEqual(expected, actual, "best words")
+        BenchmarkResult.assertEquals(expected, actual, "best words")
       }
     }
   }

@@ -4,8 +4,8 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
-import org.renaissance.ValidationException
 
 import scala.collection._
 import scala.util.Random
@@ -216,14 +216,14 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
   private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
     val EPSILON = 0.01
 
-    ValidationException.throwIfNotEqual(expected.length, actual.length, "centers count")
+    BenchmarkResult.assertEquals(expected.length, actual.length, "centers count")
 
     for (idx <- expected.indices) {
       val (exp, act) = (expected(idx), actual(idx))
 
-      ValidationException.throwIfNotEqual(exp.x, act.x, EPSILON, s"center $idx position at x")
-      ValidationException.throwIfNotEqual(exp.y, act.y, EPSILON, s"center $idx position at y")
-      ValidationException.throwIfNotEqual(exp.z, act.z, EPSILON, s"center $idx position at z")
+      BenchmarkResult.assertEquals(exp.x, act.x, EPSILON, s"center $idx position at x")
+      BenchmarkResult.assertEquals(exp.y, act.y, EPSILON, s"center $idx position at y")
+      BenchmarkResult.assertEquals(exp.z, act.z, EPSILON, s"center $idx position at z")
     }
   }
 

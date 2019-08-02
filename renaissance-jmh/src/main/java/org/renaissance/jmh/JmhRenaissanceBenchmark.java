@@ -4,6 +4,7 @@ import org.openjdk.jmh.annotations.*;
 import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
+import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.util.BenchmarkInfo;
 import org.renaissance.util.BenchmarkRegistry;
 
@@ -39,7 +40,7 @@ public abstract class JmhRenaissanceBenchmark {
   }
 
   @TearDown(Level.Iteration)
-  public final void tearDownOperation() {
+  public final void tearDownOperation() throws ValidationException {
     benchmark.afterIteration(context);
 
     result.validate();

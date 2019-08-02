@@ -19,7 +19,6 @@ package org.renaissance.jdk.streams;
 
 
 import org.apache.commons.io.IOUtils;
-import org.renaissance.ValidationException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -192,18 +191,5 @@ public class JavaScrabble {
   
   private static List<String> sortedUniqueWords(List<String> words) {
     return new ArrayList<String>(new TreeSet<String>(words));
-  }
-  
-  public static void validate(List<Entry<Integer, List<String>>> bestWords) {
-    ValidationException.throwIfNotEqual(3, bestWords.size(), "list length");
-
-    ValidationException.throwIfNotEqual(120, (int) bestWords.get(0).getKey(), "score of best word");
-    ValidationException.throwIfNotEqual("QUICKLY", String.join("-", sortedUniqueWords(bestWords.get(0).getValue())), "best scoring word");
-
-    ValidationException.throwIfNotEqual(118, (int) bestWords.get(1).getKey(), "score of second best word");
-    ValidationException.throwIfNotEqual("ZEPHYRS", String.join("-", sortedUniqueWords(bestWords.get(1).getValue())), "second best scoring word");
-
-    ValidationException.throwIfNotEqual(114, (int) bestWords.get(2).getKey(), "score of third best words");
-    ValidationException.throwIfNotEqual("QUALIFY-QUICKEN-QUICKER", String.join("-", sortedUniqueWords(bestWords.get(2).getValue())), "third best scoring words");
   }
 }

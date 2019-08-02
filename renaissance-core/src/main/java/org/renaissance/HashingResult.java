@@ -30,7 +30,7 @@ public class HashingResult implements BenchmarkResult {
   }
 
   @Override
-  public void validate() {
+  public void validate() throws ValidationException {
     List<String> vals = getSortedValues();
     long hash = 0;
     for (String v : vals) {
@@ -39,7 +39,7 @@ public class HashingResult implements BenchmarkResult {
 
     String actual = String.format("%16x", hash);
     
-    ValidationException.throwIfNotEqual(expected, actual, "object hash");
+    BenchmarkResult.assertEquals(expected, actual, "object hash");
   }
 
   private List<String> getSortedValues() {

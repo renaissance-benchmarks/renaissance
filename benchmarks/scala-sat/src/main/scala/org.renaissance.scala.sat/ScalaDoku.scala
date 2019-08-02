@@ -8,8 +8,8 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
-import org.renaissance.ValidationException
 
 object Solver {
 

@@ -1,5 +1,6 @@
 package org.renaissance;
 
+import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.harness.ExecutionPolicy;
 import org.renaissance.util.BenchmarkInfo;
 
@@ -28,7 +29,7 @@ final class ExecutionDriver implements BenchmarkContext {
 
   public final void executeBenchmark(
     Benchmark benchmark, EventDispatcher dispatcher
-  ) {
+  ) throws ValidationException {
     final ExecutionPolicy policy = config.policyFactory.create(config, benchInfo);
     final String configuration = config.configuration;
 
@@ -67,7 +68,7 @@ final class ExecutionDriver implements BenchmarkContext {
   private long executeOperation(
     final int opIndex, final String benchName, final Benchmark bench,
     final EventDispatcher dispatcher, final boolean isLast
-  ) {
+  ) throws ValidationException {
     //
     // Call the benchmark and notify listeners before the measured operation.
     // Nothing should go between the measured operation call and the timing
