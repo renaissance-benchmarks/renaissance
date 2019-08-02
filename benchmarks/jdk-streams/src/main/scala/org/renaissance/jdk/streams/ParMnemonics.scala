@@ -4,7 +4,6 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.HashingResult
 import org.renaissance.License
 
 @Name("par-mnemonics")
@@ -76,6 +75,6 @@ final class ParMnemonics extends Benchmark {
 
   override def runIteration(c: BenchmarkContext): BenchmarkResult = {
     val result = coder.parallelTranslate(coderInputParam)
-    new HashingResult(expectedHashParam, result)
+    BenchmarkResult.hashing(expectedHashParam, result)
   }
 }

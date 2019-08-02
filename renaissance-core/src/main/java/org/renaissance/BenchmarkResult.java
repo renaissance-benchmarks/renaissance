@@ -1,6 +1,17 @@
 package org.renaissance;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.LongBinaryOperator;
+import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Represents the result of one benchmark execution. Each benchmark should
@@ -66,6 +77,65 @@ public interface BenchmarkResult {
     final String name, final double expected, final double actual, final double epsilon
   ) {
     return () -> assertEquals(expected, actual, epsilon, name);
+  }
+
+
+  /**
+   * Creates a simple hashing {@link BenchmarkResult} which computes the hash
+   * of the string representation of all objects in the given {@link List} and
+   * compares it to the expected hash value.
+   *
+   * @param expected The expected hash value.
+   * @param objects The {@link List} of objects to be hashed.
+   * @return New {@link BenchmarkResult} instance.
+   */
+  static BenchmarkResult hashing(String expected, List<?> objects) {
+    assert expected != null;
+    assert objects != null;
+
+    return () -> {
+      LongBinaryOperator hashFunc = (l, r) -> l * 31 + r;
+
+      Function<LongStream, Long> streamHasher =
+        s -> s.reduce(hashFunc).getAsLong();
+
+      ToLongFunction<String> stringHasher =
+        s -> streamHasher.apply(s.chars().mapToLong(i -> i));
+
+      Function<List<?>, Stream<String>> asStrings =
+        l -> l.stream().map(o -> Objects.toString(o, "null"));
+
+      long hash = streamHasher.apply(asStrings.apply(objects).mapToLong(stringHasher));
+      String actual = String.format("%16x", hash);
+      assertEquals(expected, actual, "object hash");
+    };
+  }
+
+
+  /**
+   * Creates a simple hashing {@link BenchmarkResult} which computes the hash
+   * of the string representation of all objects in the given {@link Set} and
+   * compares it to the expected hash value.
+   * <p>
+   * In contrast to the {@link #hashing(String, List)} factory method, this
+   * one sorts the string representation of the objects in the set before
+   * computing the hash value.
+   *
+   * @param expected The expected hash value.
+   * @param objects The {@link Set} of objects to be hashed.
+   * @return New {@link BenchmarkResult} instance.
+   */
+  static BenchmarkResult hashing(String expected, Set<?> objects) {
+    assert expected != null;
+    assert objects != null;
+
+    return () -> {
+      List<String> sorted = objects.stream()
+        .map(o -> Objects.toString(o, "null"))
+        .sorted().collect(toList());
+
+      hashing(expected, sorted).validate();
+    };
   }
 
 
