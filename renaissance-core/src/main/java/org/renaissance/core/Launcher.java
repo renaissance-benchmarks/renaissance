@@ -1,6 +1,7 @@
 package org.renaissance.core;
 
 import org.renaissance.Benchmark;
+import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

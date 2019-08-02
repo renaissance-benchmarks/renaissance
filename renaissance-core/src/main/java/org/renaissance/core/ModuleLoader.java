@@ -103,4 +103,19 @@ public final class ModuleLoader {
 
     return resultUrls.toArray(URL_ARRAY_TYPE);
   }
+
+  //
+
+  public static final class ModuleLoadingException extends Exception {
+
+    ModuleLoadingException(String message) {
+      super(message);
+    }
+
+    ModuleLoadingException(String message, Throwable cause) {
+      super(message, cause);
+    }
+
+  }
+
 }
