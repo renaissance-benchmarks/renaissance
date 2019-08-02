@@ -1,5 +1,6 @@
-package org.renaissance;
+package org.renaissance.harness;
 
+import org.renaissance.ExecutionPolicy;
 import org.renaissance.core.BenchmarkInfo;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -19,10 +19,10 @@ public class Launcher {
       };
 
       // TODO Launch the generator from the build system
-      launchHarnessClass("org.renaissance.MarkdownGenerator", customArgs);
+      launchHarnessClass("org.renaissance.harness.MarkdownGenerator", customArgs);
     } else {
 
-      launchHarnessClass("org.renaissance.RenaissanceSuite", args);
+      launchHarnessClass("org.renaissance.harness.RenaissanceSuite", args);
     }
   }
 

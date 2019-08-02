@@ -1,6 +1,10 @@
-package org.renaissance;
+package org.renaissance.harness;
 
+import org.renaissance.Benchmark;
+import org.renaissance.BenchmarkContext;
+import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
+import org.renaissance.ExecutionPolicy;
 import org.renaissance.core.BenchmarkInfo;
 
 /**

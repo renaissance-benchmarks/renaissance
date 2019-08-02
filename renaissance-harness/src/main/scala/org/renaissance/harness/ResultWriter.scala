@@ -1,9 +1,10 @@
-package org.renaissance
+package org.renaissance.harness
 
 import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
+import org.renaissance.Benchmark
 import org.renaissance.Plugin.BenchmarkFailureListener
 import org.renaissance.Plugin.BenchmarkResultListener
 import org.renaissance.Plugin.HarnessShutdownListener

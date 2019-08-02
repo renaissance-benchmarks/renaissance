@@ -1,4 +1,4 @@
-package org.renaissance;
+package org.renaissance.harness;
 
 import org.renaissance.Plugin.*;
 

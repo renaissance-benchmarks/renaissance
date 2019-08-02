@@ -1,4 +1,4 @@
-package org.renaissance
+package org.renaissance.harness
 
 import java.io.File
 import java.io.IOException
@@ -9,6 +9,10 @@ import org.renaissance.core.BenchmarkInfo
 import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
+import org.renaissance.Benchmark
+import org.renaissance.BenchmarkResult
+import org.renaissance.ExecutionPolicy
+import org.renaissance.Plugin
 import org.renaissance.Plugin._
 import scopt.OptionParser
 
