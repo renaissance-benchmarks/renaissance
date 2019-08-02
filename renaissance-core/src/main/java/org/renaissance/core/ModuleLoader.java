@@ -1,20 +1,12 @@
 package org.renaissance.core;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 import java.util.logging.Logger;
 
 public final class ModuleLoader {
@@ -23,7 +15,7 @@ public final class ModuleLoader {
   private static final Map<String, String[]> GROUP_JAR_NAMES
     = getGroupJarNames(ModuleLoader.class.getResourceAsStream("/groups-jars.txt"));
 
-  public static ClassLoader getForGroup(String groupName) throws ModuleLoadingException {
+  static ClassLoader getForGroup(String groupName) throws ModuleLoadingException {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupClassloader");
 
     String[] jarNames = GROUP_JAR_NAMES.get(groupName);
@@ -64,12 +56,12 @@ public final class ModuleLoader {
     Map<String, String[]> result = new HashMap<>();
     while (sc.hasNextLine()) {
       String line = sc.nextLine();
-      String parts[] = line.split("=");
+      String[] parts = line.split("=");
       if (parts.length != 2) {
         continue;
       }
       String group = parts[0];
-      String jars[] = parts[1].split(",");
+      String[] jars = parts[1].split(",");
       result.put(group, jars);
 
       logger.finest(String.format("Found group entry %s => %s (%d)", group, parts[1], jars.length));
