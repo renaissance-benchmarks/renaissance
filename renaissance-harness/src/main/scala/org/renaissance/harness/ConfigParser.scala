@@ -60,12 +60,8 @@ final class ConfigParser(tags: Map[String, String]) {
     }
   }
 
-  def parse(args: Array[String]): Option[Config] = {
-    parser.parse(args, new Config)
-  }
+  def parse(args: Array[String]): Option[Config] = parser.parse(args, new Config)
 
-  def usage(): String = {
-    parser.usage
-  }
+  def usage(): String = parser.usage
 
 }

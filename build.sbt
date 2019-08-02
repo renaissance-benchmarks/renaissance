@@ -179,7 +179,7 @@ lazy val renaissance: Project = {
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-        case _ => MergeStrategy.singleOrError
+        case _                                   => MergeStrategy.singleOrError
       },
       javaOptions in Compile ++= {
         if (remoteDebug.value) {

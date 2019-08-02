@@ -61,7 +61,6 @@ Usage: renaissance [options] [benchmark-specification]
   --plugin <value>         Load harness plugin, specified as <jar-file>!<class-name>. Can appear multiple times.
   --csv <value>            Output results to CSV file.
   --json <value>           Output results to JSON file.
-  --functional-test        Reduce iteration times significantly for testing purposes.
   -c, --configuration <value>
                            Run benchmarks with given named configuration.
   --list                   Print list of benchmarks with their description.

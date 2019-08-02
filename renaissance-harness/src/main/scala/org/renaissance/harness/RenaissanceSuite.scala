@@ -25,7 +25,7 @@ object RenaissanceSuite {
     }
 
     // Load info on available benchmarks
-    val benchmarks = BenchmarkRegistry.createDefault();
+    val benchmarks = BenchmarkRegistry.createDefault()
 
     if (config.printList) {
       print(formatBenchmarkList(benchmarks))
@@ -34,7 +34,7 @@ object RenaissanceSuite {
     } else if (config.printGroupList) {
       println(formatGroupList(benchmarks))
     } else if (config.benchmarkSpecifiers.isEmpty) {
-      println(parser.usage)
+      println(parser.usage())
     } else {
       // Select the desired benchmarks and check that they really exist.
       val specifiers = config.benchmarkSpecifiers.asScala
@@ -60,24 +60,21 @@ object RenaissanceSuite {
           driver.executeBenchmark(benchmark, dispatcher)
 
         } catch {
-          case t: Throwable => {
+          case t: Throwable =>
             // Notify observers that a benchmark failed.
             dispatcher.notifyOnBenchmarkFailure(benchInfo.name)
             failedBenchmarks += benchInfo
 
             t match {
-              case _: ValidationException => {
+              case _: ValidationException =>
                 Console.err.println(
                   s"Benchmark '${benchInfo.name()}' failed result validation:\n${t.getMessage}"
                 )
-              }
 
-              case _ => {
+              case _ =>
                 Console.err.println(s"Benchmark '${benchInfo.name()}' failed with exception:")
                 t.printStackTrace(Console.err)
-              }
             }
-          }
         }
       }
 
@@ -87,7 +84,7 @@ object RenaissanceSuite {
 
       if (failedBenchmarks.nonEmpty) {
         val failedBenchmarksList = failedBenchmarks.map(_.name()).mkString(", ")
-        println(s"The following benchmarks failed: ${failedBenchmarksList}")
+        println(s"The following benchmarks failed: $failedBenchmarksList")
         sys.exit(1)
       }
     }
@@ -107,9 +104,9 @@ object RenaissanceSuite {
         result ++= benchmarks.getGroup(specifier).asScala
       } else if (specifier == "all") {
         // Add all benchmarks except the dummy ones
-        result ++= benchmarks.getAll().asScala.filter(_.group != "dummy")
+        result ++= benchmarks.getAll.asScala.filter(_.group != "dummy")
       } else {
-        println(s"Benchmark (or group) `${specifier}` does not exist.")
+        println(s"Benchmark (or group) '$specifier' does not exist.")
         sys.exit(1)
       }
     }
@@ -136,7 +133,6 @@ object RenaissanceSuite {
       column += word.length
     }
     result += line.toString
-    return result
   }
 
   private def formatRawBenchmarkList(benchmarks: BenchmarkRegistry) =
@@ -146,7 +142,7 @@ object RenaissanceSuite {
     val indent = "    "
 
     val result = new StringBuilder
-    for (bench <- benchmarks.getAll().asScala) {
+    for (bench <- benchmarks.getAll.asScala) {
       result.append(bench.name).append("\n")
       result.append(foldText(bench.summaryWords, 65, indent).mkString("\n")).append("\n")
       result.append(s"${indent}Default repetitions: ${bench.repetitions}").append("\n\n")

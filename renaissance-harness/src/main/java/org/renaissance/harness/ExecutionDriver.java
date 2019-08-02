@@ -19,8 +19,6 @@ final class ExecutionDriver implements BenchmarkContext {
 
   private final Config config;
 
-  private int operationIndex;
-
 
   public ExecutionDriver(
     final BenchmarkInfo benchInfo, final Config config
@@ -42,13 +40,12 @@ final class ExecutionDriver implements BenchmarkContext {
       dispatcher.notifyAfterBenchmarkSetUp(benchInfo.name());
 
       try {
-        operationIndex = 0;
+        int operationIndex = 0;
 
         do {
           printStartInfo(operationIndex, benchInfo, configuration);
 
-          final long durationNanos = executeOperation(
-            operationIndex, benchInfo.name(), benchmark,
+          final long durationNanos = executeOperation(operationIndex, benchInfo.name(), benchmark,
             dispatcher, policy.isLastOperation()
           );
 
@@ -103,7 +100,7 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  void printStartInfo(int index, BenchmarkInfo benchInfo, String confName) {
+  private void printStartInfo(int index, BenchmarkInfo benchInfo, String confName) {
     System.out.printf(
       "====== %s (%s) [%s], iteration %d started ======\n",
       benchInfo.name(), benchInfo.group(), confName ,index
@@ -111,7 +108,9 @@ final class ExecutionDriver implements BenchmarkContext {
   }
 
 
-  void printEndInfo(int index, BenchmarkInfo benchInfo, String confName, long durationNanos) {
+  private void printEndInfo(
+    int index, BenchmarkInfo benchInfo, String confName, long durationNanos
+  ) {
     final double durationMillis = durationNanos / 1e6;
 
     System.out.printf(

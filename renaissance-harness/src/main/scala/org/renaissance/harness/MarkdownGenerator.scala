@@ -33,14 +33,14 @@ object MarkdownGenerator {
   private final class LocalConfig {
     var metadata: File = _
 
-    val tags = mutable.Map[String, String]()
+    val tags: mutable.Map[String, String] = mutable.Map()
 
-    def setTag(key: String, value: String) = {
+    def setTag(key: String, value: String): LocalConfig = {
       tags.put(key, value)
       this
     }
 
-    def setMetadata(path: String) = {
+    def setMetadata(path: String): LocalConfig = {
       this.metadata = new File(path)
       this
     }
@@ -132,7 +132,7 @@ object MarkdownGenerator {
     tags.toMap
   }
 
-  private def writeFile(supplier: () => String, file: String) = {
+  private def writeFile(supplier: () => String, file: String): Unit = {
     val value = Try(supplier()) match {
       case Success(suppliedValue) => suppliedValue
       case Failure(exception) =>

@@ -7,11 +7,10 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.*;
 
 /**
  * A registry of benchmark metadata. By default, this registry is initialized
@@ -33,18 +32,18 @@ public final class BenchmarkRegistry {
     this.benchmarksByName = properties.stringPropertyNames().stream()
       .filter(p -> p.endsWith(".name"))
       .collect(toMap(
-        p -> properties.getProperty(p),
+        properties::getProperty,
         p -> createBenchmarkInfo(properties, properties.getProperty(p)),
         (x, y) -> y,
-        () -> new TreeMap<>()
+        TreeMap::new
       ));
 
     // Keep groups ordered by name (order within groups implied).
     this.benchmarksByGroup = benchmarksByName.values().stream()
       .collect(groupingBy(
         b -> b.group,
-        () -> new TreeMap<>(),
-        Collectors.toList()
+        TreeMap::new,
+        toList()
       ));
   }
 
@@ -66,7 +65,7 @@ public final class BenchmarkRegistry {
   }
 
 
-  public static BenchmarkRegistry createFromProperties(InputStream stream) {
+  private static BenchmarkRegistry createFromProperties(InputStream stream) {
     try {
       final Properties properties = new Properties();
       properties.load(stream);
@@ -119,13 +118,14 @@ public final class BenchmarkRegistry {
 
     return properties.stringPropertyNames().stream()
       // Find matching parameter properties
-      .map(n -> pattern.matcher(n)).filter(m -> m.matches())
+      .map(pattern::matcher).filter(Matcher::matches)
       // Collect parameters in a map grouped by configuration name
       .collect(groupingBy(
         m -> m.group("conf"), toMap(
           m -> m.group("param"),
           // Map special parameter values to computed values
-          m -> valueMapper.apply(properties.getProperty(m.group())))
+          m -> valueMapper.apply(properties.getProperty(m.group()))
+        )
       ));
   }
 
@@ -136,7 +136,7 @@ public final class BenchmarkRegistry {
 
 
   public List<BenchmarkInfo> getAll() {
-    return new ArrayList(benchmarksByName.values());
+    return new ArrayList<>(benchmarksByName.values());
   }
 
 
@@ -161,12 +161,12 @@ public final class BenchmarkRegistry {
 
 
   public List<String> names() {
-    return new ArrayList(benchmarksByName.keySet());
+    return new ArrayList<>(benchmarksByName.keySet());
   }
 
 
   public List<String> groupNames() {
-    return new ArrayList(benchmarksByGroup.keySet());
+    return new ArrayList<>(benchmarksByGroup.keySet());
   }
 
 

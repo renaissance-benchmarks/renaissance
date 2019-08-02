@@ -70,11 +70,11 @@ abstract class ResultWriter
     allResults.keys
   }
 
-  def getColumns(): Seq[String] = {
+  def getColumns: Seq[String] = {
     allResults.values.flatMap(_.keys).toSeq.distinct.sorted
   }
 
-  def getResults()
+  def getResults
     : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
     for {
       benchName <- getBenchmarks
@@ -84,8 +84,8 @@ abstract class ResultWriter
       (
         benchName,
         !failedBenchmarks.contains(benchName),
-        benchResults.toMap.asInstanceOf[Map[String, mutable.ArrayBuffer[Long]]],
-        (0 to maxIndex)
+        benchResults.toMap,
+        0 to maxIndex
       )
 }
 
@@ -134,8 +134,8 @@ class JsonWriter(val filename: String) extends ResultWriter {
     osInfo.update("version", System.getProperty("os.version", "unknown").toJson)
     result.update("os", osInfo.toMap.toJson)
 
-    val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean()
-    val vmArgs = runtimeMxBean.getInputArguments()
+    val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
+    val vmArgs = runtimeMxBean.getInputArguments
 
     val vmInfo = new mutable.HashMap[String, JsValue]
     vmInfo.update("name", System.getProperty("java.vm.name", "unknown").toJson)
@@ -145,16 +145,16 @@ class JsonWriter(val filename: String) extends ResultWriter {
     vmInfo.update("termination", termination.toJson)
     result.update("vm", vmInfo.toMap.toJson)
 
-    return result.toMap.toJson
+    result.toMap.toJson
   }
 
-  def getMainManifest(): java.util.jar.Manifest = {
+  def getMainManifest: java.util.jar.Manifest = {
     val klass = classOf[Benchmark]
     val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
-    return new java.util.jar.Manifest(stream)
+    new java.util.jar.Manifest(stream)
   }
 
-  def getSuiteInfo(): JsValue = {
+  def getSuiteInfo: JsValue = {
     val result = new mutable.HashMap[String, JsValue]
 
     val manifestAttrs = getMainManifest.getMainAttributes
@@ -172,7 +172,7 @@ class JsonWriter(val filename: String) extends ResultWriter {
     result.update("name", getManifestAttr("Specification-Title", ""))
     result.update("version", getManifestAttr("Specification-Version", ""))
 
-    return result.toMap.toJson
+    result.toMap.toJson
   }
 
   def store(normalTermination: Boolean): Unit = {
