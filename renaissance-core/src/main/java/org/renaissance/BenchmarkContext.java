@@ -5,9 +5,10 @@ import org.renaissance.util.DirUtils;
 import java.nio.file.Path;
 
 /**
- * Represents a benchmark execution context. Provides a benchmark with access
- * to harness services. This includes access to benchmark-specific configuration
- * values and resources, information about current repetition, etc.
+ * Represents a benchmark execution context. Allows a benchmark to access
+ * harness-provided utility services, such as retrieving benchmark- and
+ * configuration-specific parameter values, JAR file resources, or selected
+ * filesystem operations.
  */
 public interface BenchmarkContext {
 
