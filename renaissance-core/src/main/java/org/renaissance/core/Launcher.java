@@ -1,8 +1,6 @@
-package org.renaissance;
+package org.renaissance.core;
 
-import org.renaissance.core.Logging;
-import org.renaissance.core.ModuleLoader;
-import org.renaissance.core.ModuleLoadingException;
+import org.renaissance.Benchmark;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

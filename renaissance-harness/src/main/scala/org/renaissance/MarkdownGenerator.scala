@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets
 
 import org.renaissance.core.BenchmarkInfo
 import org.renaissance.core.BenchmarkRegistry
+import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
 import org.renaissance.harness.ExecutionPolicy
 import org.renaissance.harness.Plugin

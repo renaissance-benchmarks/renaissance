@@ -2,8 +2,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-import org.renaissance.Launcher
 import org.renaissance.License
+import org.renaissance.core.Launcher
 
 import scala.collection._
 

@@ -17,8 +17,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
-import org.renaissance.Launcher;
-
 public final class ModuleLoader {
   private static final URL[] URL_ARRAY_TYPE = new URL[0];
 
