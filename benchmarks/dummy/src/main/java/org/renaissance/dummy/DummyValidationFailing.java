@@ -1,6 +1,9 @@
 package org.renaissance.dummy;
 
-import org.renaissance.*;
+import org.renaissance.Benchmark;
+import org.renaissance.BenchmarkContext;
+import org.renaissance.BenchmarkResult;
+import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
 
@@ -15,10 +18,7 @@ public final class DummyValidationFailing implements Benchmark {
   public BenchmarkResult runIteration(BenchmarkContext c) {
     counter++;
     if (counter > 1) {
-      return () -> {
-        throw new ValidationException("Intentionally failing");
-      };
-
+      return BenchmarkResult.simple("intentional failure", 1, -1);
     } else {
       return BenchmarkResult.simple("nothing", 0, 0);
     }
