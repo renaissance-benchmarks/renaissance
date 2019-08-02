@@ -31,7 +31,6 @@ final class Config {
   boolean printList = false;
   boolean printRawList = false;
   boolean printGroupList = false;
-  boolean functionalTest = false;
 
   String configuration = "default";
 
@@ -102,11 +101,6 @@ final class Config {
 
   public Config withGroupList() {
     printGroupList = true;
-    return this;
-  }
-
-  public Config withFunctionalTest() {
-    functionalTest = true;
     return this;
   }
 
