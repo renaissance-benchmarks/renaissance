@@ -58,13 +58,23 @@ object RenaissanceSuite {
           driver.executeBenchmark(benchmark, dispatcher)
 
         } catch {
-          case exception: Throwable => {
+          case t: Throwable => {
             // Notify observers that a benchmark failed.
             dispatcher.notifyOnBenchmarkFailure(benchInfo.name)
             failedBenchmarks += benchInfo
 
-            Console.err.println(s"Exception occurred in ${benchInfo.name()}:")
-            exception.printStackTrace(Console.err)
+            t match {
+              case _: ValidationException => {
+                Console.err.println(
+                  s"Benchmark '${benchInfo.name()}' failed result validation:\n${t.getMessage}"
+                )
+              }
+
+              case _ => {
+                Console.err.println(s"Benchmark '${benchInfo.name()}' failed with exception:")
+                t.printStackTrace(Console.err)
+              }
+            }
           }
         }
       }
