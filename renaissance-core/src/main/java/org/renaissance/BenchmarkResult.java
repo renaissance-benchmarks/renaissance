@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongBinaryOperator;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -97,7 +96,7 @@ public interface BenchmarkResult {
       LongBinaryOperator hashFunc = (l, r) -> l * 31 + r;
 
       Function<LongStream, Long> streamHasher =
-        s -> s.reduce(hashFunc).getAsLong();
+        s -> s.reduce(hashFunc).orElse(0);
 
       ToLongFunction<String> stringHasher =
         s -> streamHasher.apply(s.chars().mapToLong(i -> i));
