@@ -27,7 +27,7 @@ import scala.util.Try
 object MarkdownGenerator {
 
   private final class LocalConfig {
-    var metadata: File = null
+    var metadata: File = _
 
     val tags = mutable.Map[String, String]()
 
@@ -79,11 +79,10 @@ object MarkdownGenerator {
 
     provider match {
       case Success(registry) => registry
-      case Failure(exception) => {
+      case Failure(exception) =>
         Console.err.println("error: " + exception.getMessage)
         Console.err.println("error: failed to initialize benchmark registry")
         sys.exit(1)
-      }
     }
   }
 
@@ -120,7 +119,7 @@ object MarkdownGenerator {
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
 
     val harnessConfigParser = new ConfigParser(tags.toMap)
-    tags("harnessUsage") = harnessConfigParser.usage
+    tags("harnessUsage") = harnessConfigParser.usage()
 
     val exampleBenchmarkClass = "MyJavaBenchmark"
     tags("exampleBenchmarkClass") = exampleBenchmarkClass
@@ -131,12 +130,11 @@ object MarkdownGenerator {
 
   private def writeFile(supplier: () => String, file: String) = {
     val value = Try(supplier()) match {
-      case Success(value) => value
-      case Failure(exception) => {
+      case Success(suppliedValue) => suppliedValue
+      case Failure(exception) =>
         Console.err.println("error: " + exception.getMessage)
         Console.err.println("error: failed to format " + file)
         sys.exit(1)
-      }
     }
 
     try {
@@ -150,11 +148,10 @@ object MarkdownGenerator {
         writer.close()
       }
     } catch {
-      case exception: IOException => {
+      case exception: IOException =>
         Console.err.println("error: " + exception.getMessage)
         Console.err.println("error: failed to write " + file)
         sys.exit(1)
-      }
     }
   }
 
@@ -165,8 +162,8 @@ object MarkdownGenerator {
 
     val result = new StringBuffer
     for ((group, benches) <- benchmarks.byGroup().asScala) {
-      result.append(s"#### ${group}").append("\n\n")
-      result.append(benches.asScala.map(formatItem(_)).mkString("\n\n")).append("\n\n")
+      result.append(s"#### $group").append("\n\n")
+      result.append(benches.asScala.map(formatItem).mkString("\n\n")).append("\n\n")
     }
 
     result.toString
@@ -177,11 +174,11 @@ object MarkdownGenerator {
       s"| ${b.name} | ${b.printableLicenses} | ${b.distro} |"
     }
 
-    benchmarks.getAll().asScala.map(formatRow(_)).mkString("\n")
+    benchmarks.getAll.asScala.map(formatRow).mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
-    return s"""
+    s"""
 
 ## Renaissance Benchmark Suite
 
@@ -407,7 +404,7 @@ in the `RenaissanceSuite.scala` file and in `${tags("moduleLoaderClass")}`.
 
   def formatContribution(tags: Map[String, String]): String = {
 
-    return s"""
+    s"""
 
 ## Contribution Guide
 
