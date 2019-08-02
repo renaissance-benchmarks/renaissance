@@ -9,6 +9,7 @@ import java.util.Arrays;
  * validate its own result. A benchmark should store all necessary information
  * in the object implementing this interface.
  */
+@FunctionalInterface
 public interface BenchmarkResult {
 
   /**
@@ -25,6 +26,8 @@ public interface BenchmarkResult {
 
   @Deprecated
   static BenchmarkResult dummy(Object... objects) {
+    assert objects != null;
+
     return () -> {
       Arrays.fill(objects, null);
 
@@ -34,16 +37,46 @@ public interface BenchmarkResult {
   }
 
 
+  /**
+   * Creates a simple {@link BenchmarkResult} which tests two
+   * {@code long} values for equality.
+   *
+   * @param name The name of the result (shown in the failure error message).
+   * @param expected The expected value.
+   * @param actual The actual value.
+   * @return New {@link BenchmarkResult} instance.
+   */
   static BenchmarkResult simple(
     final String name, final long expected, final long actual
   ) {
       return () -> assertEquals(expected, actual, name);
   }
+
+
+  /**
+   * Creates a simple {@link BenchmarkResult} which tests two
+   * {@code double} values for equality.
+   *
+   * @param name The name of the result (shown in the failure error message).
+   * @param expected The expected value.
+   * @param actual The actual value.
+   * @return New {@link BenchmarkResult} instance.
+   */
   static BenchmarkResult simple(
     final String name, final double expected, final double actual, final double epsilon
   ) {
     return () -> assertEquals(expected, actual, epsilon, name);
   }
+
+
+  /**
+   * Creates a {@link BenchmarkResult} composite which takes multiple
+   * {@link BenchmarkResult} instances and validates only if all the
+   * other results validate.
+   *
+   * @param results The partial results making up this {@link BenchmarkResult}
+   * @return New {@link BenchmarkResult} instance.
+   */
   static BenchmarkResult compound(final BenchmarkResult... results) {
     assert results != null;
 
