@@ -1,4 +1,4 @@
-package org.renaissance.harness;
+package org.renaissance;
 
 public interface ExecutionPolicy {
 

@@ -1,4 +1,4 @@
-package org.renaissance.harness;
+package org.renaissance;
 
 /**
  * Marker interface for harness plugins. Plugins are loaded dynamically and

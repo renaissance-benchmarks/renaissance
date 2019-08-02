@@ -1,7 +1,6 @@
 package org.renaissance;
 
-import org.renaissance.harness.Plugin;
-import org.renaissance.harness.Plugin.*;
+import org.renaissance.Plugin.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;

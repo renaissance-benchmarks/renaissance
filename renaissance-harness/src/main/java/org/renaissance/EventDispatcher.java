@@ -1,6 +1,6 @@
 package org.renaissance;
 
-import org.renaissance.harness.Plugin.*;
+import org.renaissance.Plugin.*;
 
 /**
  * Helper class to dispatch events to listeners. Uses array iteration to

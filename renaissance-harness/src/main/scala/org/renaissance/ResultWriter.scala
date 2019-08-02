@@ -4,9 +4,9 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
-import org.renaissance.harness.Plugin.BenchmarkFailureListener
-import org.renaissance.harness.Plugin.BenchmarkResultListener
-import org.renaissance.harness.Plugin.HarnessShutdownListener
+import org.renaissance.Plugin.BenchmarkFailureListener
+import org.renaissance.Plugin.BenchmarkResultListener
+import org.renaissance.Plugin.HarnessShutdownListener
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
