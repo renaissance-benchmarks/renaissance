@@ -1,8 +1,8 @@
 package org.renaissance;
 
-import org.renaissance.util.Logging;
-import org.renaissance.util.ModuleLoader;
-import org.renaissance.util.ModuleLoadingException;
+import org.renaissance.core.Logging;
+import org.renaissance.core.ModuleLoader;
+import org.renaissance.core.ModuleLoadingException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

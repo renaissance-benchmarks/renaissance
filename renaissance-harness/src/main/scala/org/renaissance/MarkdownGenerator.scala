@@ -5,12 +5,12 @@ import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 
+import org.renaissance.core.BenchmarkInfo
+import org.renaissance.core.BenchmarkRegistry
+import org.renaissance.core.ModuleLoader
 import org.renaissance.harness.ExecutionPolicy
 import org.renaissance.harness.Plugin
 import org.renaissance.harness.Plugin._
-import org.renaissance.util.BenchmarkInfo
-import org.renaissance.util.BenchmarkRegistry
-import org.renaissance.util.ModuleLoader
 import scopt.OptionParser
 
 import scala.collection.JavaConverters._

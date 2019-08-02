@@ -1,8 +1,8 @@
 package org.renaissance
 
-import org.renaissance.util.BenchmarkInfo
-import org.renaissance.util.BenchmarkRegistry
 import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.core.BenchmarkInfo
+import org.renaissance.core.BenchmarkRegistry
 
 import scala.collection._
 import scala.collection.JavaConverters._

@@ -1,6 +1,6 @@
 package org.renaissance;
 
-import org.renaissance.util.DirUtils;
+import org.renaissance.core.DirUtils;
 
 import java.nio.file.Path;
 

@@ -1,4 +1,4 @@
-package org.renaissance.util;
+package org.renaissance.core;
 
 final class Pair<T, U> {
   private T first;

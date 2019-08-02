@@ -1,4 +1,4 @@
-package org.renaissance.util;
+package org.renaissance.core;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;

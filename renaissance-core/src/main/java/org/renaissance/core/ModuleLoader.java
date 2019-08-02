@@ -1,4 +1,4 @@
-package org.renaissance.util;
+package org.renaissance.core;
 
 import java.io.File;
 import java.io.FileOutputStream;

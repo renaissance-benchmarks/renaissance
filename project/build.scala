@@ -188,7 +188,7 @@ object Benchmarks {
     val benchBase = classOf[Benchmark]
     val urls = classpath.map(_.toURI.toURL).toArray
     val loader = new URLClassLoader(urls, benchBase.getClassLoader)
-    val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
+    val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]core)")
 
     //
     // Scan all JAR files for classes in the org.renaissance package implementing

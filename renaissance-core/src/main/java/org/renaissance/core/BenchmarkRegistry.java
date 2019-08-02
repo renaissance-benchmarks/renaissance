@@ -1,4 +1,4 @@
-package org.renaissance.util;
+package org.renaissance.core;
 
 import org.renaissance.Benchmark;
 

@@ -5,8 +5,8 @@ import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
-import org.renaissance.util.BenchmarkInfo;
-import org.renaissance.util.BenchmarkRegistry;
+import org.renaissance.core.BenchmarkInfo;
+import org.renaissance.core.BenchmarkRegistry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

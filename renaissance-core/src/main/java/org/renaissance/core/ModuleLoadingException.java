@@ -1,4 +1,4 @@
-package org.renaissance.util;
+package org.renaissance.core;
 
 public final class ModuleLoadingException extends Exception {
   private static final long serialVersionUID = 1L;

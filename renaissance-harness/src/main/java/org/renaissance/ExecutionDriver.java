@@ -2,7 +2,7 @@ package org.renaissance;
 
 import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.harness.ExecutionPolicy;
-import org.renaissance.util.BenchmarkInfo;
+import org.renaissance.core.BenchmarkInfo;
 
 /**
  * Benchmark execution driver. Captures the sequence of actions performed
