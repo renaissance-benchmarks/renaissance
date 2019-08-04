@@ -19,8 +19,13 @@ import static java.util.stream.Collectors.toList;
  * validate its own result. A benchmark should store all necessary information
  * in the object implementing this interface.
  */
-@FunctionalInterface
-public interface BenchmarkResult {
+public abstract class BenchmarkResult {
+  //
+  // Note: BenchmarkResult was intended to be an interface (with static helper
+  // methods), but calling those methods from Scala while running on JDK 9 and
+  // JDK 11 (but not JDK 8) caused the IncompatibleClassChangeError exception
+  // to be thrown. Making BenchmarkResult an abstract class is a workaround.
+  //
 
   /**
    * Validates this benchmark result. Benchmarks are not expected to fail, but
@@ -30,19 +35,22 @@ public interface BenchmarkResult {
    *
    * @throws ValidationException if the result is invalid.
    */
-  void validate() throws ValidationException;
+  public abstract void validate() throws ValidationException;
 
   //
 
   @Deprecated
-  static BenchmarkResult dummy(Object... objects) {
+  public static BenchmarkResult dummy(Object... objects) {
     assert objects != null;
 
-    return () -> {
-      Arrays.fill(objects, null);
+    return new BenchmarkResult() {
+      @Override
+      public void validate() throws ValidationException {
+        Arrays.fill(objects, null);
 
-      System.err.println("WARNING: This benchmark provides no result that can be validated.");
-      System.err.println("         There is no way to check that no silent failure occurred.");
+        System.err.println("WARNING: This benchmark provides no result that can be validated.");
+        System.err.println("         There is no way to check that no silent failure occurred.");
+      }
     };
   }
 
@@ -56,10 +64,15 @@ public interface BenchmarkResult {
    * @param actual The actual value.
    * @return New {@link BenchmarkResult} instance.
    */
-  static BenchmarkResult simple(
+  public static BenchmarkResult simple(
     final String name, final long expected, final long actual
   ) {
-      return () -> assertEquals(expected, actual, name);
+    return new BenchmarkResult() {
+      @Override
+      public void validate() throws ValidationException {
+        assertEquals(expected, actual, name);
+      }
+    };
   }
 
 
@@ -72,10 +85,15 @@ public interface BenchmarkResult {
    * @param actual The actual value.
    * @return New {@link BenchmarkResult} instance.
    */
-  static BenchmarkResult simple(
+  public static BenchmarkResult simple(
     final String name, final double expected, final double actual, final double epsilon
   ) {
-    return () -> assertEquals(expected, actual, epsilon, name);
+    return new BenchmarkResult() {
+      @Override
+      public void validate() throws ValidationException {
+        assertEquals(expected, actual, epsilon, name);
+      }
+    };
   }
 
 
@@ -88,25 +106,28 @@ public interface BenchmarkResult {
    * @param objects The {@link List} of objects to be hashed.
    * @return New {@link BenchmarkResult} instance.
    */
-  static BenchmarkResult hashing(String expected, List<?> objects) {
+  public static BenchmarkResult hashing(String expected, List<?> objects) {
     assert expected != null;
     assert objects != null;
 
-    return () -> {
-      LongBinaryOperator hashFunc = (l, r) -> l * 31 + r;
+    return new BenchmarkResult() {
+      @Override
+      public void validate() throws ValidationException {
+        LongBinaryOperator hashFunc = (l, r) -> l * 31 + r;
 
-      Function<LongStream, Long> streamHasher =
-        s -> s.reduce(hashFunc).orElse(0);
+        Function<LongStream, Long> streamHasher =
+          s -> s.reduce(hashFunc).orElse(0);
 
-      ToLongFunction<String> stringHasher =
-        s -> streamHasher.apply(s.chars().mapToLong(i -> i));
+        ToLongFunction<String> stringHasher =
+          s -> streamHasher.apply(s.chars().mapToLong(i -> i));
 
-      Function<List<?>, Stream<String>> asStrings =
-        l -> l.stream().map(o -> Objects.toString(o, "null"));
+        Function<List<?>, Stream<String>> asStrings =
+          l -> l.stream().map(o -> Objects.toString(o, "null"));
 
-      long hash = streamHasher.apply(asStrings.apply(objects).mapToLong(stringHasher));
-      String actual = String.format("%16x", hash);
-      assertEquals(expected, actual, "object hash");
+        long hash = streamHasher.apply(asStrings.apply(objects).mapToLong(stringHasher));
+        String actual = String.format("%16x", hash);
+        assertEquals(expected, actual, "object hash");
+      }
     };
   }
 
@@ -124,16 +145,19 @@ public interface BenchmarkResult {
    * @param objects The {@link Set} of objects to be hashed.
    * @return New {@link BenchmarkResult} instance.
    */
-  static BenchmarkResult hashing(String expected, Set<?> objects) {
+  public static BenchmarkResult hashing(String expected, Set<?> objects) {
     assert expected != null;
     assert objects != null;
 
-    return () -> {
-      List<String> sorted = objects.stream()
-        .map(o -> Objects.toString(o, "null"))
-        .sorted().collect(toList());
+    return new BenchmarkResult() {
+      @Override
+      public void validate() throws ValidationException {
+        List<String> sorted = objects.stream()
+          .map(o -> Objects.toString(o, "null"))
+          .sorted().collect(toList());
 
-      hashing(expected, sorted).validate();
+        hashing(expected, sorted).validate();
+      }
     };
   }
 
@@ -146,19 +170,22 @@ public interface BenchmarkResult {
    * @param results The partial results making up this {@link BenchmarkResult}
    * @return New {@link BenchmarkResult} instance.
    */
-  static BenchmarkResult compound(final BenchmarkResult... results) {
+  public static BenchmarkResult compound(final BenchmarkResult... results) {
     assert results != null;
 
-    return () -> {
-      for (final BenchmarkResult result : results) {
-        result.validate();
+    return new BenchmarkResult() {
+      @Override
+      public void validate() throws ValidationException {
+        for (final BenchmarkResult result : results) {
+          result.validate();
+        }
       }
     };
   }
 
   //
 
-  static void assertEquals(
+  public static void assertEquals(
     int expected, int actual, String subject
   ) throws ValidationException {
     if (expected != actual) {
@@ -169,7 +196,7 @@ public interface BenchmarkResult {
   }
 
 
-  static void assertEquals(
+  public static void assertEquals(
     double expected, double actual, double epsilon, String subject
   ) throws ValidationException {
     if (((expected + epsilon) < actual) || ((expected - epsilon) > actual)) {
@@ -181,7 +208,7 @@ public interface BenchmarkResult {
   }
 
 
-  static void assertEquals(
+  public static void assertEquals(
     Object expected, Object actual, String subject
   ) throws ValidationException {
     if (!expected.equals(actual)) {
@@ -196,7 +223,7 @@ public interface BenchmarkResult {
   /**
    * Indicates that a benchmark result failed to validate.
    */
-  final class ValidationException extends Exception {
+  public static final class ValidationException extends Exception {
     public ValidationException(String message) {
         super(message);
     }
