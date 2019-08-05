@@ -25,14 +25,24 @@ final class ConfigParser(tags: Map[String, String]) {
         .action((v, c) => c.withOperationRunSeconds(v))
       opt[String]("policy")
         .text(
-          "Use policy to control repeated execution of measured operation, specified as <jar-file>!<class-name>."
+          "Use external policy to control repetitions, specified as <class-path>!<class-name>."
+        )
+        .validate(
+          v =>
+            if (v.count(_ == '!') == 1) success
+            else failure("expected <class-path>!<class-name> in external policy specification")
         )
         .action((v, c) => c.withPolicy(v))
       opt[String]("plugin")
         .text(
-          "Load harness plugin, specified as <jar-file>!<class-name>. Can appear multiple times."
+          "Load external plugin, specified as <classpath>!<class-name>. Can appear multiple times."
         )
         .action((v, c) => c.withPlugin(v))
+        .validate(
+          v =>
+            if (v.count(_ == '!') == 1) success
+            else failure("expected <class-path>!<class-name> in external plugin specification")
+        )
         .unbounded()
       opt[String]("csv")
         .text("Output results to CSV file.")
