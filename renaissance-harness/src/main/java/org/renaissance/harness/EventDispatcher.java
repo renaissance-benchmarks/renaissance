@@ -1,12 +1,19 @@
 package org.renaissance.harness;
 
+import org.renaissance.Plugin;
 import org.renaissance.Plugin.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Helper class to dispatch events to listeners. Uses array iteration to
- * avoid creating iteration objects.
+ * Helper class to dispatch events to listeners. This may seem a bit more complicated
+ * than strictly necessary, however the goal is to iterate over arrays, without any
+ * indirection associated with getting elements from an array list, and without triggering
+ * creation of auxiliary iteration objects due to use of for-each.
  */
 final class EventDispatcher {
+
   private final HarnessInitListener[] harnessInitListeners;
   private final HarnessShutdownListener[] harnessShutdownListeners;
   private final BenchmarkSetUpListener[] benchmarkSetUpListeners;
@@ -17,36 +24,36 @@ final class EventDispatcher {
   private final BenchmarkFailureListener[] benchmarkFailureListeners;
 
 
-  EventDispatcher(Config config) {
-    harnessInitListeners = config.harnessInitListeners.toArray(
+  private EventDispatcher(Builder builder) {
+    harnessInitListeners = builder.harnessInitListeners.toArray(
       new HarnessInitListener[0]
     );
 
-    harnessShutdownListeners = config.harnessShutdownListeners.toArray(
+    harnessShutdownListeners = builder.harnessShutdownListeners.toArray(
       new HarnessShutdownListener[0]
     );
 
-    benchmarkSetUpListeners = config.benchmarkSetUpListeners.toArray(
+    benchmarkSetUpListeners = builder.benchmarkSetUpListeners.toArray(
       new BenchmarkSetUpListener[0]
     );
 
-    benchmarkTearDownListeners = config.benchmarkTearDownListeners.toArray(
+    benchmarkTearDownListeners = builder.benchmarkTearDownListeners.toArray(
       new BenchmarkTearDownListener[0]
     );
 
-    operationSetUpListeners = config.operationSetUpListeners.toArray(
+    operationSetUpListeners = builder.operationSetUpListeners.toArray(
       new OperationSetUpListener[0]
     );
 
-    operationTearDownListeners = config.operationTearDownListeners.toArray(
+    operationTearDownListeners = builder.operationTearDownListeners.toArray(
       new OperationTearDownListener[0]
     );
 
-    benchmarkResultListeners = config.benchmarkResultListeners.toArray(
+    benchmarkResultListeners = builder.benchmarkResultListeners.toArray(
       new BenchmarkResultListener[0]
     );
 
-    benchmarkFailureListeners = config.benchmarkFailureListeners.toArray(
+    benchmarkFailureListeners = builder.benchmarkFailureListeners.toArray(
       new BenchmarkFailureListener[0]
     );
   }
@@ -113,6 +120,80 @@ final class EventDispatcher {
   void notifyOnBenchmarkFailure(final String benchName) {
     for (final BenchmarkFailureListener l : benchmarkFailureListeners) {
       l.onBenchmarkFailure(benchName);
+    }
+  }
+
+  //
+
+  static final class Builder {
+    private final List<HarnessInitListener> harnessInitListeners = new ArrayList<>();
+    private final List<HarnessShutdownListener> harnessShutdownListeners = new ArrayList<>();
+    private final List<BenchmarkSetUpListener> benchmarkSetUpListeners = new ArrayList<>();
+    private final List<BenchmarkTearDownListener> benchmarkTearDownListeners = new ArrayList<>();
+    private final List<OperationSetUpListener> operationSetUpListeners = new ArrayList<>();
+    private final List<OperationTearDownListener> operationTearDownListeners = new ArrayList<>();
+    private final List<BenchmarkResultListener> benchmarkResultListeners = new ArrayList<>();
+    private final List<BenchmarkFailureListener> benchmarkFailureListeners = new ArrayList<>();
+
+    /**
+     * Registers a plugin into listener lists based on implemented interfaces.
+     * Note that pair events (setup and teardown) are added to opposite
+     * ends of the lists so that each plugin can wrap existing plugins.
+     *
+     * Therefore it is expected that measurement plugins would be added
+     * as the last ones on the command-line.
+     * @param plugin The {@link Plugin} to register
+     * @return This {@link Builder}.
+     */
+    public Builder withPlugin(Plugin plugin) {
+      if (plugin instanceof HarnessInitListener) {
+        harnessInitListeners.add((HarnessInitListener) plugin);
+      }
+      if (plugin instanceof HarnessShutdownListener) {
+        harnessShutdownListeners.add(0, (HarnessShutdownListener) plugin);
+      }
+
+      if (plugin instanceof BenchmarkSetUpListener) {
+        benchmarkSetUpListeners.add((BenchmarkSetUpListener) plugin);
+      }
+      if (plugin instanceof BenchmarkTearDownListener) {
+        benchmarkTearDownListeners.add(0, (BenchmarkTearDownListener) plugin);
+      }
+
+      if (plugin instanceof OperationSetUpListener) {
+        operationSetUpListeners.add((OperationSetUpListener) plugin);
+      }
+      if (plugin instanceof OperationTearDownListener) {
+        operationTearDownListeners.add(0, (OperationTearDownListener) plugin);
+      }
+
+      if (plugin instanceof BenchmarkResultListener) {
+        benchmarkResultListeners.add((BenchmarkResultListener) plugin);
+      }
+      if (plugin instanceof BenchmarkFailureListener) {
+        benchmarkFailureListeners.add((BenchmarkFailureListener) plugin);
+      }
+
+      return this;
+    }
+
+    /**
+     * Registers a {@link ResultWriter} into respective listener lists.
+     * @param writer The {@link ResultWriter} to register.
+     * @return This {@link Builder}.
+     */
+    public Builder withResultWriter (ResultWriter writer) {
+      harnessShutdownListeners.add(writer);
+      benchmarkResultListeners.add(writer);
+      benchmarkFailureListeners.add(writer);
+      return this;
+    }
+
+    /**
+     * @return A new instance of {@link EventDispatcher}.
+     */
+    public EventDispatcher build() {
+      return new EventDispatcher(this);
     }
   }
 

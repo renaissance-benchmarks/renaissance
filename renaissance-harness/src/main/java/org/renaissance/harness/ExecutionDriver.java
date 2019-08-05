@@ -17,23 +17,20 @@ final class ExecutionDriver implements BenchmarkContext {
 
   private final BenchmarkInfo benchInfo;
 
-  private final Config config;
+  private final String configName;
 
 
   public ExecutionDriver(
-    final BenchmarkInfo benchInfo, final Config config
+    final BenchmarkInfo benchInfo, final String configName
   ) {
     this.benchInfo = benchInfo;
-    this.config = config;
+    this.configName = configName;
   }
 
 
   public final void executeBenchmark(
-    Benchmark benchmark, EventDispatcher dispatcher
+    Benchmark benchmark, EventDispatcher dispatcher, ExecutionPolicy policy
   ) throws ValidationException {
-    final ExecutionPolicy policy = config.policyFactory.create(config, benchInfo);
-    final String configuration = config.configuration;
-
     benchmark.setUpBeforeAll(this);
 
     try {
@@ -43,13 +40,13 @@ final class ExecutionDriver implements BenchmarkContext {
         int operationIndex = 0;
 
         do {
-          printStartInfo(operationIndex, benchInfo, configuration);
+          printStartInfo(operationIndex, benchInfo, configName);
 
           final long durationNanos = executeOperation(operationIndex, benchInfo.name(), benchmark,
             dispatcher, policy.isLastOperation()
           );
 
-          printEndInfo(operationIndex, benchInfo, configuration, durationNanos);
+          printEndInfo(operationIndex, benchInfo, configName, durationNanos);
           policy.registerOperation(operationIndex, durationNanos);
 
           operationIndex++;
@@ -135,7 +132,7 @@ final class ExecutionDriver implements BenchmarkContext {
 
   @Override
   public String stringParameter(String name) {
-    return benchInfo.parameter(config.configuration, name);
+    return benchInfo.parameter(configName, name);
   }
 
 }

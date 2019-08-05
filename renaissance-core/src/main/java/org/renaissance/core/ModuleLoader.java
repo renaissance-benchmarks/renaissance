@@ -1,6 +1,10 @@
 package org.renaissance.core;
 
+import org.renaissance.Plugin;
+
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -8,10 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import org.renaissance.Plugin;
 
 public final class ModuleLoader {
   private static final URL[] URL_ARRAY_TYPE = new URL[0];
@@ -48,44 +50,51 @@ public final class ModuleLoader {
     }
   }
 
-  public static Plugin loadPlugin(String spec) throws ModuleLoadingException {
-    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "loadPlugin");
-    String[] parts = spec.split("!");
-    if (parts.length != 2) {
-      String message = "Plugin loading failed: expecting classpath!classname format.";
-      logger.severe(message);
-      throw new ModuleLoadingException(message);
-    }
-    String[] classpath = parts[0].split(File.pathSeparator);
-    String classname = parts[1];
 
-    /*
-     * Note that we do not use multicatch as some exceptions gives very
-     * little information about their cause (e.g. ClassNotFoundException
-     * on OpenJDK contains only the class name).
-     */
+  public static Plugin loadPlugin(
+    String classPath, String className
+  ) throws ModuleLoadingException {
     try {
-      URL[] classpathUrls = stringsToUrls(classpath);
-      ClassLoader parent = ModuleLoader.class.getClassLoader();
-      ClassLoader loader = new URLClassLoader(classpathUrls, parent);
-      Class<?> pluginClass = loader.loadClass(classname);
-      Object pluginObj = pluginClass.newInstance();
-      return (Plugin) pluginObj;
-    } catch (MalformedURLException e) {
-      String message = String.format("Plugin loading failed: %s.", e.getMessage());
-      logger.severe(message);
-      throw new ModuleLoadingException(message, e);
-    } catch (ClassNotFoundException e) {
-      String message = String.format("Plugin loading failed: unable to load %s (%s).", classname, e.getMessage());
-      logger.severe(message);
-      throw new ModuleLoadingException(message, e);
-    } catch (InstantiationException | IllegalAccessException e) {
-      String message = String.format("Plugin loading failed: unable to instantiate %s (%s).", classname, e.getMessage());
-      logger.severe(message);
-      throw new ModuleLoadingException(message, e);
+      Class<? extends Plugin> pluginClass = loadExternalClass(classPath, className, Plugin.class);
+      Constructor<? extends Plugin> pluginCtor = pluginClass.getDeclaredConstructor();
+      return pluginCtor.newInstance();
+
+    } catch (ReflectiveOperationException e) {
+      throw new ModuleLoadingException(String.format(
+        "could not instantiate plugin %s: %s", className, e.getMessage()
+      ));
     }
   }
-  
+
+  public static <T> Class<? extends T> loadExternalClass(
+    String classPath, String className, Class<T> baseClass
+  ) throws ModuleLoadingException {
+    String[] pathElements = classPath.split(File.pathSeparator);
+    URL[] classPathUrls = stringsToUrls(pathElements);
+    if (classPathUrls.length != pathElements.length) {
+      throw new ModuleLoadingException("malformed URL(s) in classpath specification");
+    }
+
+    try {
+      ClassLoader parent = ModuleLoader.class.getClassLoader();
+      ClassLoader loader = new URLClassLoader(classPathUrls, parent);
+      Class<?> loadedClass = loader.loadClass(className);
+      return loadedClass.asSubclass(baseClass);
+
+    } catch (ClassNotFoundException e) {
+      // Be a bit more verbose, the ClassNotFoundException on OpenJDK
+      // only returns the class name as error message.
+      throw new ModuleLoadingException(String.format(
+        "could not find class '%s'", className
+      ));
+    } catch (ClassCastException e) {
+      throw new ModuleLoadingException(String.format(
+        "class '%s' is not a subclass of '%s'", className, baseClass.getName()
+      ));
+    }
+  }
+
+
   private static Map<String, String[]> getGroupJarNames(InputStream jarList) {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupJarNames");
 
@@ -146,41 +155,36 @@ public final class ModuleLoader {
     return resultUrls.toArray(URL_ARRAY_TYPE);
   }
 
-  private static URL[] stringsToUrls(String[] urls) throws MalformedURLException {
+  private static URL[] stringsToUrls(String[] urls) {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "stringsToUrls");
 
-    /*
-     * What we do here is actually quite simple:
-     *
-     *   urls.map(p -> new URL(path)).toArray()
-     *
-     * However, URL instantiation can throw (checked!) exception that Java
-     * streams are unable to handle. So we surpress that exception and return
-     * null instead that we later filter out. This allows us to later check
-     * whether exception was thrown and artificially re-throw it.
-     *
-     * Next surprise is that it is not possible to construct URL from
-     * relative file path (which would be probably the most common scenario)
-     * so we first try full-fledged URL and then filepath URI.
-     */
-    URL[] result = Arrays.stream(urls)
-      .map(path -> {
-        try {
-          return new URL(path);
-        } catch (MalformedURLException e) {
-          try {
-            return Paths.get(path).toUri().toURL();
-          } catch (MalformedURLException e2) {
-            logger.severe(String.format("Ignoring malformed URL %s.", path));
-            return null;
-          }
-        }
-      }).filter(url -> url != null)
+    //
+    // What we do here is actually quite simple:
+    //
+    //    urls.map(p -> new URL(path)).toArray()
+    //
+    // However, URL instantiation can throw (checked!) exception which Java
+    // streams are unable to handle. So we suppress that exception and return
+    // null instead, which we later filter out. This allows us to later check
+    // whether exception was thrown and artificially re-throw it.
+    //
+    // Next surprise is that it is not possible to construct an URL from a
+    // relative file path (which would be probably the most common scenario)
+    // so we first try a full-fledged URL and then a filepath URI.
+    //
+    Function<String, URL> makeUrl = path -> {
+      try {
+        return Paths.get(path).toUri().toURL();
+      } catch (MalformedURLException e) {
+        logger.severe(String.format("Ignoring malformed URL '%s'", path));
+        return null;
+      }
+    };
+
+    return Arrays.stream(urls)
+      .map(makeUrl)
+      .filter(Objects::nonNull)
       .toArray(URL[]::new);
-    if (result.length != urls.length) {
-      throw new MalformedURLException(String.format("Some URLs in %s are malformed.", String.join(File.pathSeparator, urls)));
-    }
-    return result;
   }
 
   //

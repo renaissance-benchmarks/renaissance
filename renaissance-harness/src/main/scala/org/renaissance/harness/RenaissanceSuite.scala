@@ -1,12 +1,17 @@
 package org.renaissance.harness
 
+import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.ExecutionPolicy
+import org.renaissance.Plugin
 import org.renaissance.core.BenchmarkInfo
 import org.renaissance.core.BenchmarkRegistry
-import org.renaissance.Benchmark
+import org.renaissance.core.ModuleLoader
+import org.renaissance.core.ModuleLoader.ModuleLoadingException
+import org.renaissance.core.ModuleLoader.loadExternalClass
 
-import scala.collection._
 import scala.collection.JavaConverters._
+import scala.collection._
 
 object RenaissanceSuite {
 
@@ -39,14 +44,21 @@ object RenaissanceSuite {
       // Select the desired benchmarks and check that they really exist.
       val specifiers = config.benchmarkSpecifiers.asScala
       val selectedBenchmarks = selectBenchmarks(benchmarks, specifiers)
-      runBenchmarks(selectedBenchmarks, config)
+
+      // Load plugins, init writers, and sign them up for events
+      val dispatcher = createEventDispatcher(config)
+
+      runBenchmarks(selectedBenchmarks, dispatcher, config)
     }
   }
 
-  private def runBenchmarks(benchmarks: Seq[BenchmarkInfo], config: Config): Unit = {
+  private def runBenchmarks(
+    benchmarks: Seq[BenchmarkInfo],
+    dispatcher: EventDispatcher,
+    config: Config
+  ): Unit = {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
-    val dispatcher = new EventDispatcher(config)
 
     // Notify observers that the suite is set up.
     dispatcher.notifyAfterHarnessInit()
@@ -54,10 +66,13 @@ object RenaissanceSuite {
     try {
       for (benchInfo <- benchmarks) {
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
-        val driver = new ExecutionDriver(benchInfo, config)
+        val driver = new ExecutionDriver(benchInfo, config.configuration)
+
+        // Create execution policy
+        val policy = config.policyFactory.create(config, benchInfo)
 
         try {
-          driver.executeBenchmark(benchmark, dispatcher)
+          driver.executeBenchmark(benchmark, dispatcher, policy)
 
         } catch {
           case t: Throwable =>
@@ -106,12 +121,43 @@ object RenaissanceSuite {
         // Add all benchmarks except the dummy ones
         result ++= benchmarks.getAll.asScala.filter(_.group != "dummy")
       } else {
-        println(s"Benchmark (or group) '$specifier' does not exist.")
+        Console.err.println(s"Benchmark (or group) '$specifier' does not exist.")
         sys.exit(1)
       }
     }
 
     result.toSeq
+  }
+
+  private def createEventDispatcher(config: Config) = {
+    val dispatcherBuilder = new EventDispatcher.Builder
+
+    for (specifier <- config.plugins.asScala) {
+      dispatcherBuilder.withPlugin(loadPlugin(specifier))
+    }
+
+    // Result writers go after plugins
+    if (config.csvOutput != null) {
+      dispatcherBuilder.withResultWriter(new CsvWriter(config.csvOutput))
+    }
+
+    if (config.jsonOutput != null) {
+      dispatcherBuilder.withResultWriter(new JsonWriter(config.jsonOutput))
+    }
+
+    dispatcherBuilder.build()
+  }
+
+  private def loadPlugin(specifier: String) = {
+    try {
+      val specifierParts = specifier.trim.split("!", 2)
+      val (classPath, className) = (specifierParts(0), specifierParts(1))
+      ModuleLoader.loadPlugin(classPath, className)
+    } catch {
+      case e: ModuleLoadingException =>
+        Console.err.println(s"Error: failed to load plugin '$specifier': ${e.getMessage}")
+        sys.exit(1)
+    }
   }
 
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
