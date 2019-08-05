@@ -173,17 +173,13 @@ public final class BenchmarkRegistry {
   public static Benchmark loadBenchmark(BenchmarkInfo benchInfo) {
     try {
       final ClassLoader loader = ModuleLoader.getForGroup(benchInfo.group);
+      final Class<?> loadedClass = loader.loadClass(benchInfo.className);
+      final Class<? extends Benchmark> benchClass = loadedClass.asSubclass(Benchmark.class);
+      final Constructor<? extends Benchmark> benchCtor = benchClass.getDeclaredConstructor();
 
       // Make the current thread as independent of the harness as possible.
-      // ClassLoader savedLoader = Thread.currentThread().getContextClassLoader();
       Thread.currentThread().setContextClassLoader(loader);
-
-      final Class<?> benchClass = loader.loadClass(benchInfo.className);
-      final Constructor<?> benchCtor = benchClass.getDeclaredConstructor();
-      final Benchmark result = (Benchmark) benchCtor.newInstance();
-
-      // Thread.currentThread().setContextClassLoader(savedLoader);
-      return result;
+      return benchCtor.newInstance();
 
     } catch (Exception e) {
       throw new RuntimeException("failed to load benchmark " + benchInfo.name, e);
