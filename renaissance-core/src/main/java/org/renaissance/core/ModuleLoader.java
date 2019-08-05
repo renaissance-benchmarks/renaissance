@@ -1,6 +1,7 @@
 package org.renaissance.core;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
@@ -8,6 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.renaissance.Plugin;
 
 public final class ModuleLoader {
   private static final URL[] URL_ARRAY_TYPE = new URL[0];
@@ -39,6 +43,44 @@ public final class ModuleLoader {
       return new URLClassLoader(extractedUrls, parent);
     } catch (IOException e) {
       String message = String.format("Failed to load %s: %s", groupName, e.getMessage());
+      logger.severe(message);
+      throw new ModuleLoadingException(message, e);
+    }
+  }
+
+  public static Plugin loadPlugin(String spec) throws ModuleLoadingException {
+    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "loadPlugin");
+    String[] parts = spec.split("!");
+    if (parts.length != 2) {
+      String message = "Plugin loading failed: expecting classpath!classname format.";
+      logger.severe(message);
+      throw new ModuleLoadingException(message);
+    }
+    String[] classpath = parts[0].split(File.pathSeparator);
+    String classname = parts[1];
+
+    /*
+     * Note that we do not use multicatch as some exceptions gives very
+     * little information about their cause (e.g. ClassNotFoundException
+     * on OpenJDK contains only the class name).
+     */
+    try {
+      URL[] classpathUrls = stringsToUrls(classpath);
+      ClassLoader parent = ModuleLoader.class.getClassLoader();
+      ClassLoader loader = new URLClassLoader(classpathUrls, parent);
+      Class<?> pluginClass = loader.loadClass(classname);
+      Object pluginObj = pluginClass.newInstance();
+      return (Plugin) pluginObj;
+    } catch (MalformedURLException e) {
+      String message = String.format("Plugin loading failed: %s.", e.getMessage());
+      logger.severe(message);
+      throw new ModuleLoadingException(message, e);
+    } catch (ClassNotFoundException e) {
+      String message = String.format("Plugin loading failed: unable to load %s (%s).", classname, e.getMessage());
+      logger.severe(message);
+      throw new ModuleLoadingException(message, e);
+    } catch (InstantiationException | IllegalAccessException e) {
+      String message = String.format("Plugin loading failed: unable to instantiate %s (%s).", classname, e.getMessage());
       logger.severe(message);
       throw new ModuleLoadingException(message, e);
     }
@@ -102,6 +144,43 @@ public final class ModuleLoader {
     }
 
     return resultUrls.toArray(URL_ARRAY_TYPE);
+  }
+
+  private static URL[] stringsToUrls(String[] urls) throws MalformedURLException {
+    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "stringsToUrls");
+
+    /*
+     * What we do here is actually quite simple:
+     *
+     *   urls.map(p -> new URL(path)).toArray()
+     *
+     * However, URL instantiation can throw (checked!) exception that Java
+     * streams are unable to handle. So we surpress that exception and return
+     * null instead that we later filter out. This allows us to later check
+     * whether exception was thrown and artificially re-throw it.
+     *
+     * Next surprise is that it is not possible to construct URL from
+     * relative file path (which would be probably the most common scenario)
+     * so we first try full-fledged URL and then filepath URI.
+     */
+    URL[] result = Arrays.stream(urls)
+      .map(path -> {
+        try {
+          return new URL(path);
+        } catch (MalformedURLException e) {
+          try {
+            return Paths.get(path).toUri().toURL();
+          } catch (MalformedURLException e2) {
+            logger.severe(String.format("Ignoring malformed URL %s.", path));
+            return null;
+          }
+        }
+      }).filter(url -> url != null)
+      .toArray(URL[]::new);
+    if (result.length != urls.length) {
+      throw new MalformedURLException(String.format("Some URLs in %s are malformed.", String.join(File.pathSeparator, urls)));
+    }
+    return result;
   }
 
   //

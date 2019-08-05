@@ -2,6 +2,8 @@ package org.renaissance.harness;
 
 import org.renaissance.Plugin;
 import org.renaissance.Plugin.*;
+import org.renaissance.core.ModuleLoader;
+import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,16 +46,46 @@ final class Config {
   }
 
   public Config withPlugin(String pluginModule) {
-    plugins.addAll(Arrays.stream(pluginModule.split(","))
-      .map(n -> {
-        try {
-          return (Plugin) Class.forName(pluginModule).newInstance();
-        } catch (Throwable e) {
-          throw new RuntimeException(e);
-        }
-      })
-      .collect(Collectors.toList())
-    );
+    Plugin plugin = null;
+    try {
+      plugin = ModuleLoader.loadPlugin(pluginModule);
+    } catch (ModuleLoadingException e) {
+      throw new RuntimeException(e);
+    }
+
+    /*
+     * Register the plugin into respective listener lists.
+     * Note that pair events (setup and teardown) are added to opposite
+     * ends of the lists so that each plugin can wrap existing plugins.
+     *
+     * Therefore it is expected that measurement plugins would be added
+     * as the last ones on the command-line.
+     */
+    plugins.add(plugin);
+    if (plugin instanceof HarnessInitListener) {
+      harnessInitListeners.add((HarnessInitListener) plugin);
+    }
+    if (plugin instanceof HarnessShutdownListener) {
+      harnessShutdownListeners.add(0, (HarnessShutdownListener) plugin);
+    }
+    if (plugin instanceof BenchmarkSetUpListener) {
+      benchmarkSetUpListeners.add((BenchmarkSetUpListener) plugin);
+    }
+    if (plugin instanceof BenchmarkTearDownListener) {
+      benchmarkTearDownListeners.add(0, (BenchmarkTearDownListener) plugin);
+    }
+    if (plugin instanceof OperationSetUpListener) {
+      operationSetUpListeners.add((OperationSetUpListener) plugin);
+    }
+    if (plugin instanceof OperationTearDownListener) {
+      operationTearDownListeners.add(0, (OperationTearDownListener) plugin);
+    }
+    if (plugin instanceof BenchmarkResultListener) {
+      benchmarkResultListeners.add((BenchmarkResultListener) plugin);
+    }
+    if (plugin instanceof BenchmarkFailureListener) {
+      benchmarkFailureListeners.add((BenchmarkFailureListener) plugin);
+    }
 
     return this;
   }
