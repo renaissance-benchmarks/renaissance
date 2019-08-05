@@ -6,8 +6,8 @@ import java.nio.charset.StandardCharsets
 import org.apache.commons.io.FileUtils
 import org.renaissance.Benchmark
 import org.renaissance.Plugin.BenchmarkFailureListener
-import org.renaissance.Plugin.BenchmarkResultListener
 import org.renaissance.Plugin.HarnessShutdownListener
+import org.renaissance.Plugin.MeasurementResultListener
 import spray.json._
 import spray.json.DefaultJsonProtocol._
 
@@ -24,7 +24,7 @@ import scala.collection.mutable
  */
 abstract class ResultWriter
   extends HarnessShutdownListener
-  with BenchmarkResultListener
+  with MeasurementResultListener
   with BenchmarkFailureListener {
 
   class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
@@ -54,7 +54,7 @@ abstract class ResultWriter
     Runtime.getRuntime.removeShutdownHook(storeHook)
   }
 
-  override def onBenchmarkResult(benchmark: String, metric: String, value: Long): Unit = {
+  override def onMeasurementResult(benchmark: String, metric: String, value: Long): Unit = {
     val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
     allResults.update(benchmark, benchStorage)
     val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)

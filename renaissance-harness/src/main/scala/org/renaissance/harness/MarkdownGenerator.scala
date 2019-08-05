@@ -5,15 +5,15 @@ import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 
-import org.renaissance.core.BenchmarkInfo
-import org.renaissance.core.BenchmarkRegistry
-import org.renaissance.core.Launcher
-import org.renaissance.core.ModuleLoader
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult
 import org.renaissance.ExecutionPolicy
 import org.renaissance.Plugin
 import org.renaissance.Plugin._
+import org.renaissance.core.BenchmarkInfo
+import org.renaissance.core.BenchmarkRegistry
+import org.renaissance.core.Launcher
+import org.renaissance.core.ModuleLoader
 import scopt.OptionParser
 
 import scala.collection.JavaConverters._
@@ -114,7 +114,8 @@ object MarkdownGenerator {
     tags("harnessShutdownListenerClass") = classOf[HarnessShutdownListener].getSimpleName
     tags("benchmarkSetUpListenerClass") = classOf[BenchmarkSetUpListener].getSimpleName
     tags("benchmarkTearDownListenerClass") = classOf[BenchmarkTearDownListener].getSimpleName
-    tags("benchmarkResultListenerClass") = classOf[BenchmarkResultListener].getSimpleName
+    tags("measurementResultListenerClass") = classOf[MeasurementResultListener].getSimpleName
+    tags("measurementResultPublisherClass") = classOf[MeasurementResultPublisher].getSimpleName
     tags("benchmarkFailureListenerClass") = classOf[BenchmarkFailureListener].getSimpleName
     tags("operationSetUpListenerClass") = classOf[OperationSetUpListener].getSimpleName
     tags("operationTearDownListenerClass") = classOf[OperationTearDownListener].getSimpleName
@@ -288,7 +289,8 @@ The currently supported events are represented by the following interfaces:
 - `${tags("harnessShutdownListenerClass")}`
 - `${tags("benchmarkSetUpListenerClass")}`
 - `${tags("benchmarkTearDownListenerClass")}`
-- `${tags("benchmarkResultListenerClass")}`
+- `${tags("measurementResultListenerClass")}`
+- `${tags("measurementResultPublisherClass")}`
 - `${tags("benchmarkFailureListenerClass")}`
 - `${tags("operationSetUpListenerClass")}`
 - `${tags("operationTearDownListenerClass")}`

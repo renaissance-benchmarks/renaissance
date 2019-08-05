@@ -20,8 +20,9 @@ final class EventDispatcher {
   private final BenchmarkTearDownListener[] benchmarkTearDownListeners;
   private final OperationSetUpListener[] operationSetUpListeners;
   private final OperationTearDownListener[] operationTearDownListeners;
-  private final BenchmarkResultListener[] benchmarkResultListeners;
+  private final MeasurementResultListener[] measurementResultListeners;
   private final BenchmarkFailureListener[] benchmarkFailureListeners;
+  private final MeasurementResultPublisher[] measurementResultPublishers;
 
 
   private EventDispatcher(Builder builder) {
@@ -49,8 +50,12 @@ final class EventDispatcher {
       new OperationTearDownListener[0]
     );
 
-    benchmarkResultListeners = builder.benchmarkResultListeners.toArray(
-      new BenchmarkResultListener[0]
+    measurementResultListeners = builder.measurementResultListeners.toArray(
+      new MeasurementResultListener[0]
+    );
+
+    measurementResultPublishers = builder.measurementResultPublishers.toArray(
+      new MeasurementResultPublisher[0]
     );
 
     benchmarkFailureListeners = builder.benchmarkFailureListeners.toArray(
@@ -108,11 +113,19 @@ final class EventDispatcher {
   }
 
 
-  void notifyOnBenchmarkResult(
+  void notifyOnMeasurementResult(
     final String benchName, final String metric, final long value
   ) {
-    for (final BenchmarkResultListener l : benchmarkResultListeners) {
-      l.onBenchmarkResult(benchName, metric, value);
+    for (final MeasurementResultListener l : measurementResultListeners) {
+      l.onMeasurementResult(benchName, metric, value);
+    }
+  }
+
+  void notifyMeasurementResultsRequested(
+    final String benchName, final MeasurementResultDispatcher resultDispatcher
+  ) {
+    for (final MeasurementResultPublisher l : measurementResultPublishers) {
+      l.onMeasurementResultsRequested(benchName, resultDispatcher);
     }
   }
 
@@ -132,7 +145,8 @@ final class EventDispatcher {
     private final List<BenchmarkTearDownListener> benchmarkTearDownListeners = new ArrayList<>();
     private final List<OperationSetUpListener> operationSetUpListeners = new ArrayList<>();
     private final List<OperationTearDownListener> operationTearDownListeners = new ArrayList<>();
-    private final List<BenchmarkResultListener> benchmarkResultListeners = new ArrayList<>();
+    private final List<MeasurementResultListener> measurementResultListeners = new ArrayList<>();
+    private final List<MeasurementResultPublisher> measurementResultPublishers = new ArrayList<>();
     private final List<BenchmarkFailureListener> benchmarkFailureListeners = new ArrayList<>();
 
     /**
@@ -167,9 +181,13 @@ final class EventDispatcher {
         operationTearDownListeners.add(0, (OperationTearDownListener) plugin);
       }
 
-      if (plugin instanceof BenchmarkResultListener) {
-        benchmarkResultListeners.add((BenchmarkResultListener) plugin);
+      if (plugin instanceof MeasurementResultListener) {
+        measurementResultListeners.add((MeasurementResultListener) plugin);
       }
+      if (plugin instanceof MeasurementResultPublisher) {
+        measurementResultPublishers.add((MeasurementResultPublisher) plugin);
+      }
+
       if (plugin instanceof BenchmarkFailureListener) {
         benchmarkFailureListeners.add((BenchmarkFailureListener) plugin);
       }
@@ -184,7 +202,7 @@ final class EventDispatcher {
      */
     public Builder withResultWriter (ResultWriter writer) {
       harnessShutdownListeners.add(writer);
-      benchmarkResultListeners.add(writer);
+      measurementResultListeners.add(writer);
       benchmarkFailureListeners.add(writer);
       return this;
     }

@@ -211,7 +211,8 @@ The currently supported events are represented by the following interfaces:
 - `HarnessShutdownListener`
 - `BenchmarkSetUpListener`
 - `BenchmarkTearDownListener`
-- `BenchmarkResultListener`
+- `MeasurementResultListener`
+- `MeasurementResultPublisher`
 - `BenchmarkFailureListener`
 - `OperationSetUpListener`
 - `OperationTearDownListener`
