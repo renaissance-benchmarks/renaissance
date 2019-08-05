@@ -57,8 +57,8 @@ Usage: renaissance [options] [benchmark-specification]
                            Execute the measured operation for a fixed number of seconds (wall-clock time).
   --operation-run-seconds <value>
                            Execute the measured operation for a fixed number of seconds (net operation time).
-  --policy <value>         Use policy to control repeated execution of measured operation, specified as <jar-file>!<class-name>.
-  --plugin <value>         Load harness plugin, specified as <jar-file>!<class-name>. Can appear multiple times.
+  --policy <value>         Use external policy to control repetitions, specified as <class-path>!<class-name>.
+  --plugin <value>         Load external plugin, specified as <classpath>!<class-name>. Can appear multiple times.
   --csv <value>            Output results to CSV file.
   --json <value>           Output results to JSON file.
   -c, --configuration <value>
@@ -107,6 +107,8 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
 
 - `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
+
+- `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters). (default repetitions: 20)
 
 - `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
 
@@ -254,6 +256,7 @@ The following table contains the licensing information of all the benchmarks:
 | dotty | BSD3 | MIT |
 | dummy-empty | MIT | MIT |
 | dummy-failing | MIT | MIT |
+| dummy-param | MIT | MIT |
 | dummy-setup-failing | MIT | MIT |
 | dummy-teardown-failing | MIT | MIT |
 | dummy-validation-failing | MIT | MIT |
