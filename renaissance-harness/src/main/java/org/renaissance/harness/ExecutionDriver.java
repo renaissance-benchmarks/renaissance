@@ -7,6 +7,8 @@ import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.ExecutionPolicy;
 import org.renaissance.core.BenchmarkInfo;
 
+import java.util.Locale;
+
 /**
  * Benchmark execution driver. Captures the sequence of actions performed
  * during benchmark execution (i.e., calling the sequencing methods on a
@@ -114,7 +116,9 @@ final class ExecutionDriver implements BenchmarkContext {
   ) {
     final double durationMillis = durationNanos / 1e6;
 
+    // Use explicit (null) locale to avoid locale-specific float formatting
     System.out.printf(
+      (Locale) null,
       "====== %s (%s) [%s], iteration %d completed (%.3f ms) ======\n",
       benchInfo.name(), benchInfo.group(), confName, index, durationMillis
     );
