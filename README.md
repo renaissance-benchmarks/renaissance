@@ -1,5 +1,4 @@
 
-
 ## Renaissance Benchmark Suite
 
 <p align="center">
@@ -177,11 +176,21 @@ of times and for a fixed amount of time. These policies are implicitly selected 
 setting the number of iterations or the execution time using command line options.
 
 To provide additional control over execution of the measured operation, the suite
-allows using a custom execution policy. A custom policy is a user-defined class
-which implements the ExecutionPolicy interface. To make the harness use
-a custom policy, it needs to be selected using the `--policy <class-path>!<class-name>`
-option on the command line. The `<class-path>` is the class path on which to look for
-the policy class, and `<class-name>` is a fully qualified name of the policy class.
+allows using an external execution policy. An external policy is a user-defined class
+which implements the ExecutionPolicy interface and provide at least a default
+(parameterless) constructor. To make the harness use an external policy, it needs to
+be specified using the `--policy <class-path>!<class-name>` option on the command line.
+The `<class-path>` is the class path on which to look for the policy class, and
+`<class-name>` is a fully qualified name of the policy class.
+
+External policies can receive additional command line arguments. Each argument must be
+given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments
+for the policy. The `--with-arg` option must be specified *after* the `--policy` option
+but *before* any `--plugin` option, because it is also used to pass arguments to external
+plugins (see below). A policy that wants to receive command line arguments must define a
+constructor which takes an array of strings (`String[]`) or a string vararg (`String...`)
+as parameter. The harness tries to use this constructor first and falls back to the default
+(parameterless) constructor.
 
 
 ### Plugins and interfacing with external tools
@@ -200,7 +209,7 @@ you will need to be notified about values of metrics collected by the harness an
 To this end, the suite allows loading custom plugins, which can register to receive events
 related to harness state and benchmark execution. A plugin is a user-defined class which must
 implement the `Plugin` marker interface and provide at least a default
-(no-arguments) constructor. However, such a plugin would not receive any notifications.
+(parameterless) constructor. However, such a plugin would not receive any notifications.
 To receive notifications, the plugin class must implement the corresponding interfaces
 for the `Plugin` interface name space, such as in the following example:
 
@@ -254,9 +263,12 @@ measured operation execution need to be specified last.
 
 Plugins can receive additional command line arguments. Each argument must be given using
 the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for the
-plugin (or policy) that was last mentioned on the command line. Whenever a new `--plugin`
+plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
 (or `--policy`) option is encountered, the subsequent `--with-arg` options will append
-arguments to that plugin (or policy).
+arguments to that plugin (or policy). A plugin that wants to receive command line arguments
+must define a constructor which takes an array of strings (`String[]`) or a string vararg
+(`String...`) as parameter. The harness tries to use this constructor first and falls back
+to the default (parameterless) constructor.
 
 
 ### JMH support

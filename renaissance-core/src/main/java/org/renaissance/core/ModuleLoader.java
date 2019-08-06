@@ -1,8 +1,7 @@
 package org.renaissance.core;
 
-import org.renaissance.Plugin;
-
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -49,30 +48,56 @@ public final class ModuleLoader {
   }
 
 
-  public static Plugin loadPlugin(
-    String classPath, String className, String[] args
+  /**
+   * Simple factory interface for creating instances of given classes
+   * with support for throwing exceptions.
+   *
+   * @param <T> The type of the instances to create.
+   * @param <E> The type of exception that may be thrown.
+   */
+  @FunctionalInterface
+  public interface Factory<T, E extends Throwable> {
+    T getInstance() throws E;
+  }
+
+  /**
+   * Creates a factory which can create instances of (extension) classes. The
+   * factory first tries to use a constructor which takes an array of strings as
+   * a parameter and passes the given arguments array to that constructor. If
+   * such a constructor cannot be found, it falls back to using the default
+   * constructor.
+   * <p>
+   * This method is separate from the {@link #loadExtension(String, String, Class) loadExtension}
+   * method to allow independent loading and (repeated) instantiation of extension
+   * classes.
+   */
+  public static <T> Factory<T, ReflectiveOperationException> createFactory(
+    Class<T> extClass, String[] args
   ) throws ModuleLoadingException {
     try {
-      Class<? extends Plugin> pluginClass = loadExternalClass(
-        classPath, className, Plugin.class
-      );
-
       try {
         // Try the constructor with parameters first
-        return pluginClass.getDeclaredConstructor(String[].class)
-          .newInstance(new Object[]{ args });
+        Constructor<T> ctor = extClass.getDeclaredConstructor(String[].class);
+        return () -> ctor.newInstance(new Object[]{args});
+
       } catch (NoSuchMethodException e) {
         // Fall back to default constructor
-        return pluginClass.getDeclaredConstructor().newInstance();
+        Constructor<T> ctor = extClass.getDeclaredConstructor();
+        return () -> ctor.newInstance();
       }
-    } catch (ReflectiveOperationException e) {
+    } catch (NoSuchMethodException e) {
+      // Every class should have a default constructor
       throw new ModuleLoadingException(String.format(
-        "could not instantiate plugin %s: %s", className, e.getMessage()
+        "cannot find default constructor in '%s'", extClass.getName()
       ));
     }
   }
 
-  public static <T> Class<? extends T> loadExternalClass(
+  /**
+   * Loads an extension class and casts it to the desired base class.
+   * The class is searched for in the given class path.
+   */
+  public static <T> Class<? extends T> loadExtension(
     String classPath, String className, Class<T> baseClass
   ) throws ModuleLoadingException {
     String[] pathElements = classPath.split(File.pathSeparator);
@@ -88,8 +113,8 @@ public final class ModuleLoader {
       return loadedClass.asSubclass(baseClass);
 
     } catch (ClassNotFoundException e) {
-      // Be a bit more verbose, the ClassNotFoundException on OpenJDK
-      // only returns the class name as error message.
+      // Be a bit more verbose, because the ClassNotFoundException
+      // on OpenJDK only returns the class name as error message.
       throw new ModuleLoadingException(String.format(
         "could not find class '%s'", className
       ));
@@ -161,14 +186,12 @@ public final class ModuleLoader {
     return resultUrls.toArray(URL_ARRAY_TYPE);
   }
 
+
   private static URL[] stringsToUrls(String[] urls) {
     Logger logger = Logging.getMethodLogger(ModuleLoader.class, "stringsToUrls");
 
     //
-    // What we do here is actually quite simple:
-    //
-    //    urls.map(p -> new URL(path)).toArray()
-    //
+    // Convert an array of strings to an array of URLs.
     // However, URL instantiation can throw (checked!) exception which Java
     // streams are unable to handle. So we suppress that exception and return
     // null instead, which we later filter out. This allows us to later check

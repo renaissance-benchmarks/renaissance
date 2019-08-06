@@ -5,16 +5,22 @@ import java.util.stream.Collectors;
 
 final class Config {
 
+  enum PolicyType {
+    FIXED_OP_COUNT, FIXED_OP_TIME, FIXED_TIME, EXTERNAL;
+  }
+
   final List<String> benchmarkSpecifiers = new ArrayList<>();
 
   int repetitions = -1;
   int runSeconds = 240;
 
   final Map<String, List<String>> pluginsWithArgs = new LinkedHashMap<>();
-  List<String> extraArgs = new ArrayList<>();
 
-  ExecutionPolicyFactory policyFactory = ExecutionPolicyFactory.FIXED_OP_COUNT;
-  String policy = null;
+  PolicyType policyType = PolicyType.FIXED_OP_COUNT;
+  String externalPolicy;
+  List<String> externalPolicyArgs = new ArrayList<>();
+
+  List<String> extraArgs = new ArrayList<>();
 
   String csvOutput = null;
   String jsonOutput = null;
@@ -46,26 +52,27 @@ final class Config {
   }
 
   public Config withRepetitions(int repetitions) {
-    this.policyFactory = ExecutionPolicyFactory.FIXED_OP_COUNT;
+    this.policyType = PolicyType.FIXED_OP_COUNT;
     this.repetitions = repetitions;
     return this;
   }
 
-  public Config withWallClockRunSeconds(int runSeconds) {
-    this.policyFactory = ExecutionPolicyFactory.FIXED_TIME;
+  public Config withRunSeconds(int runSeconds) {
+    this.policyType = PolicyType.FIXED_TIME;
     this.runSeconds = runSeconds;
     return this;
   }
 
   public Config withOperationRunSeconds(int runSeconds) {
-    this.policyFactory = ExecutionPolicyFactory.FIXED_OP_TIME;
+    this.policyType = PolicyType.FIXED_OP_TIME;
     this.runSeconds = runSeconds;
     return this;
   }
 
   public Config withPolicy(String policy) {
-    this.policyFactory = ExecutionPolicyFactory.CUSTOM;
-    this.policy = policy;
+    this.extraArgs = this.externalPolicyArgs;
+    this.policyType = PolicyType.EXTERNAL;
+    this.externalPolicy = policy;
     return this;
   }
 

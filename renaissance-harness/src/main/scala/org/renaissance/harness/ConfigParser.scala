@@ -19,7 +19,7 @@ final class ConfigParser(tags: Map[String, String]) {
       opt[Int]('t', "run-seconds")
         .valueName("<seconds>")
         .text("Execute the measured operation for fixed time (wall-clock).")
-        .action((v, c) => c.withWallClockRunSeconds(v))
+        .action((v, c) => c.withRunSeconds(v))
       opt[Int]("operation-run-seconds")
         .valueName("<seconds>")
         .text(

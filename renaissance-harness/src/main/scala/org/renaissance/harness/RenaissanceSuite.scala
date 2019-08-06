@@ -1,12 +1,18 @@
 package org.renaissance.harness
 
+import java.util
+import java.util.concurrent.TimeUnit.SECONDS
+
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.ExecutionPolicy
+import org.renaissance.Plugin
 import org.renaissance.core.BenchmarkInfo
 import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.ModuleLoader
 import org.renaissance.core.ModuleLoader.ModuleLoadingException
 
+import scala.annotation.switch
 import scala.collection.JavaConverters._
 import scala.collection._
 
@@ -42,17 +48,21 @@ object RenaissanceSuite {
       val specifiers = config.benchmarkSpecifiers.asScala
       val selectedBenchmarks = selectBenchmarks(benchmarks, specifiers)
 
+      // Load external policy (if any) and create policy factory
+      val policyFactory = createPolicyFactory(config)
+
       // Load plugins, init writers, and sign them up for events
       val dispatcher = createEventDispatcher(config)
 
-      runBenchmarks(selectedBenchmarks, dispatcher, config)
+      runBenchmarks(selectedBenchmarks, config.configuration, policyFactory, dispatcher)
     }
   }
 
   private def runBenchmarks(
     benchmarks: Seq[BenchmarkInfo],
-    dispatcher: EventDispatcher,
-    config: Config
+    configurationName: String,
+    policyFactory: BenchmarkInfo => ExecutionPolicy,
+    dispatcher: EventDispatcher
   ): Unit = {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
@@ -63,10 +73,10 @@ object RenaissanceSuite {
     try {
       for (benchInfo <- benchmarks) {
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
-        val driver = new ExecutionDriver(benchInfo, config.configuration)
+        val driver = new ExecutionDriver(benchInfo, configurationName)
 
         // Create execution policy
-        val policy = config.policyFactory.create(config, benchInfo)
+        val policy = policyFactory(benchInfo)
 
         try {
           driver.executeBenchmark(benchmark, dispatcher, policy)
@@ -130,7 +140,7 @@ object RenaissanceSuite {
     val dispatcherBuilder = new EventDispatcher.Builder
 
     for ((specifier, args) <- config.pluginsWithArgs.asScala) {
-      dispatcherBuilder.withPlugin(loadPlugin(specifier, args))
+      dispatcherBuilder.withPlugin(createPlugin(specifier, args))
     }
 
     // Result writers go after plugins
@@ -145,16 +155,61 @@ object RenaissanceSuite {
     dispatcherBuilder.build()
   }
 
-  private def loadPlugin(specifier: String, args: java.util.List[String]) = {
+  private def createPlugin(specifier: String, args: java.util.List[String]) = {
     try {
-      val specifierParts = specifier.trim.split("!", 2)
-      val (classPath, className) = (specifierParts(0), specifierParts(1))
-      ModuleLoader.loadPlugin(classPath, className, args.toArray(Array[String]()))
+      createExtensionFactory(specifier, args, classOf[Plugin]).getInstance()
     } catch {
-      case e: ModuleLoadingException =>
+      case e @ (_: ModuleLoadingException | _: ReflectiveOperationException) =>
         Console.err.println(s"Error: failed to load plugin '$specifier': ${e.getMessage}")
         sys.exit(1)
     }
+  }
+
+  private def createPolicyFactory(config: Config): BenchmarkInfo => ExecutionPolicy = {
+    config.policyType match {
+      case Config.PolicyType.FIXED_OP_COUNT =>
+        val repetitions = config.repetitions
+        (benchInfo: BenchmarkInfo) => {
+          val count = if (repetitions > 0) repetitions else benchInfo.repetitions()
+          ExecutionPolicies.fixedCount(count);
+        }
+
+      case Config.PolicyType.FIXED_OP_TIME =>
+        val runNanos = SECONDS.toNanos(config.runSeconds)
+        (benchInfo: BenchmarkInfo) => ExecutionPolicies.fixedOperationTime(runNanos)
+
+      case Config.PolicyType.FIXED_TIME =>
+        val runNanos = SECONDS.toNanos(config.runSeconds)
+        (benchInfo: BenchmarkInfo) => ExecutionPolicies.fixedTime(runNanos);
+
+      case Config.PolicyType.EXTERNAL =>
+        try {
+          val policyFactory = createExtensionFactory(
+            config.externalPolicy,
+            config.externalPolicyArgs,
+            classOf[ExecutionPolicy]
+          )
+          (benchInfo: BenchmarkInfo) => policyFactory.getInstance()
+
+        } catch {
+          case e @ (_: ModuleLoadingException | _: ReflectiveOperationException) =>
+            Console.err.println(
+              s"Error: failed to load policy '${config.externalPolicy}': ${e.getMessage}"
+            )
+            sys.exit(1)
+        }
+    }
+  }
+
+  private def createExtensionFactory[T](
+    specifier: String,
+    args: util.List[String],
+    baseClass: Class[T]
+  ) = {
+    val specifierParts = specifier.trim.split("!", 2)
+    val (classPath, className) = (specifierParts(0), specifierParts(1))
+    val extClass = ModuleLoader.loadExtension(classPath, className, baseClass)
+    ModuleLoader.createFactory(extClass, args.toArray(Array[String]()))
   }
 
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
