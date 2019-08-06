@@ -122,6 +122,7 @@ object MarkdownGenerator {
 
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
+    tags("renaissanceSuiteClass") = RenaissanceSuite.getClass.getSimpleName
 
     val harnessConfigParser = new ConfigParser(tags.toMap)
     tags("harnessUsage") = harnessConfigParser.usage()
@@ -203,14 +204,14 @@ in which the community can propose and improve benchmark workloads.
 ### Building the suite
 
 To build the suite and create the so-called fat JAR (or super JAR), you only
-need to run `sbt` built tool:
+need to run `sbt` build tool as follows:
 
 ```
 $$ tools/sbt/bin/sbt assembly
 ```
 
 This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs and create the final JAR under `target` directory.
+bundle the JARs and create the final JAR under the `target` directory.
 
 
 ### Running the benchmarks
@@ -245,46 +246,60 @@ ${tags("benchmarksList")}
 
 ### Execution policies
 
-The suite generally executes the measured operation of a benchmark multiple times
-and uses an execution policy to determine how many time to repeat the execution.
-By default, the suite supports executing the operation a fixed number of times
-and a fixed amount of time. These policies are implicitly selected by setting
-the number of iterations or the execution time on the suite command line.
+The suite generally executes the benchmark's measured operation multiple times
+and uses an execution policy to determine how many times to repeat the execution.
+By default, the suite supports executing the measured operation for a fixed number
+of times and for a fixed amount of time. These policies are implicitly selected by
+setting the number of iterations or the execution time using command line options.
 
-To provide additional control over execution of the measured operation, the
-suite also allows to specify a custom execution policy, which has to implement
-the ${tags("policyClass")} interface.
+To provide additional control over execution of the measured operation, the suite
+allows using a custom execution policy. A custom policy is a user-defined class
+which implements the ${tags("policyClass")} interface. To make the harness use
+a custom policy, it needs to be selected using the `--policy <class-path>!<class-name>`
+option on the command line. The `<class-path>` is the class path on which to look for
+the policy class, and `<class-name>` is a fully qualified name of the policy class.
 
 
 ### Plugins and interfacing with external tools
 
 If you are using an external tool to inspect a benchmark, such as an instrumentation agent,
-or a profiler, then you will need to make this tool aware of when a benchmark iteration
+or a profiler, then you may need to make this tool aware of when a benchmark iteration
 is starting and when it is ending.
-To allow this, the suite allows specifying custom plugins, which are notified when necessary.
-Such a plugin needs to implement the `${tags("pluginClass")}` marker interface as well as
-interfaces from the `${tags("pluginClass")}` interface name space which indicate the events
-a plugin is interested in.
 
-Here is an example of a simple plugin:
+If you need to collect additional metrics associated with the execution of the measured
+operation, e.g., hardware counters, you will need to be notified about operation execution,
+and you may want to store the measured values in the output files produced by the harness.
 
-```
-class MyPlugin extends ${tags("pluginClass")} with ${tags("harnessInitListenerClass")} {
+If you need the harness to produce output files in different format (other than CSV or JSON),
+you will need to be notified about values of metrics collected by the harness and other plugins.
+
+To this end, the suite allows loading custom plugins, which can register to receive events
+related to harness state and benchmark execution. A plugin is a user-defined class which must
+implement the `${tags("pluginClass")}` marker interface and provide at least a default
+(no-arguments) constructor. However, such a plugin would not receive any notifications.
+To receive notifications, the plugin class must implement the corresponding interfaces
+for the `${tags("pluginClass")}` interface name space, such as in the following example:
+
+```scala
+class SimplePlugin extends ${tags("pluginClass")}
+  with ${tags("harnessInitListenerClass")}
+  with ${tags("operationSetUpListenerClass")}
+  with ${tags("operationTearDownListenerClass")} {
   override def afterHarnessInit() = {
     // Initialize the plugin after the harness finished initializing
   }
 
-  override def beforeOperation(index: Int, benchmark: String) = {
+  override def beforeOperation(benchmark: String, index: Int) = {
     // Notify the tool that the measured operation is about to start.
   }
 
-  override def afterOperation(index: Int, benchmark: String) = {
+  override def afterOperation(benchmark: String, index: Int) = {
     // Notify the tool that the measured operations has finished.
   }
 }
 ```
 
-The currently supported events are represented by the following interfaces:
+The events supported by the harness are represented by the following interfaces:
 - `${tags("harnessInitListenerClass")}`
 - `${tags("harnessShutdownListenerClass")}`
 - `${tags("benchmarkSetUpListenerClass")}`
@@ -294,6 +309,31 @@ The currently supported events are represented by the following interfaces:
 - `${tags("benchmarkFailureListenerClass")}`
 - `${tags("operationSetUpListenerClass")}`
 - `${tags("operationTearDownListenerClass")}`
+
+The `${tags("measurementResultPublisherClass")}` interface is intended for plugins that
+want to publish custom measurement results. The harness calls the `onMeasurementResultsRequested`
+method with an instance of event dispatcher which the plugin is supposed to use to notify
+other result listeners about custom measurement results.
+
+The `${tags("measurementResultListenerClass")}` interface is intended for plugins that
+want to receive measurements results (perhaps to store them in a custom format). The
+harness calls the `onMeasurementResult` method with the name of the metric and its value.
+
+Similar to custom execution policy, to make the harness use a plugin, it needs to be
+specified on the command line. The harness can load multiple plugins, and each must be
+enabled using the `--plugin <class-path>!<class-name>` option. The `<class-path>` is the
+class path on which to look for the plugin class, and `<class-name>` is a fully qualified
+name of the plugin class. When registering plugins for pair events (harness init/shutdown,
+benchmark set up/tear down, operation set up/tear down), the plugins specified earlier
+"wrap" plugins specified later. This means that plugins that need to be the closes to the
+measured operation execution need to be specified last.
+
+Plugins can receive additional command line arguments. Each argument must be given using
+the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for the
+plugin (or policy) that was last mentioned on the command line. Whenever a new `--plugin`
+(or `--policy`) option is encountered, the subsequent `--with-arg` options will append
+arguments to that plugin (or policy).
+
 
 ### JMH support
 
@@ -313,6 +353,7 @@ $$ java -jar '${tags("jmhTargetPath")}/${tags("jmhJarPrefix")}-${tags("renaissan
 ### Contributing
 
 Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
+
 
 ### Licensing
 
@@ -349,15 +390,14 @@ Consequently, each *subproject* depends on the *core* project.
 
 Classes from the *core* are loaded (when Renaissance is started) by the default
 classloader. Classes from other projects (including the harness and individual benchmarks)
-are loaded by separate classloaders. This separation helps ensure that there
-are no clashes between dependencies of different projects (each benchmark may
-depend on different versions of external libraries).
+and external plugins or execution policies are loaded by separate classloaders. This
+separation helps ensure that there are no clashes between dependencies of different
+projects (each benchmark may depend on different versions of external libraries).
 
-The *harness* project implements the functionality that is necessary
-to parse the input arguments, to run the benchmarks, to generate documentation,
-and so on. The *harness* is written in Scala and is loaded by the *core*
-in a separate classloader to ensure clean environment for running the
-benchmarks.
+The *harness* project implements the functionality necessary to parse the input
+arguments, to run the benchmarks, to generate documentation, and so on. The *harness*
+is written in a mix of Java and Scala, and is loaded by the *core* in a separate classloader
+to ensure clean environment for running the benchmarks.
 
 The JARs of the subprojects (benchmarks and harness) are copied as generated
 *resources* and embedded into the resulting JAR artifact.
@@ -378,10 +418,10 @@ renaissance-core
 ```
 
 When the harness is started, it uses the input arguments to select the benchmark,
-and then unpacks the JARs of the corresponding benchmark group into a scratch folder.
-The harness then creates a classloader with the unpacked JARs and loads the benchmark group.
-The class loader is created directly below the default class loader. Because
-the default class loader contains only base JRE classes and common interfaces
+and then unpacks the JARs of the corresponding benchmark group into a temporary directory.
+The harness then creates a classloader which searches the unpacked JARs and loads the
+benchmark group. The class loader is created directly below the default class loader.
+Because the default class loader contains only base JRE classes and common interfaces
 of *core*, it ensures that dependencies of a benchmark are never mixed with any
 dependencies of any other benchmark or the harness.
 
@@ -402,9 +442,8 @@ by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
 You can see the further details of the build system in the top-level `build.sbt` file,
-in the `RenaissanceSuite.scala` file and in `${tags("moduleLoaderClass")}`.
-
-
+and in the source code of the `${tags("renaissanceSuiteClass")}` and
+`${tags("moduleLoaderClass")}` classes.
 """
   }
 
