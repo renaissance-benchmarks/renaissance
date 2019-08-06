@@ -120,9 +120,10 @@ public interface Plugin {
      * results to measurement result consumers.
      *
      * @param benchmark Name of the benchmark.
+     * @param opIndex Index of the measured operation execution.
      * @param dispatcher Callback interface for publishing measurement results.
      */
-    void onMeasurementResultsRequested(String benchmark, MeasurementResultListener dispatcher);
+    void onMeasurementResultsRequested(String benchmark, int opIndex, MeasurementResultListener dispatcher);
   }
 
   /**

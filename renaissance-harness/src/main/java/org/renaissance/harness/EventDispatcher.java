@@ -105,7 +105,7 @@ final class EventDispatcher {
 
 
   void notifyBeforeOperationTearDown(
-    final String benchName, final int opIndex, long durationNanos
+    final String benchName, final int opIndex, final long durationNanos
   ) {
     for (final OperationTearDownListener l : operationTearDownListeners) {
       l.beforeOperationTearDown(benchName, opIndex, durationNanos);
@@ -122,10 +122,11 @@ final class EventDispatcher {
   }
 
   void notifyOnMeasurementResultsRequested(
-    final String benchName, final MeasurementResultListener dispatcher
+    final String benchName, final int opIndex,
+    final MeasurementResultListener dispatcher
   ) {
     for (final MeasurementResultPublisher l : measurementResultPublishers) {
-      l.onMeasurementResultsRequested(benchName, dispatcher);
+      l.onMeasurementResultsRequested(benchName, opIndex, dispatcher);
     }
   }
 
