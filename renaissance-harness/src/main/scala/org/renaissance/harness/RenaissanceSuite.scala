@@ -2,13 +2,10 @@ package org.renaissance.harness
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
-import org.renaissance.ExecutionPolicy
-import org.renaissance.Plugin
 import org.renaissance.core.BenchmarkInfo
 import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.ModuleLoader
 import org.renaissance.core.ModuleLoader.ModuleLoadingException
-import org.renaissance.core.ModuleLoader.loadExternalClass
 
 import scala.collection.JavaConverters._
 import scala.collection._
@@ -132,8 +129,8 @@ object RenaissanceSuite {
   private def createEventDispatcher(config: Config) = {
     val dispatcherBuilder = new EventDispatcher.Builder
 
-    for (specifier <- config.plugins.asScala) {
-      dispatcherBuilder.withPlugin(loadPlugin(specifier))
+    for ((specifier, args) <- config.pluginsWithArgs.asScala) {
+      dispatcherBuilder.withPlugin(loadPlugin(specifier, args))
     }
 
     // Result writers go after plugins
@@ -148,11 +145,11 @@ object RenaissanceSuite {
     dispatcherBuilder.build()
   }
 
-  private def loadPlugin(specifier: String) = {
+  private def loadPlugin(specifier: String, args: java.util.List[String]) = {
     try {
       val specifierParts = specifier.trim.split("!", 2)
       val (classPath, className) = (specifierParts(0), specifierParts(1))
-      ModuleLoader.loadPlugin(classPath, className)
+      ModuleLoader.loadPlugin(classPath, className, args.toArray(Array[String]()))
     } catch {
       case e: ModuleLoadingException =>
         Console.err.println(s"Error: failed to load plugin '$specifier': ${e.getMessage}")

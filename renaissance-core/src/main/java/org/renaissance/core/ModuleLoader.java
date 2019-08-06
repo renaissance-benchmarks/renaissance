@@ -3,8 +3,6 @@ package org.renaissance.core;
 import org.renaissance.Plugin;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -52,13 +50,21 @@ public final class ModuleLoader {
 
 
   public static Plugin loadPlugin(
-    String classPath, String className
+    String classPath, String className, String[] args
   ) throws ModuleLoadingException {
     try {
-      Class<? extends Plugin> pluginClass = loadExternalClass(classPath, className, Plugin.class);
-      Constructor<? extends Plugin> pluginCtor = pluginClass.getDeclaredConstructor();
-      return pluginCtor.newInstance();
+      Class<? extends Plugin> pluginClass = loadExternalClass(
+        classPath, className, Plugin.class
+      );
 
+      try {
+        // Try the constructor with parameters first
+        return pluginClass.getDeclaredConstructor(String[].class)
+          .newInstance(new Object[]{ args });
+      } catch (NoSuchMethodException e) {
+        // Fall back to default constructor
+        return pluginClass.getDeclaredConstructor().newInstance();
+      }
     } catch (ReflectiveOperationException e) {
       throw new ModuleLoadingException(String.format(
         "could not instantiate plugin %s: %s", className, e.getMessage()

@@ -44,6 +44,12 @@ final class ConfigParser(tags: Map[String, String]) {
             else failure("expected <class-path>!<class-name> in external plugin specification")
         )
         .unbounded()
+      opt[String]("with-arg")
+        .text(
+          "Provides an argument to the plugin or policy specified last. Can appear multiple times."
+        )
+        .action((v, c) => c.withExtraArg(v))
+        .unbounded()
       opt[String]("csv")
         .text("Output results to CSV file.")
         .action((v, c) => c.withCsvOutput(v))

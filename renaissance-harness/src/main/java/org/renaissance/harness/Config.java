@@ -1,8 +1,6 @@
 package org.renaissance.harness;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 final class Config {
@@ -11,7 +9,9 @@ final class Config {
 
   int repetitions = -1;
   int runSeconds = 240;
-  final List<String> plugins = new ArrayList<>();
+
+  final Map<String, List<String>> pluginsWithArgs = new LinkedHashMap<>();
+  List<String> extraArgs = new ArrayList<>();
 
   ExecutionPolicyFactory policyFactory = ExecutionPolicyFactory.FIXED_OP_COUNT;
   String policy = null;
@@ -35,7 +35,13 @@ final class Config {
   }
 
   public Config withPlugin(String plugin) {
-    plugins.add(plugin);
+    extraArgs = new ArrayList<>();
+    pluginsWithArgs.put(plugin, extraArgs);
+    return this;
+  }
+
+  public Config withExtraArg(String arg) {
+    extraArgs.add(arg);
     return this;
   }
 

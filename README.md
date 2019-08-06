@@ -59,6 +59,7 @@ Usage: renaissance [options] [benchmark-specification]
                            Execute the measured operation for a fixed number of seconds (net operation time).
   --policy <value>         Use external policy to control repetitions, specified as <class-path>!<class-name>.
   --plugin <value>         Load external plugin, specified as <classpath>!<class-name>. Can appear multiple times.
+  --with-arg <value>       Provides an argument to the plugin or policy specified last. Can appear multiple times.
   --csv <value>            Output results to CSV file.
   --json <value>           Output results to JSON file.
   -c, --configuration <value>
