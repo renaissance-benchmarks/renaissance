@@ -116,25 +116,13 @@ public interface Plugin {
      * results (if any). Will be called once after completion of the measured operation,
      * after the {@link OperationTearDownListener#beforeOperationTearDown(String, int, long) beforeOperationTearDown}
      * event, but only if the {@link BenchmarkResult} returned by the measured operation is valid.
+     * The listener should use the provided {@code dispatcher} to broadcast measurement
+     * results to measurement result consumers.
      *
      * @param benchmark Name of the benchmark.
      * @param dispatcher Callback interface for publishing measurement results.
      */
-    void onMeasurementResultsRequested(String benchmark, MeasurementResultDispatcher dispatcher);
-  }
-
-  /**
-   * Callback interface provided to plugins implementing the {@link MeasurementResultPublisher} interface
-   * which allows plugins to publish their measurement results.
-   */
-  interface MeasurementResultDispatcher {
-    /**
-     * Publishes a (custom) measurement result to registered {@link MeasurementResultListener result listeners}.
-     *
-     * @param metric The name of the result metric (e.g. branch-misses).
-     * @param value The value of the result metric.
-     */
-    void publishMeasurementResult(String metric, long value);
+    void onMeasurementResultsRequested(String benchmark, MeasurementResultListener dispatcher);
   }
 
   /**

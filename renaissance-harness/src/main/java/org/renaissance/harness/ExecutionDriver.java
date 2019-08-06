@@ -93,8 +93,8 @@ final class ExecutionDriver implements BenchmarkContext {
     dispatcher.notifyOnMeasurementResult(benchName, "unixts.before", unixTsBefore);
     dispatcher.notifyOnMeasurementResult(benchName, "unixts.after", unixTsAfter);
 
-    dispatcher.notifyMeasurementResultsRequested(
-      benchName, (metric, value) -> dispatcher.notifyOnMeasurementResult(benchName, metric, value)
+    dispatcher.notifyOnMeasurementResultsRequested(
+      benchName, dispatcher::notifyOnMeasurementResult
     );
 
     return durationNanos;

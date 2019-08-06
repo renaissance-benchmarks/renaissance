@@ -121,11 +121,11 @@ final class EventDispatcher {
     }
   }
 
-  void notifyMeasurementResultsRequested(
-    final String benchName, final MeasurementResultDispatcher resultDispatcher
+  void notifyOnMeasurementResultsRequested(
+    final String benchName, final MeasurementResultListener dispatcher
   ) {
     for (final MeasurementResultPublisher l : measurementResultPublishers) {
-      l.onMeasurementResultsRequested(benchName, resultDispatcher);
+      l.onMeasurementResultsRequested(benchName, dispatcher);
     }
   }
 
