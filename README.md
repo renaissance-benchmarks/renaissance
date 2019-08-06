@@ -51,18 +51,20 @@ Renaissance Benchmark Suite, version 0.10.0
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
-  -r, --repetitions <value>
+  -r, --repetitions <count>
                            Execute the measured operation a fixed number of times.
-  -t, --run-seconds <value>
-                           Execute the measured operation for a fixed number of seconds (wall-clock time).
-  --operation-run-seconds <value>
-                           Execute the measured operation for a fixed number of seconds (net operation time).
-  --policy <value>         Use external policy to control repetitions, specified as <class-path>!<class-name>.
-  --plugin <value>         Load external plugin, specified as <classpath>!<class-name>. Can appear multiple times.
-  --with-arg <value>       Provides an argument to the plugin or policy specified last. Can appear multiple times.
-  --csv <value>            Output results to CSV file.
-  --json <value>           Output results to JSON file.
-  -c, --configuration <value>
+  -t, --run-seconds <seconds>
+                           Execute the measured operation for fixed time (wall-clock).
+  --operation-run-seconds <seconds>
+                           Execute the measured operation for fixed accumulated operation time (wall-clock).
+  --policy <class-path>!<class-name>
+                           Use external policy to control repetition of measured operation execution.
+  --plugin <class-path>!<class-name>
+                           Load external plugin. Can appear multiple times.
+  --with-arg <value>       Adds an argument to the plugin or policy specified last. Can appear multiple times.
+  --csv <file-path>        Output results to CSV file.
+  --json <file-path>       Output results to JSON file.
+  -c, --configuration <name>
                            Run benchmarks with given named configuration.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks (each benchmark name on separate line).
