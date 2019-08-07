@@ -15,22 +15,31 @@ refs:
       - 'javac -version'
       - ./tools/sbt/bin/sbt assembly
       - ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
+      # Ensure that the JMH bundle contains non-empty BenchmarkList
+      - 'test $(unzip -p renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar META-INF/BenchmarkList | wc -l) -gt 0'
+      # Clear cache directory
       - 'mkdir -p "$HOME/.prebuilt"'
       - 'ls "$HOME/.prebuilt"'
-      - 'rm -rf "$HOME/.prebuilt"/*.jar'
-      - 'cp target/renaissance-gpl-$RENAISSANCE_VERSION.jar "$HOME/.prebuilt/"`git rev-parse HEAD`.jar'
-      - 'cp renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar "$HOME/.prebuilt/"`git rev-parse HEAD`-jmh-assembly.jar'
+      - 'rm -f "$HOME/.prebuilt"/*.jar'
+      # Store bundles in cache directory
+      - 'cp target/renaissance-gpl-$RENAISSANCE_VERSION.jar "$HOME/.prebuilt/$(git rev-parse HEAD).jar"'
+      - 'cp renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar "$HOME/.prebuilt/$(git rev-parse HEAD)-jmh-assembly.jar"'
 
   - &bench
     stage: benchmark
     script:
+      # Get bundles from cache or build them
       - mkdir -p target
+      - CACHED_JAR_NAME="$HOME/.prebuilt/$(git rev-parse HEAD).jar"; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" target/renaissance-gpl-$RENAISSANCE_VERSION.jar; else ./tools/sbt/bin/sbt assembly; fi
       - mkdir -p renaissance-jmh/target/scala-2.12
-      - CACHED_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`.jar; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" target/renaissance-gpl-$RENAISSANCE_VERSION.jar; else ./tools/sbt/bin/sbt assembly; fi
-      - CACHED_JMH_JAR_NAME="$HOME/.prebuilt/"`git rev-parse HEAD`-jmh-assembly.jar; if [ -e "$CACHED_JMH_JAR_NAME" ]; then cp "$CACHED_JMH_JAR_NAME" renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar; else ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly; fi
+      - CACHED_JMH_JAR_NAME="$HOME/.prebuilt/$(git rev-parse HEAD)-jmh-assembly.jar"; if [ -e "$CACHED_JMH_JAR_NAME" ]; then cp "$CACHED_JMH_JAR_NAME" renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar; else ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly; fi
+      # Ensure that the JMH bundle contains non-empty BenchmarkList
+      - 'test $(unzip -p renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar META-INF/BenchmarkList | wc -l) -gt 0'
       - 'java -version'
+      # Test benchmarks under Renaissance harness
       - 'java -jar ./target/renaissance-gpl-$RENAISSANCE_VERSION.jar --raw-list | grep -v "^dummy" >list.txt'
-      - 'for BENCH in `cat list.txt`; do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-gpl-$RENAISSANCE_VERSION.jar -c test -r 1 "$BENCH" || exit 1; done'
+      - 'for BENCH in $(cat list.txt); do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-gpl-$RENAISSANCE_VERSION.jar -c test -r 1 "$BENCH" || exit 1; done'
+      # Test benchmarks under JMH harness
       - 'java -Xms2500M -Xmx2500M -jar ./renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar -wi 0 -i 1 -f 1'
 
 jobs:
