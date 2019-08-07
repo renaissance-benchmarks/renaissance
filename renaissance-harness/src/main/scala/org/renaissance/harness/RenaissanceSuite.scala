@@ -1,6 +1,5 @@
 package org.renaissance.harness
 
-import java.util
 import java.util.concurrent.TimeUnit.SECONDS
 
 import org.renaissance.Benchmark
@@ -12,7 +11,6 @@ import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.ModuleLoader
 import org.renaissance.core.ModuleLoader.ModuleLoadingException
 
-import scala.annotation.switch
 import scala.collection.JavaConverters._
 import scala.collection._
 
@@ -44,9 +42,7 @@ object RenaissanceSuite {
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage())
     } else {
-      // Select the desired benchmarks and check that they really exist.
-      val specifiers = config.benchmarkSpecifiers.asScala
-      val selectedBenchmarks = selectBenchmarks(benchmarks, specifiers)
+      val selected = selectBenchmarks(benchmarks, config.benchmarkSpecifiers)
 
       // Load external policy (if any) and create policy factory
       val policyFactory = createPolicyFactory(config)
@@ -54,7 +50,8 @@ object RenaissanceSuite {
       // Load plugins, init writers, and sign them up for events
       val dispatcher = createEventDispatcher(config)
 
-      runBenchmarks(selectedBenchmarks, config.configuration, policyFactory, dispatcher)
+      // Note: no access to Config beyond this call
+      runBenchmarks(selected, config.configuration, policyFactory, dispatcher)
     }
   }
 
@@ -137,25 +134,21 @@ object RenaissanceSuite {
   }
 
   private def createEventDispatcher(config: Config) = {
-    val dispatcherBuilder = new EventDispatcher.Builder
+    val builder = new EventDispatcher.Builder
 
-    for ((specifier, args) <- config.pluginsWithArgs.asScala) {
-      dispatcherBuilder.withPlugin(createPlugin(specifier, args))
+    // Register plugins first
+    for ((specifier, args) <- config.pluginsWithArgs) {
+      builder.withPlugin(createPlugin(specifier, args))
     }
 
     // Result writers go after plugins
-    if (config.csvOutput != null) {
-      dispatcherBuilder.withResultWriter(new CsvWriter(config.csvOutput))
-    }
+    config.csvOutput.foreach(f => builder.withResultWriter(new CsvWriter(f)))
+    config.jsonOutput.foreach(f => builder.withResultWriter(new JsonWriter(f)))
 
-    if (config.jsonOutput != null) {
-      dispatcherBuilder.withResultWriter(new JsonWriter(config.jsonOutput))
-    }
-
-    dispatcherBuilder.build()
+    builder.build()
   }
 
-  private def createPlugin(specifier: String, args: java.util.List[String]) = {
+  private def createPlugin(specifier: String, args: mutable.Seq[String]) = {
     try {
       createExtensionFactory(specifier, args, classOf[Plugin]).getInstance()
     } catch {
@@ -167,29 +160,29 @@ object RenaissanceSuite {
 
   private def createPolicyFactory(config: Config): BenchmarkInfo => ExecutionPolicy = {
     config.policyType match {
-      case Config.PolicyType.FIXED_OP_COUNT =>
+      case PolicyType.FIXED_OP_COUNT =>
         val repetitions = config.repetitions
         (benchInfo: BenchmarkInfo) => {
-          val count = if (repetitions > 0) repetitions else benchInfo.repetitions()
-          ExecutionPolicies.fixedCount(count);
+          val count = repetitions.getOrElse(benchInfo.repetitions())
+          ExecutionPolicies.fixedCount(count)
         }
 
-      case Config.PolicyType.FIXED_OP_TIME =>
+      case PolicyType.FIXED_OP_TIME =>
         val runNanos = SECONDS.toNanos(config.runSeconds)
-        (benchInfo: BenchmarkInfo) => ExecutionPolicies.fixedOperationTime(runNanos)
+        _ => ExecutionPolicies.fixedOperationTime(runNanos)
 
-      case Config.PolicyType.FIXED_TIME =>
+      case PolicyType.FIXED_TIME =>
         val runNanos = SECONDS.toNanos(config.runSeconds)
-        (benchInfo: BenchmarkInfo) => ExecutionPolicies.fixedTime(runNanos);
+        _ => ExecutionPolicies.fixedTime(runNanos)
 
-      case Config.PolicyType.EXTERNAL =>
+      case PolicyType.EXTERNAL =>
         try {
           val policyFactory = createExtensionFactory(
             config.externalPolicy,
             config.externalPolicyArgs,
             classOf[ExecutionPolicy]
           )
-          (benchInfo: BenchmarkInfo) => policyFactory.getInstance()
+          _ => policyFactory.getInstance()
 
         } catch {
           case e @ (_: ModuleLoadingException | _: ReflectiveOperationException) =>
@@ -203,13 +196,13 @@ object RenaissanceSuite {
 
   private def createExtensionFactory[T](
     specifier: String,
-    args: util.List[String],
+    args: mutable.Seq[String],
     baseClass: Class[T]
   ) = {
     val specifierParts = specifier.trim.split("!", 2)
     val (classPath, className) = (specifierParts(0), specifierParts(1))
     val extClass = ModuleLoader.loadExtension(classPath, className, baseClass)
-    ModuleLoader.createFactory(extClass, args.toArray(Array[String]()))
+    ModuleLoader.createFactory(extClass, args.toArray[String])
   }
 
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
