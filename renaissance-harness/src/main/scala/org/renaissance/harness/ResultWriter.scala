@@ -22,7 +22,7 @@ import scala.collection.mutable
  * Descendants are expected to override only the store() method that
  * actually stores the collected data.
  */
-abstract class ResultWriter
+private abstract class ResultWriter
   extends HarnessShutdownListener
   with MeasurementResultListener
   with BenchmarkFailureListener {
@@ -89,7 +89,7 @@ abstract class ResultWriter
       )
 }
 
-class CsvWriter(val filename: String) extends ResultWriter {
+private class CsvWriter(val filename: String) extends ResultWriter {
 
   def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuffer
@@ -123,7 +123,7 @@ class CsvWriter(val filename: String) extends ResultWriter {
   }
 }
 
-class JsonWriter(val filename: String) extends ResultWriter {
+private class JsonWriter(val filename: String) extends ResultWriter {
 
   def getEnvironment(termination: String): JsValue = {
     val result = new mutable.HashMap[String, JsValue]

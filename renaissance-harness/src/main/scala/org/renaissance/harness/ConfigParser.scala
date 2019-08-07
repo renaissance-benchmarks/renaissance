@@ -2,7 +2,7 @@ package org.renaissance.harness
 
 import scopt.OptionParser
 
-final class ConfigParser(tags: Map[String, String]) {
+private final class ConfigParser(tags: Map[String, String]) {
 
   private val parser = createParser(tags)
 
