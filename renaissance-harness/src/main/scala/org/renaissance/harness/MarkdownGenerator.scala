@@ -488,7 +488,7 @@ that extends (implements) the `${tags("benchmarkClass")}` interface.
 
 Here is an example:
 
-```
+```scala
 import org.renaissance._
 import org.renaissance.Benchmark._
 

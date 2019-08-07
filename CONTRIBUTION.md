@@ -25,7 +25,7 @@ that extends (implements) the `Benchmark` interface.
 
 Here is an example:
 
-```
+```scala
 import org.renaissance._
 import org.renaissance.Benchmark._
 
