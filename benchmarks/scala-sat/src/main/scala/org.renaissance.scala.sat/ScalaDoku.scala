@@ -9,6 +9,7 @@ import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 object Solver {
@@ -129,7 +130,7 @@ final class ScalaDoku extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    BenchmarkResult.compound(
+    Validators.compound(
       new DokuResult(Solver.solve(puzzleWithAFewHoles), SOLVED_PUZZLE),
       new DokuResult(Solver.solve(puzzleWithOneHole), SOLVED_PUZZLE)
     )

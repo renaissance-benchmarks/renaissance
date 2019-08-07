@@ -4,6 +4,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("mnemonics")
@@ -75,6 +76,6 @@ final class Mnemonics extends Benchmark {
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = coder.translate(coderInputParam)
-    BenchmarkResult.hashing(expectedHashParam, result)
+    Validators.hashing(expectedHashParam, result)
   }
 }

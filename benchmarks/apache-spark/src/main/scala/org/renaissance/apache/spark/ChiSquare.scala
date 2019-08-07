@@ -15,6 +15,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.util.Random
@@ -106,7 +107,7 @@ final class ChiSquare extends Benchmark with SparkUtil {
     results = Statistics.chiSqTest(input)
 
     // TODO: add more sophisticated validation
-    BenchmarkResult.simple("component count", COMPONENTS, results.size)
+    Validators.simple("component count", COMPONENTS, results.size)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

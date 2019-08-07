@@ -11,6 +11,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.collection._
@@ -117,6 +118,6 @@ final class Dotty extends Benchmark {
     sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
 
     // TODO: add proper validation
-    BenchmarkResult.dummy()
+    Validators.dummy()
   }
 }

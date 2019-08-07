@@ -16,6 +16,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("log-regression")
@@ -121,7 +122,7 @@ final class LogRegression extends Benchmark with SparkUtil {
     mlModel = lor.fit(rdd.toDF("label", "features"))
 
     // TODO: add proper validation
-    return BenchmarkResult.dummy(mlModel)
+    Validators.dummy(mlModel)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

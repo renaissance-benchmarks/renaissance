@@ -3,6 +3,7 @@ package org.renaissance.dummy;
 import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
+import org.renaissance.BenchmarkResult.Validators;
 import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
@@ -20,7 +21,7 @@ public final class DummyFailing implements Benchmark {
     if (counter > 1) {
       throw new AssertionError("Intentionally failing");
     } else {
-      return BenchmarkResult.simple("nothing", 0, 0);
+      return Validators.simple("nothing", 0, 0);
     }
   }
 }

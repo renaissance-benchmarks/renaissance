@@ -6,6 +6,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("akka-uct")
@@ -50,6 +51,6 @@ final class AkkaUct extends Benchmark {
     }
 
     // TODO: add proper validation
-    BenchmarkResult.dummy()
+    Validators.dummy()
   }
 }

@@ -4,6 +4,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("future-genetic")
@@ -64,6 +65,6 @@ final class FutureGenetic extends Benchmark {
     val result = benchmark.runRepetition()
 
     // TODO: add proper validation
-    BenchmarkResult.dummy(result)
+    Validators.dummy(result)
   }
 }

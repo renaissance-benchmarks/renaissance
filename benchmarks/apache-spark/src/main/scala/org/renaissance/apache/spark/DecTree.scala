@@ -20,6 +20,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("dec-tree")
@@ -135,9 +136,9 @@ final class DecTree extends Benchmark with SparkUtil {
     iteration += 1
 
     // TODO: add more in-depth validation
-    BenchmarkResult.compound(
-      BenchmarkResult.simple("tree depth", 2, treeModel.depth),
-      BenchmarkResult.simple("node count", 5, treeModel.numNodes)
+    Validators.compound(
+      Validators.simple("tree depth", 2, treeModel.depth),
+      Validators.simple("node count", 5, treeModel.numNodes)
     )
   }
 

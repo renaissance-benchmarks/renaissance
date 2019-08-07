@@ -4,6 +4,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("rx-scrabble")
@@ -53,7 +54,7 @@ final class RxScrabble extends Benchmark {
     new BenchmarkResult {
       override def validate() = {
         val actualWords = RxScrabbleImplementation.prepareForValidation(result)
-        BenchmarkResult.hashing(expectedHashParam, actualWords).validate()
+        Validators.hashing(expectedHashParam, actualWords).validate()
       }
     }
   }

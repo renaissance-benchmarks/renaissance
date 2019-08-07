@@ -13,6 +13,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.util.Random
@@ -104,6 +105,6 @@ final class Als extends Benchmark with SparkUtil {
     factModel = als.run(ratings)
 
     // TODO: add proper validation of the generated model
-    BenchmarkResult.dummy(factModel)
+    Validators.dummy(factModel)
   }
 }

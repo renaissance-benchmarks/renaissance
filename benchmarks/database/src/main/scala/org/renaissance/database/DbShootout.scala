@@ -9,6 +9,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("db-shootout")
@@ -103,6 +104,6 @@ final class DbShootout extends Benchmark {
     mvStore.parWrite(mvStoreWriter)
 
     // TODO: add proper validation
-    BenchmarkResult.dummy()
+    Validators.dummy()
   }
 }

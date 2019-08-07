@@ -11,6 +11,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("page-rank")
@@ -113,7 +114,7 @@ final class PageRank extends Benchmark with SparkUtil {
     }
 
     // TODO: add more sophisticated validation
-    BenchmarkResult.simple("ranks count", expectedRankCountParam, ranks.count())
+    Validators.simple("ranks count", expectedRankCountParam, ranks.count())
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

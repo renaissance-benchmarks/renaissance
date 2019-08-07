@@ -8,6 +8,7 @@ import org.renaissance.License
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult.Validators
 
 @Name("neo4j-analytics")
 @Group("neo4j")
@@ -65,6 +66,6 @@ final class Neo4jAnalytics extends Benchmark {
     benchmark.run()
 
     // TODO: add proper validation
-    BenchmarkResult.dummy(benchmark)
+    Validators.dummy(benchmark)
   }
 }

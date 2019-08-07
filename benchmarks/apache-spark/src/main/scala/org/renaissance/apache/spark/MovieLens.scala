@@ -19,6 +19,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.io.Source
@@ -313,7 +314,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     val recommendations = helper.recommendMovies()
 
     // TODO: add proper validation
-    BenchmarkResult.dummy(recommendations)
+    Validators.dummy(recommendations)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

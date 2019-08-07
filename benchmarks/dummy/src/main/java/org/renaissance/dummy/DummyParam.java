@@ -6,8 +6,8 @@ import org.renaissance.BenchmarkResult;
 import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
-import static org.renaissance.BenchmarkResult.compound;
-import static org.renaissance.BenchmarkResult.simple;
+import static org.renaissance.BenchmarkResult.Validators.compound;
+import static org.renaissance.BenchmarkResult.Validators.simple;
 
 @Name("dummy-param")
 @Group("dummy")

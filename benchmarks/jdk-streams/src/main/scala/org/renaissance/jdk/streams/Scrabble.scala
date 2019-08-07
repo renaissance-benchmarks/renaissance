@@ -4,6 +4,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.License
 
 import scala.collection.JavaConverters
@@ -50,7 +51,7 @@ final class Scrabble extends Benchmark {
 
     () => {
       val actualWords = JavaScrabble.prepareForValidation(result)
-      BenchmarkResult.assertEquals(
+      Assert.assertEquals(
         expectedResultParam.size,
         actualWords.size,
         "best words count"
@@ -59,7 +60,7 @@ final class Scrabble extends Benchmark {
       for ((expected, actual) <- expectedResultParam zip JavaConverters.asScalaBuffer(
              actualWords
            )) {
-        BenchmarkResult.assertEquals(expected, actual, "best words")
+        Assert.assertEquals(expected, actual, "best words")
       }
     }
   }

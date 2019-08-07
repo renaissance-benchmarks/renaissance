@@ -14,6 +14,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.util.Random
@@ -125,7 +126,7 @@ final class GaussMix extends Benchmark with SparkUtil {
       .run(input)
 
     // TODO: add more in-depth validation
-    BenchmarkResult.simple("number of gaussians", 6, gmm.k)
+    Validators.simple("number of gaussians", 6, gmm.k)
   }
 
 }

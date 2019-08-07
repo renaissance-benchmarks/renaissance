@@ -22,6 +22,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("finagle-http")
@@ -190,7 +191,7 @@ final class FinagleHttp extends Benchmark {
       totalLength += thread.totalContentLength
     }
 
-    BenchmarkResult.simple(
+    Validators.simple(
       "total request length",
       clientCountParam * requestCountParam * REQUEST_CONTENT_SIZE,
       totalLength

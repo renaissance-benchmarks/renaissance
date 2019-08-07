@@ -15,6 +15,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("naive-bayes")
@@ -123,9 +124,9 @@ class NaiveBayes extends Benchmark with SparkUtil {
       .setModelType("multinomial")
     bayesModel = bayes.run(data)
 
-    BenchmarkResult.compound(
-      BenchmarkResult.simple("pi 0", -0.84397, bayesModel.pi(0), 0.001),
-      BenchmarkResult.simple("pi 1", -0.56212, bayesModel.pi(1), 0.001)
+    Validators.compound(
+      Validators.simple("pi 0", -0.84397, bayesModel.pi(0), 0.001),
+      Validators.simple("pi 1", -0.56212, bayesModel.pi(1), 0.001)
     )
   }
 }

@@ -4,6 +4,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("fj-kmeans")
@@ -50,7 +51,7 @@ final class FjKmeans extends Benchmark {
     }
 
     // TODO: add proper validation of the individual sub-benchmarks
-    BenchmarkResult.dummy(results)
+    Validators.dummy(results)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

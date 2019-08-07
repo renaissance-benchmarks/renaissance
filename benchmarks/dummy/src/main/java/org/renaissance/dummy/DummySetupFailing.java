@@ -3,6 +3,7 @@ package org.renaissance.dummy;
 import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
+import org.renaissance.BenchmarkResult.Validators;
 import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
@@ -19,6 +20,6 @@ public final class DummySetupFailing implements Benchmark {
 
   @Override
   public BenchmarkResult run(BenchmarkContext c) {
-    return BenchmarkResult.simple("nothing", 0, 0);
+    return Validators.simple("nothing", 0, 0);
   }
 }

@@ -8,6 +8,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.concurrent.Await
@@ -63,7 +64,7 @@ final class Reactors extends Benchmark {
 
     // TODO: The use of scaling factor is not strictly correct with Fibonacci and Roundabout. For these benchmarks, the work done is not a linear function of the input argument.
 
-    BenchmarkResult.compound(
+    Validators.compound(
       Baseline.run(system, (1000000 * scalingFactorParam).intValue()),
       BigBench.run(system, (4000 * scalingFactorParam).intValue()),
       CountingActor.run(system, (8000000 * scalingFactorParam).intValue()),
@@ -108,7 +109,7 @@ object Baseline {
       }
     })
 
-    BenchmarkResult.simple("Baseline", 0, Await.result(done.future, Duration.Inf).longValue)
+    Validators.simple("Baseline", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -174,7 +175,7 @@ object BigBench {
     })
     for (i <- 0 until BigBench.NUM_WORKERS) workers(i) ! Start()
 
-    BenchmarkResult.simple("BigBench", 0, Await.result(done.future, Duration.Inf).longValue)
+    Validators.simple("BigBench", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -220,7 +221,7 @@ object CountingActor {
       self.main.seal()
     })
 
-    BenchmarkResult.simple(
+    Validators.simple(
       "CountingActor",
       sz,
       Await.result(done.future, Duration.Inf).longValue
@@ -276,7 +277,7 @@ object Fibonacci {
       fib(self.main.channel, sz)
     })
 
-    BenchmarkResult.simple("Fibonacci", exp, Await.result(done.future, Duration.Inf).longValue)
+    Validators.simple("Fibonacci", exp, Await.result(done.future, Duration.Inf).longValue)
   }
 
   def computeExpected(sz: Int): Int = {
@@ -326,7 +327,7 @@ object ForkJoinCreation {
       res += Await.result(done(i).future, Duration.Inf)
     }
 
-    BenchmarkResult.simple("ForkJoinCreation", sz, res)
+    Validators.simple("ForkJoinCreation", sz, res)
   }
 }
 
@@ -380,7 +381,7 @@ object ForkJoinThroughput {
       res += Await.result(done(i).future, Duration.Inf)
     }
 
-    BenchmarkResult.simple("ForkJoinThroughput", ForkJoinThroughput.NUM_WORKERS * sz, res)
+    Validators.simple("ForkJoinThroughput", ForkJoinThroughput.NUM_WORKERS * sz, res)
   }
 }
 
@@ -425,7 +426,7 @@ object PingPong {
     }
     new PingPongInner
 
-    BenchmarkResult.simple("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -473,7 +474,7 @@ object StreamingPingPong {
     }
     new PingPongInner
 
-    BenchmarkResult.simple(
+    Validators.simple(
       "StreamingPingPong",
       0,
       Await.result(done.future, Duration.Inf).longValue
@@ -527,7 +528,7 @@ object Roundabout {
       }
     })
 
-    BenchmarkResult.simple(
+    Validators.simple(
       "Roundabout",
       Roundabout.NUM_MESSAGES,
       Await.result(done.future, Duration.Inf).longValue
@@ -572,6 +573,6 @@ object ThreadRing {
     }
     new RingInner
 
-    BenchmarkResult.simple("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue)
+    Validators.simple("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
