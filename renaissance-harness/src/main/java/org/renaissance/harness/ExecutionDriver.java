@@ -78,15 +78,15 @@ final class ExecutionDriver implements BenchmarkContext {
     // exception is thrown and the method terminates prematurely.
     //
     final long unixTsBefore = System.currentTimeMillis();
-    bench.beforeIteration(this);
+    bench.setUpBeforeEach(this);
     dispatcher.notifyAfterOperationSetUp(benchName, opIndex, isLast);
 
     final long startNanos = System.nanoTime();
-    final BenchmarkResult result = bench.runIteration(this);
+    final BenchmarkResult result = bench.run(this);
     final long durationNanos = System.nanoTime() - startNanos;
 
     dispatcher.notifyBeforeOperationTearDown(benchName, opIndex, durationNanos);
-    bench.afterIteration(this);
+    bench.tearDownAfterEach(this);
     final long unixTsAfter = System.currentTimeMillis();
 
     result.validate();

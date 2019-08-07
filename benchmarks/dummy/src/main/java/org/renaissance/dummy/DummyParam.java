@@ -21,7 +21,7 @@ import static org.renaissance.BenchmarkResult.simple;
 @Configuration(name = "jmh")
 public final class DummyParam implements Benchmark {
   @Override
-  public BenchmarkResult runIteration(BenchmarkContext c) {
+  public BenchmarkResult run(BenchmarkContext c) {
     int threadCountParam = c.intParameter("thread_count");
     int meaningOfLifeParam = c.intParameter("meaning_of_life");
     String beyondReasonParam = c.stringParameter("beyond_reason");

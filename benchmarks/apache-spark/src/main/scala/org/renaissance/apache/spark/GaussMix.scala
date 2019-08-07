@@ -118,7 +118,7 @@ final class GaussMix extends Benchmark with SparkUtil {
     c.deleteTempDir(tempDirPath)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     gmm = new GaussianMixture()
       .setK(DISTRIBUTION_COUNT)
       .setMaxIterations(maxIterationsParam)

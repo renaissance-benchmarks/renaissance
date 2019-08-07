@@ -28,20 +28,20 @@ public abstract class JmhRenaissanceBenchmark {
 
   @Setup(Level.Iteration)
   public final void setUpOperation() {
-    benchmark.beforeIteration(context);
+    benchmark.setUpBeforeEach(context);
   }
 
   @org.openjdk.jmh.annotations.Benchmark
   @BenchmarkMode(Mode.AverageTime)
   @OutputTimeUnit(MILLISECONDS)
   @Measurement(timeUnit = MILLISECONDS)
-  public final void measuredOperation() {
-    result = benchmark.runIteration(context);
+  public final void runOperation() {
+    result = benchmark.run(context);
   }
 
   @TearDown(Level.Iteration)
   public final void tearDownOperation() throws ValidationException {
-    benchmark.afterIteration(context);
+    benchmark.tearDownAfterEach(context);
 
     result.validate();
     result = null;

@@ -80,7 +80,7 @@ final class Dotty extends Benchmark {
    */
   private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     /*
      * Construct the classpath for the compiler. Unfortunately, Dotty is
      * unable to use current classloader (either of this class or this

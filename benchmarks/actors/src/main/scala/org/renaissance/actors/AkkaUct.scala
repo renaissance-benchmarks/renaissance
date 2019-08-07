@@ -44,7 +44,7 @@ final class AkkaUct extends Benchmark {
     }
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     for (i <- 0 until loopCountParam) {
       bench.runIteration()
     }

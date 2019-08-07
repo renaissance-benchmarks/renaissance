@@ -45,7 +45,7 @@ final class Scrabble extends Benchmark {
     scrabble = new JavaScrabble(inputPathParam, scrabblePath)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = scrabble.run()
 
     () => {

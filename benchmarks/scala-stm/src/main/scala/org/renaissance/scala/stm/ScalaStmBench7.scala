@@ -46,7 +46,7 @@ final class ScalaStmBench7 extends Benchmark {
     )
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     // TODO: Make the benchmark return something useful
     stmbench7.Benchmark.main(stmBenchArgs)
 

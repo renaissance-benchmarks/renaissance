@@ -44,7 +44,7 @@ final class FjKmeans extends Benchmark {
     data = JavaKMeans.generateData(vectorLengthParam, DIMENSION, CLUSTER_COUNT)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val results = for (i <- 0 until LOOP_COUNT) yield {
       benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT)
     }

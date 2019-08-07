@@ -102,7 +102,7 @@ final class PageRank extends Benchmark with SparkUtil {
     loadData()
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     ranks = links.mapValues(v => 1.0)
     for (i <- 0 until ITERATIONS) {
       val contributions = links.join(ranks).values.flatMap {

@@ -92,7 +92,7 @@ final class DbShootout extends Benchmark {
     c.deleteTempDir(tempDirPath)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     mapDb.parReadKey(mapDbReader)
     mapDb.parWrite(mapDbWriter)
 

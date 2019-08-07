@@ -447,13 +447,13 @@ final class FinagleChirper extends Benchmark {
     Await.ready(masterService.close())
   }
 
-  override def beforeIteration(c: BenchmarkContext): Unit = {
+  override def setUpBeforeEach(c: BenchmarkContext): Unit = {
     val resetQuery = "/api/reset"
     val request = Request(Method.Get, resetQuery)
     require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val clients = for (i <- 0 until clientCount)
       yield new Client(userNames(i % userNames.length) + i)
     clients.foreach(_.start())

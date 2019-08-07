@@ -18,7 +18,7 @@ public final class DummyTeardownFailing implements Benchmark {
   }
 
   @Override
-  public BenchmarkResult runIteration(BenchmarkContext c) {
+  public BenchmarkResult run(BenchmarkContext c) {
     return BenchmarkResult.simple("nothing", 0, 0);
   }
 }

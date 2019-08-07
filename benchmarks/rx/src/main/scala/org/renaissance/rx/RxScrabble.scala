@@ -47,7 +47,7 @@ final class RxScrabble extends Benchmark {
     bench = new RxScrabbleImplementation(scrabblePath, inputPathParam)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = bench.runScrabble()
 
     new BenchmarkResult {

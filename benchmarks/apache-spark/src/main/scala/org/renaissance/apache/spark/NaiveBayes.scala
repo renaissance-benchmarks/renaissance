@@ -116,7 +116,7 @@ class NaiveBayes extends Benchmark with SparkUtil {
     c.deleteTempDir(tempDirPath)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     // Using full package name to avoid conflicting with the renaissance benchmark class name.
     val bayes = new org.apache.spark.mllib.classification.NaiveBayes()
       .setLambda(SMOOTHING)

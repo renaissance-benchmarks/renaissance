@@ -102,7 +102,7 @@ final class ChiSquare extends Benchmark with SparkUtil {
     loadData()
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
 
     // TODO: add more sophisticated validation

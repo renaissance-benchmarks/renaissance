@@ -128,7 +128,7 @@ final class ScalaDoku extends Benchmark {
     puzzleWithOneHole = preparePuzzleWithOneHole()
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     BenchmarkResult.compound(
       new DokuResult(Solver.solve(puzzleWithAFewHoles), SOLVED_PUZZLE),
       new DokuResult(Solver.solve(puzzleWithOneHole), SOLVED_PUZZLE)

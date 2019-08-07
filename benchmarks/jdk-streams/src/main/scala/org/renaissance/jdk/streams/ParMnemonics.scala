@@ -73,7 +73,7 @@ final class ParMnemonics extends Benchmark {
     )
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = coder.parallelTranslate(coderInputParam)
     BenchmarkResult.hashing(expectedHashParam, result)
   }

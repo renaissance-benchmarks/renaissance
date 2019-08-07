@@ -45,7 +45,7 @@ final class Philosophers extends Benchmark {
     mealCountParam = c.intParameter("meal_count")
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     // TODO: Return something useful, not elapsed time
     RealityShowPhilosophers.run(mealCountParam, threadCountParam)
 

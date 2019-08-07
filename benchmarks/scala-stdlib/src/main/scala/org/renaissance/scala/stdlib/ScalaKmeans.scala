@@ -226,7 +226,7 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
     }
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = kMeans(points, means, eta)
     () => validate(expectedResult, result)
   }

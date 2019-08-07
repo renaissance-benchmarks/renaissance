@@ -73,7 +73,7 @@ final class Mnemonics extends Benchmark {
     )
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = coder.translate(coderInputParam)
     BenchmarkResult.hashing(expectedHashParam, result)
   }

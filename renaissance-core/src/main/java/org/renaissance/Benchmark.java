@@ -7,18 +7,15 @@ import java.lang.annotation.*;
  * implemented by each benchmark and serves as a name space for benchmark
  * meta-data annotations.
  * <p>
- * Each benchmark must provide at least the {@link #runIteration(BenchmarkContext)} method,
- * which implements the measured part of the benchmark workload. Other methods are
- * optional and provide a benchmark with more fine-grained control over its
- * life-cycle.
+ * Each benchmark must provide at least the {@link #run(BenchmarkContext) run} method,
+ * which implements the measured part of the workload represented by the benchmark.
+ * Other methods are optional and should be used to ensure that the measured operation
+ * only contains relevant computation and that the benchmark does not leak resources.
  * <p>
- * The {@link #runIteration(BenchmarkContext)} method must return an instance
- * of {@link BenchmarkResult}, which is used by the harness to validate the
- * result of the measured operation.
- * <p>All {@link Benchmark} methods receive an instance of {@link BenchmarkContext}
- * as an argument, which allows them to query values of configurable
- * parameters, retrieve distribution JAR resources, or ask for harness-managed
- * temporary directories.
+ * All {@link Benchmark} methods receive an instance of {@link BenchmarkContext}
+ * as an argument, which allows them to query values of configurable parameters,
+ * retrieve distribution JAR resources, or ask for harness-managed temporary
+ * directories.
  */
 public interface Benchmark {
 
@@ -179,49 +176,48 @@ public interface Benchmark {
   //
 
   /**
-   * Called once before the first execution of a benchmark. This should be
-   * used to initialize the part of benchmark state that remains unchanged
-   * between repeated executions of the benchmark operation.
+   * Called once before the first execution of the benchmkar's measured operation.
+   * This should be used to initialize the benchmark state that remains unchanged
+   * between repeated executions of the measured operation.
    */
-  // TODO: void setUp(BenchmarkContext context)
   default void setUpBeforeAll(BenchmarkContext context) {}
 
 
   /**
-   * Called before each (repeated) execution of a benchmark operation. This
-   * should be used to initialize the part of benchmark state that is specific
-   * to each execution of the benchmark operation.
+   * Called before each execution of the benchmark's measured operation. This
+   * should be used to initialize the benchmark state specific to each execution
+   * of the measured operation.
    */
-  // TODO: void setUpOperation(BenchmarkContext context);
-  default void beforeIteration(BenchmarkContext context) {}
+  default void setUpBeforeEach(BenchmarkContext context) {}
 
 
   /**
-   * Executes the benchmark operation.
+   * Executes the benchmark's measured operation. Returns a {@link BenchmarkResult}
+   * instance which is later used by the harness to validate the result (outside the
+   * measurement block). Any computation related to benchmark validation must be
+   * performed in the {@link BenchmarkResult#validate() validate} method, not in the
+   * {@link #run(BenchmarkContext) run} method.
    *
-   * @return instance of {@link BenchmarkResult} which supports validation
+   * @return An instance of {@link BenchmarkResult}.
    */
-  // TODO: BenchmarkResult operation(BenchmarkContext context);
-  BenchmarkResult runIteration(BenchmarkContext context);
+  BenchmarkResult run(BenchmarkContext context);
 
 
   /**
-   * Called after each (repeated) execution of a benchmark operation. A dual
-   * method to {@link #beforeOperation(BenchmarkContext)}, which should be used to
-   * clean-up state changes due to execution of the benchmark operation. In
-   * particular, the benchmark must ensure that resources are not leaked during
-   * repeated execution of the benchmark operation.
+   * Called after each execution of the benchmark's measured operation. This is a
+   * pair method to {@link #setUpBeforeEach(BenchmarkContext) setUpBeforeEach}, which
+   * should be used to clean-up benchmark state specific to each execution of the
+   * measured operation. In particular, the benchmark must ensure that no resources are
+   * leaked during repeated execution of the measured operation.
    */
-  // TODO void tearDownOperation(BenchmarkContext context);
-  default void afterIteration(BenchmarkContext context) {}
+  default void tearDownAfterEach(BenchmarkContext context) {}
 
 
   /**
-   * Called once after the last execution of a benchmark. A dual method to
-   * {@link #tearDown(BenchmarkContext)}, which should be used to clean up parts
-   * of benchmark state that could leak resources.
+   * Called once after the last execution of the bencmark's measured operation. A pair
+   * method to {@link #setUpBeforeAll(BenchmarkContext) setUpBeforeAll}, which should
+   * be used to clean up benchmark state that could cause resource leaks.
    */
-  // TODO: void tearDown(BenchmarkContext context);
   default void tearDownAfterAll(BenchmarkContext context) {}
 
 }

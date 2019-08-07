@@ -108,7 +108,7 @@ final class LogRegression extends Benchmark with SparkUtil {
     loadData()
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     // TODO: Create only once per benchmark?
     val lor = new LogisticRegression()
       .setElasticNetParam(ELASTIC_NET_PARAM)

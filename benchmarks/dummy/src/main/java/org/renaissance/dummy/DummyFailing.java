@@ -15,7 +15,7 @@ public final class DummyFailing implements Benchmark {
   private int counter = 0;
 
   @Override
-  public BenchmarkResult runIteration(BenchmarkContext c) {
+  public BenchmarkResult run(BenchmarkContext c) {
     counter++;
     if (counter > 1) {
       throw new AssertionError("Intentionally failing");

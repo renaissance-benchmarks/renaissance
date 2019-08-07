@@ -99,7 +99,7 @@ final class Als extends Benchmark with SparkUtil {
     c.deleteTempDir(tempDirPath)
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val als = new org.apache.spark.mllib.recommendation.ALS()
     factModel = als.run(ratings)
 

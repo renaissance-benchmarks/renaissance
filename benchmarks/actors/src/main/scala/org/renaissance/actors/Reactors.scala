@@ -57,7 +57,7 @@ final class Reactors extends Benchmark {
     system.shutdown()
   }
 
-  override def runIteration(c: BenchmarkContext) = {
+  override def run(c: BenchmarkContext) = {
 
     // TODO: Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 

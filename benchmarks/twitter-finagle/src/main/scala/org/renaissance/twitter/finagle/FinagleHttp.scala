@@ -162,7 +162,7 @@ final class FinagleHttp extends Benchmark {
     server.close()
   }
 
-  override def beforeIteration(c: BenchmarkContext): Unit = {
+  override def setUpBeforeEach(c: BenchmarkContext): Unit = {
     //
     // Use a CountDownLatch initialized to (clientCount + 1) to start the
     // threads (outside the measured loop) and make them block until the
@@ -180,7 +180,7 @@ final class FinagleHttp extends Benchmark {
     }
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     // Let the threads do the work (see beforeIteration)
     threadBarrier.countDown
 

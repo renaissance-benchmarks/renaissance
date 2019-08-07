@@ -302,7 +302,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     )
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val helper = new MovieLensHelper
     loadData(helper)
 

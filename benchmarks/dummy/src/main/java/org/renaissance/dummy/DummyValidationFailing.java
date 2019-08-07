@@ -15,7 +15,7 @@ public final class DummyValidationFailing implements Benchmark {
   private int counter = 0;
 
   @Override
-  public BenchmarkResult runIteration(BenchmarkContext c) {
+  public BenchmarkResult run(BenchmarkContext c) {
     counter++;
     if (counter > 1) {
       return BenchmarkResult.simple("intentional failure", 1, -1);

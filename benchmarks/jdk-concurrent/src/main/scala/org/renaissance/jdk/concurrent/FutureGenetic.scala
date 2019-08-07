@@ -60,7 +60,7 @@ final class FutureGenetic extends Benchmark {
     benchmark.tearDownAfterAll()
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = benchmark.runRepetition()
 
     // TODO: add proper validation

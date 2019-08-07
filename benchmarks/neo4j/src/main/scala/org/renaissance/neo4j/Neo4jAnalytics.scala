@@ -60,7 +60,7 @@ final class Neo4jAnalytics extends Benchmark {
     benchmark.tearAll()
   }
 
-  override def runIteration(config: BenchmarkContext): BenchmarkResult = {
+  override def run(config: BenchmarkContext): BenchmarkResult = {
     // TODO: Return something useful for validation
     benchmark.run()
 

@@ -121,7 +121,7 @@ final class DecTree extends Benchmark with SparkUtil {
     pipeline = constructPipeline()
   }
 
-  override def runIteration(c: BenchmarkContext): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     pipelineModel = pipeline.fit(training)
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
