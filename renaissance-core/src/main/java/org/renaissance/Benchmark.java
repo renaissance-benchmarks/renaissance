@@ -176,7 +176,7 @@ public interface Benchmark {
   //
 
   /**
-   * Called once before the first execution of the benchmkar's measured operation.
+   * Called once before the first execution of the benchmark's measured operation.
    * This should be used to initialize the benchmark state that remains unchanged
    * between repeated executions of the measured operation.
    */
@@ -195,8 +195,8 @@ public interface Benchmark {
    * Executes the benchmark's measured operation. Returns a {@link BenchmarkResult}
    * instance which is later used by the harness to validate the result (outside the
    * measurement block). Any computation related to benchmark validation must be
-   * performed in the {@link BenchmarkResult#validate() validate} method, not in the
-   * {@link #run(BenchmarkContext) run} method.
+   * performed in the {@link BenchmarkResult#validate() validate} method, not in
+   * this method.
    *
    * @return An instance of {@link BenchmarkResult}.
    */
@@ -214,7 +214,7 @@ public interface Benchmark {
 
 
   /**
-   * Called once after the last execution of the bencmark's measured operation. A pair
+   * Called once after the last execution of the benchmark's measured operation. A pair
    * method to {@link #setUpBeforeAll(BenchmarkContext) setUpBeforeAll}, which should
    * be used to clean up benchmark state that could cause resource leaks.
    */
