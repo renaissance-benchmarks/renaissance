@@ -235,7 +235,8 @@ object RenaissanceSuite {
     val result = new StringBuilder
     for (bench <- benchmarks.getAll.asScala) {
       result.append(bench.name).append("\n")
-      result.append(foldText(bench.summaryWords, 65, indent).mkString("\n")).append("\n")
+      val summaryWords = bench.summary().split("\\s+")
+      result.append(foldText(summaryWords, 65, indent).mkString("\n")).append("\n")
       result.append(s"${indent}Default repetitions: ${bench.repetitions}").append("\n\n")
     }
 

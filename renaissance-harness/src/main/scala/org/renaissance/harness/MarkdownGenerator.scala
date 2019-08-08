@@ -177,7 +177,7 @@ object MarkdownGenerator {
 
   private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
     def formatRow(b: BenchmarkInfo) = {
-      s"| ${b.name} | ${b.printableLicenses} | ${b.distro} |"
+      s"| ${b.name} | ${b.licenses().mkString(",")} | ${b.distro} |"
     }
 
     benchmarks.getAll.asScala.map(formatRow).mkString("\n")

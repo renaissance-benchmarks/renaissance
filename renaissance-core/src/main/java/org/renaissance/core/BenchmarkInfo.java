@@ -1,5 +1,6 @@
 package org.renaissance.core;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -53,6 +54,8 @@ public final class BenchmarkInfo {
   public int repetitions() { return repetitions; }
 
 
+  public boolean isConfigurable() { return !configurations.isEmpty(); }
+
   public boolean hasConfiguration(String name) {
     return configurations.containsKey(name);
   }
@@ -91,14 +94,8 @@ public final class BenchmarkInfo {
     }
   }
 
-
-  public String[] summaryWords() {
-    return summary.split("\\s+");
-  }
-
-
-  public String printableLicenses() {
-    return String.join(", ", licenses);
+  public String[] licenses() {
+    return Arrays.copyOf(licenses, licenses.length);
   }
 
 }
