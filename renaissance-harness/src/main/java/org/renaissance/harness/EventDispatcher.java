@@ -26,41 +26,15 @@ final class EventDispatcher {
 
 
   private EventDispatcher(Builder builder) {
-    harnessInitListeners = builder.harnessInitListeners.toArray(
-      new HarnessInitListener[0]
-    );
-
-    harnessShutdownListeners = builder.harnessShutdownListeners.toArray(
-      new HarnessShutdownListener[0]
-    );
-
-    benchmarkSetUpListeners = builder.benchmarkSetUpListeners.toArray(
-      new BenchmarkSetUpListener[0]
-    );
-
-    benchmarkTearDownListeners = builder.benchmarkTearDownListeners.toArray(
-      new BenchmarkTearDownListener[0]
-    );
-
-    operationSetUpListeners = builder.operationSetUpListeners.toArray(
-      new OperationSetUpListener[0]
-    );
-
-    operationTearDownListeners = builder.operationTearDownListeners.toArray(
-      new OperationTearDownListener[0]
-    );
-
-    measurementResultListeners = builder.measurementResultListeners.toArray(
-      new MeasurementResultListener[0]
-    );
-
-    measurementResultPublishers = builder.measurementResultPublishers.toArray(
-      new MeasurementResultPublisher[0]
-    );
-
-    benchmarkFailureListeners = builder.benchmarkFailureListeners.toArray(
-      new BenchmarkFailureListener[0]
-    );
+    harnessInitListeners = builder.harnessInitListeners.toArray(new HarnessInitListener[0]);
+    harnessShutdownListeners = builder.harnessShutdownListeners.toArray(new HarnessShutdownListener[0]);
+    benchmarkSetUpListeners = builder.benchmarkSetUpListeners.toArray(new BenchmarkSetUpListener[0]);
+    benchmarkTearDownListeners = builder.benchmarkTearDownListeners.toArray(new BenchmarkTearDownListener[0]);
+    operationSetUpListeners = builder.operationSetUpListeners.toArray(new OperationSetUpListener[0]);
+    operationTearDownListeners = builder.operationTearDownListeners.toArray(new OperationTearDownListener[0]);
+    measurementResultListeners = builder.measurementResultListeners.toArray(new MeasurementResultListener[0]);
+    measurementResultPublishers = builder.measurementResultPublishers.toArray(new MeasurementResultPublisher[0]);
+    benchmarkFailureListeners = builder.benchmarkFailureListeners.toArray(new BenchmarkFailureListener[0]);
   }
 
   //
@@ -122,8 +96,7 @@ final class EventDispatcher {
   }
 
   void notifyOnMeasurementResultsRequested(
-    final String benchName, final int opIndex,
-    final MeasurementResultListener dispatcher
+    final String benchName, final int opIndex, final MeasurementResultListener dispatcher
   ) {
     for (final MeasurementResultPublisher l : measurementResultPublishers) {
       l.onMeasurementResultsRequested(benchName, opIndex, dispatcher);
@@ -154,9 +127,10 @@ final class EventDispatcher {
      * Registers a plugin into listener lists based on implemented interfaces.
      * Note that pair events (setup and teardown) are added to opposite
      * ends of the lists so that each plugin can wrap existing plugins.
-     *
+     * <p>
      * Therefore it is expected that measurement plugins would be added
      * as the last ones on the command-line.
+     *
      * @param plugin The {@link Plugin} to register
      * @return This {@link Builder}.
      */
@@ -196,17 +170,20 @@ final class EventDispatcher {
       return this;
     }
 
+
     /**
      * Registers a {@link ResultWriter} into respective listener lists.
+     *
      * @param writer The {@link ResultWriter} to register.
      * @return This {@link Builder}.
      */
-    public Builder withResultWriter (ResultWriter writer) {
+    public Builder withResultWriter(ResultWriter writer) {
       harnessShutdownListeners.add(writer);
       measurementResultListeners.add(writer);
       benchmarkFailureListeners.add(writer);
       return this;
     }
+
 
     /**
      * @return A new instance of {@link EventDispatcher}.
