@@ -1,5 +1,6 @@
 package org.renaissance.apache.spark
 
+import java.nio.charset.Charset
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -8,12 +9,12 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd.RDD
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.EmptyResult
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.License
 
 import scala.util.Random
 
@@ -22,14 +23,22 @@ import scala.util.Random
 @Summary("Runs the ALS algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
-class Als extends RenaissanceBenchmark with SparkUtil {
+@Parameter(name = "rating_count", defaultValue = "20000")
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("rating_count = 500")),
+    new Configuration(name = "jmh")
+  )
+)
+final class Als extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var numRatings = 20000
+  private var ratingCountParam: Int = _
 
-  val THREAD_COUNT = 4
+  private val THREAD_COUNT = 4
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -40,24 +49,24 @@ class Als extends RenaissanceBenchmark with SparkUtil {
 
   val bigInputFile = alsPath.resolve("bigfile.txt")
 
-  var sc: SparkContext = null
+  var sc: SparkContext = _
 
-  var factModel: MatrixFactorizationModel = null
+  var factModel: MatrixFactorizationModel = _
 
-  var ratings: RDD[Rating] = null
+  var ratings: RDD[Rating] = _
 
-  var tempDirPath: Path = null
+  var tempDirPath: Path = _
 
   def prepareInput() = {
     FileUtils.deleteDirectory(alsPath.toFile)
     val rand = new Random
-    val lines = (0 until numRatings).flatMap { user =>
+    val lines = (0 until ratingCountParam).flatMap { user =>
       (0 until 100).map { product =>
         val score = 1 + rand.nextInt(3) + rand.nextInt(3)
         s"$user::$product::$score"
       }
     }
-    FileUtils.write(bigInputFile.toFile, lines.mkString("\n"), true)
+    FileUtils.write(bigInputFile.toFile, lines.mkString("\n"), Charset.defaultCharset(), true)
   }
 
   def loadData() = {
@@ -70,17 +79,16 @@ class Als extends RenaissanceBenchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("als")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
-    if (c.functionalTest) {
-      numRatings = 500
-    }
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    ratingCountParam = c.intParameter("rating_count")
+
+    tempDirPath = c.generateTempDir("als")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
     prepareInput()
     loadData()
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     // Dump output.
     factModel.userFeatures
       .map {
@@ -89,14 +97,14 @@ class Als extends RenaissanceBenchmark with SparkUtil {
       .saveAsTextFile(outputPath.toString)
 
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
-  def runIteration(c: Config): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val als = new org.apache.spark.mllib.recommendation.ALS()
     factModel = als.run(ratings)
-    blackHole(factModel)
+
     // TODO: add proper validation of the generated model
-    return new EmptyResult
+    Validators.dummy(factModel)
   }
 }

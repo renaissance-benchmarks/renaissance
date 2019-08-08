@@ -3,17 +3,17 @@ import java.lang.annotation.Annotation
 import java.net.URLClassLoader
 import java.util.jar.JarFile
 import java.util.regex.Pattern
+
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 import sbt.util.Logger
+
 import scala.collection._
 
-class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
+class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 
   private def kebabCase(s: String): String = {
-    // This functionality is duplicated in the RenaissanceBenchmark class.
     val camelCaseName = if (s.last == '$') s.init else s
     val pattern = Pattern.compile("([A-Za-z])([A-Z])")
     var result = camelCaseName
@@ -27,8 +27,12 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
     sys.error("unreachable")
   }
 
-  private def getAnnotation[T <: Annotation](annotationClass: Class[T]) = {
+  private def getAnnotation[A <: Annotation](annotationClass: Class[A]) = {
     benchClass.getDeclaredAnnotation(annotationClass)
+  }
+
+  private def getAnnotations[A <: Annotation](annotationClass: Class[A]) = {
+    benchClass.getDeclaredAnnotationsByType(annotationClass)
   }
 
   def className = benchClass.getName
@@ -77,6 +81,61 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
     if (annotation != null) annotation.value() else 20
   }
 
+  def parameters(): Map[String, String] = {
+    getAnnotations(classOf[Parameter])
+      .flatMap(
+        p =>
+          Array(
+            (s"parameter.${p.name}.default" -> p.defaultValue),
+            (s"parameter.${p.name}.summary" -> p.summary)
+          )
+      )
+      .toMap
+  }
+
+  private def parameterDefaults(confName: String) = {
+    getAnnotations(classOf[Parameter])
+      .map(
+        p => s"configuration.${confName}.${p.name}" -> p.defaultValue()
+      )
+      .toMap
+  }
+
+  def configurations(): Map[String, String] = {
+    //
+    // Create default configuration and initialize each configuration
+    // using the default values parameters. Then apply configuration-specific
+    // settings that override the defaults, but only for known parameters.
+    //
+    val result = mutable.Map[String, String]()
+    result ++= parameterDefaults("default")
+
+    for (conf <- getAnnotations(classOf[Configuration])) {
+      result ++= parameterDefaults(conf.name())
+
+      for (setting <- conf.settings) {
+        val elements = setting.split("=").map(x => x.trim)
+        if (elements.length != 2) {
+          throw new IllegalArgumentException(
+            s"malformed setting in configuration '${conf.name}': ${setting}"
+          )
+        }
+
+        val (name, value) = (elements(0), elements(1))
+        val paramKey = s"configuration.${conf.name}.${name}"
+        if (!result.contains(paramKey)) {
+          throw new NoSuchElementException(
+            s"unknown parameter in configuration '${conf.name}': ${name}"
+          )
+        }
+
+        result.put(paramKey, value)
+      }
+    }
+
+    result.toMap
+  }
+
   def licenses(): Array[License] = {
     val annotation = getAnnotation(classOf[Licenses])
     if (annotation != null) annotation.value() else Array()
@@ -112,7 +171,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: RenaissanceBenchmark]) {
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
       "distro" -> distro.toString
-    )
+    ) ++ parameters ++ configurations()
   }
 
 }
@@ -126,10 +185,10 @@ object Benchmarks {
     // with the class loader of the base class as its parent. This will allow
     // us to use core classes here.
     //
-    val benchBase = classOf[RenaissanceBenchmark]
+    val benchBase = classOf[Benchmark]
     val urls = classpath.map(_.toURI.toURL).toArray
     val loader = new URLClassLoader(urls, benchBase.getClassLoader)
-    val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]util)")
+    val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]core)")
 
     //
     // Scan all JAR files for classes in the org.renaissance package implementing

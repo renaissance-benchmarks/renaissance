@@ -9,8 +9,14 @@ object ZipResourceUtil {
 
   def readZipFromResourceToText(resourceName: String): String = {
     val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + resourceName))
-    zis.getNextEntry()
-    IOUtils.toString(zis, StandardCharsets.UTF_8)
+
+    try {
+      zis.getNextEntry()
+      IOUtils.toString(zis, StandardCharsets.UTF_8)
+
+    } finally {
+      zis.close()
+    }
   }
 
 }

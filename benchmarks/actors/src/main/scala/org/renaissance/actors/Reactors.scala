@@ -1,10 +1,18 @@
 package org.renaissance.actors
 
-import io.reactors._
+import io.reactors.Channel
+import io.reactors.Reactor
+import io.reactors.ReactorPreempted
+import io.reactors.ReactorSystem
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
-import org.renaissance._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.License
 
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.Await
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -15,7 +23,15 @@ import scala.util.Random
 )
 @Licenses(Array(License.MIT))
 @Repetitions(10)
-class Reactors extends RenaissanceBenchmark {
+@Parameter(name = "scaling_factor", defaultValue = "1.0")
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("scaling_factor = 0.1")),
+    new Configuration(name = "jmh")
+  )
+)
+final class Reactors extends Benchmark {
 
   // Code based on https://github.com/reactors-io/reactors
   // The original uses BSD 3-clause license, the result is compatible with MIT license.
@@ -23,45 +39,42 @@ class Reactors extends RenaissanceBenchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var scalingFactor: Double = 1
+  private var scalingFactorParam: Double = _
 
   private var system: ReactorSystem = _
 
   private var expectedFibonacci: Int = _
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    scalingFactorParam = c.doubleParameter("scaling_factor")
+
     // Instantiate the default reactor system used throughout the benchmark.
     system = ReactorSystem.default("bench-system")
-
-    if (c.functionalTest) {
-      scalingFactor = 0.1
-    }
-
-    expectedFibonacci = Fibonacci.computeExpected((28 * scalingFactor).intValue())
+    expectedFibonacci = Fibonacci.computeExpected((28 * scalingFactorParam).intValue())
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     // Shut down the reactor system.
     system.shutdown()
   }
 
-  def runIteration(c: Config): BenchmarkResult = {
+  override def run(c: BenchmarkContext) = {
 
     // TODO: Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 
     // TODO: The use of scaling factor is not strictly correct with Fibonacci and Roundabout. For these benchmarks, the work done is not a linear function of the input argument.
 
-    new CompoundResult(
-      Baseline.run(system, (1000000 * scalingFactor).intValue()),
-      BigBench.run(system, (4000 * scalingFactor).intValue()),
-      CountingActor.run(system, (8000000 * scalingFactor).intValue()),
-      Fibonacci.run(system, (28 * scalingFactor).intValue(), expectedFibonacci),
-      ForkJoinCreation.run(system, (250000 * scalingFactor).intValue()),
-      ForkJoinThroughput.run(system, (21000 * scalingFactor).intValue()),
-      PingPong.run(system, (1500000 * scalingFactor).intValue()),
-      StreamingPingPong.run(system, (5000000 * scalingFactor).intValue()),
-      Roundabout.run(system, (750000 * scalingFactor).intValue()),
-      ThreadRing.run(system, (2500000 * scalingFactor).intValue())
+    Validators.compound(
+      Baseline.run(system, (1000000 * scalingFactorParam).intValue()),
+      BigBench.run(system, (4000 * scalingFactorParam).intValue()),
+      CountingActor.run(system, (8000000 * scalingFactorParam).intValue()),
+      Fibonacci.run(system, (28 * scalingFactorParam).intValue(), expectedFibonacci),
+      ForkJoinCreation.run(system, (250000 * scalingFactorParam).intValue()),
+      ForkJoinThroughput.run(system, (21000 * scalingFactorParam).intValue()),
+      PingPong.run(system, (1500000 * scalingFactorParam).intValue()),
+      StreamingPingPong.run(system, (5000000 * scalingFactorParam).intValue()),
+      Roundabout.run(system, (750000 * scalingFactorParam).intValue()),
+      ThreadRing.run(system, (2500000 * scalingFactorParam).intValue())
     )
   }
 }
@@ -76,7 +89,7 @@ class Reactors extends RenaissanceBenchmark {
  */
 object Baseline {
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("Baseline workload: Reactor scheduling events")
 
     val done = Promise[Int]()
@@ -96,7 +109,7 @@ object Baseline {
       }
     })
 
-    new SimpleResult("Baseline", 0, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple("Baseline", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -119,7 +132,7 @@ object BigBench {
   case class Start() extends Cmd
   case class End() extends Cmd
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("BigBench workload: Many-to-many message ping pong")
 
     val done = Promise[Int]()
@@ -162,7 +175,7 @@ object BigBench {
     })
     for (i <- 0 until BigBench.NUM_WORKERS) workers(i) ! Start()
 
-    new SimpleResult("BigBench", 0, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple("BigBench", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }
 
@@ -181,7 +194,7 @@ object CountingActor {
   case class Increment() extends Cmd
   case class Get() extends Cmd
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("CountingActor workload: Single reactor event processing")
 
     val done = Promise[Int]()
@@ -208,7 +221,11 @@ object CountingActor {
       self.main.seal()
     })
 
-    new SimpleResult("CountingActor", sz, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple(
+      "CountingActor",
+      sz,
+      Await.result(done.future, Duration.Inf).longValue
+    )
   }
 }
 
@@ -222,7 +239,7 @@ object CountingActor {
  */
 object Fibonacci {
 
-  def run(system: ReactorSystem, sz: Int, exp: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int, exp: Int): BenchmarkResult = {
     println("Fibonacci workload: Dynamic reactor mix with varying lifetimes")
 
     val done = Promise[Int]()
@@ -260,7 +277,7 @@ object Fibonacci {
       fib(self.main.channel, sz)
     })
 
-    new SimpleResult("Fibonacci", exp, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple("Fibonacci", exp, Await.result(done.future, Duration.Inf).longValue)
   }
 
   def computeExpected(sz: Int): Int = {
@@ -284,7 +301,7 @@ object Fibonacci {
  */
 object ForkJoinCreation {
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("ForkJoinCreation workload: Reactor creation performance")
 
     val done = new Array[Promise[Int]](sz)
@@ -310,7 +327,7 @@ object ForkJoinCreation {
       res += Await.result(done(i).future, Duration.Inf)
     }
 
-    new SimpleResult("ForkJoinCreation", sz, res.longValue())
+    Validators.simple("ForkJoinCreation", sz, res)
   }
 }
 
@@ -327,7 +344,7 @@ object ForkJoinThroughput {
   // The number of workers to create.
   val NUM_WORKERS = 256
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("ForkJoinThroughput workload: Reactor processing performance")
 
     val done = new Array[Promise[Int]](ForkJoinThroughput.NUM_WORKERS)
@@ -364,7 +381,7 @@ object ForkJoinThroughput {
       res += Await.result(done(i).future, Duration.Inf)
     }
 
-    new SimpleResult("ForkJoinThroughput", ForkJoinThroughput.NUM_WORKERS * sz, res.longValue())
+    Validators.simple("ForkJoinThroughput", ForkJoinThroughput.NUM_WORKERS * sz, res)
   }
 }
 
@@ -378,7 +395,7 @@ object ForkJoinThroughput {
  */
 object PingPong {
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("PingPong workload: Reactor pair sequential ping pong performance")
 
     val done = Promise[Int]()
@@ -409,7 +426,7 @@ object PingPong {
     }
     new PingPongInner
 
-    new SimpleResult("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
   }
 }
 
@@ -426,7 +443,7 @@ object StreamingPingPong {
   // How many ping pong exchanges to overlap.
   val WINDOW_SIZE = 128
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("StreamingPingPong workload: Reactor pair overlapping ping pong performance")
 
     val done = Promise[Int]()
@@ -457,10 +474,10 @@ object StreamingPingPong {
     }
     new PingPongInner
 
-    new SimpleResult(
+    Validators.simple(
       "StreamingPingPong",
       0,
-      Await.result(done.future, Duration.Inf).longValue()
+      Await.result(done.future, Duration.Inf).longValue
     )
   }
 }
@@ -476,7 +493,7 @@ object Roundabout {
   // How many messages to send.
   val NUM_MESSAGES = 500000
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("Roundabout workload: Many channels reactor performance")
 
     val done = Promise[Int]()
@@ -511,10 +528,10 @@ object Roundabout {
       }
     })
 
-    new SimpleResult(
+    Validators.simple(
       "Roundabout",
       Roundabout.NUM_MESSAGES,
-      Await.result(done.future, Duration.Inf).longValue()
+      Await.result(done.future, Duration.Inf).longValue
     )
   }
 }
@@ -532,7 +549,7 @@ object ThreadRing {
   // Size of worker ring.
   val RING_SIZE = 1000
 
-  def run(system: ReactorSystem, sz: Int): SimpleResult = {
+  def run(system: ReactorSystem, sz: Int) = {
     println("ThreadRing workload: Reactor ring forwarding performance")
 
     val done = Promise[Int]()
@@ -556,6 +573,6 @@ object ThreadRing {
     }
     new RingInner
 
-    new SimpleResult("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue())
+    Validators.simple("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue)
   }
 }

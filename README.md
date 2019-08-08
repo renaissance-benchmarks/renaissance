@@ -1,5 +1,4 @@
 
-
 ## Renaissance Benchmark Suite
 
 <p align="center">
@@ -18,14 +17,14 @@ in which the community can propose and improve benchmark workloads.
 ### Building the suite
 
 To build the suite and create the so-called fat JAR (or super JAR), you only
-need to run `sbt` built tool:
+need to run `sbt` build tool as follows:
 
 ```
 $ tools/sbt/bin/sbt assembly
 ```
 
 This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs and create the final JAR under `target` directory.
+bundle the JARs and create the final JAR under the `target` directory.
 
 
 ### Running the benchmarks
@@ -41,6 +40,18 @@ Above, the `<renaissance-home>` is the path to the root directory of the Renaiss
 and `<benchmarks>` is the list of benchmarks that you wish to run.
 For example, you can specify `scala-kmeans` as the benchmark.
 
+The suite generally executes the benchmark's measured operation multiple times. By default,
+the suite executes each benchmark operation for a specific number of times. The benchmark-specific
+number of repetitions is only intended for quick visual evaluation of benchmark execution time,
+but is not sufficient for thorough experimental evaluation, which will generally need much more
+repetitions.
+
+For thorough experimental evaluation, the benchmarks should be repeated for a large number of
+times or executed for a long time. The number of repetitions and the execution time can be
+set for all benchmarks using the `-r` or `-t` options. More fine-grained control over benchmark
+execution can be achieved by providing the harness with a plugin implementing a custom execution
+policy (see [below](#plugins) for details).
+
 
 #### Complete list of command-line options
 
@@ -51,18 +62,21 @@ Renaissance Benchmark Suite, version 0.10.0
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
-  -r, --repetitions <value>
-                           Number of repetitions used with the fixed-iterations policy.
-  -w, --warmup-seconds <value>
-                           Number of warmup seconds, when using time-based policies.
-  -t, --run-seconds <value>
-                           Number of seconds to run after the warmup, when using time-based policies.
-  --policy <value>         Execution policy, one of: fixed-warmup, fixed-iterations
-  --plugins <value>        Comma-separated list of class names of plugin implementations.
-  --csv <value>            Output results to CSV file.
-  --json <value>           Output results to JSON file.
-  --readme                 Regenerates the README file, and does not run anything.
-  --functional-test        Reduce iteration times significantly for testing purposes.
+  -r, --repetitions <count>
+                           Execute the measured operation a fixed number of times.
+  -t, --run-seconds <seconds>
+                           Execute the measured operation for fixed time (wall-clock).
+  --operation-run-seconds <seconds>
+                           Execute the measured operation for fixed accumulated operation time (wall-clock).
+  --policy <class-path>!<class-name>
+                           Use policy plugin to control repetition of measured operation execution.
+  --plugin <class-path>!<class-name>
+                           Load external plugin. Can appear multiple times.
+  --with-arg <value>       Adds an argument to the plugin or policy specified last. Can appear multiple times.
+  --csv <file-path>        Output results to CSV file.
+  --json <file-path>       Output results to JSON file.
+  -c, --configuration <name>
+                           Run benchmarks with given named configuration.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks (each benchmark name on separate line).
   --group-list             Print list of benchmark groups (each group name on separate line).
@@ -107,6 +121,8 @@ The following is the complete list of benchmarks, separated into groups.
 - `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
 
 - `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
+
+- `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters). (default repetitions: 20)
 
 - `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
 
@@ -163,42 +179,106 @@ The following is the complete list of benchmarks, separated into groups.
 
 
 
-### Run policies
-
-The suite is designed to support multiple ways of executing a benchmark --
-for example, a fixed number of iterations, or a fixed amount of time.
-This logic is encapsulated in run policies. Current policies include:
-
-- `fixed-warmup` -- Warms up the VM by running the benchmark a fixed amount of time, and then runs the benchmark again for some fixed amount of time (use `-w` and `-t`).
-
-- `fixed-iterations` -- Runs the benchmark for a fixed number of iterations (use `-r`).
-
-
-
-### Plugins and interfacing with external tools
+### <a name="plugins">Using plugins to customize the harness</a>
 
 If you are using an external tool to inspect a benchmark, such as an instrumentation agent,
-or a profiler, then you will need to make this tool aware of when a benchmark iteration
-is starting and when it is ending.
-To allow this, the suite allows specifying custom plugins, which are notified when necessary.
-Here is an example of how to implement a plugin:
+or a profiler, then you may need to make this tool aware of when a benchmark's measured
+operation is about to be executed and when it finished executing.
 
-```
-class MyPlugin extends Plugin {
-  def onCreation() = {
-    // Initialize the plugin after it has been created.
+If you need to collect additional metrics associated with the execution of the measured
+operation, e.g., hardware counters, you will need to be notified about operation execution,
+and you may want to store the measured values in the output files produced by the harness.
+
+If you need the harness to produce output files in different format (other than CSV or JSON),
+you will need to be notified about values of metrics collected by the harness and other plugins.
+
+If you need more fine-grained control over the repetition of the benchmark's measured operation,
+you will need to be able to tell the harness when to keep executing the benchmark and when to
+stop.
+
+To this end, the suite provides hooks for plugins which can subscribe to events related to
+harness state and benchmark execution. A plugin is a user-defined class which must implement
+the `Plugin` marker interface and provide at least a default (parameter-less)
+constructor. However, such a minimal plugin would not receive any notifications. To receive
+notifications, the plugin class must implement interfaces from the `Plugin`
+interface name space depending on the type of events it wants to receive, or services it wants
+to provide. This is demonstrated in the following example:
+
+```scala
+class SimplePlugin extends Plugin
+  with HarnessInitListener
+  with OperationSetUpListener
+  with OperationTearDownListener {
+  override def afterHarnessInit() = {
+    // Initialize the plugin after the harness finished initializing
   }
-  def beforeIteration(policy: Policy) = {
-    // Notify the tool that a benchmark iteration is about to start.
+
+  override def afterOperationSetUp(benchmark: String, index: Int) = {
+    // Notify the tool that the measured operation is about to start.
   }
-  def afterIteration(policy: Policy) = {
-    // Notify the tool that the benchmark iteration has ended.
+
+  override def beforeOperationTearDown(benchmark: String, index: Int) = {
+    // Notify the tool that the measured operations has finished.
   }
 }
 ```
 
-Here, the Policy argument describes
-the current state of the benchmark.
+The following interfaces provide common (paired) event types which allow a plugin to hook
+into a specific point in the benchmark execution sequence. They are analogous to common
+annotations known from testing frameworks such as JUnit.
+- `HarnessInitListener`
+- `HarnessShutdownListener`
+- `BenchmarkSetUpListener`
+- `BenchmarkTearDownListener`
+- `OperationSetUpListener`
+- `OperationTearDownListener`
+
+The following interfaces provide special non-paired event types:
+- `MeasurementResultListener`, intended for plugins that want to receive
+measurements results (perhaps to store them in a custom format). The harness calls the
+`onMeasurementResult` method with the name of the metric and its value, but only if the
+benchmark operation produces a valid result.
+- `BenchmarkFailureListener`, which indicates that the benchmark execution
+has either failed in some way (the benchmark triggered an exception), or that the benchmark
+operation produced a result which failed validation. This means that no measurements results
+will be received.
+
+And finally the following interface are used by the harness to request
+services from plugins:
+- `MeasurementResultPublisher`, intended for plugins that want to collect
+values of additional metrics around the execution of the benchmark operation. The harness
+calls the `onMeasurementResultsRequested` method with an instance of event dispatcher which
+the plugin is supposed to use to notify other result listeners about custom measurement results.
+- `ExecutionPolicy`, intended for plugins that want to control the execution
+of the benchmark's measured operation. Such a plugin should implement other interfaces to
+get enough information to determine, per-benchmark, whether to execute the measured operation
+or not. The harness calls the `canExecute` method before executing the benchmark's measured
+operation, and will pass the result of `isLast` method to some other events.
+
+To make the harness use an external plugin, it needs to be specified on the command line.
+The harness can load multiple plugins, and each must be enabled using the
+`--plugin <class-path>!<class-name>` option. The `<class-path>` is the class path on which
+to look for the plugin class, and `<class-name>` is a fully qualified name of the plugin class.
+Custom execution policy must be enabled using the `--policy <class-path>!<class-name>` option.
+The syntax is the same as in case of normal plugins (and the policy is also a plugin, which
+can register for all event types), but this option tells the harness to actually use the
+plugin to control benchmark execution. Other than that, policy is treated the same was as
+plugin.
+
+When registering plugins for pair events (harness init/shutdown, benchmark set up/tear down,
+operation set up/tear down), the plugins specified earlier "wrap" plugins specified later.
+This means that plugins that need to be the closest to the measured operation need to be
+specified last. Note that this also applies to the execution policy, which would be generally
+specified first, but any order is possible.
+
+Plugins (and policies) can receive additional command line arguments. Each argument must be
+given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for
+the plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
+(or `--policy`) option is encountered, the subsequent `--with-arg` options will append
+arguments to that plugin (or policy). A plugin that wants to receive command line arguments
+must define a constructor which takes an array of strings (`String[]`) or a string vararg
+(`String...`) as parameter. The harness tries to use this constructor first and falls back
+to the default (parameter-less) constructor.
 
 
 ### JMH support
@@ -219,6 +299,7 @@ $ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.10.0.j
 ### Contributing
 
 Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
+
 
 ### Licensing
 
@@ -241,6 +322,7 @@ The following table contains the licensing information of all the benchmarks:
 | dotty | BSD3 | MIT |
 | dummy-empty | MIT | MIT |
 | dummy-failing | MIT | MIT |
+| dummy-param | MIT | MIT |
 | dummy-setup-failing | MIT | MIT |
 | dummy-teardown-failing | MIT | MIT |
 | dummy-validation-failing | MIT | MIT |
@@ -276,24 +358,22 @@ The Renaissance benchmark suite is organized into several `sbt` projects:
   for a specific domain (and having a separate set of dependencies)
 
 The *core* project is written in pure Java, and it contains the basic benchmark API.
-Its most important class is `RenaissanceBenchmark`,
-which must be extended by a concrete benchmark implementation, and the
-annotations in the `Benchmark` class, which are
-used to set static information about a benchmark, such as a summary or
-detailed description.
+Its most important elements are the `Benchmark` interface,
+which must be implemented by each benchmark, and the annotations in the
+`Benchmark` interface name space, which are used to provide
+benchmark meta data, such as a summary or a detailed description.
 Consequently, each *subproject* depends on the *core* project.
 
-Interfaces of *core* are loaded (when Renaissance is started) by the default
-classloader. Every other class (including harness and individual benchmarks)
-is loaded by a separate classloader. This separation was done so that there
-are never clashes between the different dependencies of the different projects.
-Because each benchmark may depend on different versions of external libraries.
+Classes from the *core* are loaded (when Renaissance is started) by the default
+classloader. Classes from other projects (including the harness and individual benchmarks)
+and external plugins or execution policies are loaded by separate classloaders. This
+separation helps ensure that there are no clashes between dependencies of different
+projects (each benchmark may depend on different versions of external libraries).
 
-The *harness* project implements the functionality that is necessary
-to parse the input arguments, to run the benchmarks, to generate documentation,
-and so on. The *harness* is written in Scala and is loaded by the *core*
-in a separate classloader to ensure clean environment for running the
-benchmarks.
+The *harness* project implements the functionality necessary to parse the input
+arguments, to run the benchmarks, to generate documentation, and so on. The *harness*
+is written in a mix of Java and Scala, and is loaded by the *core* in a separate classloader
+to ensure clean environment for running the benchmarks.
 
 The JARs of the subprojects (benchmarks and harness) are copied as generated
 *resources* and embedded into the resulting JAR artifact.
@@ -314,10 +394,10 @@ renaissance-core
 ```
 
 When the harness is started, it uses the input arguments to select the benchmark,
-and then unpacks the JARs of the corresponding benchmark group into a scratch folder.
-The harness then creates a classloader with the unpacked JARs and loads the benchmark group.
-The class loader is created directly below the default class loader. Because
-the default class loader contains only base JRE classes and common interfaces
+and then unpacks the JARs of the corresponding benchmark group into a temporary directory.
+The harness then creates a classloader that searches the unpacked JARs and loads the
+benchmark group. The class loader is created directly below the default class loader.
+Because the default class loader contains only base JRE classes and common interfaces
 of *core*, it ensures that dependencies of a benchmark are never mixed with any
 dependencies of any other benchmark or the harness.
 
@@ -338,6 +418,5 @@ by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
 You can see the further details of the build system in the top-level `build.sbt` file,
-in the `renaissance-suite.scala` file and in `ModuleLoader`.
-
-
+and in the source code of the `RenaissanceSuite` and
+`ModuleLoader` classes.

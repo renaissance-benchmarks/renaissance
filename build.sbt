@@ -2,8 +2,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
-import org.renaissance.Launcher
 import org.renaissance.License
+import org.renaissance.core.Launcher
 
 import scala.collection._
 
@@ -82,7 +82,7 @@ def jarsAndListGenerator = Def.taskDyn {
       for (benchInfo <- Benchmarks.listBenchmarks(allJars, Some(logger))) {
         if (!nonGpl || benchInfo.distro() == License.MIT) {
           for ((k, v) <- benchInfo.toMap()) {
-            benchDetails.setProperty(s"benchmark.${benchInfo.name}.$k", v);
+            benchDetails.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
           }
         }
       }
@@ -138,7 +138,7 @@ def addLink(scriptFile: File, linkFile: File): Unit = {
 
     // Otherwise just force a new relative symlink.
     val scriptRelPath = linkPath.getParent.relativize(scriptPath)
-    println(s"Setting pre-push hook link to ${scriptRelPath}")
+    println(s"Setting pre-push hook link to $scriptRelPath")
     Files.delete(linkPath)
     Files.createSymbolicLink(linkPath, scriptRelPath)
 
@@ -179,7 +179,7 @@ lazy val renaissance: Project = {
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-        case x                                   => MergeStrategy.singleOrError
+        case _                                   => MergeStrategy.singleOrError
       },
       javaOptions in Compile ++= {
         if (remoteDebug.value) {
@@ -241,7 +241,7 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
     }.taskValue +: (sourceGenerators in Compile).value,
     assembly in Jmh := ((assembly in Jmh) dependsOn (compile in Jmh)).value,
     assemblyMergeStrategy in assembly := {
-      case PathList("scala", xs @ _*) =>
+      case PathList("scala", _*) =>
         MergeStrategy.discard
       case x =>
         val oldStrategy = (assemblyMergeStrategy in assembly).value

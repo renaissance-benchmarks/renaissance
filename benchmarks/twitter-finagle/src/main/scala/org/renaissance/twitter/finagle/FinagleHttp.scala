@@ -18,19 +18,43 @@ import com.twitter.finagle.http
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.Config
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 
 @Name("finagle-http")
 @Group("twitter-finagle")
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)
-class FinagleHttp extends RenaissanceBenchmark {
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(
+      name = "request_count",
+      defaultValue = "12000",
+      summary = "Number of requests sent during the execution of the benchmark"
+    ),
+    new Parameter(
+      name = "client_count",
+      defaultValue = "$cpu.count",
+      summary = "Number of clients that are simultaneously sending the requests"
+    )
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(
+      name = "test",
+      settings = Array("request_count = 150", "client_count = 2")
+    ),
+    new Configuration(name = "jmh")
+  )
+)
+final class FinagleHttp extends Benchmark {
 
   class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {
     var totalContentLength = 0L
@@ -39,20 +63,26 @@ class FinagleHttp extends RenaissanceBenchmark {
       val client: Service[http.Request, http.Response] =
         com.twitter.finagle.Http.newService(s"localhost:$port")
 
-      barrier.countDown
-      barrier.await
+      try {
+        barrier.countDown
+        barrier.await
 
-      for (i <- 0 until requestCount) {
-        val request = http.Request(http.Method.Get, "/json")
-        request.host = s"localhost:$port"
-        val response: Future[http.Response] = client(request)
-        // Need to use map() instead of onSuccess() as we actually need to
-        // wait for the side-effect, not the original response
-        Await.result(response.map { rep: http.Response =>
-          totalContentLength += rep.content.length
-        })
+        for (i <- 0 until requestCount) {
+          val request = http.Request(http.Method.Get, "/json")
+          request.host = s"localhost:$port"
+
+          val response: Future[http.Response] = client(request)
+
+          // Need to use map() instead of onSuccess() as we actually need to
+          // wait for the side-effect, not the original response
+          Await.result(response.map { rep: http.Response =>
+            totalContentLength += rep.content.length
+          })
+        }
+
+      } finally {
+        client.close()
       }
-      client.close()
     }
   }
 
@@ -61,28 +91,27 @@ class FinagleHttp extends RenaissanceBenchmark {
 
   /** Number of requests sent during the execution of the benchmark.
    */
-  var NUM_REQUESTS = 12000
+  private var requestCountParam: Int = _
 
   /** Number of clients that are simultaneously sending the requests.
    */
-  var NUM_CLIENTS = Runtime.getRuntime.availableProcessors
+  private var clientCountParam: Int = _
 
   /** Manually computed length of one request (see /json handler).
    */
-  val REQUEST_CONTENT_SIZE = 27
+  private val REQUEST_CONTENT_SIZE = 27
 
-  var server: ListeningServer = null
+  private var server: ListeningServer = _
 
   var port: Int = -1
 
   var threads: Array[WorkerThread] = null
   var threadBarrier: CountDownLatch = null
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    if (c.functionalTest) {
-      NUM_REQUESTS = 150
-      NUM_CLIENTS = 2
-    }
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    requestCountParam = c.intParameter("request_count")
+    clientCountParam = c.intParameter("client_count")
+
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")
     val muxer: HttpMuxer = new HttpMuxer()
@@ -124,41 +153,47 @@ class FinagleHttp extends RenaissanceBenchmark {
     println(
       "finagle-http on :%d spawning %d client and %s server workers.".format(
         port,
-        NUM_CLIENTS,
+        clientCountParam,
         System.getProperty("com.twitter.finagle.netty4.numWorkers", "default number of")
       )
     )
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     server.close()
   }
 
-  // Start the threads outside of the measured loop (use count-down latch
-  // to start the work simultaneously)
-  override def beforeIteration(c: Config): Unit = {
-    threads = new Array[WorkerThread](NUM_CLIENTS)
-    threadBarrier = new CountDownLatch(NUM_CLIENTS + 1)
-    for (i <- 0 until NUM_CLIENTS) {
-      threads(i) = new WorkerThread(port, threadBarrier, NUM_REQUESTS)
+  override def setUpBeforeEach(c: BenchmarkContext): Unit = {
+    //
+    // Use a CountDownLatch initialized to (clientCount + 1) to start the
+    // threads (outside the measured loop) and make them block until the
+    // measured operation is executed. In the measured operation, we provide
+    // the one last countDown() invocation which unblocks all the threads
+    // and lets the start working simultaneously.
+    //
+    threadBarrier = new CountDownLatch(clientCountParam + 1)
+
+    threads = new Array[WorkerThread](clientCountParam)
+    for (i <- threads.indices) {
+      threads(i) = new WorkerThread(port, threadBarrier, requestCountParam)
       threads(i).setName(s"finagle-http-worker-$i")
       threads(i).start()
     }
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
-    // This actually starts the threads (see beforeIteration)
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    // Let the threads do the work (see beforeIteration)
     threadBarrier.countDown
 
     var totalLength = 0L
-    for (i <- 0 until NUM_CLIENTS) {
-      threads(i).join()
-      totalLength += threads(i).totalContentLength
+    for (thread <- threads) {
+      thread.join()
+      totalLength += thread.totalContentLength
     }
 
-    return new SimpleResult(
+    Validators.simple(
       "total request length",
-      NUM_CLIENTS * NUM_REQUESTS * REQUEST_CONTENT_SIZE,
+      clientCountParam * requestCountParam * REQUEST_CONTENT_SIZE,
       totalLength
     )
   }

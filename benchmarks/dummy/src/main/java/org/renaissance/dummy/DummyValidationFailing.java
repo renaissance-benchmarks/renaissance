@@ -1,11 +1,10 @@
 package org.renaissance.dummy;
 
-import org.renaissance.Config;
-import org.renaissance.License;
-import org.renaissance.RenaissanceBenchmark;
+import org.renaissance.Benchmark;
+import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
-import org.renaissance.SimpleResult;
-import org.renaissance.ValidationException;
+import org.renaissance.BenchmarkResult.Validators;
+import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
 
@@ -13,23 +12,16 @@ import static org.renaissance.Benchmark.*;
 @Group("dummy")
 @Summary("A dummy benchmark for testing the harness (fails during validation).")
 @Licenses(License.MIT)
-public final class DummyValidationFailing extends RenaissanceBenchmark {
-  private static class FailingValidator implements BenchmarkResult {
-    @Override
-    public void validate() {
-      throw new ValidationException("Intentionally failing");
-    }
-  }
-
+public final class DummyValidationFailing implements Benchmark {
   private int counter = 0;
 
   @Override
-  protected BenchmarkResult runIteration(Config config) {
+  public BenchmarkResult run(BenchmarkContext c) {
     counter++;
     if (counter > 1) {
-      return new FailingValidator();
+      return Validators.simple("intentional failure", 1, -1);
     } else {
-      return new SimpleResult("nothing", 0, 0);
+      return Validators.simple("nothing", 0, 0);
     }
   }
 }

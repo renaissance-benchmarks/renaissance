@@ -1,28 +1,37 @@
 package org.renaissance.jdk.streams
 
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.HashingResult
+import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.License
 
 @Name("par-mnemonics")
 @Group("jdk-streams")
 @Summary("Solves the phone mnemonics problem using parallel JDK streams.")
 @Licenses(Array(License.MIT))
 @Repetitions(16)
-class ParMnemonics extends RenaissanceBenchmark {
+@Parameter(name = "coder_input", defaultValue = "72252762577225276257528249849874238824")
+@Parameter(name = "expected_hash", defaultValue = "72b6f7d83bc807c0")
+@Configuration(
+  name = "test",
+  settings = Array("coder_input = 7225276257722527", "expected_hash = b789f159108bb450")
+)
+@Configuration(name = "jmh")
+final class ParMnemonics extends Benchmark {
 
-  var testInput: String = null
+  private var coderInputParam: String = _
 
-  var coder: MnemonicsCoderWithStream = null
+  private var expectedHashParam: String = _
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    testInput = "72252762577225276257528249849874238824"
-    if (c.functionalTest) {
-      testInput = "7225276257722527"
-    }
+  private var coder: MnemonicsCoderWithStream = _
+
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    coderInputParam = c.stringParameter("coder_input")
+    expectedHashParam = c.stringParameter("expected_hash")
+
+    // TODO Unify Mnemonics and ParMnemonics setup
     coder = new MnemonicsCoderWithStream(
       java.util.Arrays.asList(
         "Scala",
@@ -65,11 +74,8 @@ class ParMnemonics extends RenaissanceBenchmark {
     )
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
-    val result = coder.parallelTranslate(testInput)
-    return new HashingResult(
-      if (c.functionalTest) "b789f159108bb450" else "72b6f7d83bc807c0",
-      result
-    )
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    val result = coder.parallelTranslate(coderInputParam)
+    Validators.hashing(expectedHashParam, result)
   }
 }

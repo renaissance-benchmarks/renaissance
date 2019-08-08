@@ -1,8 +1,7 @@
-package org.renaissance;
+package org.renaissance.core;
 
-import org.renaissance.util.Logging;
-import org.renaissance.util.ModuleLoader;
-import org.renaissance.util.ModuleLoadingException;
+import org.renaissance.Benchmark;
+import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -12,11 +11,28 @@ import java.util.logging.Logger;
 
 public class Launcher {
   public static void main(String args[]) {
+    if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
+      final Package benchmarkPkg = Benchmark.class.getPackage();
+      final String[] customArgs = new String[] {
+        "--title", benchmarkPkg.getSpecificationTitle(),
+        "--version", benchmarkPkg.getImplementationVersion()
+      };
+
+      // TODO Launch the generator from the build system
+      launchHarnessClass("org.renaissance.harness.MarkdownGenerator", customArgs);
+    } else {
+
+      launchHarnessClass("org.renaissance.harness.RenaissanceSuite", args);
+    }
+  }
+
+
+  private static void launchHarnessClass(String className, String[] args) {
     final Logger logger = Logging.getMethodLogger(Launcher.class, "main");
 
     try {
       final ClassLoader loader = ModuleLoader.getForGroup("renaissance-harness");
-      final Class<?> suiteClass = loader.loadClass("org.renaissance.RenaissanceSuite");
+      final Class<?> suiteClass = loader.loadClass(className);
       final Method suiteMain = suiteClass.getMethod("main", String[].class);
       suiteMain.invoke(null, new Object[] { args });
 

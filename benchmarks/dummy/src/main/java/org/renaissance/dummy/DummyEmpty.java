@@ -1,10 +1,10 @@
 package org.renaissance.dummy;
 
-import org.renaissance.Config;
-import org.renaissance.License;
-import org.renaissance.RenaissanceBenchmark;
+import org.renaissance.Benchmark;
+import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
-import org.renaissance.SimpleResult;
+import org.renaissance.BenchmarkResult.Validators;
+import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
 
@@ -12,9 +12,9 @@ import static org.renaissance.Benchmark.*;
 @Group("dummy")
 @Summary("A dummy benchmark which only serves to test the harness.")
 @Licenses(License.MIT)
-public final class DummyEmpty extends RenaissanceBenchmark {
+public final class DummyEmpty implements Benchmark {
   @Override
-  protected BenchmarkResult runIteration(Config config) {
-    return new SimpleResult("nothing", 0, 0);
+  public BenchmarkResult run(BenchmarkContext c) {
+    return Validators.simple("nothing", 0, 0);
   }
 }

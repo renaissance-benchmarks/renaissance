@@ -1,5 +1,4 @@
 
-
 ## Contribution Guide
 
 ### Code organization and internals
@@ -21,18 +20,18 @@ The code is organized into three main parts:
 ### Adding a new benchmark
 
 To add a new benchmark to an existing group, identify the respective project
-in the `benchmarks` directory, and add a new top-level Scala class
-that extends the `RenaissanceBenchmark` interface.
+in the `benchmarks` directory, and add a new top-level Scala (Java) class
+that extends (implements) the `Benchmark` interface.
 
 Here is an example:
 
-```
+```scala
 import org.renaissance._
 import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
-final class MyJavaBenchmark extends RenaissanceBenchmark {
-  override protected def runIteration(config: Config): BenchmarkResult = {
+final class MyJavaBenchmark extends Benchmark {
+  override def runIteration(config: Config): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
     // Return object for later validation of the iteration.
@@ -50,8 +49,8 @@ using an existing project, such as `scala-stdlib`, as an example.
 The project will be automatically picked up by the build system
 and included into the Renaissance distribution.
 
-Once the benchmark has been added, one needs to make sure to be compliant with the code formatting of the project
-(rules defined in `.scalafmt.conf`).
+Once the benchmark has been added, one needs to make sure to be compliant with the code
+formatting of the project (rules defined in `.scalafmt.conf`).
 A convenient sbt task can do that check:
 ```
 $ tools/sbt/bin/sbt renaissanceFormatCheck
@@ -62,10 +61,10 @@ Another one can directly update the source files to match the desired format:
 $ tools/sbt/bin/sbt renaissanceFormat
 ```
 
-Moreover, the content of the README and CONTRIBUTION files are automatically generated from the codebase.
+Moreover, the contents of the README and CONTRIBUTION files are automatically generated from the codebase.
 Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
 ```
-$ tools/sbt/bin/sbt runMain org.renaissance.Launcher --readme
+$ tools/sbt/bin/sbt runMain org.renaissance.core.Launcher --readme
 ```
 
 ### IDE development

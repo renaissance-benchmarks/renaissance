@@ -104,7 +104,7 @@ object RealityShowPhilosophers {
     elapsed
   }
 
-  def run(meals: Int, philosopherCount: Int): Unit = {
+  def run(meals: Int, philosopherCount: Int) = {
     time(philosopherCount, meals)
   }
 }

@@ -11,12 +11,12 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.Statistics
 import org.apache.spark.mllib.stat.test.ChiSqTestResult
 import org.apache.spark.rdd.RDD
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.License
 
 import scala.util.Random
 
@@ -25,16 +25,29 @@ import scala.util.Random
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)
-class ChiSquare extends RenaissanceBenchmark with SparkUtil {
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
+    new Parameter(name = "number_count", defaultValue = "1500000")
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("number_count = 10000")),
+    new Configuration(name = "jmh")
+  )
+)
+final class ChiSquare extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  val COMPONENTS = 5
+  private var numberCountParam: Int = _
 
-  var SIZE = 1500000
+  private var threadCountParam: Int = _
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  private val COMPONENTS = 5
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -45,19 +58,20 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
 
   val measurementsFile = chiSquarePath.resolve("measurements.txt")
 
-  var tempDirPath: Path = null
+  var tempDirPath: Path = _
 
-  var sc: SparkContext = null
+  var sc: SparkContext = _
 
-  var input: RDD[LabeledPoint] = null
+  var input: RDD[LabeledPoint] = _
 
-  var results: Array[ChiSqTestResult] = null
+  var results: Array[ChiSqTestResult] = _
 
   def prepareInput() = {
     FileUtils.deleteDirectory(chiSquarePath.toFile)
+
     val rand = new Random(0L)
     val content = new StringBuilder
-    for (i <- 0 until SIZE) {
+    for (i <- 0 until numberCountParam) {
       def randDouble(): Double = {
         (rand.nextDouble() * 10).toInt / 10.0
       }
@@ -65,6 +79,7 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
       content.append((0 until COMPONENTS).map(_ => randDouble()).mkString(" "))
       content.append("\n")
     }
+
     FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
   }
 
@@ -78,28 +93,28 @@ class ChiSquare extends RenaissanceBenchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("chi_square")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
-    if (c.functionalTest) {
-      SIZE = 10000
-    }
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    threadCountParam = c.intParameter("thread_count")
+    numberCountParam = c.intParameter("number_count")
+
+    tempDirPath = c.generateTempDir("chi_square")
+    sc = setUpSparkContext(tempDirPath, threadCountParam, "chi-square")
     prepareInput()
     loadData()
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
-    blackHole(results)
+
     // TODO: add more sophisticated validation
-    return new SimpleResult("result count", COMPONENTS, results.size)
+    Validators.simple("component count", COMPONENTS, results.size)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     val output = results.map(_.statistic).mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 
 }

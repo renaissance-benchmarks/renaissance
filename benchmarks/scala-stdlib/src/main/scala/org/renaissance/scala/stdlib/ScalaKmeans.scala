@@ -1,11 +1,11 @@
 package org.renaissance.scala.stdlib
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
-import org.renaissance.ValidationException
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Assert
+import org.renaissance.License
 
 import scala.collection._
 import scala.util.Random
@@ -122,40 +122,34 @@ trait KmeansUtilities {
 @Summary("Runs the K-Means algorithm using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(50)
-class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
-
-  class ScalaKmeansResult(expected: Seq[Point], actual: GenSeq[Point]) extends BenchmarkResult {
-
-    val EPSILON = 0.01
-
-    override def validate(): Unit = {
-      ValidationException.throwIfNotEqual(expected.length, actual.length, "centers count")
-      var idx = 0
-      for ((exp, act) <- (expected zip actual)) {
-        ValidationException.throwIfNotEqual(exp.x, act.x, EPSILON, s"center $idx position at x")
-        ValidationException.throwIfNotEqual(exp.y, act.y, EPSILON, s"center $idx position at y")
-        ValidationException.throwIfNotEqual(exp.z, act.z, EPSILON, s"center $idx position at z")
-        idx = idx + 1
-      }
-    }
-  }
+@Parameter(
+  name = "point_count",
+  defaultValue = "500000",
+  summary = "Number of data points to generate"
+)
+@Parameter(
+  name = "cluster_count",
+  defaultValue = "32",
+  summary = "Number of clusters to create"
+)
+@Configuration(name = "test", settings = Array("point_count = 5000", "cluster_count = 8"))
+@Configuration(name = "jmh")
+final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var numPoints = 500000
+  private var pointCountParam: Int = _
 
-  var k = 32
+  private var clusterCountParam: Int = _
 
-  val eta = 0.01
+  private val eta = 0.01
 
-  var centers: GenSeq[Point] = null
+  private var points: Seq[Point] = _
 
-  var points: Seq[Point] = null
+  private var means: GenSeq[Point] = _
 
-  var means: GenSeq[Point] = null
-
-  val EXPECTED_RESULT_FULL = Seq(
+  private val EXPECTED_RESULT_FULL = Seq(
     new Point(0.69, 0.54, 0.76),
     new Point(0.97, 1.09, 0.37),
     new Point(0.89, 1.0, 0.75),
@@ -190,7 +184,7 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
     new Point(1.11, 1.23, 0.23)
   )
 
-  val EXPECTED_RESULT_TEST = Seq(
+  private val EXPECTED_RESULT_TEST = Seq(
     new Point(0.91, 0.51, 0.66),
     new Point(0.78, 0.34, 0.41),
     new Point(1.18, 0.43, 0.71),
@@ -201,21 +195,40 @@ class ScalaKmeans extends RenaissanceBenchmark with KmeansUtilities {
     new Point(0.56, 1.05, 0.31)
   )
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    if (c.functionalTest) {
-      numPoints = 5000
-      k = 8
+  private var expectedResult: Seq[Point] = _
+
+  override def setUpBeforeAll(c: BenchmarkContext) = {
+    pointCountParam = c.intParameter("point_count")
+    clusterCountParam = c.intParameter("cluster_count")
+
+    if (EXPECTED_RESULT_FULL.length == clusterCountParam) {
+      expectedResult = EXPECTED_RESULT_FULL
+    } else if (EXPECTED_RESULT_TEST.length == clusterCountParam) {
+      expectedResult = EXPECTED_RESULT_TEST
+    } else {
+      throw new AssertionError(s"no expected result for ${clusterCountParam} clusters")
     }
-    points = generatePoints(k, numPoints)
-    means = initializeMeans(k, points)
+
+    points = generatePoints(clusterCountParam, pointCountParam)
+    means = initializeMeans(clusterCountParam, points)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
-    centers = kMeans(points, means, eta)
-    blackHole(centers)
-    return new ScalaKmeansResult(
-      if (c.functionalTest) EXPECTED_RESULT_TEST else EXPECTED_RESULT_FULL,
-      centers
-    )
+  private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
+    val EPSILON = 0.01
+
+    Assert.assertEquals(expected.length, actual.length, "centers count")
+
+    for (idx <- expected.indices) {
+      val (exp, act) = (expected(idx), actual(idx))
+
+      Assert.assertEquals(exp.x, act.x, EPSILON, s"center $idx position at x")
+      Assert.assertEquals(exp.y, act.y, EPSILON, s"center $idx position at y")
+      Assert.assertEquals(exp.z, act.z, EPSILON, s"center $idx position at z")
+    }
+  }
+
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    val result = kMeans(points, means, eta)
+    () => validate(expectedResult, result)
   }
 }

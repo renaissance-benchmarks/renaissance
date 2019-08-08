@@ -16,27 +16,39 @@ import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.CompoundResult
-import org.renaissance.Config
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
-import org.renaissance.SimpleResult
 
 @Name("dec-tree")
 @Group("apache-spark")
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-class DecTree extends RenaissanceBenchmark with SparkUtil {
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
+    new Parameter(name = "copy_count", defaultValue = "100")
+  )
+)
+@Configurations(
+  Array(
+    new Configuration(name = "test", settings = Array("copy_count = 5")),
+    new Configuration(name = "jmh")
+  )
+)
+final class DecTree extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var numCopies = 100
+  private var threadCountParam: Int = _
 
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  private var copyCountParam: Int = _
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
@@ -66,7 +78,7 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
 
     val text =
       IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    for (i <- 0 until numCopies) {
+    for (i <- 0 until copyCountParam) {
       FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
 
@@ -100,17 +112,17 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
     )
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    tempDirPath = RenaissanceBenchmark.generateTempDir("dec_tree")
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
-    if (c.functionalTest) {
-      numCopies = 5
-    }
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    threadCountParam = c.intParameter("thread_count")
+    copyCountParam = c.intParameter("copy_count")
+
+    tempDirPath = c.generateTempDir("dec_tree")
+    sc = setUpSparkContext(tempDirPath, threadCountParam, "dec-tree")
     training = prepareAndLoadInput(decisionTreePath, inputFile)
     pipeline = constructPipeline()
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     pipelineModel = pipeline.fit(training)
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
@@ -122,15 +134,16 @@ class DecTree extends RenaissanceBenchmark with SparkUtil {
       true
     )
     iteration += 1
+
     // TODO: add more in-depth validation
-    return new CompoundResult(
-      new SimpleResult("tree depth", 2, treeModel.depth),
-      new SimpleResult("node count", 5, treeModel.numNodes)
+    Validators.compound(
+      Validators.simple("tree depth", 2, treeModel.depth),
+      Validators.simple("node count", 5, treeModel.numNodes)
     )
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    RenaissanceBenchmark.deleteTempDir(tempDirPath)
+    c.deleteTempDir(tempDirPath)
   }
 }

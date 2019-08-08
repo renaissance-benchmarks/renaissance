@@ -1,59 +1,60 @@
 package org.renaissance.jdk.concurrent
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.EmptyResult
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.License
 
 @Name("fj-kmeans")
 @Group("jdk-concurrent")
 @Summary("Runs the k-means algorithm using the fork/join framework.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
-class FjKmeans extends RenaissanceBenchmark {
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "vector_length", defaultValue = "500000")
+@Configuration(name = "test", settings = Array("vector_length = 500"))
+@Configuration(name = "jmh")
+final class FjKmeans extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private val THREAD_COUNT = Runtime.getRuntime.availableProcessors
+  private var threadCountParam: Int = _
 
-  private var DIMENSION = 5
+  private var vectorLengthParam: Int = _
 
-  private var VECTOR_LENGTH = 500000
+  private val DIMENSION = 5
 
-  private var CLUSTER_COUNT = 5
+  private val CLUSTER_COUNT = 5
 
-  private var ITERATION_COUNT = 50
+  private val ITERATION_COUNT = 50
 
-  private var LOOP_COUNT = 4
+  private val LOOP_COUNT = 4
 
-  private var benchmark: JavaKMeans = null
+  private var benchmark: JavaKMeans = _
 
-  private var data: java.util.List[Array[java.lang.Double]] = null
+  private var data: java.util.List[Array[java.lang.Double]] = _
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    if (c.functionalTest) {
-      DIMENSION = 5
-      VECTOR_LENGTH = 500
-      CLUSTER_COUNT = 5
-      ITERATION_COUNT = 50
-      LOOP_COUNT = 4
-    }
-    benchmark = new JavaKMeans(DIMENSION, THREAD_COUNT)
-    data = JavaKMeans.generateData(VECTOR_LENGTH, DIMENSION, CLUSTER_COUNT)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    threadCountParam = c.intParameter("thread_count")
+    vectorLengthParam = c.intParameter("vector_length")
+
+    benchmark = new JavaKMeans(DIMENSION, threadCountParam)
+    data = JavaKMeans.generateData(vectorLengthParam, DIMENSION, CLUSTER_COUNT)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
-    for (i <- 0 until LOOP_COUNT) {
-      blackHole(benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT))
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    val results = for (i <- 0 until LOOP_COUNT) yield {
+      benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT)
     }
+
     // TODO: add proper validation of the individual sub-benchmarks
-    return new EmptyResult
+    Validators.dummy(results)
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     benchmark.tearDown()
     benchmark = null
     data = null

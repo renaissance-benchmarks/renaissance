@@ -1,10 +1,10 @@
 package org.renaissance.dummy;
 
-import org.renaissance.Config;
-import org.renaissance.License;
-import org.renaissance.RenaissanceBenchmark;
+import org.renaissance.Benchmark;
+import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
-import org.renaissance.SimpleResult;
+import org.renaissance.BenchmarkResult.Validators;
+import org.renaissance.License;
 
 import static org.renaissance.Benchmark.*;
 
@@ -12,14 +12,14 @@ import static org.renaissance.Benchmark.*;
 @Group("dummy")
 @Summary("A dummy benchmark for testing the harness (fails during teardown).")
 @Licenses(License.MIT)
-public final class DummyTeardownFailing extends RenaissanceBenchmark {
+public final class DummyTeardownFailing implements Benchmark {
   @Override
-  public void tearDownAfterAll(Config config) {
+  public void tearDownAfterAll(BenchmarkContext c) {
     throw new AssertionError("Intentionally failing");
   }
 
   @Override
-  protected BenchmarkResult runIteration(Config config) {
-    return new SimpleResult("nothing", 0, 0);
+  public BenchmarkResult run(BenchmarkContext c) {
+    return Validators.simple("nothing", 0, 0);
   }
 }

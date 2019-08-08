@@ -1,17 +1,16 @@
 package org.renaissance.scala.sat.doku
 
-import cafesat.api.FormulaBuilder.{and, or, propVar}
+import cafesat.api.FormulaBuilder.and
+import cafesat.api.FormulaBuilder.or
+import cafesat.api.FormulaBuilder.propVar
 import cafesat.api.Solver.solveForSatisfiability
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
-import org.renaissance.{
-  BenchmarkResult,
-  CompoundResult,
-  Config,
-  EmptyResult,
-  License,
-  RenaissanceBenchmark,
-  ValidationException
-}
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.License
 
 object Solver {
 
@@ -87,15 +86,9 @@ object Solver {
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(20)
-class ScalaDoku extends RenaissanceBenchmark {
-
-  class DokuResult(actualResult: Array[Array[Int]], expectedResult: Array[Array[Int]])
-    extends BenchmarkResult {
-    override def validate(): Unit = {
-      if (expectedResult.deep != actualResult.deep)
-        throw new ValidationException("Result array differs from expected solution.")
-    }
-  }
+// Work around @Repeatable annotations not working in this Scala version.
+@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+final class ScalaDoku extends Benchmark {
 
   /*
    * An arbitrary solved sudoku puzzle. The puzzle is copied and some entries
@@ -113,45 +106,45 @@ class ScalaDoku extends RenaissanceBenchmark {
     Array(4, 9, 1, 6, 3, 2, 7, 8, 5)
   )
 
-  var puzzle1: Array[Array[Option[Int]]] = null
+  var puzzleWithAFewHoles: Array[Array[Option[Int]]] = _
 
-  var puzzle2: Array[Array[Option[Int]]] = null
+  var puzzleWithOneHole: Array[Array[Option[Int]]] = _
 
-  private def preparePuzzleWithAFewHoles(): Unit = {
-    puzzle1 = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
-    puzzle1(0)(0) = None
-    puzzle1(4)(8) = None
-    puzzle1(7)(7) = None
+  private def preparePuzzleWithAFewHoles() = {
+    val result = SOLVED_PUZZLE.map(row => row.map(i => Some(i): Option[Int]))
+    result(0)(0) = None
+    result(4)(8) = None
+    result(7)(7) = None
+    result
   }
 
-  private def preparePuzzleWithOneHole(): Unit = {
-    puzzle2 = SOLVED_PUZZLE.map(row => row.map(i => (Some(i): Option[Int])))
-    puzzle2(2)(7) = None
+  private def preparePuzzleWithOneHole() = {
+    val result = SOLVED_PUZZLE.map(row => row.map(i => Some(i): Option[Int]))
+    result(2)(7) = None
+    result
   }
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    preparePuzzleWithAFewHoles()
-    preparePuzzleWithOneHole()
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    puzzleWithAFewHoles = preparePuzzleWithAFewHoles()
+    puzzleWithOneHole = preparePuzzleWithOneHole()
   }
 
-  private def validateResultExists(result: Option[Array[Array[Int]]]): Array[Array[Int]] = {
-    if (result == None)
-      throw new ValidationException("Result array does not exist.")
-    return result.get
-  }
-
-  private def solvePuzzleWithAFewHoles(): Array[Array[Int]] = {
-    return validateResultExists(Solver.solve(puzzle1))
-  }
-
-  private def solvePuzzleWithOneHole(): Array[Array[Int]] = {
-    return validateResultExists(Solver.solve(puzzle2))
-  }
-
-  override def runIteration(c: Config): BenchmarkResult = {
-    return new CompoundResult(
-      new DokuResult(solvePuzzleWithAFewHoles(), SOLVED_PUZZLE),
-      new DokuResult(solvePuzzleWithOneHole(), SOLVED_PUZZLE)
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    Validators.compound(
+      new DokuResult(Solver.solve(puzzleWithAFewHoles), SOLVED_PUZZLE),
+      new DokuResult(Solver.solve(puzzleWithOneHole), SOLVED_PUZZLE)
     )
   }
+
+  final class DokuResult(actual: Option[Array[Array[Int]]], expected: Array[Array[Int]])
+    extends BenchmarkResult {
+    override def validate(): Unit = {
+      if (actual.isEmpty)
+        throw new ValidationException("Result array does not exist.")
+
+      if (expected.deep != actual.get.deep)
+        throw new ValidationException("Result array differs from expected solution.")
+    }
+  }
+
 }

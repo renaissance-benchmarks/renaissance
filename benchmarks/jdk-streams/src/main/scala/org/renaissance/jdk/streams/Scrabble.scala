@@ -1,13 +1,12 @@
 package org.renaissance.jdk.streams
 
-import java.util.Map.Entry
-import java.util.List
-import org.renaissance.Config
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
+import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.ValidationException
+import org.renaissance.BenchmarkResult.Assert
+import org.renaissance.License
+
 import scala.collection.JavaConverters
 
 @Name("scrabble")
@@ -15,45 +14,54 @@ import scala.collection.JavaConverters
 @Summary("Solves the Scrabble puzzle using JDK Streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(50)
-class Scrabble extends RenaissanceBenchmark {
-
-  class ScrabbleResult(actualResult: List[Entry[Integer, List[String]]], expected: Seq[String])
-    extends BenchmarkResult {
-
-    override def validate(): Unit = {
-      val actualWords = JavaScrabble.prepareForValidation(actualResult)
-      ValidationException.throwIfNotEqual(expected.size, actualWords.size, "best words count")
-
-      for ((expected, actual) <- expected zip JavaConverters.asScalaBuffer(actualWords)) {
-        ValidationException.throwIfNotEqual(expected, actual, "best words")
-      }
-    }
-  }
+@Parameter(name = "input_path", defaultValue = "/shakespeare.txt")
+@Parameter(
+  name = "expected_result",
+  defaultValue = "120--QUICKLY,118--ZEPHYRS,114--QUALIFY-QUICKEN-QUICKER"
+)
+@Configuration(
+  name = "test",
+  settings = Array(
+    "input_path = /shakespeare-truncated.txt",
+    "expected_result = 120--QUICKLY,114--QUICKEN-QUICKER,108--BLAZING-PRIZING"
+  )
+)
+@Configuration(name = "jmh")
+final class Scrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var shakespearePath = "/shakespeare.txt"
+  private var inputPathParam: String = _
 
-  var scrabblePath = "/scrabble.txt"
+  private var expectedResultParam: Seq[String] = _
 
-  var scrabble: JavaScrabble = null
+  private val scrabblePath = "/scrabble.txt"
 
-  val expectedResultFull = Seq("120--QUICKLY", "118--ZEPHYRS", "114--QUALIFY-QUICKEN-QUICKER")
-  val expectedResultTest = Seq("120--QUICKLY", "114--QUICKEN-QUICKER", "108--BLAZING-PRIZING")
+  private var scrabble: JavaScrabble = _
 
-  override def setUpBeforeAll(c: Config): Unit = {
-    if (c.functionalTest) {
-      shakespearePath = "/shakespeare-truncated.txt"
-    }
-    scrabble = new JavaScrabble(shakespearePath, scrabblePath)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    inputPathParam = c.stringParameter("input_path")
+    expectedResultParam = c.stringParameter("expected_result").split(",").map(_.trim).toSeq
+    scrabble = new JavaScrabble(inputPathParam, scrabblePath)
   }
 
-  override def runIteration(c: Config): BenchmarkResult = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
     val result = scrabble.run()
-    return new ScrabbleResult(
-      result,
-      if (c.functionalTest) expectedResultTest else expectedResultFull
-    )
+
+    () => {
+      val actualWords = JavaScrabble.prepareForValidation(result)
+      Assert.assertEquals(
+        expectedResultParam.size,
+        actualWords.size,
+        "best words count"
+      )
+
+      for ((expected, actual) <- expectedResultParam zip JavaConverters.asScalaBuffer(
+             actualWords
+           )) {
+        Assert.assertEquals(expected, actual, "best words")
+      }
+    }
   }
 }

@@ -1,6 +1,6 @@
-package org.renaissance;
+package org.renaissance.core;
 
-public class Pair<T, U> {
+final class Pair<T, U> {
   private T first;
   private U second;
 

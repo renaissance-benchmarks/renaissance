@@ -1,4 +1,4 @@
-package org.renaissance.util;
+package org.renaissance.core;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
-public class Logging {
+public final class Logging {
   private static final Handler STDERR_HANDLER;
   private static final Level LOG_LEVEL;
   

@@ -2,47 +2,70 @@ package org.renaissance.neo4j
 
 import java.nio.file.Paths
 
-import org.renaissance.BenchmarkResult
-import org.renaissance.Config
-import org.renaissance.EmptyResult
-import org.renaissance.License
-import org.renaissance.RenaissanceBenchmark
 import org.renaissance.Benchmark._
+import org.renaissance.BenchmarkResult
+import org.renaissance.License
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
+import org.renaissance.Benchmark
+import org.renaissance.BenchmarkContext
+import org.renaissance.BenchmarkResult.Validators
 
 @Name("neo4j-analytics")
 @Group("neo4j")
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
 @Repetitions(20)
-class Neo4jAnalytics extends RenaissanceBenchmark {
+// Work around @Repeatable annotations not working in this Scala version.
+@Parameters(
+  Array(
+    new Parameter(name = "long_query_count", defaultValue = "2"),
+    new Parameter(name = "short_query_count", defaultValue = "1"),
+    new Parameter(name = "mutator_query_count", defaultValue = "1")
+  )
+)
+@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+final class Neo4jAnalytics extends Benchmark {
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
+  private val scratchPath = Paths.get("target", "modules", "neo4j", "neo4j-analytics.db")
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  var benchmark: AnalyticsBenchmark = new AnalyticsBenchmark(
-    scratchPath.toFile,
-    sys.props.get("renaissance.neo4j.long-query-count").map(_.toInt),
-    sys.props.get("renaissance.neo4j.short-query-count").map(_.toInt),
-    sys.props.get("renaissance.neo4j.mutator-query-count").map(_.toInt)
-  )
+  private var longQueryCountParam: Int = _
 
-  override def setUpBeforeAll(c: Config): Unit = {
+  private var shortQueryCountParam: Int = _
+
+  private var mutatorQueryCountParam: Int = _
+
+  private var benchmark: AnalyticsBenchmark = _
+
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    longQueryCountParam = c.intParameter("long_query_count")
+    shortQueryCountParam = c.intParameter("short_query_count")
+    mutatorQueryCountParam = c.intParameter("mutator_query_count")
+
+    benchmark = new AnalyticsBenchmark(
+      scratchPath.toFile,
+      Option(longQueryCountParam),
+      Option(shortQueryCountParam),
+      Option(mutatorQueryCountParam)
+    )
+
     benchmark.setupAll()
   }
 
-  override def tearDownAfterAll(c: Config): Unit = {
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     benchmark.tearAll()
   }
 
-  protected def runIteration(config: Config): BenchmarkResult = {
+  override def run(config: BenchmarkContext): BenchmarkResult = {
+    // TODO: Return something useful for validation
     benchmark.run()
+
     // TODO: add proper validation
-    return new EmptyResult
+    Validators.dummy(benchmark)
   }
 }
