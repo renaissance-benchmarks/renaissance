@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult
-import org.renaissance.ExecutionPolicy
 import org.renaissance.Plugin
 import org.renaissance.Plugin._
 import org.renaissance.core.BenchmarkInfo
@@ -108,21 +107,22 @@ object MarkdownGenerator {
 
     tags("configClass") = classOf[Config].getSimpleName
     tags("pluginClass") = classOf[Plugin].getSimpleName
-    tags("policyClass") = classOf[ExecutionPolicy].getSimpleName
 
     tags("harnessInitListenerClass") = classOf[HarnessInitListener].getSimpleName
     tags("harnessShutdownListenerClass") = classOf[HarnessShutdownListener].getSimpleName
     tags("benchmarkSetUpListenerClass") = classOf[BenchmarkSetUpListener].getSimpleName
     tags("benchmarkTearDownListenerClass") = classOf[BenchmarkTearDownListener].getSimpleName
-    tags("measurementResultListenerClass") = classOf[MeasurementResultListener].getSimpleName
-    tags("measurementResultPublisherClass") = classOf[MeasurementResultPublisher].getSimpleName
-    tags("benchmarkFailureListenerClass") = classOf[BenchmarkFailureListener].getSimpleName
     tags("operationSetUpListenerClass") = classOf[OperationSetUpListener].getSimpleName
     tags("operationTearDownListenerClass") = classOf[OperationTearDownListener].getSimpleName
 
+    tags("benchmarkFailureListenerClass") = classOf[BenchmarkFailureListener].getSimpleName
+    tags("measurementResultListenerClass") = classOf[MeasurementResultListener].getSimpleName
+    tags("measurementResultPublisherClass") = classOf[MeasurementResultPublisher].getSimpleName
+    tags("executionPolicyClass") = classOf[ExecutionPolicy].getSimpleName
+
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
-    tags("renaissanceSuiteClass") = RenaissanceSuite.getClass.getSimpleName
+    tags("renaissanceSuiteClass") = "RenaissanceSuite"
 
     val harnessConfigParser = new ConfigParser(tags.toMap)
     tags("harnessUsage") = harnessConfigParser.usage()
@@ -177,7 +177,7 @@ object MarkdownGenerator {
 
   private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
     def formatRow(b: BenchmarkInfo) = {
-      s"| ${b.name} | ${b.licenses().mkString(",")} | ${b.distro} |"
+      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} |"
     }
 
     benchmarks.getAll.asScala.map(formatRow).mkString("\n")
@@ -226,6 +226,18 @@ Above, the `<renaissance-home>` is the path to the root directory of the Renaiss
 and `<benchmarks>` is the list of benchmarks that you wish to run.
 For example, you can specify `scala-kmeans` as the benchmark.
 
+The suite generally executes the benchmark's measured operation multiple times. By default,
+the suite executes each benchmark operation for a specific number of times. The benchmark-specific
+number of repetitions is only intended for quick visual evaluation of benchmark execution time,
+but is not sufficient for thorough experimental evaluation, which will generally need much more
+repetitions.
+
+For thorough experimental evaluation, the benchmarks should be repeated for a large number of
+times or executed for a long time. The number of repetitions and the execution time can be
+set for all benchmarks using the `-r` or `-t` options. More fine-grained control over benchmark
+execution can be achieved by providing the harness with a plugin implementing a custom execution
+policy (see [below](#plugins) for details).
+
 
 #### Complete list of command-line options
 
@@ -243,37 +255,11 @@ The following is the complete list of benchmarks, separated into groups.
 ${tags("benchmarksList")}
 
 
-### Execution policies
-
-The suite generally executes the benchmark's measured operation multiple times
-and uses an execution policy to determine how many times to repeat the execution.
-By default, the suite supports executing the measured operation for a fixed number
-of times and for a fixed amount of time. These policies are implicitly selected by
-setting the number of iterations or the execution time using command line options.
-
-To provide additional control over execution of the measured operation, the suite
-allows using an external execution policy. An external policy is a user-defined class
-which implements the ${tags("policyClass")} interface and provide at least a default
-(parameterless) constructor. To make the harness use an external policy, it needs to
-be specified using the `--policy <class-path>!<class-name>` option on the command line.
-The `<class-path>` is the class path on which to look for the policy class, and
-`<class-name>` is a fully qualified name of the policy class.
-
-External policies can receive additional command line arguments. Each argument must be
-given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments
-for the policy. The `--with-arg` option must be specified *after* the `--policy` option
-but *before* any `--plugin` option, because it is also used to pass arguments to external
-plugins (see below). A policy that wants to receive command line arguments must define a
-constructor which takes an array of strings (`String[]`) or a string vararg (`String...`)
-as parameter. The harness tries to use this constructor first and falls back to the default
-(parameterless) constructor.
-
-
-### Plugins and interfacing with external tools
+### <a name="plugins">Using plugins to customize the harness</a>
 
 If you are using an external tool to inspect a benchmark, such as an instrumentation agent,
-or a profiler, then you may need to make this tool aware of when a benchmark iteration
-is starting and when it is ending.
+or a profiler, then you may need to make this tool aware of when a benchmark's measured
+operation is about to be executed and when it finished executing.
 
 If you need to collect additional metrics associated with the execution of the measured
 operation, e.g., hardware counters, you will need to be notified about operation execution,
@@ -282,12 +268,17 @@ and you may want to store the measured values in the output files produced by th
 If you need the harness to produce output files in different format (other than CSV or JSON),
 you will need to be notified about values of metrics collected by the harness and other plugins.
 
-To this end, the suite allows loading custom plugins, which can register to receive events
-related to harness state and benchmark execution. A plugin is a user-defined class which must
-implement the `${tags("pluginClass")}` marker interface and provide at least a default
-(parameterless) constructor. However, such a plugin would not receive any notifications.
-To receive notifications, the plugin class must implement the corresponding interfaces
-for the `${tags("pluginClass")}` interface name space, such as in the following example:
+If you need more fine-grained control over the repetition of the benchmark's measured operation,
+you will need to be able to tell the harness when to keep executing the benchmark and when to
+stop.
+
+To this end, the suite provides hooks for plugins which can subscribe to events related to
+harness state and benchmark execution. A plugin is a user-defined class which must implement
+the `${tags("pluginClass")}` marker interface and provide at least a default (parameter-less)
+constructor. However, such a minimal plugin would not receive any notifications. To receive
+notifications, the plugin class must implement interfaces from the `${tags("pluginClass")}`
+interface name space depending on the type of events it wants to receive, or services it wants
+to provide. This is demonstrated in the following example:
 
 ```scala
 class SimplePlugin extends ${tags("pluginClass")}
@@ -298,53 +289,72 @@ class SimplePlugin extends ${tags("pluginClass")}
     // Initialize the plugin after the harness finished initializing
   }
 
-  override def beforeOperation(benchmark: String, index: Int) = {
+  override def afterOperationSetUp(benchmark: String, index: Int) = {
     // Notify the tool that the measured operation is about to start.
   }
 
-  override def afterOperation(benchmark: String, index: Int) = {
+  override def beforeOperationTearDown(benchmark: String, index: Int) = {
     // Notify the tool that the measured operations has finished.
   }
 }
 ```
 
-The events supported by the harness are represented by the following interfaces:
+The following interfaces provide common (paired) event types which allow a plugin to hook
+into a specific point in the benchmark execution sequence. They are analogous to common
+annotations known from testing frameworks such as JUnit.
 - `${tags("harnessInitListenerClass")}`
 - `${tags("harnessShutdownListenerClass")}`
 - `${tags("benchmarkSetUpListenerClass")}`
 - `${tags("benchmarkTearDownListenerClass")}`
-- `${tags("measurementResultListenerClass")}`
-- `${tags("measurementResultPublisherClass")}`
-- `${tags("benchmarkFailureListenerClass")}`
 - `${tags("operationSetUpListenerClass")}`
 - `${tags("operationTearDownListenerClass")}`
 
-The `${tags("measurementResultPublisherClass")}` interface is intended for plugins that
-want to publish custom measurement results. The harness calls the `onMeasurementResultsRequested`
-method with an instance of event dispatcher which the plugin is supposed to use to notify
-other result listeners about custom measurement results.
+The following interfaces provide special non-paired event types:
+- `${tags("measurementResultListenerClass")}`, intended for plugins that want to receive
+measurements results (perhaps to store them in a custom format). The harness calls the
+`onMeasurementResult` method with the name of the metric and its value, but only if the
+benchmark operation produces a valid result.
+- `${tags("benchmarkFailureListenerClass")}`, which indicates that the benchmark execution
+has either failed in some way (the benchmark triggered an exception), or that the benchmark
+operation produced a result which failed validation. This means that no measurements results
+will be received.
 
-The `${tags("measurementResultListenerClass")}` interface is intended for plugins that
-want to receive measurements results (perhaps to store them in a custom format). The
-harness calls the `onMeasurementResult` method with the name of the metric and its value.
+And finally the following interface are used by the harness to request
+services from plugins:
+- `${tags("measurementResultPublisherClass")}`, intended for plugins that want to collect
+values of additional metrics around the execution of the benchmark operation. The harness
+calls the `onMeasurementResultsRequested` method with an instance of event dispatcher which
+the plugin is supposed to use to notify other result listeners about custom measurement results.
+- `${tags("executionPolicyClass")}`, intended for plugins that want to control the execution
+of the benchmark's measured operation. Such a plugin should implement other interfaces to
+get enough information to determine, per-benchmark, whether to execute the measured operation
+or not. The harness calls the `canExecute` method before executing the benchmark's measured
+operation, and will pass the result of `isLast` method to some other events.
 
-Similar to custom execution policy, to make the harness use a plugin, it needs to be
-specified on the command line. The harness can load multiple plugins, and each must be
-enabled using the `--plugin <class-path>!<class-name>` option. The `<class-path>` is the
-class path on which to look for the plugin class, and `<class-name>` is a fully qualified
-name of the plugin class. When registering plugins for pair events (harness init/shutdown,
-benchmark set up/tear down, operation set up/tear down), the plugins specified earlier
-"wrap" plugins specified later. This means that plugins that need to be the closes to the
-measured operation execution need to be specified last.
+To make the harness use an external plugin, it needs to be specified on the command line.
+The harness can load multiple plugins, and each must be enabled using the
+`--plugin <class-path>!<class-name>` option. The `<class-path>` is the class path on which
+to look for the plugin class, and `<class-name>` is a fully qualified name of the plugin class.
+Custom execution policy must be enabled using the `--policy <class-path>!<class-name>` option.
+The syntax is the same as in case of normal plugins (and the policy is also a plugin, which
+can register for all event types), but this option tells the harness to actually use the
+plugin to control benchmark execution. Other than that, policy is treated the same was as
+plugin.
 
-Plugins can receive additional command line arguments. Each argument must be given using
-the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for the
-plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
+When registering plugins for pair events (harness init/shutdown, benchmark set up/tear down,
+operation set up/tear down), the plugins specified earlier "wrap" plugins specified later.
+This means that plugins that need to be the closest to the measured operation need to be
+specified last. Note that this also applies to the execution policy, which would be generally
+specified first, but any order is possible.
+
+Plugins (and policies) can receive additional command line arguments. Each argument must be
+given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for
+the plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
 (or `--policy`) option is encountered, the subsequent `--with-arg` options will append
 arguments to that plugin (or policy). A plugin that wants to receive command line arguments
 must define a constructor which takes an array of strings (`String[]`) or a string vararg
 (`String...`) as parameter. The harness tries to use this constructor first and falls back
-to the default (parameterless) constructor.
+to the default (parameter-less) constructor.
 
 
 ### JMH support
@@ -431,7 +441,7 @@ renaissance-core
 
 When the harness is started, it uses the input arguments to select the benchmark,
 and then unpacks the JARs of the corresponding benchmark group into a temporary directory.
-The harness then creates a classloader which searches the unpacked JARs and loads the
+The harness then creates a classloader that searches the unpacked JARs and loads the
 benchmark group. The class loader is created directly below the default class loader.
 Because the default class loader contains only base JRE classes and common interfaces
 of *core*, it ensures that dependencies of a benchmark are never mixed with any

@@ -139,4 +139,41 @@ public interface Plugin {
      */
     void onBenchmarkFailure(String benchmark);
   }
+
+  /**
+   * Indicates that plugin is capable of providing context-sensitive
+   * advice regarding the repetition of benchmark's measured operation.
+   * The plugin is only loaded once and must manage its own per-benchmark
+   * state. This means that it will need to implement listeners to hook
+   * into harness events.
+   */
+  interface ExecutionPolicy extends Plugin {
+
+    /**
+     * Determines whether the harness should execute the benchmark's measured
+     * operation or whether it should stop executing the benchmark. The provided
+     * operation index is only intended as an indicator and will be incremented
+     * by one on subsequent calls.
+     *
+     * @param benchName Name of the benchmark.
+     * @param opIndex   Index of the measured operation execution.
+     * @return {@code true} if the harness can execute the measured operation, {@code false}
+     * otherwise.
+     */
+    boolean canExecute(final String benchName, final int opIndex);
+
+    /**
+     * Determines if the benchmark operation to be executed is the last one.
+     * This only serves for informational purposes and does not control
+     * benchmark execution. If the policy implementation does not know, it
+     * should return {@code false}.
+     *
+     * @param benchName Name of the benchmark.
+     * @param opIndex   Index of the measured operation execution.
+     * @return {@code true} if the operation is known to be the last,
+     * {@code false} otherwise.
+     */
+    boolean isLast(final String benchName, final int opIndex);
+  }
+
 }

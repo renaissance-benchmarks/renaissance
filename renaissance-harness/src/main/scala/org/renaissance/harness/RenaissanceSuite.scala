@@ -1,15 +1,19 @@
 package org.renaissance.harness
 
 import java.util.concurrent.TimeUnit.SECONDS
+import java.util.function.ToIntFunction
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
-import org.renaissance.ExecutionPolicy
 import org.renaissance.Plugin
+import org.renaissance.Plugin.ExecutionPolicy
 import org.renaissance.core.BenchmarkInfo
 import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.ModuleLoader
 import org.renaissance.core.ModuleLoader.ModuleLoadingException
+import org.renaissance.harness.ExecutionPolicies.FixedOpCount
+import org.renaissance.harness.ExecutionPolicies.FixedOpTime
+import org.renaissance.harness.ExecutionPolicies.FixedTime
 
 import scala.collection.JavaConverters._
 import scala.collection._
@@ -31,34 +35,51 @@ object RenaissanceSuite {
     }
 
     // Load info on available benchmarks
-    val benchmarks = BenchmarkRegistry.createDefault()
+    val allBenchmarks = BenchmarkRegistry.createDefault()
 
     if (config.printList) {
-      print(formatBenchmarkList(benchmarks))
+      print(formatBenchmarkList(allBenchmarks))
     } else if (config.printRawList) {
-      println(formatRawBenchmarkList(benchmarks))
+      println(formatRawBenchmarkList(allBenchmarks))
     } else if (config.printGroupList) {
-      println(formatGroupList(benchmarks))
+      println(formatGroupList(allBenchmarks))
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage())
     } else {
-      val selected = selectBenchmarks(benchmarks, config.benchmarkSpecifiers)
+      val benchmarks = selectBenchmarks(allBenchmarks, config.benchmarkSpecifiers)
 
-      // Load external policy (if any) and create policy factory
-      val policyFactory = createPolicyFactory(config)
+      // Load all plugins in given order (including external policy)
+      val plugins = for ((specifier, args) <- config.pluginsWithArgs) yield {
+        specifier -> createExtension(specifier, args)
+      }
 
-      // Load plugins, init writers, and sign them up for events
-      val dispatcher = createEventDispatcher(config)
+      // Get effective execution policy (built-in or external)
+      val policy = getPolicy(config, benchmarks, plugins)
+
+      // If using built-in policy, prepend it to list of plugins
+      var pluginsWithPolicy = plugins.values.toSeq
+      if (config.policyType != PolicyType.EXTERNAL) {
+        pluginsWithPolicy = policy +: pluginsWithPolicy
+      }
+
+      // Initialize result writers (if any)
+      val writers = Seq(
+        config.csvOutput.map(f => new CsvWriter(f)),
+        config.jsonOutput.map(f => new JsonWriter(f))
+      ).flatten
+
+      // Register plugins (including policy) and result writers for harness events
+      val dispatcher = createEventDispatcher(pluginsWithPolicy, writers)
 
       // Note: no access to Config beyond this call
-      runBenchmarks(selected, config.configuration, policyFactory, dispatcher)
+      runBenchmarks(benchmarks, config.configuration, policy, dispatcher)
     }
   }
 
   private def runBenchmarks(
     benchmarks: Seq[BenchmarkInfo],
     configurationName: String,
-    policyFactory: BenchmarkInfo => ExecutionPolicy,
+    policy: ExecutionPolicy,
     dispatcher: EventDispatcher
   ): Unit = {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
@@ -71,9 +92,6 @@ object RenaissanceSuite {
       for (benchInfo <- benchmarks) {
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
         val driver = new ExecutionDriver(benchInfo, configurationName)
-
-        // Create execution policy
-        val policy = policyFactory(benchInfo)
 
         try {
           driver.executeBenchmark(benchmark, dispatcher, policy)
@@ -133,76 +151,69 @@ object RenaissanceSuite {
     result.toSeq
   }
 
-  private def createEventDispatcher(config: Config) = {
+  private def createEventDispatcher(plugins: Iterable[Plugin], writers: Seq[ResultWriter]) = {
     val builder = new EventDispatcher.Builder
 
     // Register plugins first
-    for ((specifier, args) <- config.pluginsWithArgs) {
-      builder.withPlugin(createPlugin(specifier, args))
-    }
+    plugins.foreach(builder.withPlugin)
 
     // Result writers go after plugins
-    config.csvOutput.foreach(f => builder.withResultWriter(new CsvWriter(f)))
-    config.jsonOutput.foreach(f => builder.withResultWriter(new JsonWriter(f)))
+    writers.foreach(builder.withResultWriter)
 
     builder.build()
   }
 
-  private def createPlugin(specifier: String, args: mutable.Seq[String]) = {
+  private def createExtension[T](
+    specifier: String,
+    args: mutable.Seq[String]
+  ) = {
     try {
-      createExtensionFactory(specifier, args, classOf[Plugin]).getInstance()
+      val specifierParts = specifier.trim.split("!", 2)
+      val (classPath, className) = (specifierParts(0), specifierParts(1))
+      val extClass = ModuleLoader.loadExtension(classPath, className, classOf[Plugin])
+      ModuleLoader.createExtension(extClass, args.toArray[String])
     } catch {
-      case e @ (_: ModuleLoadingException | _: ReflectiveOperationException) =>
+      case e: ModuleLoadingException =>
         Console.err.println(s"Error: failed to load plugin '$specifier': ${e.getMessage}")
         sys.exit(1)
     }
   }
 
-  private def createPolicyFactory(config: Config): BenchmarkInfo => ExecutionPolicy = {
+  private def getPolicy(
+    config: Config,
+    benchmarks: Seq[BenchmarkInfo],
+    plugins: Map[String, Plugin]
+  ): ExecutionPolicy = {
     config.policyType match {
       case PolicyType.FIXED_OP_COUNT =>
-        val repetitions = config.repetitions
-        (benchInfo: BenchmarkInfo) => {
-          val count = repetitions.getOrElse(benchInfo.repetitions())
-          ExecutionPolicies.fixedCount(count)
+        val countProvider: ToIntFunction[String] = if (config.repetitions.isDefined) {
+          // Global repetition count is set, overrides benchmark defaults
+          _: String =>
+            config.repetitions.get
+        } else {
+          // Global repetition count is unset, get default value from benchmark
+          name: String =>
+            benchmarks.find(info => info.name == name).get.repetitions()
         }
 
+        new FixedOpCount(countProvider)
+
       case PolicyType.FIXED_OP_TIME =>
-        val runNanos = SECONDS.toNanos(config.runSeconds)
-        _ => ExecutionPolicies.fixedOperationTime(runNanos)
+        new FixedOpTime(SECONDS.toNanos(config.runSeconds))
 
       case PolicyType.FIXED_TIME =>
-        val runNanos = SECONDS.toNanos(config.runSeconds)
-        _ => ExecutionPolicies.fixedTime(runNanos)
+        new FixedTime(SECONDS.toNanos(config.runSeconds))
 
       case PolicyType.EXTERNAL =>
-        try {
-          val policyFactory = createExtensionFactory(
-            config.externalPolicy,
-            config.externalPolicyArgs,
-            classOf[ExecutionPolicy]
-          )
-          _ => policyFactory.getInstance()
-
-        } catch {
-          case e @ (_: ModuleLoadingException | _: ReflectiveOperationException) =>
+        plugins(config.policyPlugin) match {
+          case policy: ExecutionPolicy => policy
+          case _ =>
             Console.err.println(
-              s"Error: failed to load policy '${config.externalPolicy}': ${e.getMessage}"
+              s"Error: '${config.policyPlugin}' does not implement ${classOf[ExecutionPolicy].getName}"
             )
             sys.exit(1)
         }
     }
-  }
-
-  private def createExtensionFactory[T](
-    specifier: String,
-    args: mutable.Seq[String],
-    baseClass: Class[T]
-  ) = {
-    val specifierParts = specifier.trim.split("!", 2)
-    val (classPath, className) = (specifierParts(0), specifierParts(1))
-    val extClass = ModuleLoader.loadExtension(classPath, className, baseClass)
-    ModuleLoader.createFactory(extClass, args.toArray[String])
   }
 
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {

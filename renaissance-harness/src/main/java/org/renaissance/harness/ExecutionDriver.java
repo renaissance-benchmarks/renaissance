@@ -4,7 +4,7 @@ import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkContext;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
-import org.renaissance.ExecutionPolicy;
+import org.renaissance.Plugin.ExecutionPolicy;
 import org.renaissance.core.BenchmarkInfo;
 
 import java.util.Locale;
@@ -36,26 +36,27 @@ final class ExecutionDriver implements BenchmarkContext {
     benchmark.setUpBeforeAll(this);
 
     try {
-      dispatcher.notifyAfterBenchmarkSetUp(benchInfo.name());
+      final String benchName = benchInfo.name();
+      dispatcher.notifyAfterBenchmarkSetUp(benchName);
 
       try {
-        int operationIndex = 0;
+        int opIndex = 0;
 
-        do {
-          printStartInfo(operationIndex, benchInfo, configName);
+        while (policy.canExecute(benchName, opIndex)) {
+          printStartInfo(opIndex, benchInfo, configName);
 
-          final long durationNanos = executeOperation(operationIndex, benchInfo.name(), benchmark,
-            dispatcher, policy.isLastOperation()
+          final long durationNanos = executeOperation(
+            opIndex, benchName, benchmark, dispatcher,
+            policy.isLast(benchName, opIndex)
           );
 
-          printEndInfo(operationIndex, benchInfo, configName, durationNanos);
-          policy.registerOperation(operationIndex, durationNanos);
+          printEndInfo(opIndex, benchInfo, configName, durationNanos);
 
-          operationIndex++;
-        } while (policy.keepExecuting());
+          opIndex++;
+        }
 
       } finally {
-        dispatcher.notifyBeforeBenchmarkTearDown(benchInfo.name());
+        dispatcher.notifyBeforeBenchmarkTearDown(benchName);
       }
 
     } finally {

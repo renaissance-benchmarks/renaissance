@@ -43,22 +43,10 @@ public final class ModuleLoader {
     } catch (IOException e) {
       String message = String.format("Failed to load %s: %s", groupName, e.getMessage());
       logger.severe(message);
-      throw new ModuleLoadingException(message, e);
+      throw new ModuleLoadingException(e, message);
     }
   }
 
-
-  /**
-   * Simple factory interface for creating instances of given classes
-   * with support for throwing exceptions.
-   *
-   * @param <T> The type of the instances to create.
-   * @param <E> The type of exception that may be thrown.
-   */
-  @FunctionalInterface
-  public interface Factory<T, E extends Throwable> {
-    T getInstance() throws E;
-  }
 
   /**
    * Creates a factory which can create instances of (extension) classes. The
@@ -66,31 +54,31 @@ public final class ModuleLoader {
    * a parameter and passes the given arguments array to that constructor. If
    * such a constructor cannot be found, it falls back to using the default
    * constructor.
-   * <p>
-   * This method is separate from the {@link #loadExtension(String, String, Class) loadExtension}
-   * method to allow independent loading and (repeated) instantiation of extension
-   * classes.
    */
-  public static <T> Factory<T, ReflectiveOperationException> createFactory(
+  public static <T> T createExtension(
     Class<T> extClass, String[] args
   ) throws ModuleLoadingException {
     try {
       try {
         // Try the constructor with parameters first
         Constructor<T> ctor = extClass.getDeclaredConstructor(String[].class);
-        return () -> ctor.newInstance(new Object[]{args});
+        return ctor.newInstance(new Object[] { args });
 
       } catch (NoSuchMethodException e) {
         // Fall back to default constructor
-        Constructor<T> ctor = extClass.getDeclaredConstructor();
-        return () -> ctor.newInstance();
+        return extClass.getDeclaredConstructor().newInstance();
       }
     } catch (NoSuchMethodException e) {
       // Every class should have a default constructor
-      throw new ModuleLoadingException(String.format(
+      throw new ModuleLoadingException(
         "cannot find default constructor in '%s'", extClass.getName()
-      ));
+      );
+    } catch (ReflectiveOperationException e) {
+      throw new ModuleLoadingException(
+        "cannot instantiate '%s': %s", extClass.getName(), e.getMessage()
+      );
     }
+
   }
 
   /**
@@ -115,13 +103,13 @@ public final class ModuleLoader {
     } catch (ClassNotFoundException e) {
       // Be a bit more verbose, because the ClassNotFoundException
       // on OpenJDK only returns the class name as error message.
-      throw new ModuleLoadingException(String.format(
+      throw new ModuleLoadingException(
         "could not find class '%s'", className
-      ));
+      );
     } catch (ClassCastException e) {
-      throw new ModuleLoadingException(String.format(
+      throw new ModuleLoadingException(
         "class '%s' is not a subclass of '%s'", className, baseClass.getName()
-      ));
+      );
     }
   }
 
@@ -224,8 +212,12 @@ public final class ModuleLoader {
       super(message);
     }
 
-    ModuleLoadingException(String message, Throwable cause) {
+    ModuleLoadingException(Throwable cause, String message) {
       super(message, cause);
+    }
+
+    ModuleLoadingException(String format, Object... args) {
+      super(String.format(format, args));
     }
 
   }

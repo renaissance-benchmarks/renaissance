@@ -1,78 +1,133 @@
 package org.renaissance.harness;
 
-import org.renaissance.ExecutionPolicy;
+import java.util.function.ToIntFunction;
+
+import static org.renaissance.Plugin.*;
 
 /**
  * A collection of (simple) execution policies.
  */
 final class ExecutionPolicies {
 
-  static ExecutionPolicy fixedCount(final int count) {
-    return new ExecutionPolicy() {
-      private int executedCount = 0;
+  /**
+   * Executes a benchmark's measured operation for a given number of times.
+   * The number of repetitions can be specific to each benchmark, therefore
+   * the policy needs to be provided with a function that returns the number
+   * of repetitions for a given benchmark.
+   */
+  static final class FixedOpCount implements ExecutionPolicy,
+    BenchmarkSetUpListener {
 
-      @Override
-      public boolean keepExecuting() {
-        return executedCount < count;
-      }
+    private final ToIntFunction<String> countLimitProvider;
 
-      @Override
-      public void registerOperation(int index, long duration) {
-        executedCount = index + 1;
-      }
+    private int countLimit;
 
-      @Override
-      public boolean isLastOperation() { return executedCount + 1 >= count; }
-    };
+    FixedOpCount(ToIntFunction<String> countLimitProvider) {
+      this.countLimitProvider = countLimitProvider;
+    }
+
+    @Override
+    public void afterBenchmarkSetUp(String benchName) {
+      // Reset counters for each benchmark
+      countLimit = countLimitProvider.applyAsInt(benchName);
+    }
+
+    @Override
+    public boolean canExecute(String benchName, int opIndex) {
+      return opIndex < countLimit;
+    }
+
+    @Override
+    public boolean isLast(String benchName, int opIndex) {
+      return opIndex + 1 == countLimit;
+    }
   }
 
-  static ExecutionPolicy fixedTime(long elapsedNanosLimit) {
-    return new ExecutionPolicy() {
-      private long lastNanos = -1;
-      private long elapsedNanos = 0;
-      private int elapsedCount = 0;
 
-      @Override
-      public boolean keepExecuting() { return !isElapsed() || isLastOperation(); }
+  /**
+   * Keeps executing the benchmark's measured operation for a fixed amount
+   * of time. The interval starts after a benchmark has been set up, before
+   * the first execution of a benchmark's measured operation.
+   * <p>
+   * Note that the timer interval also includes the time consumed by other
+   * plugins and event listeners.
+   */
+  static final class FixedTime implements ExecutionPolicy,
+    BenchmarkSetUpListener, OperationTearDownListener {
 
-      private boolean isElapsed() { return elapsedNanos >= elapsedNanosLimit; }
+    private final long runTimeNanos;
 
-      @Override
-      public void registerOperation(int index, long durationNanos) {
-        final long currentNanos = System.nanoTime();
+    private long endNanos;
+    private int elapsedCount;
 
-        if (lastNanos < 0) {
-          lastNanos = currentNanos - durationNanos;
-        }
+    FixedTime(final long runTimeNanos) {
+      this.runTimeNanos = runTimeNanos;
+    }
 
-        elapsedNanos += currentNanos - lastNanos;
-        elapsedCount += isElapsed() ? 1 : 0;
-      }
+    @Override
+    public void afterBenchmarkSetUp(String benchmark) {
+      // Reset counters for each benchmark
+      endNanos = System.nanoTime() + runTimeNanos;
+      elapsedCount = 0;
+    }
 
-      @Override
-      public boolean isLastOperation() { return elapsedCount == 1; }
-    };
+    @Override
+    public void beforeOperationTearDown(String benchmark, int opIndex, long durationNanos) {
+      elapsedCount += (System.nanoTime() >= endNanos) ? 1 : 0;
+    }
+
+    @Override
+    public boolean canExecute(String benchName, int opIndex) {
+      return elapsedCount <= 1;
+    }
+
+    @Override
+    public boolean isLast(String benchName, int opIndex) {
+      return elapsedCount == 1;
+    }
   }
 
-  static ExecutionPolicy fixedOperationTime(long elapsedNanosLimit) {
-    return new ExecutionPolicy() {
-      private long elapsedNanos = 0;
-      private int elapsedCount = 0;
 
-      @Override
-      public boolean keepExecuting() { return !isElapsed() || isLastOperation(); }
+  /**
+   * Keeps executing the benchmark's measured operation until the accumulated
+   * execution time of the operation exceeds a given limit. This policy differs
+   * from the {@link FixedTime} policy in that it does not include the execution
+   * time of other plugins and event listeners.
+   */
+  static final class FixedOpTime implements ExecutionPolicy,
+    BenchmarkSetUpListener, OperationTearDownListener {
 
-      private boolean isElapsed() { return elapsedNanos >= elapsedNanosLimit; }
+    private final long operationRunTimeNanos;
 
-      @Override
-      public void registerOperation(int index, long durationNanos) {
-        elapsedNanos += durationNanos;
-        elapsedCount += isElapsed() ? 1 : 0;
-      }
+    private long remainingNanos;
+    private int elapsedCount;
 
-      @Override
-      public boolean isLastOperation() { return elapsedCount == 1; }
-    };
+    FixedOpTime(final long operationRunTimeNanos) {
+      this.operationRunTimeNanos = operationRunTimeNanos;
+    }
+
+    @Override
+    public void afterBenchmarkSetUp(String benchmark) {
+      // Reset counters for each benchmark
+      remainingNanos = operationRunTimeNanos;
+      elapsedCount = 0;
+    }
+
+    @Override
+    public void beforeOperationTearDown(String benchmark, int opIndex, long durationNanos) {
+      remainingNanos -= durationNanos;
+      elapsedCount += (remainingNanos <= 0) ? 1 : 0;
+    }
+
+    @Override
+    public boolean canExecute(String benchName, int opIndex) {
+      return elapsedCount <= 1;
+    }
+
+    @Override
+    public boolean isLast(String benchName, int opIndex) {
+      return elapsedCount == 1;
+    }
   }
 
 }

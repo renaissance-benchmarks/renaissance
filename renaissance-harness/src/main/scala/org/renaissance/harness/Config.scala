@@ -13,8 +13,7 @@ private final class Config {
   val pluginsWithArgs = mutable.LinkedHashMap[String, mutable.ArrayBuffer[String]]()
 
   // External policy specifier. Valid only when policyType is EXTERNAL
-  var externalPolicy: String = _
-  val externalPolicyArgs = mutable.ArrayBuffer[String]()
+  var policyPlugin: String = _
 
   // Holds the current buffer into which policy/plugin arguments are appended.
   // Switched when a --policy or --plugin option occurs on the command line.
@@ -40,6 +39,12 @@ private final class Config {
     this
   }
 
+  def withPolicy(specifier: String) = {
+    policyType = PolicyType.EXTERNAL
+    policyPlugin = specifier;
+    withPlugin(specifier)
+  }
+
   def withExtraArg(arg: String) = {
     this.extraArgs += arg
     this
@@ -60,13 +65,6 @@ private final class Config {
   def withOperationRunSeconds(seconds: Int) = {
     policyType = PolicyType.FIXED_OP_TIME
     runSeconds = seconds
-    this
-  }
-
-  def withPolicy(specifier: String) = {
-    extraArgs = this.externalPolicyArgs
-    policyType = PolicyType.EXTERNAL
-    externalPolicy = specifier
     this
   }
 
