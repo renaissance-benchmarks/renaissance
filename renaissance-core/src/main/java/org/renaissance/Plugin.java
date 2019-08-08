@@ -10,7 +10,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified after the harness finished
    * initializing, before it starts to set up the first of the benchmarks.
    */
-  interface HarnessInitListener {
+  interface HarnessInitListener extends Plugin {
     /**
      * Called before setting up the first benchmark (before calling its set up
      * method), after initializing the harness.
@@ -22,7 +22,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified before the harness shuts down,
    * after it has torn down the last of the benchmarks.
    */
-  interface HarnessShutdownListener {
+  interface HarnessShutdownListener extends Plugin {
     /**
      * Called after the last benchmark finished executing (after calling its
      * tear down method), before the harness exits.
@@ -34,7 +34,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified before executing the first
    * measured operation, after the benchmark has been set up by the harness.
    */
-  interface BenchmarkSetUpListener {
+  interface BenchmarkSetUpListener extends Plugin {
     /**
      * Called before first execution of the measured operation, after calling
      * the benchmark set up method.
@@ -48,7 +48,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified after executing the last
    * measured operation, before the benchmark has been torn down by the harness.
    */
-  interface BenchmarkTearDownListener {
+  interface BenchmarkTearDownListener extends Plugin {
     /**
      * Called after last execution of the measured operation, before calling
      * the benchmark tear down method.
@@ -62,7 +62,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified before each execution of the
    * measured operation, after it has been set up by the harness.
    */
-  interface OperationSetUpListener {
+  interface OperationSetUpListener extends Plugin {
     /**
      * Called before executing the measured operation, after calling the
      * operation set up method.
@@ -79,7 +79,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified after each execution of the
    * measured operation, before it has been torn down by the harness.
    */
-  interface OperationTearDownListener {
+  interface OperationTearDownListener extends Plugin {
     /**
      * Called after the benchmark finished executing the measured operation,
      * before calling the operation tear down method.
@@ -94,7 +94,7 @@ public interface Plugin {
   /**
    * Indicates that a plugin wants to be notified about measurement results.
    */
-  interface MeasurementResultListener {
+  interface MeasurementResultListener extends Plugin {
     /**
      * Notifies the listener about new measurement result. May be called multiple times
      * after completion of the measured operation (i.e.m never inside the measured code),
@@ -110,7 +110,7 @@ public interface Plugin {
   /**
    * Indicates that a plugin is a provider of measurement results.
    */
-  interface MeasurementResultPublisher {
+  interface MeasurementResultPublisher extends Plugin {
     /**
      * Notifies the listener (result publisher) that it is time to publish measurement
      * results (if any). Will be called once after completion of the measured operation,
@@ -129,7 +129,7 @@ public interface Plugin {
   /**
    * Indicates that a plugin wants to be notified when a benchmark fails.
    */
-  interface BenchmarkFailureListener {
+  interface BenchmarkFailureListener extends Plugin {
     /**
      * Called whenever a benchmark fails during set up, tear down, or operation
      * (including operation set up and tear down). There will be no more
