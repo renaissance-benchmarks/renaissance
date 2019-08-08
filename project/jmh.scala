@@ -45,7 +45,7 @@ public class ${jmhClassName} extends JmhRenaissanceBenchmark {
     val perProjectBenchmarkClasses = for {
       (project, allJars, loadedJars) <- groupJars
       // TODO: Filter projects in the build file if possible
-      if project.startsWith("benchmarks")
+      if project.startsWith("benchmarks/")
     } yield {
       // Scan project jars for benchmarks and fill the property file.
       logger.info(s"Generating JMH wrappers for project $project")
