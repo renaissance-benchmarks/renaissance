@@ -65,6 +65,9 @@ final class FinagleHttp extends Benchmark {
         com.twitter.finagle.Http.newService(serviceHost)
 
       try {
+        val responseHandler = (response: Response) =>
+          totalContentLength += response.content.length
+
         barrier.countDown
         barrier.await
 
@@ -76,9 +79,7 @@ final class FinagleHttp extends Benchmark {
 
           // Need to use map() instead of onSuccess() as we actually need to
           // wait for the side-effect, not the original response
-          Await.result(response.map { rep: http.Response =>
-            totalContentLength += rep.content.length
-          })
+          Await.result(response.map(responseHandler))
         }
 
       } finally {
