@@ -60,8 +60,9 @@ final class FinagleHttp extends Benchmark {
     var totalContentLength = 0L
 
     override def run(): Unit = {
+      val serviceHost = s"localhost:$port"
       val client: Service[http.Request, http.Response] =
-        com.twitter.finagle.Http.newService(s"localhost:$port")
+        com.twitter.finagle.Http.newService(serviceHost)
 
       try {
         barrier.countDown
@@ -69,7 +70,7 @@ final class FinagleHttp extends Benchmark {
 
         for (i <- 0 until requestCount) {
           val request = http.Request(http.Method.Get, "/json")
-          request.host = s"localhost:$port"
+          request.host = serviceHost
 
           val response: Future[http.Response] = client(request)
 
