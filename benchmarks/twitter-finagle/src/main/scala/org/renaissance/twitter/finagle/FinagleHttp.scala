@@ -68,17 +68,17 @@ final class FinagleHttp extends Benchmark {
         val responseHandler = (response: Response) =>
           totalContentLength += response.content.length
 
-        barrier.countDown
-        barrier.await
+        barrier.countDown()
+        barrier.await()
 
-        for (i <- 0 until requestCount) {
+        for (_ <- 0 until requestCount) {
           val request = http.Request(http.Method.Get, "/json")
           request.host = serviceHost
 
           val response: Future[http.Response] = client(request)
 
-          // Need to use map() instead of onSuccess() as we actually need to
-          // wait for the side-effect, not the original response
+          // Use map() instead of onSuccess() because we need to
+          // wait for the side-effect, not the original response.
           Await.result(response.map(responseHandler))
         }
 
@@ -107,8 +107,8 @@ final class FinagleHttp extends Benchmark {
 
   var port: Int = -1
 
-  var threads: Array[WorkerThread] = null
-  var threadBarrier: CountDownLatch = null
+  var threads: Array[WorkerThread] = _
+  var threadBarrier: CountDownLatch = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     requestCountParam = c.intParameter("request_count")
@@ -119,7 +119,7 @@ final class FinagleHttp extends Benchmark {
     val muxer: HttpMuxer = new HttpMuxer()
       .withHandler(
         "/json",
-        Service.mk { req: Request =>
+        Service.mk { _: Request =>
           val rep = Response()
           rep.content =
             Buf.ByteArray.Owned(mapper.writeValueAsBytes(Map("message" -> "Hello, World!")))
@@ -127,7 +127,7 @@ final class FinagleHttp extends Benchmark {
           Future.value(rep)
         }
       )
-      .withHandler("/plaintext", Service.mk { req: Request =>
+      .withHandler("/plaintext", Service.mk { _: Request =>
         val rep = Response()
         rep.content = helloWorld
         rep.contentType = "text/plain"
@@ -168,10 +168,10 @@ final class FinagleHttp extends Benchmark {
   override def setUpBeforeEach(c: BenchmarkContext): Unit = {
     //
     // Use a CountDownLatch initialized to (clientCount + 1) to start the
-    // threads (outside the measured loop) and make them block until the
-    // measured operation is executed. In the measured operation, we provide
-    // the one last countDown() invocation which unblocks all the threads
-    // and lets the start working simultaneously.
+    // threads (outside the measured operation) and make them block until the
+    // measured operation is executed. The measured operation provides the
+    // last countDown() invocation which unblocks all the threads so that
+    // they start working simultaneously.
     //
     threadBarrier = new CountDownLatch(clientCountParam + 1)
 
@@ -184,8 +184,8 @@ final class FinagleHttp extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    // Let the threads do the work (see beforeIteration)
-    threadBarrier.countDown
+    // Unleash the threads (see beforeOperationSetUp).
+    threadBarrier.countDown()
 
     var totalLength = 0L
     for (thread <- threads) {
