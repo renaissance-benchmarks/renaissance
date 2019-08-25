@@ -28,6 +28,9 @@ private final class Config {
 
   var configuration = "default"
 
+  var forceGcBefore = false
+  var forceGcAfter = false
+
   def withBenchmarkSpecification(v: String) = {
     benchmarkSpecifiers ++= v.split(",").map(_.trim)
     this
@@ -98,6 +101,18 @@ private final class Config {
     this
   }
 
+  def withForcedGc(when: String) = {
+    val lcWhen = when.toLowerCase()
+    if (List("before", "around").contains(lcWhen)) {
+      forceGcBefore = true
+    }
+
+    if (List("after", "around").contains(lcWhen)) {
+      forceGcAfter = true
+    }
+
+    this
+  }
 }
 
 private object PolicyType extends Enumeration {

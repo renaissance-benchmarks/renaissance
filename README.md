@@ -77,6 +77,7 @@ Usage: renaissance [options] [benchmark-specification]
   --json <file-path>       Output results to JSON file.
   -c, --configuration <name>
                            Run benchmarks with given named configuration.
+  --force-gc <when>        Force garbage collection 'before', 'after', or 'around' measured operation.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks (each benchmark name on separate line).
   --group-list             Print list of benchmark groups (each group name on separate line).
