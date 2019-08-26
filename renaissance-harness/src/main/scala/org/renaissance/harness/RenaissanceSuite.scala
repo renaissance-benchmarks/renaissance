@@ -2,6 +2,7 @@ package org.renaissance.harness
 
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
+import java.util.Locale
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
@@ -21,6 +22,10 @@ import scala.collection._
 object RenaissanceSuite {
 
   def main(args: Array[String]): Unit = {
+    // Reset locale to have repeatable output across
+    // different environments.
+    Locale.setDefault(Locale.ROOT)
+
     val benchmarkPkg = classOf[Benchmark].getPackage
     val parser = new ConfigParser(
       immutable.Map(
