@@ -36,7 +36,7 @@ import scala.collection.JavaConverters._
       settings = Array(
         "input_line_count = 5000",
         "expected_rank_count = 1661",
-        "expected_rank_hash=7ca80582125b8ca7"
+        "expected_rank_hash = 7ca80582125b8ca7"
       )
     ),
     new Configuration(name = "jmh")
@@ -60,7 +60,7 @@ final class PageRank extends Benchmark with SparkUtil {
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  val inputZipFile = "web-berkstan.txt.zip"
+  val inputZipResource = "/web-berkstan.txt.zip"
   val inputFile = "web-BerkStan.txt"
 
   var sc: SparkContext = _
@@ -103,7 +103,7 @@ final class PageRank extends Benchmark with SparkUtil {
 
     tempDirPath = c.generateTempDir("page_rank")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
-    links = loadData(inputZipFile, inputFile, inputLineCountParam)
+    links = loadData(inputZipResource, inputFile, inputLineCountParam)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
