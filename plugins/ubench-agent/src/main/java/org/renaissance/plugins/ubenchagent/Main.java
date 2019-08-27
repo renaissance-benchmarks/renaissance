@@ -2,7 +2,9 @@ package org.renaissance.plugins.ubenchagent;
 
 import org.renaissance.Plugin;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import cz.cuni.mff.d3s.perf.Measurement;
 import cz.cuni.mff.d3s.perf.BenchmarkResults;
@@ -16,12 +18,15 @@ public class Main implements Plugin,
   final int eventSet;
 
   public Main(String[] args) {
-    if (args.length != 1) {
-      warn("One argument should have been provided to the constructor.");
+    String[] events = Arrays.stream(args)
+        .flatMap(a -> Arrays.stream(a.split(",")))
+        .collect(Collectors.toList())
+        .toArray(new String[0]);
+    if (events.length == 0) {
+      warn("No events specified, are you sure about this?");
       eventSet = -1;
       return;
     }
-    String[] events = args[0].split(",");
 
     eventSet = Measurement.createEventSet(1, events);
   }
