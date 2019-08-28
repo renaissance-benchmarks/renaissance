@@ -138,10 +138,10 @@ final class PageRank extends Benchmark with SparkUtil {
 
         val rankLines = ranks
           .sortByKey()
+          .collect
           .map {
             case (url, rank) => f"$url $rank%.8f"
           }
-          .collect
           .toList
 
         Validators.hashing(expectedRankHashParam, rankLines.asJava).validate()
