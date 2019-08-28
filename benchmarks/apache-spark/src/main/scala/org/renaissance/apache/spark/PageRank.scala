@@ -26,7 +26,7 @@ import scala.collection.JavaConverters._
     new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
     new Parameter(name = "input_line_count", defaultValue = "-1"),
     new Parameter(name = "expected_rank_count", defaultValue = "598652"),
-    new Parameter(name = "expected_rank_hash", defaultValue = "d8bf7171feef1b87")
+    new Parameter(name = "expected_rank_hash", defaultValue = "4704db55b9f60104")
   )
 )
 @Configurations(
@@ -36,7 +36,7 @@ import scala.collection.JavaConverters._
       settings = Array(
         "input_line_count = 5000",
         "expected_rank_count = 1661",
-        "expected_rank_hash = 7ca80582125b8ca7"
+        "expected_rank_hash = 9fd2e94dca375b4e"
       )
     ),
     new Configuration(name = "jmh")
