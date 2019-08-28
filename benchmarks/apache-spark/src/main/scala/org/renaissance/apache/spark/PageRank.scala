@@ -140,7 +140,7 @@ final class PageRank extends Benchmark with SparkUtil {
           .sortByKey()
           .collect
           .map {
-            case (url, rank) => f"$url $rank%.8f"
+            case (url, rank) => f"$url $rank%.7f"
           }
           .toList
 
