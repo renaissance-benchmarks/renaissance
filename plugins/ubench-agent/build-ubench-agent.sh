@@ -6,13 +6,16 @@ msg() {
     echo "[build-ubench-agent]:" "$@" >&2
 }
 
-UBENCH_AGENT_DIR="ubench-agent-repo"
+UBENCH_AGENT_COMMIT="5e8473dbc4d38948dc2d680b5fdf0775824ad40f"
+UBENCH_AGENT_TARBALL="java-ubench-agent-$UBENCH_AGENT_COMMIT.tar.gz"
+UBENCH_AGENT_TARBALL_URL="https://github.com/D-iii-S/java-ubench-agent/archive/$UBENCH_AGENT_COMMIT.tar.gz"
+UBENCH_AGENT_DIR="java-ubench-agent-$UBENCH_AGENT_COMMIT"
 
 msg "Fetching sources..."
+wget --continue -O "$UBENCH_AGENT_TARBALL" "$UBENCH_AGENT_TARBALL_URL"
 if ! [ -d "$UBENCH_AGENT_DIR" ]; then
-    git clone https://github.com/D-iii-S/java-ubench-agent.git "$UBENCH_AGENT_DIR"
-else
-    ( cd "$UBENCH_AGENT_DIR"; git pull )
+    msg "Unpacking the tarball..."
+    tar xzf "$UBENCH_AGENT_TARBALL"
 fi
 
 msg "Building agent..."
