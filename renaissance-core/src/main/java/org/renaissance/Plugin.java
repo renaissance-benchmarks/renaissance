@@ -3,6 +3,10 @@ package org.renaissance;
 /**
  * Marker interface for harness plugins. Plugins are loaded dynamically and
  * each {@link Plugin} implementation must have a zero arguments constructor.
+ * To actually plug into the benchmark execution sequence, a plugin needs to
+ * one or more listener interfaces. Each listener interface corresponds to a
+ * single point in the execution sequence and defines a single method which
+ * receives parameters relevant to that point.
  */
 public interface Plugin {
 
@@ -10,7 +14,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified after the harness finished
    * initializing, before it starts to set up the first of the benchmarks.
    */
-  interface HarnessInitListener extends Plugin {
+  interface AfterHarnessInitListener extends Plugin {
     /**
      * Called before setting up the first benchmark (before calling its set up
      * method), after initializing the harness.
@@ -22,7 +26,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified before the harness shuts down,
    * after it has torn down the last of the benchmarks.
    */
-  interface HarnessShutdownListener extends Plugin {
+  interface BeforeHarnessShutdownListener extends Plugin {
     /**
      * Called after the last benchmark finished executing (after calling its
      * tear down method), before the harness exits.
@@ -31,13 +35,29 @@ public interface Plugin {
   }
 
   /**
-   * Indicates that a plugin wants to be notified before executing the first
-   * measured operation, after the benchmark has been set up by the harness.
+   * Indicates that a plugin wants to be notified before executing a benchmark's
+   * measured operation for the first time, <emph>before</emph> the benchmark has
+   * been set up by the harness.
    */
-  interface BenchmarkSetUpListener extends Plugin {
+  interface BeforeBenchmarkSetUpListener extends Plugin {
     /**
-     * Called before first execution of the measured operation, after calling
-     * the benchmark set up method.
+     * Called before first execution of the measured operation,
+     * <emph>before</emph> calling the benchmark's set up method.
+     *
+     * @param benchmark Name of the benchmark.
+     */
+    void beforeBenchmarkSetUp(String benchmark);
+  }
+
+  /**
+   * Indicates that a plugin wants to be notified before executing a benchmark's
+   * measured operation for the first time, <emph>after</emph> the benchmark has
+   * been set up by the harness.
+   */
+  interface AfterBenchmarkSetUpListener extends Plugin {
+    /**
+     * Called before first execution of the measured operation,
+     * <emph>after</emph> calling the benchmark's set up method.
      *
      * @param benchmark Name of the benchmark.
      */
@@ -46,12 +66,13 @@ public interface Plugin {
 
   /**
    * Indicates that a plugin wants to be notified after executing the last
-   * measured operation, before the benchmark has been torn down by the harness.
+   * measured operation of a benchmark, <emph>before</emph> the benchmark has
+   * been torn down by the harness.
    */
-  interface BenchmarkTearDownListener extends Plugin {
+  interface BeforeBenchmarkTearDownListener extends Plugin {
     /**
-     * Called after last execution of the measured operation, before calling
-     * the benchmark tear down method.
+     * Called after last execution of a benchmark's measured operation, before
+     * calling the benchmark's tear down method.
      *
      * @param benchmark Name of the benchmark.
      */
@@ -59,10 +80,25 @@ public interface Plugin {
   }
 
   /**
+   * Indicates that a plugin wants to be notified after executing the last
+   * measured operation, <emph>after</emph> the benchmark has been torn down
+   * by the harness.
+   */
+  interface AfterBenchmarkTearDownListener extends Plugin {
+    /**
+     * Called after last execution of a benchmark's measured operation, after
+     * the benchmark's tear down method has been called.
+     *
+     * @param benchmark Name of the benchmark.
+     */
+    void afterBenchmarkTearDown(String benchmark);
+  }
+
+  /**
    * Indicates that a plugin wants to be notified before each execution of the
    * measured operation, after it has been set up by the harness.
    */
-  interface OperationSetUpListener extends Plugin {
+  interface AfterOperationSetUpListener extends Plugin {
     /**
      * Called before executing the measured operation, after calling the
      * operation set up method.
@@ -79,7 +115,7 @@ public interface Plugin {
    * Indicates that a plugin wants to be notified after each execution of the
    * measured operation, before it has been torn down by the harness.
    */
-  interface OperationTearDownListener extends Plugin {
+  interface BeforeOperationTearDownListener extends Plugin {
     /**
      * Called after the benchmark finished executing the measured operation,
      * before calling the operation tear down method.
@@ -114,7 +150,7 @@ public interface Plugin {
     /**
      * Notifies the listener (result publisher) that it is time to publish measurement
      * results (if any). Will be called once after completion of the measured operation,
-     * after the {@link OperationTearDownListener#beforeOperationTearDown(String, int, long) beforeOperationTearDown}
+     * after the {@link BeforeOperationTearDownListener#beforeOperationTearDown(String, int, long) beforeOperationTearDown}
      * event, but only if the {@link BenchmarkResult} returned by the measured operation is valid.
      * The listener should use the provided {@code dispatcher} to broadcast measurement
      * results to measurement result consumers.
