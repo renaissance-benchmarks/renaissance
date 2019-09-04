@@ -1,18 +1,19 @@
 package org.renaissance.apache.spark
 
-import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-import java.nio.file.Paths
+import java.util.regex.Pattern
 
-import org.apache.commons.io.FileUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
+import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+
+import scala.collection.JavaConverters._
 
 @Name("page-rank")
 @Group("apache-spark")
@@ -24,14 +25,19 @@ import org.renaissance.License
   Array(
     new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
     new Parameter(name = "input_line_count", defaultValue = "-1"),
-    new Parameter(name = "expected_rank_count", defaultValue = "598652")
+    new Parameter(name = "expected_rank_count", defaultValue = "598652"),
+    new Parameter(name = "expected_rank_hash", defaultValue = "9b39ddf5eaa8b3d2")
   )
 )
 @Configurations(
   Array(
     new Configuration(
       name = "test",
-      settings = Array("input_line_count = 5000", "expected_rank_count = 1661")
+      settings = Array(
+        "input_line_count = 5000",
+        "expected_rank_count = 1664",
+        "expected_rank_hash = 797021674f62a217"
+      )
     ),
     new Configuration(name = "jmh")
   )
@@ -47,85 +53,124 @@ final class PageRank extends Benchmark with SparkUtil {
 
   private var expectedRankCountParam: Int = _
 
-  private val ITERATIONS = 2
+  private var expectedRankHashParam: String = _
+
+  /** Number of iterations of the page rank algorithm. */
+  private val PAGE_RANK_ITERATIONS = 2
+
+  private val INPUT_ZIP_RESOURCE = "/web-berkstan.txt.zip"
+
+  private val INPUT_ZIP_ENTRY = "web-BerkStan.txt"
+
+  /**
+   * Maximum difference in neighboring ranks for web sites in the same class.
+   * The value is slightly lower but in the same order as 1/685230, which
+   * corresponds to the number of web sites in the input data set
+   */
+  private val RANK_DIFFERENCE_LIMIT = 1e-6
 
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  val pageRankPath = Paths.get("target", "page-rank")
+  private var sc: SparkContext = _
 
-  val outputPath = pageRankPath.resolve("output")
+  private var links: RDD[(Int, Iterable[Int])] = _
 
-  val inputZipFile = "web-berkstan.txt.zip"
+  private var tempDirPath: Path = _
 
-  val bigInputFile = pageRankPath.resolve("bigfile.txt")
+  private def loadData(zipName: String, entryName: String, lineCount: Int) = {
+    val inputSource = ZipResourceUtil.sourceFromZipResource(entryName, zipName)
 
-  var sc: SparkContext = _
-
-  var links: RDD[(String, Iterable[String])] = _
-
-  var ranks: RDD[(String, Double)] = _
-
-  var tempDirPath: Path = _
-
-  def prepareInput(c: BenchmarkContext) = {
-    FileUtils.deleteDirectory(pageRankPath.toFile)
-    var inputText = ZipResourceUtil.readZipFromResourceToText(inputZipFile)
-    if (inputLineCountParam >= 0) {
-      inputText = inputText.linesWithSeparators.take(inputLineCountParam).mkString
-    }
-
-    FileUtils.write(bigInputFile.toFile, inputText, StandardCharsets.UTF_8, true)
-  }
-
-  def loadData() = {
-    val lines = sc.textFile(bigInputFile.toString)
-    links = lines
-      .map { line =>
-        val parts = line.split("\\s+")
-        (parts(0), parts(1))
+    try {
+      var inputLines = inputSource.getLines().dropWhile(_.startsWith("#"))
+      if (lineCount >= 0) {
+        inputLines = inputLines.take(lineCount)
       }
-      .distinct()
-      .groupByKey()
-      .cache()
 
-//    ranks = links.mapValues(v => 1.0)
+      val splitter = Pattern.compile("\\s+")
+      sc.parallelize(inputLines.toSeq)
+        .map { line =>
+          val parts = splitter.split(line, 2)
+          parts(0).toInt -> parts(1).toInt
+        }
+        .groupByKey()
+        .cache()
+    } finally {
+      inputSource.close()
+    }
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     threadCountParam = c.intParameter("thread_count")
-    expectedRankCountParam = c.intParameter("expected_rank_count")
     inputLineCountParam = c.intParameter("input_line_count")
+    expectedRankCountParam = c.intParameter("expected_rank_count")
+    expectedRankHashParam = c.stringParameter("expected_rank_hash")
 
     tempDirPath = c.generateTempDir("page_rank")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
-    prepareInput(c)
-    loadData()
+    links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
+
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    ranks = links.mapValues(v => 1.0)
-    for (i <- 0 until ITERATIONS) {
+    var ranks = links.mapValues(_ => 1.0)
+    for (_ <- 0 until PAGE_RANK_ITERATIONS) {
       val contributions = links.join(ranks).values.flatMap {
-        case (urls, rank) =>
-          urls.map(url => (url, rank / urls.size))
+        case (urls, rank) => urls.map(url => (url, rank / urls.size))
       }
       ranks = contributions.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
     }
 
-    // TODO: add more sophisticated validation
-    Validators.simple("ranks count", expectedRankCountParam, ranks.count())
+    //
+    // Trigger the computation by counting the ranks. An alternative is to
+    // call collect(), which would also gather all the data into the driver
+    // as part of the measured operation. A typical application would probably
+    // iterate over a (potentially large) result (which is what count() may
+    // do) instead of collecting it into one place.
+    //
+    val rankCount: Int = ranks.count().toInt
+
+    new BenchmarkResult {
+      //
+      // Check the number of ranks and the string representation of the web site
+      // identifiers ordered by rank and web site id (for equivalent ranks). To
+      // work around numerical instability issues, the sites are first pre-sorted
+      // by rank, and the ordering is then relaxed so that neighboring ranks that
+      // differ only slightly are considered equal.
+      //
+      override def validate() = {
+        Assert.assertEquals(expectedRankCountParam, rankCount, "ranks count")
+
+        val preSortedEntries = ranks.sortBy { case (_, rank) => rank }.collect
+        val sortedEntries = relaxedRanks(preSortedEntries, RANK_DIFFERENCE_LIMIT).sortBy {
+          case (url, rank) => (rank, url)
+        }
+
+        val rankLines = sortedEntries.map { case (url, _) => url.toString }.toList
+        Validators.hashing(expectedRankHashParam, rankLines.asJava).validate()
+      }
+
+      private def relaxedRanks(entries: Seq[(Int, Double)], diffLimit: Double) = {
+        var prevRank = entries(0)._2
+        var groupRank = prevRank
+
+        entries
+          .map {
+            case (url, rank) =>
+              val diff = rank - prevRank
+              if (diff > diffLimit) {
+                groupRank = rank
+              }
+
+              prevRank = rank
+              (url, groupRank)
+          }
+      }
+
+    }
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    val output = ranks
-      .collect()
-      .map {
-        case (url, rank) => s"$url $rank"
-      }
-      .mkString("\n")
-    FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-
     tearDownSparkContext(sc)
     c.deleteTempDir(tempDirPath)
   }
