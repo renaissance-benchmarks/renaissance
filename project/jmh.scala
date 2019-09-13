@@ -21,8 +21,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(MILLISECONDS)
-@Warmup(iterations = ${info.repetitions}, time = 1, timeUnit = MILLISECONDS)
-@Measurement(iterations = ${info.repetitions / 4 + 1}, time = 1, timeUnit = MILLISECONDS)
+@Warmup(iterations = ${info.repetitions})
+@Measurement(iterations = ${info.repetitions / 4 + 1})
 public class ${jmhClassName} extends JmhRenaissanceBenchmark {
   public ${jmhClassName}() { super("${info.name}"); }
 }

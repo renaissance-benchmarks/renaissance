@@ -32,7 +32,7 @@ public abstract class JmhRenaissanceBenchmark {
   }
 
   @org.openjdk.jmh.annotations.Benchmark
-  @BenchmarkMode(Mode.AverageTime)
+  @BenchmarkMode(Mode.SingleShotTime)
   @OutputTimeUnit(MILLISECONDS)
   @Measurement(timeUnit = MILLISECONDS)
   public final void runOperation() {
