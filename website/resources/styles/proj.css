@@ -256,7 +256,7 @@ li.topdivider {
   margin-right: -4px;
 }
 
-li.topdivider.rightmost {
+li.topdivider.toprightmost {
   margin-right: 10px;
 }
 
