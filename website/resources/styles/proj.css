@@ -256,6 +256,10 @@ li.topdivider {
   margin-right: -4px;
 }
 
+li.topdivider.rightmost {
+  margin-right: 10px;
+}
+
 #main {
   color: #555;
 }
