@@ -31,10 +31,10 @@ import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
 final class MyJavaBenchmark extends Benchmark {
-  override def runIteration(config: Config): BenchmarkResult = {
+  override def run(context: BenchmarkContext): BenchmarkResult = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
-    // Return object for later validation of the iteration.
+    // Return object for later validation of the operation result.
     return new MyJavaBenchmarkResult()
   }
 }
