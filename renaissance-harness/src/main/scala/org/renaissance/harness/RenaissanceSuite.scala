@@ -66,17 +66,13 @@ object RenaissanceSuite {
       }
 
       //
-      // (Optionally) register built-in plugins to force GC before and/or
-      // after execution of the measured operation. These plugins have the
-      // lowest priority and are therefore positioned the farthest from the
-      // measured operation (before/after built-in policies).
+      // (Optionally) register the built-in plugin to force GC before each
+      // measured operation. The plugin has the lowest priority and is the
+      // first to be executed 'before operation', preceding the built-in
+      // policies.
       //
-      if (config.forceGcBefore) {
-        plugins = ExecutionPlugins.forceGcBeforeOperationPlugin() +: plugins
-      }
-
-      if (config.forceGcAfter) {
-        plugins = ExecutionPlugins.forceGcAfterOperationPlugin() +: plugins
+      if (config.forceGc) {
+        plugins = new ExecutionPlugins.ForceGcPlugin() +: plugins
       }
 
       // Initialize result writers (if any).

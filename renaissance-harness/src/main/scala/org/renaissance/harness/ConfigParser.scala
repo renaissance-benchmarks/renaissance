@@ -87,16 +87,9 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((v, c) => c.withConfiguration(v))
         .maxOccurs(1)
 
-      opt[String]("force-gc")
-        .valueName("<when>")
-        .text("Force garbage collection 'before', 'after', or 'around' measured operation.")
-        .validate(v => {
-          val options = List("before", "after", "around")
-          if (options.contains(v.toLowerCase)) success
-          else failure("expected 'before', 'after', or 'around' when forcing GC")
-        })
-        .action((v, c) => c.withForcedGc(v))
-        .unbounded()
+      opt[Unit]("no-forced-gc")
+        .text("Do not force garbage collection before each measured operation.")
+        .action((_, c) => c.withoutForcedGc())
 
       opt[Unit]("list")
         .text("Print list of benchmarks with their description.")

@@ -28,8 +28,12 @@ private final class Config {
 
   var configuration = "default"
 
-  var forceGcBefore = false
-  var forceGcAfter = false
+  /**
+   * Force garbage collection before executing the measured operation. This is
+   * enabled by default to avoid accumulating garbage between operations which
+   * can then trigger GC during operation.
+   */
+  var forceGc = true
 
   def withBenchmarkSpecification(v: String) = {
     benchmarkSpecifiers ++= v.split(",").map(_.trim)
@@ -101,16 +105,8 @@ private final class Config {
     this
   }
 
-  def withForcedGc(when: String) = {
-    val lcWhen = when.toLowerCase()
-    if (List("before", "around").contains(lcWhen)) {
-      forceGcBefore = true
-    }
-
-    if (List("after", "around").contains(lcWhen)) {
-      forceGcAfter = true
-    }
-
+  def withoutForcedGc() = {
+    forceGc = false
     this
   }
 }

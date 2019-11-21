@@ -1,66 +1,57 @@
 package org.renaissance.harness;
 
-import org.renaissance.Plugin.OperationSetUpListener;
-import org.renaissance.Plugin.OperationTearDownListener;
+import org.renaissance.Plugin.AfterOperationSetUpListener;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Formatter;
+import java.util.Locale;
 
 final class ExecutionPlugins {
 
-  static OperationSetUpListener forceGcBeforeOperationPlugin() {
-    return (benchmark, opIndex, isLastOp) -> {
-      System.out.println("Forcing GC before measured operation.");
-      RuntimeHelper.singleton.collectGarbage();
-    };
-  }
-
-
-  static OperationTearDownListener forceGcAfterOperationPlugin() {
-    return (benchmark, opIndex, isLastOp) -> {
-      System.out.println("Forcing GC after measured operation.");
-      RuntimeHelper.singleton.collectGarbage();
-    };
-  }
-
-
-  private static final class RuntimeHelper {
-    private static final RuntimeHelper singleton = new RuntimeHelper();
-
-    private static final int FORCED_GC_LOOPS_LIMIT = 10;
-    private static final int FORCED_GC_DELAY_SECONDS = 1;
-
+  static final class ForceGcPlugin implements AfterOperationSetUpListener {
     private final Runtime runtime = Runtime.getRuntime();
 
-    private long getHeapSize() {
+    @Override
+    public void afterOperationSetUp(String benchmark, int opIndex, boolean isLastOp) {
+      collectGarbage("before operation");
+    }
+
+    private void collectGarbage(String occasion) {
+      final long startHeapSize = heapSize();
+      final long startTime = System.nanoTime();
+      runtime.runFinalization();
+      runtime.gc();
+      final long durationNanos = System.nanoTime() - startTime;
+      final long endHeapSize = heapSize();
+
+      System.out.printf(
+        (Locale) null,
+        "GC %s: completed in %.3f ms, heap usage %s -> %s.\n",
+        occasion, durationNanos / 1e6,
+        humanFormat("%.3f", " %sB", startHeapSize),
+        humanFormat("%.3f", " %sB", endHeapSize)
+      );
+    }
+
+    private long heapSize() {
       return runtime.totalMemory() - runtime.freeMemory();
     }
 
-    private void triggerCollection() {
-      runtime.runFinalization();
-      runtime.gc();
-    }
+    private static String humanFormat(String numberFormat, String unitFormat, long value) {
+      final Formatter result = new Formatter();
 
-    long collectGarbage() {
-      final long initialSize = getHeapSize();
-
-      try {
-        GC_LOOP: for (int i = 0; i < FORCED_GC_LOOPS_LIMIT; i++) {
-          final long sizeBefore = getHeapSize();
-          triggerCollection();
-
-          TimeUnit.SECONDS.sleep(FORCED_GC_DELAY_SECONDS);
-
-          if (getHeapSize() >= sizeBefore) {
-            break GC_LOOP;
-          }
-        }
-
-      } catch (InterruptedException e) {
-        // Stop trying to shrink the heap.
+      final int unit = (Long.SIZE - Long.numberOfLeadingZeros(value) - 1) / 10;
+      if (unit > 0) {
+        final long granularity = 1L << (unit * 10);
+        result.format(numberFormat, (double) value / granularity);
+        result.format(unitFormat, "KMGTPE".charAt(unit - 1));
+      } else {
+        result.format("%d", value);
+        result.format(unitFormat, "");
       }
 
-      return initialSize - getHeapSize();
+      return result.toString();
     }
+
   }
 
 }
