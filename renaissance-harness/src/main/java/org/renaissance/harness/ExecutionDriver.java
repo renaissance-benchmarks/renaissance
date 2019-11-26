@@ -33,34 +33,44 @@ final class ExecutionDriver implements BenchmarkContext {
   public final void executeBenchmark(
     Benchmark benchmark, EventDispatcher dispatcher, ExecutionPolicy policy
   ) throws ValidationException {
-    benchmark.setUpBeforeAll(this);
+    final String benchName = benchInfo.name();
+    dispatcher.notifyBeforeBenchmarkSetUp(benchName);
 
     try {
-      final String benchName = benchInfo.name();
-      dispatcher.notifyAfterBenchmarkSetUp(benchName);
+      benchmark.setUpBeforeAll(this);
 
       try {
-        int opIndex = 0;
+        dispatcher.notifyAfterBenchmarkSetUp(benchName);
 
-        while (policy.canExecute(benchName, opIndex)) {
-          printStartInfo(opIndex, benchInfo, configName);
+        try {
+          int opIndex = 0;
 
-          final long durationNanos = executeOperation(
-            opIndex, benchName, benchmark, dispatcher,
-            policy.isLast(benchName, opIndex)
-          );
+          while (policy.canExecute(benchName, opIndex)) {
+            printStartInfo(opIndex, benchInfo, configName);
 
-          printEndInfo(opIndex, benchInfo, configName, durationNanos);
+            final long durationNanos = executeOperation(
+              opIndex, benchName, benchmark, dispatcher,
+              policy.isLast(benchName, opIndex)
+            );
 
-          opIndex++;
+            printEndInfo(opIndex, benchInfo, configName, durationNanos);
+
+            opIndex++;
+          }
+
+        } finally {
+          // Complement the notifyAfterBenchmarkSetUp() events.
+          dispatcher.notifyBeforeBenchmarkTearDown(benchName);
         }
 
       } finally {
-        dispatcher.notifyBeforeBenchmarkTearDown(benchName);
+        // Complement the setUpBeforeAll() benchmark invocation.
+        benchmark.tearDownAfterAll(this);
       }
 
     } finally {
-      benchmark.tearDownAfterAll(this);
+      // Complement the notifyBeforeBenchmarkSetUp() events.
+      dispatcher.notifyAfterBenchmarkTearDown(benchName);
     }
   }
 

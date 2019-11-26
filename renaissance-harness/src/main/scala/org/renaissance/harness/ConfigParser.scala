@@ -87,6 +87,10 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((v, c) => c.withConfiguration(v))
         .maxOccurs(1)
 
+      opt[Unit]("no-forced-gc")
+        .text("Do not force garbage collection before each measured operation.")
+        .action((_, c) => c.withoutForcedGc())
+
       opt[Unit]("list")
         .text("Print list of benchmarks with their description.")
         .action((_, c) => c.withList)

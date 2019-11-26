@@ -39,7 +39,7 @@ object RenaissanceSuite {
       case None    => sys.exit(1)
     }
 
-    // Load info on available benchmarks
+    // Load information about available benchmarks.
     val allBenchmarks = BenchmarkRegistry.createDefault()
 
     if (config.printList) {
@@ -53,30 +53,43 @@ object RenaissanceSuite {
     } else {
       val benchmarks = selectBenchmarks(allBenchmarks, config.benchmarkSpecifiers)
 
-      // Load all plugins in given order (including external policy)
-      val plugins = for ((specifier, args) <- config.pluginsWithArgs) yield {
+      // Load all plugins in given order (including external policy).
+      val externalPlugins = for ((specifier, args) <- config.pluginsWithArgs) yield {
         specifier -> createExtension(specifier, args)
       }
 
-      // Get effective execution policy (built-in or external)
-      val policy = getPolicy(config, benchmarks, plugins)
+      //
+      // Get effective execution policy (built-in or external) and if using
+      // a built-in policy, prepend it to list of plugins (external policy
+      // will be among the external plugins specified on the command line).
+      //
+      var plugins = externalPlugins.values.toSeq
 
-      // If using built-in policy, prepend it to list of plugins
-      var pluginsWithPolicy = plugins.values.toSeq
+      val policy = getPolicy(config, benchmarks, externalPlugins)
       if (config.policyType != PolicyType.EXTERNAL) {
-        pluginsWithPolicy = policy +: pluginsWithPolicy
+        plugins = policy +: plugins
       }
 
-      // Initialize result writers (if any)
+      //
+      // (Optionally) register the built-in plugin to force GC before each
+      // measured operation. The plugin has the lowest priority and is the
+      // first to be executed 'before operation', preceding the built-in
+      // policies.
+      //
+      if (config.forceGc) {
+        plugins = new ExecutionPlugins.ForceGcPlugin() +: plugins
+      }
+
+      // Initialize result writers (if any).
       val writers = Seq(
         config.csvOutput.map(f => new CsvWriter(f)),
         config.jsonOutput.map(f => new JsonWriter(f))
       ).flatten
 
-      // Register plugins (including policy) and result writers for harness events
-      val dispatcher = createEventDispatcher(pluginsWithPolicy, writers)
+      // Register plugins and result writers for harness events.
+      val dispatcher = createEventDispatcher(plugins, writers)
 
-      // Note: no access to Config beyond this call
+      // Note: no access to Config beyond this point.
       runBenchmarks(benchmarks, config.configuration, policy, dispatcher)
     }
   }

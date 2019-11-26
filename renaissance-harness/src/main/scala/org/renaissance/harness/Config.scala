@@ -28,6 +28,13 @@ private final class Config {
 
   var configuration = "default"
 
+  /**
+   * Force garbage collection before executing the measured operation. This is
+   * enabled by default to avoid accumulating garbage between operations which
+   * can then trigger GC during operation.
+   */
+  var forceGc = true
+
   def withBenchmarkSpecification(v: String) = {
     benchmarkSpecifiers ++= v.split(",").map(_.trim)
     this
@@ -98,6 +105,10 @@ private final class Config {
     this
   }
 
+  def withoutForcedGc() = {
+    forceGc = false
+    this
+  }
 }
 
 private object PolicyType extends Enumeration {

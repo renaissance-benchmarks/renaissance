@@ -6,6 +6,7 @@ import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 
 import org.renaissance.Benchmark
+import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.Plugin
 import org.renaissance.Plugin._
@@ -105,20 +106,32 @@ object MarkdownGenerator {
     tags("benchmarkClass") = classOf[Benchmark].getSimpleName
     tags("benchmarkResultClass") = classOf[BenchmarkResult].getSimpleName
 
-    tags("configClass") = classOf[Config].getSimpleName
+    tags("contextClass") = classOf[BenchmarkContext].getSimpleName
     tags("pluginClass") = classOf[Plugin].getSimpleName
+    tags("policyClass") = classOf[ExecutionPolicy].getSimpleName
 
-    tags("harnessInitListenerClass") = classOf[HarnessInitListener].getSimpleName
-    tags("harnessShutdownListenerClass") = classOf[HarnessShutdownListener].getSimpleName
-    tags("benchmarkSetUpListenerClass") = classOf[BenchmarkSetUpListener].getSimpleName
-    tags("benchmarkTearDownListenerClass") = classOf[BenchmarkTearDownListener].getSimpleName
-    tags("operationSetUpListenerClass") = classOf[OperationSetUpListener].getSimpleName
-    tags("operationTearDownListenerClass") = classOf[OperationTearDownListener].getSimpleName
+    tags("afterHarnessInitListenerClass") = classOf[AfterHarnessInitListener].getSimpleName
+    tags("beforeHarnessShutdownListenerClass") =
+      classOf[BeforeHarnessShutdownListener].getSimpleName
+
+    tags("beforeBenchmarkSetUpListenerClass") =
+      classOf[BeforeBenchmarkSetUpListener].getSimpleName
+    tags("afterBenchmarkTearDownListenerClass") =
+      classOf[AfterBenchmarkTearDownListener].getSimpleName
+
+    tags("afterBenchmarkSetUpListenerClass") =
+      classOf[AfterBenchmarkSetUpListener].getSimpleName
+    tags("beforeBenchmarkTearDownListenerClass") =
+      classOf[BeforeBenchmarkTearDownListener].getSimpleName
+
+    tags("afterOperationSetUpListenerClass") =
+      classOf[AfterOperationSetUpListener].getSimpleName
+    tags("beforeOperationTearDownListenerClass") =
+      classOf[BeforeOperationTearDownListener].getSimpleName
 
     tags("benchmarkFailureListenerClass") = classOf[BenchmarkFailureListener].getSimpleName
     tags("measurementResultListenerClass") = classOf[MeasurementResultListener].getSimpleName
     tags("measurementResultPublisherClass") = classOf[MeasurementResultPublisher].getSimpleName
-    tags("executionPolicyClass") = classOf[ExecutionPolicy].getSimpleName
 
     tags("launcherClassFull") = classOf[Launcher].getName
     tags("moduleLoaderClass") = classOf[ModuleLoader].getSimpleName
@@ -282,9 +295,10 @@ to provide. This is demonstrated in the following example:
 
 ```scala
 class SimplePlugin extends ${tags("pluginClass")}
-  with ${tags("harnessInitListenerClass")}
-  with ${tags("operationSetUpListenerClass")}
-  with ${tags("operationTearDownListenerClass")} {
+  with ${tags("afterHarnessInitListenerClass")}
+  with ${tags("afterOperationSetUpListenerClass")}
+  with ${tags("beforeOperationTearDownListenerClass")} {
+
   override def afterHarnessInit() = {
     // Initialize the plugin after the harness finished initializing
   }
@@ -301,13 +315,14 @@ class SimplePlugin extends ${tags("pluginClass")}
 
 The following interfaces provide common (paired) event types which allow a plugin to hook
 into a specific point in the benchmark execution sequence. They are analogous to common
-annotations known from testing frameworks such as JUnit.
-- `${tags("harnessInitListenerClass")}`
-- `${tags("harnessShutdownListenerClass")}`
-- `${tags("benchmarkSetUpListenerClass")}`
-- `${tags("benchmarkTearDownListenerClass")}`
-- `${tags("operationSetUpListenerClass")}`
-- `${tags("operationTearDownListenerClass")}`
+annotations known from testing frameworks such as JUnit. Harness-level events occur only
+once per the whole execution, benchmark-level events occur once for each benchmark
+executed, and operation-level events occur once for each execution of the measured
+operation.
+- `${tags("afterHarnessInitListenerClass")}`, `${tags("beforeHarnessShutdownListenerClass")}`
+- `${tags("beforeBenchmarkSetUpListenerClass")}`, `${tags("afterBenchmarkTearDownListenerClass")}`
+- `${tags("afterBenchmarkSetUpListenerClass")}`, `${tags("beforeBenchmarkTearDownListenerClass")}`
+- `${tags("afterOperationSetUpListenerClass")}`, `${tags("beforeOperationTearDownListenerClass")}`
 
 The following interfaces provide special non-paired event types:
 - `${tags("measurementResultListenerClass")}`, intended for plugins that want to receive
@@ -319,17 +334,17 @@ has either failed in some way (the benchmark triggered an exception), or that th
 operation produced a result which failed validation. This means that no measurements results
 will be received.
 
-And finally the following interface are used by the harness to request
+And finally the following interfaces are used by the harness to request
 services from plugins:
 - `${tags("measurementResultPublisherClass")}`, intended for plugins that want to collect
 values of additional metrics around the execution of the benchmark operation. The harness
 calls the `onMeasurementResultsRequested` method with an instance of event dispatcher which
 the plugin is supposed to use to notify other result listeners about custom measurement results.
-- `${tags("executionPolicyClass")}`, intended for plugins that want to control the execution
+- `${tags("policyClass")}`, intended for plugins that want to control the execution
 of the benchmark's measured operation. Such a plugin should implement other interfaces to
 get enough information to determine, per-benchmark, whether to execute the measured operation
 or not. The harness calls the `canExecute` method before executing the benchmark's measured
-operation, and will pass the result of `isLast` method to some other events.
+operation, and will pass the result of the `isLast` method to some other events.
 
 To make the harness use an external plugin, it needs to be specified on the command line.
 The harness can load multiple plugins, and each must be enabled using the
@@ -342,10 +357,11 @@ plugin to control benchmark execution. Other than that, policy is treated the sa
 plugin.
 
 When registering plugins for pair events (harness init/shutdown, benchmark set up/tear down,
-operation set up/tear down), the plugins specified earlier "wrap" plugins specified later.
-This means that plugins that need to be the closest to the measured operation need to be
-specified last. Note that this also applies to the execution policy, which would be generally
-specified first, but any order is possible.
+operation set up/tear down), the plugins specified earlier will "wrap" plugins specified later.
+This means that for example plugins that want to collect additional measurements and need to
+invoked as close as possible to the measured operation need to be specified last. Note that
+this also applies to an external execution policy, which would be generally specified first,
+but any order is possible.
 
 Plugins (and policies) can receive additional command line arguments. Each argument must be
 given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for
@@ -463,9 +479,8 @@ We need to do this to, e.g., avoid accidentally resolving the wrong class
 by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
-You can see the further details of the build system in the top-level `build.sbt` file,
-and in the source code of the `${tags("renaissanceSuiteClass")}` and
-`${tags("moduleLoaderClass")}` classes.
+You can find further details in the top-level `build.sbt` file, and in the source code of
+the `${tags("renaissanceSuiteClass")}` and `${tags("moduleLoaderClass")}` classes.
 """
   }
 
@@ -504,12 +519,10 @@ import org.renaissance.Benchmark._
 
 @Summary("Runs some performance-critical Java code.")
 final class ${tags("exampleBenchmarkClass")} extends ${tags("benchmarkClass")} {
-  override def runIteration(config: ${tags("configClass")}): ${tags(
-      "benchmarkResultClass"
-    )} = {
+  override def run(context: ${tags("contextClass")}): ${tags("benchmarkResultClass")} = {
     // This is the benchmark body, which in this case calls some Java code.
     JavaCode.runSomeJavaCode()
-    // Return object for later validation of the iteration.
+    // Return object for later validation of the operation result.
     return new ${tags("exampleBenchmarkClass")}Result()
   }
 }

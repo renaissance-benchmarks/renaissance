@@ -16,7 +16,7 @@ final class ExecutionPolicies {
    * of repetitions for a given benchmark.
    */
   static final class FixedOpCount implements ExecutionPolicy,
-    BenchmarkSetUpListener {
+    AfterBenchmarkSetUpListener {
 
     private final ToIntFunction<String> countLimitProvider;
 
@@ -53,7 +53,7 @@ final class ExecutionPolicies {
    * plugins and event listeners.
    */
   static final class FixedTime implements ExecutionPolicy,
-    BenchmarkSetUpListener, OperationTearDownListener {
+    AfterBenchmarkSetUpListener, BeforeOperationTearDownListener {
 
     private final long runTimeNanos;
 
@@ -95,7 +95,7 @@ final class ExecutionPolicies {
    * time of other plugins and event listeners.
    */
   static final class FixedOpTime implements ExecutionPolicy,
-    BenchmarkSetUpListener, OperationTearDownListener {
+    AfterBenchmarkSetUpListener, BeforeOperationTearDownListener {
 
     private final long operationRunTimeNanos;
 

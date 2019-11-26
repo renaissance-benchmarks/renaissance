@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
 import org.renaissance.Benchmark
+import org.renaissance.Plugin.BeforeHarnessShutdownListener
 import org.renaissance.Plugin.BenchmarkFailureListener
-import org.renaissance.Plugin.HarnessShutdownListener
 import org.renaissance.Plugin.MeasurementResultListener
 import spray.json._
 import spray.json.DefaultJsonProtocol._
@@ -23,7 +23,7 @@ import scala.collection.mutable
  * actually stores the collected data.
  */
 private abstract class ResultWriter
-  extends HarnessShutdownListener
+  extends BeforeHarnessShutdownListener
   with MeasurementResultListener
   with BenchmarkFailureListener {
 

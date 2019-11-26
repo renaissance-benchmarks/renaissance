@@ -77,6 +77,7 @@ Usage: renaissance [options] [benchmark-specification]
   --json <file-path>       Output results to JSON file.
   -c, --configuration <name>
                            Run benchmarks with given named configuration.
+  --no-forced-gc           Do not force garbage collection before each measured operation.
   --list                   Print list of benchmarks with their description.
   --raw-list               Print list of benchmarks (each benchmark name on separate line).
   --group-list             Print list of benchmark groups (each group name on separate line).
@@ -206,9 +207,10 @@ to provide. This is demonstrated in the following example:
 
 ```scala
 class SimplePlugin extends Plugin
-  with HarnessInitListener
-  with OperationSetUpListener
-  with OperationTearDownListener {
+  with AfterHarnessInitListener
+  with AfterOperationSetUpListener
+  with BeforeOperationTearDownListener {
+
   override def afterHarnessInit() = {
     // Initialize the plugin after the harness finished initializing
   }
@@ -225,13 +227,14 @@ class SimplePlugin extends Plugin
 
 The following interfaces provide common (paired) event types which allow a plugin to hook
 into a specific point in the benchmark execution sequence. They are analogous to common
-annotations known from testing frameworks such as JUnit.
-- `HarnessInitListener`
-- `HarnessShutdownListener`
-- `BenchmarkSetUpListener`
-- `BenchmarkTearDownListener`
-- `OperationSetUpListener`
-- `OperationTearDownListener`
+annotations known from testing frameworks such as JUnit. Harness-level events occur only
+once per the whole execution, benchmark-level events occur once for each benchmark
+executed, and operation-level events occur once for each execution of the measured
+operation.
+- `AfterHarnessInitListener`, `BeforeHarnessShutdownListener`
+- `BeforeBenchmarkSetUpListener`, `AfterBenchmarkTearDownListener`
+- `AfterBenchmarkSetUpListener`, `BeforeBenchmarkTearDownListener`
+- `AfterOperationSetUpListener`, `BeforeOperationTearDownListener`
 
 The following interfaces provide special non-paired event types:
 - `MeasurementResultListener`, intended for plugins that want to receive
@@ -243,7 +246,7 @@ has either failed in some way (the benchmark triggered an exception), or that th
 operation produced a result which failed validation. This means that no measurements results
 will be received.
 
-And finally the following interface are used by the harness to request
+And finally the following interfaces are used by the harness to request
 services from plugins:
 - `MeasurementResultPublisher`, intended for plugins that want to collect
 values of additional metrics around the execution of the benchmark operation. The harness
@@ -253,7 +256,7 @@ the plugin is supposed to use to notify other result listeners about custom meas
 of the benchmark's measured operation. Such a plugin should implement other interfaces to
 get enough information to determine, per-benchmark, whether to execute the measured operation
 or not. The harness calls the `canExecute` method before executing the benchmark's measured
-operation, and will pass the result of `isLast` method to some other events.
+operation, and will pass the result of the `isLast` method to some other events.
 
 To make the harness use an external plugin, it needs to be specified on the command line.
 The harness can load multiple plugins, and each must be enabled using the
@@ -266,10 +269,11 @@ plugin to control benchmark execution. Other than that, policy is treated the sa
 plugin.
 
 When registering plugins for pair events (harness init/shutdown, benchmark set up/tear down,
-operation set up/tear down), the plugins specified earlier "wrap" plugins specified later.
-This means that plugins that need to be the closest to the measured operation need to be
-specified last. Note that this also applies to the execution policy, which would be generally
-specified first, but any order is possible.
+operation set up/tear down), the plugins specified earlier will "wrap" plugins specified later.
+This means that for example plugins that want to collect additional measurements and need to
+invoked as close as possible to the measured operation need to be specified last. Note that
+this also applies to an external execution policy, which would be generally specified first,
+but any order is possible.
 
 Plugins (and policies) can receive additional command line arguments. Each argument must be
 given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for
@@ -417,6 +421,5 @@ We need to do this to, e.g., avoid accidentally resolving the wrong class
 by going through the system class loader (this can easily happen with,
 e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
 
-You can see the further details of the build system in the top-level `build.sbt` file,
-and in the source code of the `RenaissanceSuite` and
-`ModuleLoader` classes.
+You can find further details in the top-level `build.sbt` file, and in the source code of
+the `RenaissanceSuite` and `ModuleLoader` classes.
