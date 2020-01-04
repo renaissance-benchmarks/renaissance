@@ -28,7 +28,7 @@ public class Main implements Plugin,
       return;
     }
 
-    eventSet = Measurement.createEventSet(1, events);
+    eventSet = Measurement.createEventSet(1, events, Measurement.THREAD_INHERIT);
   }
 
   @Override
