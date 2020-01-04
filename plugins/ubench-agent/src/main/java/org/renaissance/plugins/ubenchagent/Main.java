@@ -10,9 +10,9 @@ import cz.cuni.mff.d3s.perf.Measurement;
 import cz.cuni.mff.d3s.perf.BenchmarkResults;
 
 public class Main implements Plugin,
-    Plugin.BenchmarkSetUpListener,
-    Plugin.OperationSetUpListener,
-    Plugin.OperationTearDownListener,
+    Plugin.AfterBenchmarkSetUpListener,
+    Plugin.AfterOperationSetUpListener,
+    Plugin.BeforeOperationTearDownListener,
     Plugin.MeasurementResultPublisher {
 
   final int eventSet;
