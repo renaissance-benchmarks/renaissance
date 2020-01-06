@@ -66,6 +66,8 @@ jobs:
 
     - <<: *bundle
       os: osx
+      osx_image: xcode9.3
+      jdk: openjdk8
     - <<: *bundle
       jdk: openjdk8
     - <<: *bundle
@@ -84,6 +86,8 @@ jobs:
 
     - <<: *bench
       os: osx
+      osx_image: xcode9.3
+      jdk: openjdk8
     - <<: *bench
       jdk: openjdk8
     - <<: *bench
