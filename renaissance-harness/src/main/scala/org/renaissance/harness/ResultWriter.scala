@@ -135,6 +135,8 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
 
 private final class JsonWriter(val filename: String) extends ResultWriter {
 
+  private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
+
   private def getEnvironment(termination: String): JsValue = {
     val osInfo = getOsInfo
     val vmInfo = getVmInfo(termination)
@@ -147,9 +149,9 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def getOsInfo = {
     val osInfo = new mutable.HashMap[String, JsValue]
-    osInfo.update("name", System.getProperty("os.name", "unknown").toJson)
-    osInfo.update("arch", System.getProperty("os.arch", "unknown").toJson)
-    osInfo.update("version", System.getProperty("os.version", "unknown").toJson)
+    osInfo.update("name", systemPropertyAsJson("os.name"))
+    osInfo.update("arch", systemPropertyAsJson("os.arch"))
+    osInfo.update("version", systemPropertyAsJson("os.version"))
     osInfo
   }
 
@@ -158,9 +160,9 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     val vmArgs = runtimeMxBean.getInputArguments
 
     val vmInfo = new mutable.HashMap[String, JsValue]
-    vmInfo.update("name", System.getProperty("java.vm.name", "unknown").toJson)
-    vmInfo.update("vm_version", System.getProperty("java.vm.version", "unknown").toJson)
-    vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
+    vmInfo.update("name", systemPropertyAsJson("java.vm.name"))
+    vmInfo.update("vm_version", systemPropertyAsJson("java.vm.version"))
+    vmInfo.update("jre_version", systemPropertyAsJson("java.version"))
     vmInfo.update("args", vmArgs.asScala.toList.toJson)
     vmInfo.update("termination", termination.toJson)
     vmInfo
