@@ -112,12 +112,12 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
     writeToFile(filename, csv.toString)
   }
 
-  private def formatHeader(metricNames: Seq[String], csv: StringBuffer) = {
+  private def formatHeader(metricNames: Seq[String], csv: StringBuffer): Unit = {
     // There will always be at least one column after "benchmark".
     csv.append("benchmark,").append(metricNames.mkString(",")).append("\n")
   }
 
-  private def formatResults(metricNames: Seq[String], csv: StringBuffer) = {
+  private def formatResults(metricNames: Seq[String], csv: StringBuffer): Unit = {
     for ((benchmark, _, metricsByName, repetitionCount) <- getBenchmarkResults) {
       for (i <- 0 until repetitionCount) {
         csv.append(benchmark)
