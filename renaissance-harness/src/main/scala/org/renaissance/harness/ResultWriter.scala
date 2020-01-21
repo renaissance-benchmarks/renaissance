@@ -175,10 +175,10 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getSuiteInfo: JsValue = {
-    val manifestAttrs = getMainManifest.getMainAttributes
-    val manifestAttrAsJson = (key: String, defaultValue: String) => {
-      val tmp = manifestAttrs.getValue(key)
-      if (tmp == null) defaultValue.toJson else tmp.toJson
+    val manifest = getMainManifest
+
+    def manifestAttrAsJson(key: String, defaultValue: String) = {
+      Option(manifest.getMainAttributes.getValue(key)).getOrElse(defaultValue).toJson
     }
 
     def getGitInfo = {
