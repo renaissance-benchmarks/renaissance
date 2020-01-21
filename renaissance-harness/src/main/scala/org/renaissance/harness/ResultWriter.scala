@@ -33,14 +33,16 @@ private abstract class ResultWriter
     }
   }
 
-  private final val allResults =
-    new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
-  private final val failedBenchmarks = new mutable.ArrayBuffer[String]
   private final val storeHook = new FlushOnShutdownThread(this)
 
   Runtime.getRuntime.addShutdownHook(storeHook)
 
   protected def store(normalTermination: Boolean): Unit
+  // A result is a map of metric names to a sequence of metric values.
+  private final val resultsByBenchmarkName =
+    mutable.Map[String, mutable.Map[String, mutable.Buffer[Long]]]()
+
+  private final val failedBenchmarkNames = mutable.Set[String]()
 
   private final def storeResults(normalTermination: Boolean): Unit = this.synchronized {
     // This method is synchronized to ensure we do not overwrite
@@ -60,31 +62,32 @@ private abstract class ResultWriter
     metric: String,
     value: Long
   ): Unit = {
-    val benchStorage = allResults.getOrElseUpdate(benchmark, new mutable.HashMap)
-    val metricStorage = benchStorage.getOrElseUpdate(metric, new mutable.ArrayBuffer)
-    metricStorage += value
+    val metricsByName = resultsByBenchmarkName.getOrElseUpdate(benchmark, mutable.Map())
+    val metricValues = metricsByName.getOrElseUpdate(metric, mutable.Buffer())
+    metricValues += value
   }
 
-  final override def onBenchmarkFailure(benchmark: String): Unit = {
-    failedBenchmarks += benchmark
+  final override def onBenchmarkFailure(benchmarkName: String): Unit = {
+    failedBenchmarkNames += benchmarkName
   }
 
-  protected final def getBenchmarks: Iterable[String] = {
-    allResults.keys
+  protected final def getBenchmarkNames: Iterable[String] = {
+    resultsByBenchmarkName.keys
   }
 
-  protected final def getColumns: Seq[String] = {
-    allResults.values.flatMap(_.keys).toSeq.distinct.sorted
+  protected final def getMetricNames: Seq[String] = {
+    val metricNames = resultsByBenchmarkName.values.flatMap(_.keys)
+    metricNames.toSeq.distinct.sorted
   }
 
-  protected final def getResults
-    : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Int)] =
+  protected final def getBenchmarkResults
+    : Iterable[(String, Boolean, Map[String, mutable.Buffer[Long]], Int)] =
     for {
-      benchName <- getBenchmarks
-      benchResults = allResults(benchName).toMap
-      benchFailed = failedBenchmarks.contains(benchName)
-      valueCountMax = benchResults.values.map(_.size).max
-    } yield (benchName, benchFailed, benchResults, valueCountMax)
+      benchName <- getBenchmarkNames
+      metricsByName = resultsByBenchmarkName(benchName).toMap
+      benchFailed = failedBenchmarkNames.contains(benchName)
+      repetitionCount = metricsByName.values.map(_.size).max
+    } yield (benchName, benchFailed, metricsByName, repetitionCount)
 
   protected final def writeToFile(fileName: String, string: String): Unit = {
     FileUtils.write(new File(fileName), string, StandardCharsets.UTF_8, false)
@@ -97,27 +100,27 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
   override def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuffer
 
-    val columns = getColumns
+    val columns = getMetricNames
     formatHeader(columns, csv)
     formatResults(columns, csv)
 
     writeToFile(filename, csv.toString)
   }
 
-  private def formatHeader(columns: Seq[String], csv: StringBuffer) = {
+  private def formatHeader(metricNames: Seq[String], csv: StringBuffer) = {
     // There will always be at least one column after "benchmark".
-    csv.append("benchmark,").append(columns.mkString(",")).append("\n")
+    csv.append("benchmark,").append(metricNames.mkString(",")).append("\n")
   }
 
-  private def formatResults(columns: Seq[String], csv: StringBuffer) = {
-    for ((benchmark, _, results, repetitions) <- getResults) {
-      for (i <- 0 until repetitions) {
+  private def formatResults(metricNames: Seq[String], csv: StringBuffer) = {
+    for ((benchmark, _, metricsByName, repetitionCount) <- getBenchmarkResults) {
+      for (i <- 0 until repetitionCount) {
         csv.append(benchmark)
 
-        for (c <- columns) {
-          val values = results.getOrElse(c, new mutable.ArrayBuffer)
-          val score = if (values.isDefinedAt(i)) values(i).toString else "NA"
-          csv.append(",").append(score)
+        for (metricName <- metricNames) {
+          val values = metricsByName.getOrElse(metricName, mutable.Buffer())
+          val stringValue = if (values.isDefinedAt(i)) values(i).toString else "NA"
+          csv.append(",").append(stringValue)
         }
 
         csv.append("\n")
@@ -158,61 +161,60 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     )
   }
 
-  private def getMainManifest: java.util.jar.Manifest = {
-    val klass = classOf[Benchmark]
-    val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
-    new java.util.jar.Manifest(stream)
-  }
-
   private def getSuiteInfo = {
-    val manifest = getMainManifest
+
+    val manifest = {
+      val benchClass = classOf[Benchmark]
+      val stream = benchClass.getResourceAsStream("/META-INF/MANIFEST.MF")
+      new java.util.jar.Manifest(stream)
+    }
 
     def manifestAttrAsJson(key: String, defaultValue: String) = {
       Option(manifest.getMainAttributes.getValue(key)).getOrElse(defaultValue).toJson
     }
 
-    def getGitInfo = {
-      Map(
-        "commit_hash" -> manifestAttrAsJson("Git-Head-Commit", "unknown"),
-        "commit_date" -> manifestAttrAsJson("Git-Head-Commit-Date", "unknown"),
-        "dirty" -> manifestAttrAsJson("Git-Uncommitted-Changes", "true")
-      )
-    }
+    val gitInfo = Map(
+      "commit_hash" -> manifestAttrAsJson("Git-Head-Commit", "unknown"),
+      "commit_date" -> manifestAttrAsJson("Git-Head-Commit-Date", "unknown"),
+      "dirty" -> manifestAttrAsJson("Git-Uncommitted-Changes", "true")
+    )
+
+    //
 
     Map(
-      "git" -> getGitInfo.toJson,
+      "git" -> gitInfo.toJson,
       "name" -> manifestAttrAsJson("Specification-Title", ""),
       "version" -> manifestAttrAsJson("Specification-Version", "")
     )
   }
 
   override def store(normalTermination: Boolean): Unit = {
-    val tree = Map(
+    val result = Map(
       "format_version" -> 4.toJson,
-      "benchmarks" -> getBenchmarks.toList.toJson,
+      "benchmarks" -> getBenchmarkNames.toJson,
       "environment" -> getEnvironment(if (normalTermination) "normal" else "forced").toJson,
       "suite" -> getSuiteInfo.toJson,
       "data" -> getResultData.toJson
     )
 
-    writeToFile(filename, tree.toJson.prettyPrint)
+    writeToFile(filename, result.toJson.prettyPrint)
   }
 
   private def getResultData = {
-    val columns = getColumns
+    val metricNames = getMetricNames
 
-    val dataTree = new mutable.HashMap[String, JsValue]
-    for ((benchmark, benchFailed, results, repetitions) <- getResults) {
-      val subtree = new mutable.ArrayBuffer[JsValue]
-      for (i <- 0 until repetitions) {
-        val scores = new mutable.HashMap[String, JsValue]
-        for (c <- columns) {
-          val values = results.getOrElse(c, new mutable.ArrayBuffer)
+    val dataTree = mutable.Map[String, JsValue]()
+    for ((benchmark, benchFailed, metricsByName, repetitionCount) <- getBenchmarkResults) {
+      val subtree = mutable.Buffer[JsValue]()
+      for (i <- 0 until repetitionCount) {
+        val repetitionValues = mutable.Map[String, JsValue]()
+        for (metricName <- metricNames) {
+          val values = metricsByName.getOrElse(metricName, mutable.Buffer())
           if (values.isDefinedAt(i)) {
-            scores.update(c, values(i).toJson)
+            repetitionValues.update(metricName, values(i).toJson)
           }
         }
-        subtree += scores.toMap.toJson
+        subtree += repetitionValues.toMap.toJson
       }
 
       val resultsTree = Map(
