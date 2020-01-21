@@ -14,13 +14,13 @@ import spray.json.DefaultJsonProtocol._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-/** Common functionality for JSON and CSV results writers.
+/** Provides common functionality for JSON and CSV result writers.
  *
- * This class takes care of registering a shutdown hook so that the results
- * are not lost when JVM is forcefully terminated.
+ * Registers a shutdown hook to avoid losing unsaved results in case
+ * the JVM is forcefully terminated.
  *
- * Descendants are expected to override only the store() method that
- * actually stores the collected data.
+ * Subclasses are expected to only override the [[store()]] method
+ * which actually stores the collected data.
  */
 private abstract class ResultWriter
   extends BeforeHarnessShutdownListener
@@ -37,7 +37,6 @@ private abstract class ResultWriter
 
   Runtime.getRuntime.addShutdownHook(storeHook)
 
-  protected def store(normalTermination: Boolean): Unit
   // A result is a map of metric names to a sequence of metric values.
   private final val resultsByBenchmarkName =
     mutable.Map[String, mutable.Map[String, mutable.Buffer[Long]]]()
@@ -96,6 +95,9 @@ private abstract class ResultWriter
     FileUtils.write(new File(fileName), string, StandardCharsets.UTF_8, false)
   }
 
+  //
+
+  protected def store(normalTermination: Boolean): Unit
 }
 
 private final class CsvWriter(val filename: String) extends ResultWriter {
