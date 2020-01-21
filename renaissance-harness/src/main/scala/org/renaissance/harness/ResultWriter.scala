@@ -176,23 +176,23 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def getSuiteInfo: JsValue = {
     val manifestAttrs = getMainManifest.getMainAttributes
-    val getManifestAttr = (key: String, defaultValue: String) => {
+    val manifestAttrAsJson = (key: String, defaultValue: String) => {
       val tmp = manifestAttrs.getValue(key)
       if (tmp == null) defaultValue.toJson else tmp.toJson
     }
 
     def getGitInfo = {
       val git = new mutable.HashMap[String, JsValue]
-      git.update("commit_hash", getManifestAttr("Git-Head-Commit", "unknown"))
-      git.update("commit_date", getManifestAttr("Git-Head-Commit-Date", "unknown"))
-      git.update("dirty", getManifestAttr("Git-Uncommitted-Changes", "true"))
+      git.update("commit_hash", manifestAttrAsJson("Git-Head-Commit", "unknown"))
+      git.update("commit_date", manifestAttrAsJson("Git-Head-Commit-Date", "unknown"))
+      git.update("dirty", manifestAttrAsJson("Git-Uncommitted-Changes", "true"))
       git
     }
 
     val result = new mutable.HashMap[String, JsValue]
     result.update("git", getGitInfo.toMap.toJson)
-    result.update("name", getManifestAttr("Specification-Title", ""))
-    result.update("version", getManifestAttr("Specification-Version", ""))
+    result.update("name", manifestAttrAsJson("Specification-Title", ""))
+    result.update("version", manifestAttrAsJson("Specification-Version", ""))
     result.toMap.toJson
   }
 
