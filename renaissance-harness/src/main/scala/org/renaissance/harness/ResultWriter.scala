@@ -101,14 +101,23 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuffer
+
+    val columns = getColumns
+    formatHeader(columns, csv)
+    formatResults(columns, csv)
+
+    writeToFile(filename, csv.toString)
+  }
+
+  private def formatHeader(columns: Seq[String], csv: StringBuffer) = {
     csv.append("benchmark")
-    val columns = new mutable.ArrayBuffer[String]
-    for (c <- getColumns) {
-      columns += c
+    for (c <- columns) {
       csv.append(",").append(c)
     }
     csv.append("\n")
+  }
 
+  private def formatResults(columns: Seq[String], csv: StringBuffer) = {
     for ((benchmark, goodRuns, results, repetitions) <- getResults) {
       for (i <- repetitions) {
         val line = new StringBuffer
@@ -121,9 +130,8 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
         csv.append(line).append("\n")
       }
     }
-
-    writeToFile(filename, csv.toString)
   }
+
 }
 
 private final class JsonWriter(val filename: String) extends ResultWriter {
