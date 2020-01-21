@@ -123,8 +123,8 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
         csv.append(benchmark)
 
         for (metricName <- metricNames) {
-          val values = metricsByName.getOrElse(metricName, mutable.Buffer())
-          val stringValue = if (values.isDefinedAt(i)) values(i).toString else "NA"
+          val values = metricsByName.get(metricName)
+          val stringValue = values.map(values => values(i).toString).getOrElse("NA")
           csv.append(",").append(stringValue)
         }
 
@@ -210,24 +210,21 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     val dataTree = mutable.Map[String, JsValue]()
     for ((benchmark, benchFailed, metricsByName, repetitionCount) <- getBenchmarkResults) {
-      val subtree = mutable.Buffer[JsValue]()
-      for (i <- 0 until repetitionCount) {
-        val repetitionValues = mutable.Map[String, JsValue]()
-        for (metricName <- metricNames) {
-          val values = metricsByName.getOrElse(metricName, mutable.Buffer())
-          if (values.isDefinedAt(i)) {
-            repetitionValues.update(metricName, values(i).toJson)
-          }
-        }
-        subtree += repetitionValues.toMap.toJson
-      }
+      // Collect (name -> value) tuples for metrics into a map for each repetition.
+      val repetitions = (0 until repetitionCount).map(
+        i =>
+          metricNames
+            .map(name => metricsByName.get(name).map(values => (name -> values(i).toJson)))
+            .flatten
+            .toMap
+      )
 
-      val resultsTree = Map(
-        "results" -> subtree.toList.toJson,
+      val benchmarkTree = Map(
+        "results" -> repetitions.toJson,
         "termination" -> (if (benchFailed) "failure" else "normal").toJson
       )
 
-      dataTree.update(benchmark, resultsTree.toJson)
+      dataTree.update(benchmark, benchmarkTree.toJson)
     }
 
     dataTree.toMap
