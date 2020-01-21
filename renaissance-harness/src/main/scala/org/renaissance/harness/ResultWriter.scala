@@ -81,16 +81,10 @@ private abstract class ResultWriter
     : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Int)] =
     for {
       benchName <- getBenchmarks
-      benchResults = allResults(benchName)
+      benchResults = allResults(benchName).toMap
       benchFailed = failedBenchmarks.contains(benchName)
       valueCountMax = benchResults.values.map(_.size).max
-    } yield
-      (
-        benchName,
-        benchFailed,
-        benchResults.toMap,
-        valueCountMax
-      )
+    } yield (benchName, benchFailed, benchResults, valueCountMax)
 
   protected final def writeToFile(fileName: String, string: String): Unit = {
     FileUtils.write(new File(fileName), string, StandardCharsets.UTF_8, false)
