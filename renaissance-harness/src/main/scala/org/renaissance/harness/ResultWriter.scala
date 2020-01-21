@@ -8,8 +8,8 @@ import org.renaissance.Benchmark
 import org.renaissance.Plugin.BeforeHarnessShutdownListener
 import org.renaissance.Plugin.BenchmarkFailureListener
 import org.renaissance.Plugin.MeasurementResultListener
-import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -141,7 +141,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def getEnvironment(normalTermination: Boolean) = {
     Map(
-      "os" -> getOsInfo.toJson,
+      "os" -> getOsInfo,
       "vm" -> getVmInfo(normalTermination),
     )
   }
