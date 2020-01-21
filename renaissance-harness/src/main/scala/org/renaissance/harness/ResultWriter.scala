@@ -110,24 +110,22 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
   }
 
   private def formatHeader(columns: Seq[String], csv: StringBuffer) = {
-    csv.append("benchmark")
-    for (c <- columns) {
-      csv.append(",").append(c)
-    }
-    csv.append("\n")
+    // There will always be at least one column after "benchmark".
+    csv.append("benchmark,").append(columns.mkString(",")).append("\n")
   }
 
   private def formatResults(columns: Seq[String], csv: StringBuffer) = {
     for ((benchmark, goodRuns, results, repetitions) <- getResults) {
       for (i <- repetitions) {
-        val line = new StringBuffer
-        line.append(benchmark)
+        csv.append(benchmark)
+
         for (c <- columns) {
           val values = results.getOrElse(c, new mutable.ArrayBuffer)
-          val score = if (i < values.size) values(i).toString else "NA"
-          line.append(",").append(score.toString)
+          val score = if (values.isDefinedAt(i)) values(i).toString else "NA"
+          csv.append(",").append(score)
         }
-        csv.append(line).append("\n")
+
+        csv.append("\n")
       }
     }
   }
@@ -202,7 +200,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
         val scores = new mutable.HashMap[String, JsValue]
         for (c <- columns) {
           val values = results.getOrElse(c, new mutable.ArrayBuffer)
-          if (i < values.size) {
+          if (values.isDefinedAt(i)) {
             scores.update(c, values(i).toJson)
           }
         }
