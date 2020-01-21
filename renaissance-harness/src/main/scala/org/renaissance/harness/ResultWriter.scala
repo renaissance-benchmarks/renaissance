@@ -136,13 +136,10 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
 private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def getEnvironment(termination: String): JsValue = {
-    val result = new mutable.HashMap[String, JsValue]
-
     val osInfo = new mutable.HashMap[String, JsValue]
     osInfo.update("name", System.getProperty("os.name", "unknown").toJson)
     osInfo.update("arch", System.getProperty("os.arch", "unknown").toJson)
     osInfo.update("version", System.getProperty("os.version", "unknown").toJson)
-    result.update("os", osInfo.toMap.toJson)
 
     val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
     val vmArgs = runtimeMxBean.getInputArguments
@@ -153,8 +150,10 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
     vmInfo.update("args", vmArgs.asScala.toList.toJson)
     vmInfo.update("termination", termination.toJson)
-    result.update("vm", vmInfo.toMap.toJson)
 
+    val result = new mutable.HashMap[String, JsValue]
+    result.update("os", osInfo.toMap.toJson)
+    result.update("vm", vmInfo.toMap.toJson)
     result.toMap.toJson
   }
 
@@ -165,8 +164,6 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getSuiteInfo: JsValue = {
-    val result = new mutable.HashMap[String, JsValue]
-
     val manifestAttrs = getMainManifest.getMainAttributes
     val getManifestAttr = (key: String, defaultValue: String) => {
       val tmp = manifestAttrs.getValue(key)
@@ -178,6 +175,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     git.update("commit_date", getManifestAttr("Git-Head-Commit-Date", "unknown"))
     git.update("dirty", getManifestAttr("Git-Uncommitted-Changes", "true"))
 
+    val result = new mutable.HashMap[String, JsValue]
     result.update("git", git.toMap.toJson)
     result.update("name", getManifestAttr("Specification-Title", ""))
     result.update("version", getManifestAttr("Specification-Version", ""))
@@ -187,12 +185,6 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
     val columns = getColumns
-
-    val tree = new mutable.HashMap[String, JsValue]
-    tree.update("format_version", 4.toJson)
-    tree.update("benchmarks", getBenchmarks.toList.toJson)
-    tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
-    tree.update("suite", getSuiteInfo)
 
     val dataTree = new mutable.HashMap[String, JsValue]
     for ((benchmark, benchFailed, results, repetitions) <- getResults) {
@@ -207,12 +199,19 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
         }
         subtree += scores.toMap.toJson
       }
+
       val resultsTree = new mutable.HashMap[String, JsValue]
       resultsTree.update("results", subtree.toList.toJson)
       resultsTree.update("termination", (if (benchFailed) "failure" else "normal").toJson)
+
       dataTree.update(benchmark, resultsTree.toMap.toJson)
     }
 
+    val tree = new mutable.HashMap[String, JsValue]
+    tree.update("format_version", 4.toJson)
+    tree.update("benchmarks", getBenchmarks.toList.toJson)
+    tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
+    tree.update("suite", getSuiteInfo)
     tree.update("data", dataTree.toMap.toJson)
 
     writeToFile(filename, tree.toMap.toJson.prettyPrint)
