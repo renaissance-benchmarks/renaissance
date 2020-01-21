@@ -137,14 +137,14 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
-  private def getEnvironment(termination: String): JsValue = {
+  private def getEnvironment(termination: String) = {
     val osInfo = getOsInfo
     val vmInfo = getVmInfo(termination)
 
     Map(
       "os" -> osInfo.toJson,
       "vm" -> vmInfo.toJson
-    ).toJson
+    )
   }
 
   private def getOsInfo = {
@@ -174,7 +174,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     new java.util.jar.Manifest(stream)
   }
 
-  private def getSuiteInfo: JsValue = {
+  private def getSuiteInfo = {
     val manifest = getMainManifest
 
     def manifestAttrAsJson(key: String, defaultValue: String) = {
@@ -190,19 +190,19 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     }
 
     Map(
-      "git" -> getGitInfo.toMap.toJson,
+      "git" -> getGitInfo.toJson,
       "name" -> manifestAttrAsJson("Specification-Title", ""),
       "version" -> manifestAttrAsJson("Specification-Version", "")
-    ).toJson
+    )
   }
 
   override def store(normalTermination: Boolean): Unit = {
     val tree = Map(
       "format_version" -> 4.toJson,
       "benchmarks" -> getBenchmarks.toList.toJson,
-      "environment" -> getEnvironment(if (normalTermination) "normal" else "forced"),
-      "suite" -> getSuiteInfo,
-      "data" -> getResultData.toMap.toJson
+      "environment" -> getEnvironment(if (normalTermination) "normal" else "forced").toJson,
+      "suite" -> getSuiteInfo.toJson,
+      "data" -> getResultData.toJson
     )
 
     writeToFile(filename, tree.toJson.prettyPrint)
@@ -233,7 +233,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       dataTree.update(benchmark, resultsTree.toJson)
     }
 
-    dataTree
+    dataTree.toMap
   }
 
 }
