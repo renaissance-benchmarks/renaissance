@@ -90,6 +90,11 @@ private abstract class ResultWriter
         benchResults.toMap,
         0 to maxIndex
       )
+
+  protected final def writeToFile(fileName: String, string: String): Unit = {
+    FileUtils.write(new File(fileName), string, StandardCharsets.UTF_8, false)
+  }
+
 }
 
 private final class CsvWriter(val filename: String) extends ResultWriter {
@@ -117,12 +122,7 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
       }
     }
 
-    FileUtils.write(
-      new File(filename),
-      csv.toString,
-      StandardCharsets.UTF_8,
-      false
-    )
+    writeToFile(filename, csv.toString)
   }
 }
 
@@ -208,11 +208,6 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     tree.update("data", dataTree.toMap.toJson)
 
-    FileUtils.write(
-      new File(filename),
-      tree.toMap.toJson.prettyPrint,
-      java.nio.charset.StandardCharsets.UTF_8,
-      false
-    )
+    writeToFile(filename, tree.toMap.toJson.prettyPrint)
   }
 }
