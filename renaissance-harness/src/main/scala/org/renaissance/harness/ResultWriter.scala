@@ -49,12 +49,15 @@ private abstract class ResultWriter
     // the results when user sends Ctrl-C when store() is already being
     // called (i.e. shutdown hook is still registered but is *almost*
     // no longer needed).
+    if (normalTermination) {
+      Runtime.getRuntime.removeShutdownHook(storeHook)
+    }
+
     store(normalTermination)
   }
 
   final override def beforeHarnessShutdown(): Unit = {
     storeResults(true)
-    Runtime.getRuntime.removeShutdownHook(storeHook)
   }
 
   final override def onMeasurementResult(
