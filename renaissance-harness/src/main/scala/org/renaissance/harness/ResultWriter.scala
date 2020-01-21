@@ -82,11 +82,12 @@ private abstract class ResultWriter
     for {
       benchName <- getBenchmarks
       benchResults = allResults(benchName)
+      benchFailed = failedBenchmarks.contains(benchName)
       valueCountMax = benchResults.values.map(_.size).max
     } yield
       (
         benchName,
-        !failedBenchmarks.contains(benchName),
+        benchFailed,
         benchResults.toMap,
         valueCountMax
       )
@@ -115,7 +116,7 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
   }
 
   private def formatResults(columns: Seq[String], csv: StringBuffer) = {
-    for ((benchmark, goodRuns, results, repetitions) <- getResults) {
+    for ((benchmark, _, results, repetitions) <- getResults) {
       for (i <- 0 until repetitions) {
         csv.append(benchmark)
 
@@ -194,7 +195,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     tree.update("suite", getSuiteInfo)
 
     val dataTree = new mutable.HashMap[String, JsValue]
-    for ((benchmark, goodRuns, results, repetitions) <- getResults) {
+    for ((benchmark, benchFailed, results, repetitions) <- getResults) {
       val subtree = new mutable.ArrayBuffer[JsValue]
       for (i <- 0 until repetitions) {
         val scores = new mutable.HashMap[String, JsValue]
@@ -208,7 +209,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       }
       val resultsTree = new mutable.HashMap[String, JsValue]
       resultsTree.update("results", subtree.toList.toJson)
-      resultsTree.update("termination", (if (goodRuns) "normal" else "failure").toJson)
+      resultsTree.update("termination", (if (benchFailed) "failure" else "normal").toJson)
       dataTree.update(benchmark, resultsTree.toMap.toJson)
     }
 
