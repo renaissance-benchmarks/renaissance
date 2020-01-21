@@ -1,10 +1,9 @@
 package org.renaissance.harness
 
+import java.util.Locale
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
@@ -105,7 +104,7 @@ object RenaissanceSuite {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
-    val vmStartNanos = getVmStartNanos()
+    val vmStartNanos = getVmStartNanos
 
     // Notify observers that the suite is set up.
     dispatcher.notifyAfterHarnessInit()
@@ -149,12 +148,12 @@ object RenaissanceSuite {
     }
   }
 
-  private def getVmStartNanos() = {
+  private def getVmStartNanos = {
     //
     // Get nanoTime() reading from between two
     // distinct currentTimeMillis() readings.
     //
-    val initMillis = System.currentTimeMillis();
+    val initMillis = System.currentTimeMillis()
     while (System.currentTimeMillis() == initMillis) {
       // Wait for the next reading.
     }
@@ -167,7 +166,7 @@ object RenaissanceSuite {
     }
 
     val currentNanosAfter = System.nanoTime()
-    val currentNanos = (currentNanosBefore + currentNanosAfter) / 2;
+    val currentNanos = (currentNanosBefore + currentNanosAfter) / 2
 
     //
     // Approximate nanoTime() value at VM start based on the millisecond
