@@ -139,10 +139,10 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
-  private def getEnvironment(termination: String) = {
+  private def getEnvironment(normalTermination: Boolean) = {
     Map(
       "os" -> getOsInfo.toJson,
-      "vm" -> getVmInfo(termination).toJson
+      "vm" -> getVmInfo(normalTermination),
     )
   }
 
@@ -154,7 +154,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     )
   }
 
-  private def getVmInfo(termination: String) = {
+  private def getVmInfo(normalTermination: Boolean) = {
     val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
 
     Map(
@@ -162,7 +162,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       "vm_version" -> systemPropertyAsJson("java.vm.version"),
       "jre_version" -> systemPropertyAsJson("java.version"),
       "args" -> runtimeMxBean.getInputArguments.asScala.toList.toJson,
-      "termination" -> termination.toJson
+      "termination" -> (if (normalTermination) "normal" else "forced").toJson,
     )
   }
 
@@ -197,7 +197,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     val result = Map(
       "format_version" -> 4.toJson,
       "benchmarks" -> getBenchmarkNames.toJson,
-      "environment" -> getEnvironment(if (normalTermination) "normal" else "forced").toJson,
+      "environment" -> getEnvironment(normalTermination).toJson,
       "suite" -> getSuiteInfo.toJson,
       "data" -> getResultData.toJson
     )
