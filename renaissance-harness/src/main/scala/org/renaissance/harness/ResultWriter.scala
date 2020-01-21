@@ -60,10 +60,8 @@ private abstract class ResultWriter
     metric: String,
     value: Long
   ): Unit = {
-    val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
-    allResults.update(benchmark, benchStorage)
-    val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
-    benchStorage.update(metric, metricStorage)
+    val benchStorage = allResults.getOrElseUpdate(benchmark, new mutable.HashMap)
+    val metricStorage = benchStorage.getOrElseUpdate(metric, new mutable.ArrayBuffer)
     metricStorage += value
   }
 
