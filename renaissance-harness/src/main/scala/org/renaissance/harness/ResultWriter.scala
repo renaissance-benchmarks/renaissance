@@ -27,21 +27,22 @@ private abstract class ResultWriter
   with MeasurementResultListener
   with BenchmarkFailureListener {
 
-  class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
+  private final class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
     override def run(): Unit = {
       results.storeResults(false)
     }
   }
 
-  val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
-  val failedBenchmarks = new mutable.ArrayBuffer[String]
-  val storeHook = new FlushOnShutdownThread(this)
+  private final val allResults =
+    new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
+  private final val failedBenchmarks = new mutable.ArrayBuffer[String]
+  private final val storeHook = new FlushOnShutdownThread(this)
 
   Runtime.getRuntime.addShutdownHook(storeHook)
 
   protected def store(normalTermination: Boolean): Unit
 
-  def storeResults(normalTermination: Boolean): Unit = this.synchronized {
+  private final def storeResults(normalTermination: Boolean): Unit = this.synchronized {
     // This method is synchronized to ensure we do not overwrite
     // the results when user sends Ctrl-C when store() is already being
     // called (i.e. shutdown hook is still registered but is *almost*
@@ -49,12 +50,16 @@ private abstract class ResultWriter
     store(normalTermination)
   }
 
-  override def beforeHarnessShutdown(): Unit = {
+  final override def beforeHarnessShutdown(): Unit = {
     storeResults(true)
     Runtime.getRuntime.removeShutdownHook(storeHook)
   }
 
-  override def onMeasurementResult(benchmark: String, metric: String, value: Long): Unit = {
+  final override def onMeasurementResult(
+    benchmark: String,
+    metric: String,
+    value: Long
+  ): Unit = {
     val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
     allResults.update(benchmark, benchStorage)
     val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
@@ -62,19 +67,19 @@ private abstract class ResultWriter
     metricStorage += value
   }
 
-  override def onBenchmarkFailure(benchmark: String): Unit = {
+  final override def onBenchmarkFailure(benchmark: String): Unit = {
     failedBenchmarks += benchmark
   }
 
-  def getBenchmarks: Iterable[String] = {
+  protected final def getBenchmarks: Iterable[String] = {
     allResults.keys
   }
 
-  def getColumns: Seq[String] = {
+  protected final def getColumns: Seq[String] = {
     allResults.values.flatMap(_.keys).toSeq.distinct.sorted
   }
 
-  def getResults
+  protected final def getResults
     : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
     for {
       benchName <- getBenchmarks
@@ -89,9 +94,9 @@ private abstract class ResultWriter
       )
 }
 
-private class CsvWriter(val filename: String) extends ResultWriter {
+private final class CsvWriter(val filename: String) extends ResultWriter {
 
-  def store(normalTermination: Boolean): Unit = {
+  override def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuffer
     csv.append("benchmark")
     val columns = new mutable.ArrayBuffer[String]
@@ -123,9 +128,9 @@ private class CsvWriter(val filename: String) extends ResultWriter {
   }
 }
 
-private class JsonWriter(val filename: String) extends ResultWriter {
+private final class JsonWriter(val filename: String) extends ResultWriter {
 
-  def getEnvironment(termination: String): JsValue = {
+  private def getEnvironment(termination: String): JsValue = {
     val result = new mutable.HashMap[String, JsValue]
 
     val osInfo = new mutable.HashMap[String, JsValue]
@@ -148,13 +153,13 @@ private class JsonWriter(val filename: String) extends ResultWriter {
     result.toMap.toJson
   }
 
-  def getMainManifest: java.util.jar.Manifest = {
+  private def getMainManifest: java.util.jar.Manifest = {
     val klass = classOf[Benchmark]
     val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
     new java.util.jar.Manifest(stream)
   }
 
-  def getSuiteInfo: JsValue = {
+  private def getSuiteInfo: JsValue = {
     val result = new mutable.HashMap[String, JsValue]
 
     val manifestAttrs = getMainManifest.getMainAttributes
@@ -175,7 +180,7 @@ private class JsonWriter(val filename: String) extends ResultWriter {
     result.toMap.toJson
   }
 
-  def store(normalTermination: Boolean): Unit = {
+  override def store(normalTermination: Boolean): Unit = {
     val columns = getColumns
 
     val tree = new mutable.HashMap[String, JsValue]
