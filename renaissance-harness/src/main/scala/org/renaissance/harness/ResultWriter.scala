@@ -78,17 +78,17 @@ private abstract class ResultWriter
   }
 
   protected final def getResults
-    : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
+    : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Int)] =
     for {
       benchName <- getBenchmarks
       benchResults = allResults(benchName)
-      maxIndex = benchResults.values.map(_.size).max - 1
+      valueCountMax = benchResults.values.map(_.size).max
     } yield
       (
         benchName,
         !failedBenchmarks.contains(benchName),
         benchResults.toMap,
-        0 to maxIndex
+        valueCountMax
       )
 
   protected final def writeToFile(fileName: String, string: String): Unit = {
@@ -116,7 +116,7 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
 
   private def formatResults(columns: Seq[String], csv: StringBuffer) = {
     for ((benchmark, goodRuns, results, repetitions) <- getResults) {
-      for (i <- repetitions) {
+      for (i <- 0 until repetitions) {
         csv.append(benchmark)
 
         for (c <- columns) {
@@ -196,7 +196,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     val dataTree = new mutable.HashMap[String, JsValue]
     for ((benchmark, goodRuns, results, repetitions) <- getResults) {
       val subtree = new mutable.ArrayBuffer[JsValue]
-      for (i <- repetitions) {
+      for (i <- 0 until repetitions) {
         val scores = new mutable.HashMap[String, JsValue]
         for (c <- columns) {
           val values = results.getOrElse(c, new mutable.ArrayBuffer)
