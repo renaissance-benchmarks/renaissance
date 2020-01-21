@@ -3,6 +3,8 @@ package org.renaissance.harness
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
@@ -103,13 +105,15 @@ object RenaissanceSuite {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
+    val vmStartNanos = getVmStartNanos()
+
     // Notify observers that the suite is set up.
     dispatcher.notifyAfterHarnessInit()
 
     try {
       for (benchInfo <- benchmarks) {
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
-        val driver = new ExecutionDriver(benchInfo, configurationName)
+        val driver = new ExecutionDriver(benchInfo, configurationName, vmStartNanos)
 
         try {
           driver.executeBenchmark(benchmark, dispatcher, policy)
@@ -143,6 +147,35 @@ object RenaissanceSuite {
         sys.exit(1)
       }
     }
+  }
+
+  private def getVmStartNanos() = {
+    //
+    // Get nanoTime() reading from between two
+    // distinct currentTimeMillis() readings.
+    //
+    val initMillis = System.currentTimeMillis();
+    while (System.currentTimeMillis() == initMillis) {
+      // Wait for the next reading.
+    }
+
+    val currentNanosBefore = System.nanoTime()
+
+    val currentMillis = System.currentTimeMillis()
+    while (System.currentTimeMillis() == currentMillis) {
+      // Wait for the next reading.
+    }
+
+    val currentNanosAfter = System.nanoTime()
+    val currentNanos = (currentNanosBefore + currentNanosAfter) / 2;
+
+    //
+    // Approximate nanoTime() value at VM start based on the millisecond
+    // timestamp available from the Runtime MX Bean.
+    //
+    val vmStartMillis = management.ManagementFactory.getRuntimeMXBean.getStartTime
+    val uptimeMillis = currentMillis - vmStartMillis
+    currentNanos - MILLISECONDS.toNanos(uptimeMillis)
   }
 
   def selectBenchmarks(

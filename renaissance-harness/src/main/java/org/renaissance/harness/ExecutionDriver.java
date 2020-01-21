@@ -21,12 +21,16 @@ final class ExecutionDriver implements BenchmarkContext {
 
   private final String configName;
 
+  /** The value of {@link System#nanoTime()} at VM start. */
+  private final long vmStartNanos;
 
   public ExecutionDriver(
-    final BenchmarkInfo benchInfo, final String configName
+    final BenchmarkInfo benchInfo, final String configName,
+    final long vmStartNanos
   ) {
     this.benchInfo = benchInfo;
     this.configName = configName;
+    this.vmStartNanos = vmStartNanos;
   }
 
 
@@ -88,7 +92,6 @@ final class ExecutionDriver implements BenchmarkContext {
     // and return the duration of the measured operation, otherwise an
     // exception is thrown and the method terminates prematurely.
     //
-    final long unixTsBefore = System.currentTimeMillis();
     bench.setUpBeforeEach(this);
     dispatcher.notifyAfterOperationSetUp(benchName, opIndex, isLast);
 
@@ -98,13 +101,12 @@ final class ExecutionDriver implements BenchmarkContext {
 
     dispatcher.notifyBeforeOperationTearDown(benchName, opIndex, durationNanos);
     bench.tearDownAfterEach(this);
-    final long unixTsAfter = System.currentTimeMillis();
 
     result.validate();
 
-    dispatcher.notifyOnMeasurementResult(benchName, "nanos", durationNanos);
-    dispatcher.notifyOnMeasurementResult(benchName, "unixts.before", unixTsBefore);
-    dispatcher.notifyOnMeasurementResult(benchName, "unixts.after", unixTsAfter);
+    final long uptimeNanos = startNanos - vmStartNanos;
+    dispatcher.notifyOnMeasurementResult(benchName, "uptime_ns", uptimeNanos);
+    dispatcher.notifyOnMeasurementResult(benchName, "duration_ns", durationNanos);
 
     dispatcher.notifyOnMeasurementResultsRequested(
       benchName, opIndex, dispatcher::notifyOnMeasurementResult
