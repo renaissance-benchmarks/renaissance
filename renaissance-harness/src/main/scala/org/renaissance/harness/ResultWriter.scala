@@ -141,31 +141,31 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     val osInfo = getOsInfo
     val vmInfo = getVmInfo(termination)
 
-    val result = new mutable.HashMap[String, JsValue]
-    result.update("os", osInfo.toMap.toJson)
-    result.update("vm", vmInfo.toMap.toJson)
-    result.toMap.toJson
+    Map(
+      "os" -> osInfo.toJson,
+      "vm" -> vmInfo.toJson
+    ).toJson
   }
 
   private def getOsInfo = {
-    val osInfo = new mutable.HashMap[String, JsValue]
-    osInfo.update("name", systemPropertyAsJson("os.name"))
-    osInfo.update("arch", systemPropertyAsJson("os.arch"))
-    osInfo.update("version", systemPropertyAsJson("os.version"))
-    osInfo
+    Map(
+      "name" -> systemPropertyAsJson("os.name"),
+      "arch" -> systemPropertyAsJson("os.arch"),
+      "version" -> systemPropertyAsJson("os.version")
+    )
   }
 
   private def getVmInfo(termination: String) = {
     val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
     val vmArgs = runtimeMxBean.getInputArguments
 
-    val vmInfo = new mutable.HashMap[String, JsValue]
-    vmInfo.update("name", systemPropertyAsJson("java.vm.name"))
-    vmInfo.update("vm_version", systemPropertyAsJson("java.vm.version"))
-    vmInfo.update("jre_version", systemPropertyAsJson("java.version"))
-    vmInfo.update("args", vmArgs.asScala.toList.toJson)
-    vmInfo.update("termination", termination.toJson)
-    vmInfo
+    Map(
+      "name" -> systemPropertyAsJson("java.vm.name"),
+      "vm_version" -> systemPropertyAsJson("java.vm.version"),
+      "jre_version" -> systemPropertyAsJson("java.version"),
+      "args" -> vmArgs.asScala.toList.toJson,
+      "termination" -> termination.toJson
+    )
   }
 
   private def getMainManifest: java.util.jar.Manifest = {
@@ -182,29 +182,30 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     }
 
     def getGitInfo = {
-      val git = new mutable.HashMap[String, JsValue]
-      git.update("commit_hash", manifestAttrAsJson("Git-Head-Commit", "unknown"))
-      git.update("commit_date", manifestAttrAsJson("Git-Head-Commit-Date", "unknown"))
-      git.update("dirty", manifestAttrAsJson("Git-Uncommitted-Changes", "true"))
-      git
+      Map(
+        "commit_hash" -> manifestAttrAsJson("Git-Head-Commit", "unknown"),
+        "commit_date" -> manifestAttrAsJson("Git-Head-Commit-Date", "unknown"),
+        "dirty" -> manifestAttrAsJson("Git-Uncommitted-Changes", "true")
+      )
     }
 
-    val result = new mutable.HashMap[String, JsValue]
-    result.update("git", getGitInfo.toMap.toJson)
-    result.update("name", manifestAttrAsJson("Specification-Title", ""))
-    result.update("version", manifestAttrAsJson("Specification-Version", ""))
-    result.toMap.toJson
+    Map(
+      "git" -> getGitInfo.toMap.toJson,
+      "name" -> manifestAttrAsJson("Specification-Title", ""),
+      "version" -> manifestAttrAsJson("Specification-Version", "")
+    ).toJson
   }
 
   override def store(normalTermination: Boolean): Unit = {
-    val tree = new mutable.HashMap[String, JsValue]
-    tree.update("format_version", 4.toJson)
-    tree.update("benchmarks", getBenchmarks.toList.toJson)
-    tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
-    tree.update("suite", getSuiteInfo)
-    tree.update("data", getResultData.toMap.toJson)
+    val tree = Map(
+      "format_version" -> 4.toJson,
+      "benchmarks" -> getBenchmarks.toList.toJson,
+      "environment" -> getEnvironment(if (normalTermination) "normal" else "forced"),
+      "suite" -> getSuiteInfo,
+      "data" -> getResultData.toMap.toJson
+    )
 
-    writeToFile(filename, tree.toMap.toJson.prettyPrint)
+    writeToFile(filename, tree.toJson.prettyPrint)
   }
 
   private def getResultData = {
@@ -224,11 +225,12 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
         subtree += scores.toMap.toJson
       }
 
-      val resultsTree = new mutable.HashMap[String, JsValue]
-      resultsTree.update("results", subtree.toList.toJson)
-      resultsTree.update("termination", (if (benchFailed) "failure" else "normal").toJson)
+      val resultsTree = Map(
+        "results" -> subtree.toList.toJson,
+        "termination" -> (if (benchFailed) "failure" else "normal").toJson
+      )
 
-      dataTree.update(benchmark, resultsTree.toMap.toJson)
+      dataTree.update(benchmark, resultsTree.toJson)
     }
 
     dataTree
