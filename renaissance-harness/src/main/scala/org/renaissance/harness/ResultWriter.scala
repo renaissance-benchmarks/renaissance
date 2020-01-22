@@ -209,7 +209,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   private def getJreInfo = {
     val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
 
-    Map(
+    val result = mutable.Buffer(
       "name" -> systemPropertyAsJson("java.runtime.name"),
       "version" -> systemPropertyAsJson("java.runtime.version"),
       "java_vendor" -> systemPropertyAsJson("java.vendor"),
@@ -219,9 +219,14 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       "spec_version" -> systemPropertyAsJson("java.specification.version"),
       "home" -> systemPropertyAsJson("java.home"),
       "library_path" -> pathsAsJson(runtimeMxBean.getLibraryPath),
-      "boot_class_path" -> pathsAsJson(runtimeMxBean.getBootClassPath),
       "class_path" -> pathsAsJson(runtimeMxBean.getClassPath)
     )
+
+    if (runtimeMxBean.isBootClassPathSupported) {
+      result += ("boot_class_path" -> pathsAsJson(runtimeMxBean.getBootClassPath))
+    }
+
+    result.toMap
   }
 
   private def unixTimeAsIso(unixTime: Long) = {
