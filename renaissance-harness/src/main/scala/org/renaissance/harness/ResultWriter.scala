@@ -328,13 +328,13 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       new java.util.jar.Manifest(stream)
     }
 
-    def manifestAttrAsJson(key: String, defaultValue: String) = {
-      Option(manifest.getMainAttributes.getValue(key)).getOrElse(defaultValue).toJson
+    def manifestAttrAsJson(key: String, defaultValue: String = null) = {
+      Option(manifest.getMainAttributes.getValue(key)).orElse(Option(defaultValue)).toJson
     }
 
     val gitInfo = Map(
-      "commit_hash" -> manifestAttrAsJson("Git-Head-Commit", "unknown"),
-      "commit_date" -> manifestAttrAsJson("Git-Head-Commit-Date", "unknown"),
+      "commit_hash" -> manifestAttrAsJson("Git-Head-Commit"),
+      "commit_date" -> manifestAttrAsJson("Git-Head-Commit-Date"),
       "dirty" -> manifestAttrAsJson("Git-Uncommitted-Changes", "true")
     )
 
@@ -342,8 +342,8 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     Map(
       "git" -> gitInfo.toJson,
-      "name" -> manifestAttrAsJson("Specification-Title", ""),
-      "version" -> manifestAttrAsJson("Specification-Version", "")
+      "name" -> manifestAttrAsJson("Specification-Title"),
+      "version" -> manifestAttrAsJson("Specification-Version")
     )
   }
 
