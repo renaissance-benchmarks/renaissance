@@ -255,9 +255,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getMemoryPoolInfo = {
-    val pools = management.ManagementFactory.getMemoryPoolMXBeans.asScala
-
-    pools
+    management.ManagementFactory.getMemoryPoolMXBeans.asScala
       .map(pool => {
         Map(
           "name" -> pool.getName.toJson,
@@ -270,9 +268,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getCollectorInfo = {
-    val collectors = management.ManagementFactory.getGarbageCollectorMXBeans.asScala
-
-    collectors
+    management.ManagementFactory.getGarbageCollectorMXBeans.asScala
       .map(gc => {
         Map(
           "name" -> gc.getName.toJson,
