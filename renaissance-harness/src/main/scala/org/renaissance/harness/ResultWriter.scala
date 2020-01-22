@@ -284,21 +284,20 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getCompilationInfo = {
-    val info = management.ManagementFactory.getCompilationMXBean
-    if (info != null) {
-      val result = mutable.Buffer(
-        "name" -> info.getName.toJson
-      )
+    // Compilation MX Bean is not available in interpreted mode.
+    Option(management.ManagementFactory.getCompilationMXBean).map(
+      info => {
+        val result = mutable.Buffer(
+          "name" -> info.getName.toJson
+        )
 
-      if (info.isCompilationTimeMonitoringSupported) {
-        result += ("compilation_time_ms" -> info.getTotalCompilationTime.toJson)
+        if (info.isCompilationTimeMonitoringSupported) {
+          result += ("compilation_time_ms" -> info.getTotalCompilationTime.toJson)
+        }
+
+        result.toMap
       }
-
-      Option(result.toMap)
-    } else {
-      // Compilation MX Bean is not available in interpreted mode.
-      Option.empty
-    }
+    )
   }
 
   private def getClassLoadingInfo = {
