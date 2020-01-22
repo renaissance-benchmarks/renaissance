@@ -158,7 +158,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   private def getOsInfo = {
     val os = management.ManagementFactory.getOperatingSystemMXBean
 
-    val result = mutable.Map(
+    val result = mutable.Buffer(
       "name" -> os.getName.toJson,
       "arch" -> os.getArch.toJson,
       "version" -> os.getVersion.toJson,
@@ -167,7 +167,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     os match {
       case unixOs: UnixOperatingSystemMXBean =>
-        result ++= Map(
+        result += (
           "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
           "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
           "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,
