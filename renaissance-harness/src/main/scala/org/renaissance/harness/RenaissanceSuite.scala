@@ -158,14 +158,18 @@ object RenaissanceSuite {
       // Wait for the next reading.
     }
 
-    val currentNanosBefore = System.nanoTime()
-
+    // Wait for the next reading and get straddling nanoTime readings.
     val currentMillis = System.currentTimeMillis()
-    while (System.currentTimeMillis() == currentMillis) {
-      // Wait for the next reading.
+    var currentNanosBefore = System.nanoTime ()
+    var currentNanosAfter = 0L
+    var sameTick = true
+    while (sameTick) {
+      sameTick = (System.currentTimeMillis() == currentMillis)
+      currentNanosAfter = System.nanoTime()
+      if (sameTick) currentNanosBefore = currentNanosAfter
     }
 
-    val currentNanosAfter = System.nanoTime()
+    // The two straddling nanoTime readings should give us the best estimate.
     val currentNanos = (currentNanosBefore + currentNanosAfter) / 2
 
     //
