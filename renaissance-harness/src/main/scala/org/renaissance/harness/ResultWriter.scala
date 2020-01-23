@@ -182,21 +182,21 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getVmInfo(normalTermination: Boolean) = {
-    val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
+    val runtime = management.ManagementFactory.getRuntimeMXBean
 
     Map(
-      "name" -> runtimeMxBean.getVmName.toJson,
-      "vendor" -> runtimeMxBean.getVmVendor.toJson,
-      "version" -> runtimeMxBean.getVmVersion.toJson,
-      "spec_name" -> runtimeMxBean.getSpecName.toJson,
-      "spec_vendor" -> runtimeMxBean.getSpecVendor.toJson,
-      "spec_version" -> runtimeMxBean.getSpecVersion.toJson,
+      "name" -> runtime.getVmName.toJson,
+      "vendor" -> runtime.getVmVendor.toJson,
+      "version" -> runtime.getVmVersion.toJson,
+      "spec_name" -> runtime.getSpecName.toJson,
+      "spec_vendor" -> runtime.getSpecVendor.toJson,
+      "spec_version" -> runtime.getSpecVersion.toJson,
       "mode" -> systemPropertyAsJson("java.vm.info"),
-      "args" -> runtimeMxBean.getInputArguments.asScala.toList.toJson,
+      "args" -> runtime.getInputArguments.asScala.toList.toJson,
       "termination" -> (if (normalTermination) "normal" else "forced").toJson,
-      "start_unix_ms" -> runtimeMxBean.getStartTime.toJson,
-      "start_iso" -> unixTimeAsIso(runtimeMxBean.getStartTime).toJson,
-      "uptime_ms" -> runtimeMxBean.getUptime.toJson,
+      "start_unix_ms" -> runtime.getStartTime.toJson,
+      "start_iso" -> unixTimeAsIso(runtime.getStartTime).toJson,
+      "uptime_ms" -> runtime.getUptime.toJson,
       "collectors" -> getCollectorInfo.toJson,
       "compiler" -> getCompilationInfo.toJson,
       "classloading" -> getClassLoadingInfo.toJson,
@@ -207,7 +207,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getJreInfo = {
-    val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
+    val runtime = management.ManagementFactory.getRuntimeMXBean
 
     val result = mutable.Buffer(
       "name" -> systemPropertyAsJson("java.runtime.name"),
@@ -218,12 +218,12 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       "spec_vendor" -> systemPropertyAsJson("java.specification.vendor"),
       "spec_version" -> systemPropertyAsJson("java.specification.version"),
       "home" -> systemPropertyAsJson("java.home"),
-      "library_path" -> pathsAsJson(runtimeMxBean.getLibraryPath),
-      "class_path" -> pathsAsJson(runtimeMxBean.getClassPath)
+      "library_path" -> pathsAsJson(runtime.getLibraryPath),
+      "class_path" -> pathsAsJson(runtime.getClassPath)
     )
 
-    if (runtimeMxBean.isBootClassPathSupported) {
-      result += ("boot_class_path" -> pathsAsJson(runtimeMxBean.getBootClassPath))
+    if (runtime.isBootClassPathSupported) {
+      result += ("boot_class_path" -> pathsAsJson(runtime.getBootClassPath))
     }
 
     result.toMap
@@ -245,12 +245,12 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getMemoryInfo = {
-    val info = management.ManagementFactory.getMemoryMXBean
+    val memory = management.ManagementFactory.getMemoryMXBean
 
     Map(
-      "heap_usage" -> getMemoryUsageInfo(info.getHeapMemoryUsage).toJson,
-      "nonheap_usage" -> getMemoryUsageInfo(info.getNonHeapMemoryUsage).toJson,
-      "pending_finalization_count" -> info.getObjectPendingFinalizationCount.toJson
+      "heap_usage" -> getMemoryUsageInfo(memory.getHeapMemoryUsage).toJson,
+      "nonheap_usage" -> getMemoryUsageInfo(memory.getNonHeapMemoryUsage).toJson,
+      "pending_finalization_count" -> memory.getObjectPendingFinalizationCount.toJson
     )
   }
 
@@ -297,22 +297,22 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
   }
 
   private def getClassLoadingInfo = {
-    val info = management.ManagementFactory.getClassLoadingMXBean
+    val classLoading = management.ManagementFactory.getClassLoadingMXBean
 
     Map(
-      "class_count" -> info.getLoadedClassCount.toJson,
-      "classes_total" -> info.getTotalLoadedClassCount.toJson
+      "class_count" -> classLoading.getLoadedClassCount.toJson,
+      "classes_total" -> classLoading.getTotalLoadedClassCount.toJson
     )
   }
 
   private def getThreadInfo = {
-    val info = management.ManagementFactory.getThreadMXBean
+    val threads = management.ManagementFactory.getThreadMXBean
 
     Map(
-      "thread_count" -> info.getThreadCount.toJson,
-      "thread_count_max" -> info.getPeakThreadCount.toJson,
-      "daemon_thread_count" -> info.getDaemonThreadCount.toJson,
-      "threads_total" -> info.getTotalStartedThreadCount.toJson
+      "thread_count" -> threads.getThreadCount.toJson,
+      "thread_count_max" -> threads.getPeakThreadCount.toJson,
+      "daemon_thread_count" -> threads.getDaemonThreadCount.toJson,
+      "threads_total" -> threads.getTotalStartedThreadCount.toJson
     )
   }
 
@@ -359,7 +359,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     val dataTree = mutable.Map[String, JsValue]()
     for ((benchmark, benchFailed, metricsByName, repetitionCount) <- getBenchmarkResults) {
-      // Collect (name -> value) tuples for metrics into a map for each repetition.
+      // For each repetition, collect (name -> value) tuples for metrics into a map.
       val repetitions = (0 until repetitionCount).map(
         i =>
           metricNames
