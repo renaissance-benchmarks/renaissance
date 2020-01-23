@@ -150,35 +150,57 @@ object RenaissanceSuite {
 
   private def getVmStartNanos = {
     //
-    // Get nanoTime() reading from between two
-    // distinct currentTimeMillis() readings.
+    // Get two nanoTime() samples around currentTimeMillis() that are as
+    // close as possible to when the currentTimeMillis() result flips. Use
+    // the two straddling nanoTime() readings as an estimate of nanoTime()
+    // corresponding to the last currentTimeMillis() result.
     //
-    val initMillis = System.currentTimeMillis()
-    while (System.currentTimeMillis() == initMillis) {
-      // Wait for the next reading.
-    }
+    // Repeat to minimize the difference between the two nanoTime() readings
+    // and stop when no improvement has been observed for several iterations.
+    //
+    // This avoids basing the estimate on first calls to native methods which
+    // tend to be slow, and has a chance to avoid scheduling artifacts.
+    //
+    val streakLengthMax = 10
 
-    // Wait for the next reading and get straddling nanoTime readings.
-    val currentMillis = System.currentTimeMillis()
-    var currentNanosBefore = System.nanoTime ()
-    var currentNanosAfter = 0L
-    var sameTick = true
-    while (sameTick) {
-      sameTick = (System.currentTimeMillis() == currentMillis)
-      currentNanosAfter = System.nanoTime()
-      if (sameTick) currentNanosBefore = currentNanosAfter
-    }
+    var syncNanos = 0L
+    var syncMillis = 0L
 
-    // The two straddling nanoTime readings should give us the best estimate.
-    val currentNanos = (currentNanosBefore + currentNanosAfter) / 2
+    var nanosDiffMin = Long.MaxValue
+    var streakLength = 0
+    do {
+      var nanosBefore = 0L
+      var currentMillis = 0L
+
+      val lastMillis = System.currentTimeMillis()
+      var nanosAfter = System.nanoTime()
+
+      do {
+        nanosBefore = nanosAfter;
+        currentMillis = System.currentTimeMillis()
+        nanosAfter = System.nanoTime()
+      } while (currentMillis == lastMillis)
+
+      streakLength += 1
+
+      val nanosDiff = nanosAfter - nanosBefore
+      if (nanosDiff < nanosDiffMin) {
+        nanosDiffMin = nanosDiff
+        streakLength = 0
+
+        // Record the corresponding nanoTime() estimate.
+        syncNanos = (nanosBefore + nanosAfter) / 2
+        syncMillis = currentMillis
+      }
+    } while (streakLength < streakLengthMax)
 
     //
     // Approximate nanoTime() value at VM start based on the millisecond
     // timestamp available from the Runtime MX Bean.
     //
     val vmStartMillis = management.ManagementFactory.getRuntimeMXBean.getStartTime
-    val uptimeMillis = currentMillis - vmStartMillis
-    currentNanos - MILLISECONDS.toNanos(uptimeMillis)
+    val uptimeMillis = syncMillis - vmStartMillis
+    syncNanos - MILLISECONDS.toNanos(uptimeMillis)
   }
 
   def selectBenchmarks(
