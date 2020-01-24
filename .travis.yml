@@ -121,7 +121,6 @@ before_script:
 cache:
   directories:
     - $HOME/.ivy2/cache
-    - $HOME/.sbt
     - $HOME/.prebuilt
 
 before_cache:
@@ -129,4 +128,3 @@ before_cache:
   # (see https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html#Caching)
   - rm -fv $HOME/.ivy2/.sbt.ivy.lock
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt -name "*.lock" -print -delete
