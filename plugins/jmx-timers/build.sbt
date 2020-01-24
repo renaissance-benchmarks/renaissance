@@ -3,7 +3,7 @@ lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 lazy val pluginJMXTimers = (project in file("."))
   .settings(
     name := "plugin-jmxtimers",
-    version := "0.0.1",
+    version := "0.0.2",
     crossPaths := false,
     autoScalaLibrary := false,
     organization := (organization in renaissanceCore).value,
