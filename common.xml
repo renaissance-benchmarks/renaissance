@@ -5,22 +5,22 @@
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 	<property name="ivy.jar.file.length" value="" />
 	<property name="benchmark.scala.conf" value="scala" />
-	
+
 	<property name="rns.harness.jar" location="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
 	<property name="rns.meta.collector.jar" location="${root.project.basedir}/out/meta-collector/jars/meta-collector.jar" />
 
-    <macrodef name="taskdef-scalac">
-        <attribute name="ivy-config" default="scala" />
-        <sequential>
-            <ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="@{ivy-config}" />
-            <ivy:cachepath pathid="scala.path.id" conf="@{ivy-config}" />
-            <taskdef name="scalac" classname="scala.tools.ant.Scalac">
-                <classpath>
-                    <path refid="scala.path.id" />
-                </classpath>
-            </taskdef>
-        </sequential>
-    </macrodef>
+	<macrodef name="taskdef-scalac">
+		<attribute name="ivy-config" default="scala" />
+		<sequential>
+			<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="@{ivy-config}" />
+			<ivy:cachepath pathid="scala.path.id" conf="@{ivy-config}" />
+			<taskdef name="scalac" classname="scala.tools.ant.Scalac">
+				<classpath>
+					<path refid="scala.path.id" />
+				</classpath>
+			</taskdef>
+		</sequential>
+	</macrodef>
 
 	<condition property="scala.loaded">
 		<typefound name="scalac" />
@@ -68,16 +68,73 @@
 		<srcfiles dir="${root.project.basedir}" includes="*.xml" />
 		<srcfiles file="${rns.meta.collector.jar}" />
 	</uptodate>
-	
+
+	<condition property="bm-src-java-scala">
+		<and>
+			<available file="src/main/java" type="dir" />
+			<available file="src/main/scala" type="dir" />
+		</and>
+	</condition>
+
+	<condition property="bm-src-java-only">
+		<and>
+			<available file="src/main/java" type="dir" />
+			<not>
+				<available file="src/main/scala" type="dir" />
+			</not>
+		</and>
+	</condition>
+
+	<condition property="bm-src-scala-only">
+		<and>
+			<not>
+				<available file="src/main/java" type="dir" />
+			</not>
+			<available file="src/main/scala" type="dir" />
+		</and>
+	</condition>
+
+
 	<target name="-verbose" if="verbose">
-	   <echo message="" />
-	   <echo message=" ===> ${benchmark.name}" />
-	   <echo message="" />
+		<echo message="" />
+		<echo message=" ===> ${benchmark.name}" />
+		<echo message="" />
 	</target>
 
-	<target name="benchmark-compile" depends="-verbose,ivy-init" unless="bm-uptodate">
-	    <taskdef-scalac ivy-config="${benchmark.scala.conf}" />
-	
+	<target name="-benchmark-compile-scala-only" if="bm-src-scala-only" unless="bm-uptodate">
+		<taskdef-scalac ivy-config="${benchmark.scala.conf}" />
+
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
+		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
+		<ivy:cachepath pathid="benchmark.path.id" />
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" >
+			<src path="src/main/scala" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+				<pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
+			</classpath>
+			<compilerarg value="-Xlint:all" />
+		</scalac>
+	</target>
+
+	<target name="-benchmark-compile-java-only" if="bm-src-java-only" unless="bm-uptodate">
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
+		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
+		<ivy:cachepath pathid="benchmark.path.id" />
+		<javac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" >
+			<src path="src/main/java" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+			</classpath>
+			<compilerarg value="-Xlint:all" />
+		</javac>
+	</target>
+
+	<target name="-benchmark-compile-java-scala" if="bm-src-java-scala" unless="bm-uptodate">
+		<taskdef-scalac ivy-config="${benchmark.scala.conf}" />
+
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachepath pathid="benchmark.path.id" />
@@ -92,26 +149,29 @@
 			<compilerarg value="-Xlint:all" />
 		</scalac>
 		<javac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" includeantruntime="false">
-            <src path="src/main/java" />
-            <classpath>
-                <path refid="benchmark.path.id" />
-                <pathelement path="${root.project.basedir}/out/core/classes" />
-                <pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
-            </classpath>
-            <compilerarg value="-Xlint:all" />
-        </javac>
-        <scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes">
-            <src path="src/main/scala" />
-            <src path="src/main/java" />
-            <classpath>
-                <path refid="benchmark.path.id" />
-                <pathelement path="${root.project.basedir}/out/core/classes" />
-                <pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
-            </classpath>
-            <compilerarg value="-Xlint:all" />
-        </scalac>
+			<src path="src/main/java" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+				<pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
+			</classpath>
+			<compilerarg value="-Xlint:all" />
+		</javac>
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes">
+			<src path="src/main/scala" />
+			<src path="src/main/java" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+				<pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
+			</classpath>
+			<compilerarg value="-Xlint:all" />
+		</scalac>
+	</target>
 
-        <ivy:cachefileset setid="benchmark.path.id" conf="bm-${benchmark.name}" />
+	<target name="benchmark-compile" depends="-verbose,ivy-init,-benchmark-compile-java-scala,-benchmark-compile-java-only,-benchmark-compile-scala-only" unless="bm-uptodate">
+		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
+		<ivy:cachefileset setid="benchmark.path.id" conf="bm-${benchmark.name}" />
 		<pathconvert pathsep="," property="benchmark.path.id" refid="benchmark.path.id">
 			<mapper>
 				<chainedmapper>
@@ -121,10 +181,10 @@
 			</mapper>
 		</pathconvert>
 		<pathconvert pathsep=" " property="benchmark.path.id.spaces" refid="benchmark.path.id">
-        </pathconvert>
+		</pathconvert>
 		<java fork="true" jar="${root.project.basedir}/out/meta-collector/jars/meta-collector.jar" output="${root.project.basedir}/out/benchmarks/${benchmark.name}/details.props" logError="true">
-		  <arg file="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
-		  <arg line="${benchmark.path.id.spaces}" />
+			<arg file="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
+			<arg line="${benchmark.path.id.spaces}" />
 		</java>
 	</target>
 
@@ -133,7 +193,7 @@
 		</jar>
 		<touch file="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/${benchmark.name}.jar" />
 	</target>
-	
+
 	<target name="benchmark-clean">
 		<delete dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/" />
 	</target>
