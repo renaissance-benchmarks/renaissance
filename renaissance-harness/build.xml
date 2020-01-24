@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="Renaissance harness" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="root.project.basedir" location="${basedir}/../" />
+	<import file="../common.xml" />
+	
+  <uptodate property="harness-uptodate" targetfile="${rns.harness.jar}">
+        <srcfiles dir="src" includes="**/*" />
+        <srcfiles dir="." includes="*.xml" />
+        <srcfiles dir="${root.project.basedir}" includes="*.xml" />
+    </uptodate>
+	
+	
+	<target name="main"
+            depends="jar"
+            description="Default target: create JAR with the harness."
+        >
+    </target>
+	
+	<target name="jar" depends="compile" unless="harness-uptodate">
+		<mkdir dir="${root.project.basedir}/out/harness/" />
+		<jar destfile="${rns.harness.jar}">
+			<fileset dir="${root.project.basedir}/out/harness/classes" />
+		</jar>
+		<touch file="${rns.harness.jar}" />
+	</target>
+
+	<target name="compile" description="Compile suite harness." depends="ivy-init" unless="harness-uptodate">
+		<taskdef-scalac ivy-config="scala" />
+
+		<mkdir dir="${root.project.basedir}/out/harness/classes" />
+		<ivy:retrieve conf="harness" />
+		<ivy:cachepath pathid="harness.path.id" conf="harness" />
+		<scalac destdir="${root.project.basedir}/out/harness/classes">
+			<src path="src/main/scala" />
+			<src path="src/main/java" />
+			<classpath>
+				<path refid="harness.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+			</classpath>
+			<compilerarg value="-Xlint:all" />
+		</scalac>
+		<javac destdir="${root.project.basedir}/out/harness/classes" includeantruntime="false">
+			<src path="src/main/java" />
+			<classpath>
+				<path refid="harness.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+				<pathelement path="${root.project.basedir}/out/harness/classes" />
+			</classpath>
+			<compilerarg value="-Xlint:all" />
+		</javac>
+		<ivy:cachefileset setid="harness.path.id" conf="harness" />
+		<pathconvert pathsep="," property="harness.path.id" refid="harness.path.id">
+			<mapper>
+				<chainedmapper>
+					<flattenmapper />
+					<globmapper from="*.jar" to="lib/*.jar" />
+				</chainedmapper>
+			</mapper>
+		</pathconvert>
+		<echo file="${root.project.basedir}/out/harness/groups-jars.txt" message="renaissance-harness=renaissance-harness/renaissance-harness_2.12-0.10.0.jar,${harness.path.id}${line.separator}" />
+	</target>
+</project>
+

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="scala-sat" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="root.project.basedir" location="${basedir}/../../" />
+	<property name="benchmark.name" value="scala-sat" />
+	<property name="benchmark.scala.conf" value="scala-2-11-8" />
+	<import file="../../common.xml" />
+
+	<target name="main"
+			depends="benchmark-compile"
+			description="Default target: compile only."
+		>
+	</target>
+</project>

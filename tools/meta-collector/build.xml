@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="Meta collector helper for Renaissance" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="root.project.basedir" location="${basedir}/../../" />
+	<import file="../../common.xml" />
+
+	<uptodate property="collector-uptodate" targetfile="${rns.meta.collector.jar}">
+		<srcfiles dir="src" includes="**/*" />
+		<srcfiles dir="." includes="*.xml" />
+		<srcfiles dir="${root.project.basedir}" includes="*.xml" />
+	</uptodate>
+
+
+	<target name="main"
+            depends="jar"
+            description="Default target: create JAR with the collector."
+        >
+	</target>
+
+	<target name="jar" depends="compile" unless="collector-uptodate">
+		<mkdir dir="${root.project.basedir}/out/meta-collector/jars/" />
+		<ivy:retrieve conf="meta-collector" />
+		<ivy:cachefileset setid="collector.path.id" />
+		<jar destfile="${rns.meta.collector.jar}">
+			<fileset dir="${root.project.basedir}/out/meta-collector/classes/" />
+			<fileset dir="${root.project.basedir}/out/core/classes/" />
+			<zipgroupfileset refid="collector.path.id" />
+			<manifest>
+				<attribute name="Main-Class" value="org.renaissance.tools.metacollector.Main" />
+			</manifest>
+		</jar>
+		<touch file="${rns.meta.collector.jar}" />
+	</target>
+
+	<target name="compile" description="Compile meta collector." depends="ivy-init" unless="collector-uptodate">
+		<mkdir dir="${root.project.basedir}/out/meta-collector/classes" />
+		<ivy:retrieve file="${root.project.basedir}/ivy.xml" conf="meta-collector" />
+		<ivy:cachepath pathid="collector.path.id" conf="meta-collector" />
+		<javac destdir="${root.project.basedir}/out/meta-collector/classes" debug="true" includeantruntime="false">
+			<src path="src/main/java" />
+			<compilerarg value="-Xlint:all" />
+			<classpath>
+				<path refid="collector.path.id" />
+				<pathelement path="${root.project.basedir}/out/core/classes" />
+			</classpath>
+		</javac>
+	</target>
+</project>
+

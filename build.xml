@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="Renaissance" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property file="local-settings.ini" />
+	<property name="root.project.basedir" location="${basedir}" />
+
+	<import file="./common.xml" />
+
+	<macrodef name="foreach-benchmark">
+		<attribute name="target" default="main" />
+		<element name="nested" optional="true" />
+		<sequential>
+			<ant dir="${root.project.basedir}/benchmarks/actors" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/apache-spark" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/database" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/dummy" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/jdk-concurrent" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/jdk-streams" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/neo4j" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/rx" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/scala-dotty" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/scala-stdlib" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/twitter-finagle" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
+		</sequential>
+	</macrodef>
+
+	<target name="print-properties">
+		<echoproperties format="text" />
+	</target>
+
+	<target name="main" depends="fatjar" description="Default target: create fat JAR.">
+	</target>
+
+	<target name="toolchain" depends="tool-meta-collector" />
+
+	<target name="tool-meta-collector">
+		<ant dir="tools/meta-collector" target="jar" />
+	</target>
+
+	<target name="compile" depends="toolchain,compile-core,jar-harness,compile-benchmarks" />
+
+	<target name="fatjar" depends="ivy-init,toolchain,compile-core,jar-harness,compile-benchmarks" description="Create fat JAR.">
+		<ant dir="tools" antfile="ant-fatjar.xml" target="-fatjar" inheritall="false" />
+	</target>
+
+	<target name="compile-core" description="Compile suite core.">
+		<mkdir dir="out/core/classes" />
+		<javac destdir="out/core/classes" debug="true" includeantruntime="false">
+			<src path="renaissance-core/src/main/java/" />
+			<compilerarg value="-Xlint:all" />
+		</javac>
+	</target>
+
+	<target name="jar-harness">
+		<ant dir="renaissance-harness" target="jar" />
+	</target>
+
+	<target name="compile-benchmarks" depends="tool-meta-collector">
+		<foreach-benchmark target="benchmark-jar">
+			<nested>
+			    <property name="verbose" value="true" />
+			</nested>
+		</foreach-benchmark>
+	</target>
+
+	<target name="dist-clean" description="Remove generated files including Ivy.">
+		<delete dir="out" />
+	</target>
+
+	<target name="clean" description="Remove generated files.">
+		<delete includeemptydirs="true">
+			<fileset dir="out">
+				<include name="**/*" />
+				<exclude name="ivy/" />
+			</fileset>
+		</delete>
+	</target>
+</project>

@@ -24,4 +24,18 @@ public enum License {
     return licenses;
   }
 
+  public static License getParent(License... licenses) {
+    for (License l : licenses) {
+      switch (l) {
+      case GPL2:
+      case GPL3:
+      case EPL1:
+      case MPL2:
+        return GPL3;
+      default:
+        // look at next one
+      }
+    }
+    return MIT;
+  }
 }

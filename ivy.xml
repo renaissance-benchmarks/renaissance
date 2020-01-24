@@ -1,0 +1,79 @@
+<ivy-module version="2.0">
+    <info organisation="org.renaissance" module="suite" />
+    <configurations>
+        <conf name="harness" description="Harness"/>
+        <conf name="scala" description="Scala langauge"/>
+        <conf name="scala-2-11-8" description="Scala langauge"/>
+        <conf name="scala-2-11-4" description="Scala langauge"/>
+        <conf name="meta-collector" description="Meta data collector"/>
+        
+        <conf name="bm-actors" description="actors benchmarks" extends="scala-2-11-8" />
+        <conf name="bm-apache-spark" description="apache-spark benchmarks" extends="scala-2-11-8" />
+        <conf name="bm-database" description="database benchmarks" extends="scala-2-11-8" />
+        <conf name="bm-dummy" description="dummy benchmarks" />
+        <conf name="bm-jdk-concurrent" description="jdk-concurrent benchmarks" />
+        <conf name="bm-jdk-streams" description="jdk-streams benchmarks" />
+        <conf name="bm-neo4j" description="neo4j benchmarks"  extends="scala-2-11-4"/>
+        <conf name="bm-rx" description="rx benchmarks" extends="scala-2-11-8" />
+        <conf name="bm-scala-dotty" description="scala-dotty benchmarks" />
+        <conf name="bm-scala-sat" description="scala-sat benchmarks" />
+        <conf name="bm-scala-stdlib" description="scala-stdlib benchmarks" />
+        <conf name="bm-scala-stm" description="scala-stm benchmarks" />
+        <conf name="bm-twitter-finagle" description="twitter-finagle benchmarks" extends="scala-2-11-8" />
+    </configurations>
+    <dependencies>
+        <dependency org="org.scala-lang" name="scala-library" rev="2.12.8" conf="scala->master;harness->master;bm-jdk-concurrent->default;bm-jdk-streams->default;bm-scala-stdlib->default" />
+        <dependency org="org.scala-lang" name="scala-compiler" rev="2.12.8" conf="scala->master" />
+        <dependency org="org.scala-lang" name="scala-reflect" rev="2.12.8" conf="scala->master" />
+        
+        <dependency org="org.scala-lang" name="scala-library" rev="2.11.8" conf="scala-2-11-8->master;bm-twitter-finagle->default" />
+        <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.8" conf="scala-2-11-8->master" />
+        <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.8" conf="scala-2-11-8->master" />
+        
+        <dependency org="org.scala-lang" name="scala-library" rev="2.11.4" conf="scala-2-11-4->master;bm-neo4j->default" />
+        <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.4" conf="scala-2-11-4->master" />
+        <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.4" conf="scala-2-11-4->master" />
+        
+        
+        <dependency org="org.reflections" name="reflections" rev="0.9.10" conf="meta-collector->default" />
+        <dependency org="com.google.code.gson" name="gson" rev="2.8.5" conf="meta-collector->default" />
+        <dependency org="org.slf4j" name="slf4j-api" rev="1.7.28" conf="meta-collector->default" />
+        <dependency org="org.slf4j" name="slf4j-simple" rev="1.7.28" conf="meta-collector->default" />
+        <dependency org="commons-io" name="commons-io" rev="2.6" conf="harness->master;bm-apache-spark->default;bm-jdk-streams->default;bm-neo4j->default;bm-rx->default;bm-scala-dotty->default" />
+        <dependency org="com.github.scopt" name="scopt_2.12" rev="4.0.0-RC2" conf="harness->master" />
+        <dependency org="io.spray" name="spray-json_2.12" rev="1.3.5" conf="harness->master" />
+        <dependency org="io.jenetics" name="jenetics" rev="4.4.0" conf="bm-jdk-concurrent->default" />
+        <dependency org="com.twitter" name="finagle-http_2.11" rev="19.4.0" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter" name="finagle-stats_2.11" rev="19.4.0" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter" name="finagle-core_2.11" rev="19.4.0" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter" name="twitter-server_2.11" rev="19.4.0" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter.common" name="metrics" rev="0.0.39" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter.common" name="io" rev="0.0.69" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter" name="util-core_2.11" rev="19.4.0" conf="bm-twitter-finagle->default" />
+        <dependency org="com.twitter" name="util-events_2.11" rev="7.0.0" conf="bm-twitter-finagle->default" />
+        <dependency org="com.typesafe.akka" name="akka-actor_2.11" rev="2.3.11" conf="bm-actors->default" />
+        <dependency org="io.reactors" name="reactors-core_2.11" rev="0.7" conf="bm-actors->default" />
+        
+        <dependency org="org.apache.spark" name="spark-core_2.11" rev="2.0.0" conf="bm-apache-spark->default" />
+        <dependency org="org.apache.spark" name="spark-sql_2.11" rev="2.0.0" conf="bm-apache-spark->default" />
+        <dependency org="org.apache.spark" name="spark-mllib_2.11" rev="2.0.0" conf="bm-apache-spark->default" />
+        
+        <dependency org="com.github.jnr" name="jnr-posix" rev="3.0.29" conf="bm-database->default" />
+        <dependency org="org.apache.commons" name="commons-math3" rev="3.6.1" conf="bm-database->default" />
+        <dependency org="org.agrona" name="agrona" rev="0.9.7" conf="bm-database->default" />
+        <dependency org="net.openhft" name="zero-allocation-hashing" rev="0.6" conf="bm-database->default" />
+        <dependency org="org.mapdb" name="mapdb" rev="3.0.1" conf="bm-database->default" />
+        <dependency org="com.h2database" name="h2-mvstore" rev="1.4.192" conf="bm-database->default" />
+        <dependency org="net.openhft" name="chronicle-core" rev="2.17.2" conf="bm-database->default" />
+        <dependency org="net.openhft" name="chronicle-bytes" rev="2.17.7" conf="bm-database->default" />
+        <dependency org="net.openhft" name="chronicle-threads" rev="2.17.1" conf="bm-database->default" />
+        <dependency org="net.openhft" name="chronicle-map" rev="3.17.0" conf="bm-database->default" />
+        
+        <dependency org="org.neo4j" name="neo4j" rev="3.3.4" conf="bm-neo4j->default" />
+        <dependency org="net.liftweb" name="lift-json_2.11" rev="3.2.0" conf="bm-neo4j->default" />
+        
+        <dependency org="io.reactivex" name="rxjava" rev="1.3.7" conf="bm-rx->default" />
+        
+        <dependency org="ch.epfl.lamp" name="dotty-compiler_0.12" rev="0.12.0" conf="bm-scala-dotty->default" />
+    </dependencies>
+</ivy-module>

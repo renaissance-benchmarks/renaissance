@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="ant-fatjar" default="bad-call" xmlns:ivy="antlib:org.apache.ivy.ant">
+    <property name="root.project.basedir" location="${basedir}/../" />
+
+	<target name="bad-call" description="Default target: do nothing.">
+	   <echo message="Not to be used directly!" />
+	</target>
+
+	<uptodate property="fatjar-uptodate" targetfile="${root.project.basedir}/out/fatjar/renaissance.jar">
+		<srcfiles dir="${root.project.basedir}/out/benchmarks/" includes="**/jars/*.jar" />
+		<srcfiles dir="${root.project.basedir}" includes="*.xml" />
+		<srcfiles file="${rns.meta.collector.jar}" />
+		<srcfiles dir="${root.project.basedir}/out/harness" includes="**/groups-jars.txt" />
+		<srcfiles dir="${root.project.basedir}/out/benchmarks" includes="**/groups-jars.txt" />
+		<srcfiles dir="${root.project.basedir}/out/benchmarks" includes="**/details.props" />
+		<srcfiles file="${root.project.basedir}/out/meta/groups-jars.txt" />
+		<srcfiles file="${root.project.basedir}/out/meta/benchmark-details.properties" />
+	</uptodate>
+
+	<target name="-fatjar-actual" unless="fatjar-uptodate">
+		<mkdir dir="${root.project.basedir}/out/fatjar/root" />
+		<mkdir dir="${root.project.basedir}/out/meta" />
+
+		<concat destfile="${root.project.basedir}/out/meta/groups-jars.txt">
+			<fileset dir="${root.project.basedir}/out/harness" includes="**/groups-jars.txt" />
+			<fileset dir="${root.project.basedir}/out/benchmarks" includes="**/groups-jars.txt" />
+		</concat>
+
+		<concat destfile="${root.project.basedir}/out/meta/benchmark-details.properties">
+			<fileset dir="${root.project.basedir}/out/benchmarks" includes="**/details.props" />
+		</concat>
+
+		<ivy:resolve log="queit" file="${root.project.basedir}/ivy.xml" />
+		<ivy:cachefileset setid="everything.path.id" />
+
+		<jar destfile="${root.project.basedir}/out/fatjar/renaissance.jar">
+			<fileset dir="${root.project.basedir}/out/core/classes" />
+			<fileset file="${root.project.basedir}/out/meta/groups-jars.txt" />
+			<fileset file="${root.project.basedir}/out/meta/benchmark-details.properties" />
+			<mappedresources>
+				<fileset file="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
+				<globmapper from="*.jar" to="renaissance-harness/*.jar" />
+			</mappedresources>
+
+			<mappedresources>
+				<fileset refid="everything.path.id" />
+				<chainedmapper>
+					<flattenmapper />
+					<globmapper from="*.jar" to="lib/*.jar" />
+				</chainedmapper>
+			</mappedresources>
+
+			<mappedresources>
+				<fileset dir="${root.project.basedir}/out/benchmarks" includes="*/jars/*.jar" />
+				<chainedmapper>
+					<flattenmapper />
+					<globmapper from="*.jar" to="benchmarks/*.jar" />
+				</chainedmapper>
+			</mappedresources>
+
+			<manifest>
+				<attribute name="Main-Class" value="org.renaissance.core.Launcher" />
+			</manifest>
+		</jar>
+		<touch file="${root.project.basedir}/out/fatjar/renaissance.jar" />
+	</target>
+
+	<target name="-fatjar" depends="-fatjar-actual" />
+</project>
+
