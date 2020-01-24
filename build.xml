@@ -54,7 +54,7 @@
 
 	<target name="toolchain" depends="tool-meta-collector" />
 
-	<target name="tool-meta-collector">
+	<target name="tool-meta-collector" depends="compile-core">
 		<ant dir="tools/meta-collector" target="jar" />
 	</target>
 
