@@ -19,7 +19,7 @@ refs:
       - ant fatjar
       #- ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
       # Ensure that the JMH bundle contains non-empty BenchmarkList
-      - 'test $(unzip -p renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar META-INF/BenchmarkList | wc -l) -gt 0'
+      #- 'test $(unzip -p renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar META-INF/BenchmarkList | wc -l) -gt 0'
       # Clear cache directory
       - 'mkdir -p "$HOME/.prebuilt"'
       - 'ls "$HOME/.prebuilt"'
@@ -73,28 +73,28 @@ jobs:
       jdk: openjdk8
     - <<: *bundle
       jdk: oraclejdk8
-    - <<: *bundle
-      jdk: oraclejdk9
-    - <<: *bundle
-      env:
-       - USE_JDK=openjdk11
-    - <<: *bundle
-      env:
-        - USE_JDK=OpenJ9
+#    - <<: *bundle
+#      jdk: oraclejdk9
+#    - <<: *bundle
+#      env:
+#       - USE_JDK=openjdk11
+#    - <<: *bundle
+#      env:
+#        - USE_JDK=OpenJ9
 
-    - <<: *bench
-      os: osx
-      osx_image: xcode9.3
-      jdk: oraclejdk9
-    - <<: *bench
-      jdk: openjdk8
-    - <<: *bench
-      jdk: oraclejdk8
-    - <<: *bench
-      jdk: oraclejdk9
-    - <<: *bench
-      env:
-       - USE_JDK=openjdk11
+#    - <<: *bench
+#      os: osx
+#      osx_image: xcode9.3
+#      jdk: oraclejdk9
+#    - <<: *bench
+#      jdk: openjdk8
+#    - <<: *bench
+#      jdk: oraclejdk8
+#    - <<: *bench
+#      jdk: oraclejdk9
+#    - <<: *bench
+#      env:
+#       - USE_JDK=openjdk11
     # Disabled because of #131
     #- <<: *bench
     #  env:
@@ -103,7 +103,7 @@ jobs:
 stages:
   - "Basic checks"
   - bundle
-  - benchmark
+#  - benchmark
 
 before_install:
   - 'if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ant; fi'
@@ -119,13 +119,13 @@ before_script:
   - 'if [ "$USE_JDK" = "openjdk11" ]; then ./install-jdk.sh -f 11 --target "$JAVA_HOME"; fi'
   - 'if [ -n "$USE_JDK" ]; then export PATH="$JAVA_HOME/bin:$PATH"; fi'
 
-cache:
-  directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.prebuilt
+#cache:
+#  directories:
+#    - $HOME/.ivy2/cache
+#    - $HOME/.prebuilt
 
-before_cache:
+#before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
   # (see https://www.scala-sbt.org/1.0/docs/Travis-CI-with-sbt.html#Caching)
-  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+# - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+# - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
