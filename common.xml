@@ -61,18 +61,6 @@
 			</classpath>
 		</taskdef>
 	</target>
-	
-	<target name="xxscala-for-benchmark-init" depends="ivy-init">
-	    <ivy:resolve file="${root.project.basedir}/ivy.xml" conf="${benchmark.scala.conf}" />
-        <ivy:retrieve conf="${benchmark.scala.conf}" />
-        <ivy:cachepath pathid="scala.path.id" conf="${benchmark.scala.conf}" />
-        <taskdef name="scalac" classname="scala.tools.ant.Scalac">
-            <classpath>
-                <path refid="scala.path.id" />
-            </classpath>
-        </taskdef>
-	</target>
-
 
 	<uptodate property="bm-uptodate" targetfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/${benchmark.name}.jar">
 		<srcfiles dir="src" includes="**/*" />
