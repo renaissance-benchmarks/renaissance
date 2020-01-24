@@ -96,4 +96,8 @@
 			</fileset>
 		</delete>
 	</target>
+	
+	<target name="ivy-clean-cache" description="Clean Ivy cache" depends="ivy-init">
+		<ivy:cleancache />
+	</target>
 </project>
