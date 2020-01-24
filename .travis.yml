@@ -104,6 +104,9 @@ stages:
   - bundle
   - benchmark
 
+before_install:
+  - 'if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ant; fi'
+
 before_script:
   # For us, the default options are broken as they pass "-v"
   # to the JVM instead after the sbt JAR.
