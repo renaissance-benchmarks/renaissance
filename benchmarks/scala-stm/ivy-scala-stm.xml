@@ -1,0 +1,7 @@
+<ivy-module version="2.0">
+    <info organisation="org.renaissance" module="scala-stm" />
+    <publications>
+        <artifact name="scala-stm-library_2.12-0.8" type="jar" ext="jar" />
+        <artifact name="stmbench7-VELOX-1.2" type="jar" ext="jar" />
+    </publications>
+</ivy-module>

@@ -2,12 +2,47 @@
 <project basedir="." name="scala-stm" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
 	<property name="root.project.basedir" location="${basedir}/../../" />
 	<property name="benchmark.name" value="scala-stm" />
-	<property name="benchmark.scala.conf" value="scala-2-11-8" />
+	<property name="benchmark.scala.conf" value="scala-2-12-3" />
+	<property name="deps.version" value="20190417.1" />
 	<import file="../../common.xml" />
 
-	<target name="main"
-			depends="benchmark-compile"
-			description="Default target: compile only."
-		>
+	<target name="main" depends="benchmark-compile" description="Default target: compile only.">
+	</target>
+
+	<condition property="scala-stm-already-published">
+		<equals arg1="${scala-stm-published-version}" arg2="${deps.version}" />
+	</condition>
+
+	<target name="-benchmark-build-deps" depends="ivy-init" unless="scala-stm-already-published">
+		<taskdef-scalac ivy-config="${benchmark.scala.conf}" />
+
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-classes" />
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-jars" />
+
+		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="scala-2-12-3" />
+		<ivy:cachepath pathid="benchmark.path.id" />
+
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-classes">
+			<src path="scala-stm-library/src/main/scala/" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+			</classpath>
+		</scalac>
+
+		<jar destfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-jars/scala-stm-library_2.12-0.8.jar" basedir="${root.project.basedir}/out/benchmarks/${benchmark.name}//stmlib-classes">
+		</jar>
+		<copy file="scala-stm-library/lib/stmbench7-VELOX-1.2.jar" tofile="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-jars/stmbench7-VELOX-1.2.jar" />
+
+		<ivy:resolve log="quiet" file="ivy-scala-stm.xml" />
+		<ivy:publish pubrevision="${deps.version}" organisation="org.renaissance" module="scala-stm" status="release" overwrite="true" forcedeliver="true" update="true" resolver="renaissance">
+			<artifacts pattern="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/[artifact].[ext]" />
+		</ivy:publish>
+	</target>
+
+	<target name="benchmark-build-deps" depends="ivy-init">
+		<ivy:findrevision organisation="org.renaissance" module="scala-stm" revision="${deps.version}" property="already-published" />
+		<ant dir="." target="-benchmark-build-deps" inheritall="false">
+			<property name="scala-stm-published-version" value="${already-published}" />
+		</ant>
 	</target>
 </project>

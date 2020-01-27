@@ -5,6 +5,7 @@
         <conf name="scala" description="Scala langauge"/>
         <conf name="scala-2-11-8" description="Scala langauge"/>
         <conf name="scala-2-11-4" description="Scala langauge"/>
+        <conf name="scala-2-12-3" description="Scala langauge"/>
         <conf name="meta-collector" description="Meta data collector"/>
         
         <conf name="bm-actors" description="actors benchmarks" extends="scala-2-11-8" />
@@ -18,7 +19,7 @@
         <conf name="bm-scala-dotty" description="scala-dotty benchmarks" />
         <conf name="bm-scala-sat" description="scala-sat benchmarks" />
         <conf name="bm-scala-stdlib" description="scala-stdlib benchmarks" />
-        <conf name="bm-scala-stm" description="scala-stm benchmarks" />
+        <conf name="bm-scala-stm" description="scala-stm benchmarks" extends="scala-2-12-3" />
         <conf name="bm-twitter-finagle" description="twitter-finagle benchmarks" extends="scala-2-11-8" />
     </configurations>
     <dependencies>
@@ -34,6 +35,9 @@
         <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.4" conf="scala-2-11-4->master" />
         <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.4" conf="scala-2-11-4->master" />
         
+        <dependency org="org.scala-lang" name="scala-library" rev="2.12.3" conf="scala-2-12-3->master;bm-scala-stm->default" />
+        <dependency org="org.scala-lang" name="scala-compiler" rev="2.12.3" conf="scala-2-12-3->master" />
+        <dependency org="org.scala-lang" name="scala-reflect" rev="2.12.3" conf="scala-2-12-3->master" />
         
         <dependency org="org.reflections" name="reflections" rev="0.9.10" conf="meta-collector->default" />
         <dependency org="com.google.code.gson" name="gson" rev="2.8.5" conf="meta-collector->default" />
@@ -75,5 +79,7 @@
         <dependency org="io.reactivex" name="rxjava" rev="1.3.7" conf="bm-rx->default" />
         
         <dependency org="ch.epfl.lamp" name="dotty-compiler_0.12" rev="0.12.0" conf="bm-scala-dotty->default" />
+
+        <dependency org="org.renaissance" name="scala-stm" rev="20190417.1" conf="bm-scala-stm->default" />
     </dependencies>
 </ivy-module>

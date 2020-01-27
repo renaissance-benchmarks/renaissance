@@ -39,6 +39,9 @@
 			<ant dir="${root.project.basedir}/benchmarks/scala-stdlib" target="@{target}" inheritall="false">
 				<nested />
 			</ant>
+			<ant dir="${root.project.basedir}/benchmarks/scala-stm" target="@{target}" inheritall="false">
+				<nested />
+			</ant>
 			<ant dir="${root.project.basedir}/benchmarks/twitter-finagle" target="@{target}" inheritall="false">
 				<nested />
 			</ant>
@@ -79,7 +82,7 @@
 	<target name="compile-benchmarks" depends="tool-meta-collector">
 		<foreach-benchmark target="benchmark-jar">
 			<nested>
-			    <property name="verbose" value="true" />
+				<property name="verbose" value="true" />
 			</nested>
 		</foreach-benchmark>
 	</target>
