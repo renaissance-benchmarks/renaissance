@@ -14,6 +14,7 @@
 	<macrodef name="taskdef-scalac">
 		<attribute name="ivy-config" default="scala" />
 		<sequential>
+			<echo message="Defining [scalac /] with @{ivy-config} ..." />
 			<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="@{ivy-config}" />
 			<ivy:cachepath pathid="scala.path.id" conf="@{ivy-config}" />
 			<taskdef name="scalac" classname="scala.tools.ant.Scalac">
@@ -98,7 +99,7 @@
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachepath pathid="benchmark.path.id" />
-		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" >
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="debug">
 			<src path="src/main/scala" />
 			<classpath>
 				<path refid="benchmark.path.id" />
@@ -129,7 +130,7 @@
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachepath pathid="benchmark.path.id" />
-		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" >
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="debug">
 			<src path="src/main/scala" />
 			<src path="src/main/java" />
 			<classpath>
