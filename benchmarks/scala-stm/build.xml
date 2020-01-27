@@ -35,7 +35,7 @@
 
 		<ivy:resolve log="quiet" file="ivy-scala-stm.xml" />
 		<ivy:publish pubrevision="${deps.version}" organisation="org.renaissance" module="scala-stm" status="release" overwrite="true" forcedeliver="true" update="true" resolver="renaissance">
-			<artifacts pattern="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/[artifact].[ext]" />
+			<artifacts pattern="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-jars/[artifact].[ext]" />
 		</ivy:publish>
 	</target>
 
