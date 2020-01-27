@@ -27,7 +27,7 @@
         <dependency org="org.scala-lang" name="scala-compiler" rev="2.12.8" conf="scala->master" />
         <dependency org="org.scala-lang" name="scala-reflect" rev="2.12.8" conf="scala->master" />
         
-        <dependency org="org.scala-lang" name="scala-library" rev="2.11.8" conf="scala-2-11-8->master;bm-twitter-finagle->default" />
+	<dependency org="org.scala-lang" name="scala-library" rev="2.11.8" conf="scala-2-11-8->master;bm-twitter-finagle->default;bm-actors->default" />
         <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.8" conf="scala-2-11-8->master" />
         <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.8" conf="scala-2-11-8->master" />
         
