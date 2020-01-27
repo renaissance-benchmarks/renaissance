@@ -177,6 +177,7 @@
 			<arg file="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 			<arg line="${benchmark.path.id.spaces}" />
 		</java>
+		<echo file="${root.project.basedir}/out/benchmarks/${benchmark.name}/groups-jars.txt" message="${benchmark.name}=benchmarks/${benchmark.name}.jar,${benchmark.path.id}${line.separator}" />
 	</target>
 
 	<target name="benchmark-jar" depends="benchmark-compile" unless="bm-uptodate">
