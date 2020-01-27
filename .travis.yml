@@ -15,6 +15,7 @@ refs:
       - set -e
       - 'java -version'
       - 'javac -version'
+      - ant clean ivy-purge
       - ant clean-ivy-resolve-cache
       - ant fatjar
       #- ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
