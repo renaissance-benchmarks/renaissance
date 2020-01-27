@@ -43,6 +43,18 @@ public class Main {
             return result;
         }
 
+        @SuppressWarnings("unchecked")
+        public <T extends Annotation> T[] getMany(Class<T> annotation, T[] theType) {
+            Annotation all[] = benchmark.getAnnotations();
+            List<T> result = new ArrayList<>(all.length);
+            for (Annotation a : all) {
+                if (a.annotationType().equals(annotation)) {
+                    result.add((T)a);
+                }
+            }
+            return result.toArray(theType);
+        }
+
         public void store(String key, String value) {
             props.put(key, value);
         }
@@ -96,7 +108,11 @@ public class Main {
             try {
                 parameters = details.get(Benchmark.Parameters.class).value();
             } catch (NoSuchElementException e) {
-                parameters = new Benchmark.Parameter[0];
+                try {
+                    parameters = details.getMany(Benchmark.Parameter.class, new Benchmark.Parameter[0]);
+                } catch (NoSuchElementException e2) {
+                    parameters = new Benchmark.Parameter[0];
+                }
             }
             for (Benchmark.Parameter param : parameters) {
                 String prefix = "parameter." + param.name();
