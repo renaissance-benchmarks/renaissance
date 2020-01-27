@@ -184,7 +184,21 @@
 	</target>
 
 	<target name="benchmark-jar" depends="benchmark-compile" unless="bm-uptodate">
-		<jar destfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/${benchmark.name}.jar" basedir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes/">
+		<jar destfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/${benchmark.name}.jar">
+			<fileset dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes/" />
+			<!--
+				Trick: we would ideally want to only use
+
+				[fileset dir="src/main/resources" /]
+
+				but that would fail when the directory is not present.
+				Hence we use the inclusion filter + mapper that works even
+				when no files are matched.
+			-->
+			<mappedresources>
+			<fileset dir="src" includes="main/resources/**/*" />
+			<globmapper from="main/resources/*" to="*" />
+			</mappedresources>
 		</jar>
 		<touch file="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/${benchmark.name}.jar" />
 	</target>
