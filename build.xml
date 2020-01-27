@@ -92,6 +92,7 @@
 	</target>
 
 	<target name="clean" description="Remove generated files.">
+		<mkdir dir="out" />
 		<delete includeemptydirs="true">
 			<fileset dir="out">
 				<include name="**/*" />
