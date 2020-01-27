@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivysettings>
-    <settings defaultResolver="default" />
+    <settings defaultResolver="renaissance-chain" />
     <caches resolutionCacheDir="${ivy.settings.dir}/out/ivy-resolve-cache" />
 
     <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
@@ -8,4 +8,15 @@
     <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
     <include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml"/>
     <include url="${ivy.default.settings.dir}/ivysettings-default-chain.xml"/>
+
+    <resolvers>
+        <filesystem name="renaissance">
+            <ivy pattern="${ivy.settings.dir}/out/ivy-repo/repo/[module](-[branch])/[revision]/[artifact](-[branch])-[revision].[ext]" />
+            <artifact pattern="${ivy.settings.dir}/out/ivy-repo/[module]/[revision]/[artifact](-[branch])-[revision].[ext]" />
+        </filesystem>
+        <chain name="renaissance-chain">
+            <resolver ref="renaissance" />
+            <resolver ref="default" />
+        </chain>
+    </resolvers>
 </ivysettings>
