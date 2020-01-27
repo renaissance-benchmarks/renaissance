@@ -159,8 +159,11 @@
 			<compilerarg value="-Xlint:all" />
 		</scalac>
 	</target>
+	
+	<target name="benchmark-build-deps">
+	</target>
 
-	<target name="benchmark-compile" depends="-verbose,ivy-init,-benchmark-compile-java-scala,-benchmark-compile-java-only,-benchmark-compile-scala-only" unless="bm-uptodate">
+	<target name="benchmark-compile" depends="-verbose,ivy-init,benchmark-build-deps,-benchmark-compile-java-scala,-benchmark-compile-java-only,-benchmark-compile-scala-only" unless="bm-uptodate">
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachefileset setid="benchmark.path.id" conf="bm-${benchmark.name}" />
 		<pathconvert pathsep="," property="benchmark.path.id" refid="benchmark.path.id">
