@@ -5,6 +5,8 @@
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 	<property name="ivy.jar.file.length" value="" />
 	<property name="benchmark.scala.conf" value="scala" />
+	
+	<property file="${root.project.basedir}/renaissance.properties" />
 
 	<property name="rns.harness.jar" location="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
 	<property name="rns.meta.collector.jar" location="${root.project.basedir}/out/meta-collector/jars/meta-collector.jar" />

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." name="ant-fatjar" default="bad-call" xmlns:ivy="antlib:org.apache.ivy.ant">
     <property name="root.project.basedir" location="${basedir}/../" />
+    <import file="../common.xml" />
 
 	<target name="bad-call" description="Default target: do nothing.">
 	   <echo message="Not to be used directly!" />
@@ -9,6 +10,7 @@
 	<uptodate property="fatjar-uptodate" targetfile="${root.project.basedir}/out/fatjar/renaissance.jar">
 		<srcfiles dir="${root.project.basedir}/out/benchmarks/" includes="**/jars/*.jar" />
 		<srcfiles dir="${root.project.basedir}" includes="*.xml" />
+		<srcfiles dir="${root.project.basedir}/tools/" includes="ant-*.xml" />
 		<srcfiles file="${rns.meta.collector.jar}" />
 		<srcfiles dir="${root.project.basedir}/out/harness" includes="**/groups-jars.txt" />
 		<srcfiles dir="${root.project.basedir}/out/benchmarks" includes="**/groups-jars.txt" />
@@ -60,6 +62,8 @@
 
 			<manifest>
 				<attribute name="Main-Class" value="org.renaissance.core.Launcher" />
+				<attribute name="Implementation-Version" value="${renaissance.version}" />
+				<attribute name="Specification-Title" value="Renaissance Benchmark Suite" />
 			</manifest>
 		</jar>
 		<touch file="${root.project.basedir}/out/fatjar/renaissance.jar" />
