@@ -97,7 +97,7 @@
 		</delete>
 	</target>
 	
-	<target name="ivy-clean-cache" description="Clean Ivy cache" depends="ivy-init">
-		<ivy:cleancache />
+	<target name="clean-ivy-resolve-cache" description="Clean Ivy cache" depends="ivy-init">
+		<delete dir="out/ivy-resolve-cache" />
 	</target>
 </project>

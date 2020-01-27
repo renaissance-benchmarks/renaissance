@@ -15,7 +15,7 @@ refs:
       - set -e
       - 'java -version'
       - 'javac -version'
-      - ant ivy-clean-cache
+      - ant clean-ivy-resolve-cache
       - ant fatjar
       #- ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
       # Ensure that the JMH bundle contains non-empty BenchmarkList
@@ -119,9 +119,9 @@ before_script:
   - 'if [ "$USE_JDK" = "openjdk11" ]; then ./install-jdk.sh -f 11 --target "$JAVA_HOME"; fi'
   - 'if [ -n "$USE_JDK" ]; then export PATH="$JAVA_HOME/bin:$PATH"; fi'
 
-#cache:
-#  directories:
-#    - $HOME/.ivy2/cache
+cache:
+  directories:
+    - $HOME/.ivy2/cache
 #    - $HOME/.prebuilt
 
 #before_cache:
