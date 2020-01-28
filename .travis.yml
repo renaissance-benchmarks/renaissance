@@ -74,14 +74,14 @@ jobs:
       jdk: openjdk8
     - <<: *bundle
       jdk: oraclejdk8
-#    - <<: *bundle
-#      jdk: oraclejdk9
-#    - <<: *bundle
-#      env:
-#       - USE_JDK=openjdk11
-#    - <<: *bundle
-#      env:
-#        - USE_JDK=OpenJ9
+    - <<: *bundle
+      jdk: oraclejdk9
+    - <<: *bundle
+      env:
+       - USE_JDK=openjdk11
+    - <<: *bundle
+      env:
+        - USE_JDK=OpenJ9
 
 #    - <<: *bench
 #      os: osx
