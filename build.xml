@@ -6,7 +6,7 @@
 	<condition property="need-rt-jar">
 		<not>
 			<or>
-				<contains string="${ant.java.version}" substring="1." />
+				<matches string="${java.version}" pattern="^1." />
 				<available file="out/misc/rt-export.jar" />
 			</or>
 		</not>

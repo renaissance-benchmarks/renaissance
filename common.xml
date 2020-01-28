@@ -44,7 +44,7 @@
 		<and>
 			<isset property="benchmark.needs.rt.jar" />
 			<not>
-			     <contains string="${ant.java.version}" substring="1." />
+			     <matches string="${java.version}" pattern="^1." />
 			</not>
 		</and>
 	</condition>
