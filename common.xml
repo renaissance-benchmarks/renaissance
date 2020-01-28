@@ -40,12 +40,16 @@
 		</and>
 	</condition>
 	
+	<condition property="env.is.jdk.nine.plus">
+		<not>
+			<matches string="${java.version}" pattern="^1[.]" />
+		</not>
+	</condition>
+	
 	<condition property="use.exported.rt.jar" value="${root.project.basedir}/out/misc/rt-export.jar" else="">
 		<and>
 			<isset property="benchmark.needs.rt.jar" />
-			<not>
-			     <matches string="${java.version}" pattern="^1." />
-			</not>
+			<isset property="env.is.jdk.nine.plus" />
 		</and>
 	</condition>
 

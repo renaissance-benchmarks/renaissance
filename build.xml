@@ -3,16 +3,16 @@
 	<property file="local-settings.ini" />
 	<property name="root.project.basedir" location="${basedir}" />
 
-	<condition property="need-rt-jar">
-		<not>
-			<or>
-				<matches string="${java.version}" pattern="^1." />
-				<available file="out/misc/rt-export.jar" />
-			</or>
-		</not>
-	</condition>
-
 	<import file="./common.xml" />
+
+	<condition property="need.rt.jar">
+		<and>
+			<isset property="env.is.jdk.nine.plus" />
+			<not>
+				<available file="out/misc/rt-export.jar" />
+			</not>
+		</and>
+	</condition>
 
 	<macrodef name="foreach-benchmark">
 		<attribute name="target" default="main" />
@@ -69,7 +69,8 @@
 		<echo message="ant.version: ${ant.version}" />
 		<echo message="ant.java.version: ${ant.java.version}" />
 		<echo message="java.version: ${java.version}" />
-		<echo message="need-rt-jar: ${need.rt.jar}" />
+		<echo message="env.is.jdk.nine.plus: ${env.is.jdk.nine.plus}" />
+		<echo message="need.rt.jar: ${need.rt.jar}" />
 	</target>
 
 	<target name="main" depends="fatjar" description="Default target: create fat JAR.">
@@ -81,7 +82,7 @@
 		<ant dir="tools/meta-collector" target="jar" />
 	</target>
 
-	<target name="-get-rt-jar" if="need-rt-jar">
+	<target name="-get-rt-jar" if="need.rt.jar">
 		<mkdir dir="out/misc" />
 		<echo message="Creating rt.jar from JDK9+ modules ..." />
 		<java jar="tools/java9-rt-export.jar" fork="true">
@@ -89,9 +90,7 @@
 		</java>
 	</target>
 
-	<target name="get-rt-jar" depends="-get-rt-jar">
-		<echo message="${ant.java.version}" />
-	</target>
+	<target name="get-rt-jar" depends="-get-rt-jar" />
 
 	<target name="compile" depends="toolchain,compile-core,jar-harness,compile-benchmarks" />
 
