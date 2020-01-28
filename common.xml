@@ -113,6 +113,7 @@
 		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="debug">
 			<src path="src/main/scala" />
 			<classpath>
+				<path refid="path.rt.jar" />
 				<path refid="benchmark.path.id" />
 				<pathelement path="${root.project.basedir}/out/core/classes" />
 				<pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
