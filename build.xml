@@ -81,7 +81,9 @@
 		</java>
 	</target>
 
-	<target name="get-rt-jar" depends="-get-rt-jar" />
+	<target name="get-rt-jar" depends="-get-rt-jar">
+		<echo message="${ant.java.version}" />
+	</target>
 
 	<target name="compile" depends="toolchain,compile-core,jar-harness,compile-benchmarks" />
 
