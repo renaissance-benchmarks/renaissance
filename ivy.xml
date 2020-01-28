@@ -3,6 +3,7 @@
     <configurations>
         <conf name="harness" description="Harness"/>
         <conf name="scala" description="Scala langauge"/>
+        <conf name="scala-2-11-7" description="Scala langauge"/>
         <conf name="scala-2-11-8" description="Scala langauge"/>
         <conf name="scala-2-11-4" description="Scala langauge"/>
         <conf name="scala-2-12-3" description="Scala langauge"/>
@@ -17,7 +18,7 @@
         <conf name="bm-neo4j" description="neo4j benchmarks"  extends="scala-2-11-4"/>
         <conf name="bm-rx" description="rx benchmarks" extends="scala-2-11-8" />
         <conf name="bm-scala-dotty" description="scala-dotty benchmarks" />
-        <conf name="bm-scala-sat" description="scala-sat benchmarks" />
+        <conf name="bm-scala-sat" description="scala-sat benchmarks" extends="scala-2-11-7" />
         <conf name="bm-scala-stdlib" description="scala-stdlib benchmarks" />
         <conf name="bm-scala-stm" description="scala-stm benchmarks" extends="scala-2-12-3" />
         <conf name="bm-twitter-finagle" description="twitter-finagle benchmarks" extends="scala-2-11-8" />
@@ -31,6 +32,10 @@
         <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.8" conf="scala-2-11-8->master" />
         <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.8" conf="scala-2-11-8->master" />
         
+        <dependency org="org.scala-lang" name="scala-library" rev="2.11.7" conf="scala-2-11-7->master;bm-scala-sat->default" />
+        <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.7" conf="scala-2-11-7->master" />
+        <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.7" conf="scala-2-11-7->master" />
+
         <dependency org="org.scala-lang" name="scala-library" rev="2.11.4" conf="scala-2-11-4->master;bm-neo4j->default" />
         <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.4" conf="scala-2-11-4->master" />
         <dependency org="org.scala-lang" name="scala-reflect" rev="2.11.4" conf="scala-2-11-4->master" />
@@ -81,5 +86,6 @@
         <dependency org="ch.epfl.lamp" name="dotty-compiler_0.12" rev="0.12.0" conf="bm-scala-dotty->default" />
 
         <dependency org="org.renaissance" name="scala-stm" rev="20190417.1" conf="bm-scala-stm->default" />
+        <dependency org="org.renaissance" name="scala-sat" rev="20190704.1" conf="bm-scala-sat->default" />
     </dependencies>
 </ivy-module>

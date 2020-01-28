@@ -2,12 +2,60 @@
 <project basedir="." name="scala-sat" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
 	<property name="root.project.basedir" location="${basedir}/../../" />
 	<property name="benchmark.name" value="scala-sat" />
-	<property name="benchmark.scala.conf" value="scala-2-11-8" />
+	<property name="benchmark.scala.conf" value="scala-2-11-7" />
+	<property name="deps.version" value="20190704.1" />
 	<import file="../../common.xml" />
 
 	<target name="main"
 			depends="benchmark-compile"
 			description="Default target: compile only."
 		>
+	</target>
+
+	<condition property="scala-sat-already-published">
+		<equals arg1="${scala-sat-published-version}" arg2="${deps.version}" />
+	</condition>
+
+	<target name="-benchmark-build-deps" depends="ivy-init" unless="scala-sat-already-published">
+		<taskdef-scalac ivy-config="${benchmark.scala.conf}" />
+
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/cafesat-classes" />
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/smtlib-classes" />
+		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/deps-jars" />
+
+		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="scala-2-11-7" />
+		<ivy:cachepath pathid="benchmark.path.id" />
+
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/cafesat-classes">
+			<src path="cafesat/src/main/scala/" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+			</classpath>
+		</scalac>
+
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/smtlib-classes">
+			<src path="scala-smtlib/src/main/scala/" />
+			<classpath>
+				<path refid="benchmark.path.id" />
+				<path location="${root.project.basedir}/out/benchmarks/${benchmark.name}/cafesat-classes" />
+			</classpath>
+		</scalac>
+
+		<jar destfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/deps-jars/scala-smtlib.jar" basedir="${root.project.basedir}/out/benchmarks/${benchmark.name}/smtlib-classes">
+		</jar>
+		<jar destfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/deps-jars/cafesat.jar" basedir="${root.project.basedir}/out/benchmarks/${benchmark.name}/cafesat-classes">
+		</jar>
+
+		<ivy:resolve log="quiet" file="ivy-scala-sat.xml" />
+		<ivy:publish pubrevision="${deps.version}" organisation="org.renaissance" module="scala-sat" status="release" overwrite="true" forcedeliver="true" update="true" resolver="renaissance">
+			<artifacts pattern="${root.project.basedir}/out/benchmarks/${benchmark.name}/deps-jars/[artifact].[ext]" />
+		</ivy:publish>
+	</target>
+
+	<target name="benchmark-build-deps" depends="ivy-init">
+		<ivy:findrevision organisation="org.renaissance" module="scala-sat" revision="${deps.version}" property="already-published" />
+		<ant dir="." target="-benchmark-build-deps" inheritall="false">
+			<property name="scala-sat-published-version" value="${already-published}" />
+		</ant>
 	</target>
 </project>
