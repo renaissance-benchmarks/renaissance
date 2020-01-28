@@ -4,12 +4,12 @@
 	<property name="root.project.basedir" location="${basedir}" />
 
 	<condition property="need-rt-jar">
-		<and>
-			<javaversion atleast="9" />
-			<not>
+		<not>
+			<or>
+				<contains string="${ant.java.version}" substring="1." />
 				<available file="out/misc/rt-export.jar" />
-			</not>
-		</and>
+			</or>
+		</not>
 	</condition>
 
 	<import file="./common.xml" />

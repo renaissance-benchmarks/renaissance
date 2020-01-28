@@ -43,7 +43,9 @@
 	<condition property="use.exported.rt.jar" value="${root.project.basedir}/out/misc/rt-export.jar" else="">
 		<and>
 			<isset property="benchmark.needs.rt.jar" />
-			<javaversion atleast="9" />
+			<not>
+			     <contains string="${ant.java.version}" substring="1." />
+			</not>
 		</and>
 	</condition>
 
