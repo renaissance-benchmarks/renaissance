@@ -15,6 +15,7 @@ refs:
       - set -e
       - 'java -version'
       - 'javac -version'
+      - ant env
       - ant clean
       - ant clean-ivy-resolve-cache
       - ant fatjar

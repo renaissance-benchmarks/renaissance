@@ -64,6 +64,14 @@
 		<echoproperties format="text" />
 	</target>
 
+	<target name="env" description="Print environment details">
+		<echo message="Renassaince version: ${renaissance.version}" />
+		<echo message="ant.version: ${ant.version}" />
+		<echo message="ant.java.version: ${ant.java.version}" />
+		<echo message="java.version: ${java.version}" />
+		<echo message="need-rt-jar: ${need.rt.jar}" />
+	</target>
+
 	<target name="main" depends="fatjar" description="Default target: create fat JAR.">
 	</target>
 
