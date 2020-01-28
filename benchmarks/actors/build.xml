@@ -3,6 +3,7 @@
 	<property name="root.project.basedir" location="${basedir}/../../" />
 	<property name="benchmark.name" value="actors" />
 	<property name="benchmark.scala.conf" value="scala-2-11-8" />
+	<property name="benchmark.needs.rt.jar" value="true" />
 	<import file="../../common.xml" />
 
 	<target name="main"

@@ -3,6 +3,15 @@
 	<property file="local-settings.ini" />
 	<property name="root.project.basedir" location="${basedir}" />
 
+	<condition property="need-rt-jar">
+		<and>
+			<javaversion atleast="9" />
+			<not>
+				<available file="out/misc/rt-export.jar" />
+			</not>
+		</and>
+	</condition>
+
 	<import file="./common.xml" />
 
 	<macrodef name="foreach-benchmark">
@@ -58,11 +67,21 @@
 	<target name="main" depends="fatjar" description="Default target: create fat JAR.">
 	</target>
 
-	<target name="toolchain" depends="tool-meta-collector" />
+	<target name="toolchain" depends="tool-meta-collector,get-rt-jar" />
 
 	<target name="tool-meta-collector" depends="compile-core">
 		<ant dir="tools/meta-collector" target="jar" />
 	</target>
+
+	<target name="-get-rt-jar" if="need-rt-jar">
+		<mkdir dir="out/misc" />
+		<echo message="Creating rt.jar from JDK9+ modules ..." />
+		<java jar="tools/java9-rt-export.jar" fork="true">
+			<arg value="out/misc/rt-export.jar" />
+		</java>
+	</target>
+
+	<target name="get-rt-jar" depends="-get-rt-jar" />
 
 	<target name="compile" depends="toolchain,compile-core,jar-harness,compile-benchmarks" />
 

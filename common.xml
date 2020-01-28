@@ -39,6 +39,15 @@
 			<length file="${ivy.jar.file}" when="equal" length="1282424" />
 		</and>
 	</condition>
+	
+	<condition property="use.exported.rt.jar" value="${root.project.basedir}/out/misc/rt-export.jar" else="">
+		<and>
+			<isset property="benchmark.needs.rt.jar" />
+			<javaversion atleast="9" />
+		</and>
+	</condition>
+
+	<path id="path.rt.jar" location="${use.exported.rt.jar}" />
 
 	<target name="ivy-fetch" unless="ivy.fetched">
 		<mkdir dir="${ivy.jar.dir}" />
@@ -134,6 +143,7 @@
 			<src path="src/main/scala" />
 			<src path="src/main/java" />
 			<classpath>
+				<path refid="path.rt.jar" />
 				<path refid="benchmark.path.id" />
 				<pathelement path="${root.project.basedir}/out/core/classes" />
 				<pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
@@ -153,6 +163,7 @@
 			<src path="src/main/scala" />
 			<src path="src/main/java" />
 			<classpath>
+				<path refid="path.rt.jar" />
 				<path refid="benchmark.path.id" />
 				<pathelement path="${root.project.basedir}/out/core/classes" />
 				<pathelement path="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />

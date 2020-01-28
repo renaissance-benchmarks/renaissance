@@ -3,6 +3,7 @@
 	<property name="root.project.basedir" location="${basedir}/../../" />
 	<property name="benchmark.name" value="scala-sat" />
 	<property name="benchmark.scala.conf" value="scala-2-11-7" />
+	<property name="benchmark.needs.rt.jar" value="true" />
 	<property name="deps.version" value="20190704.1" />
 	<import file="../../common.xml" />
 
@@ -29,6 +30,7 @@
 		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/cafesat-classes">
 			<src path="cafesat/src/main/scala/" />
 			<classpath>
+				<path refid="path.rt.jar" />
 				<path refid="benchmark.path.id" />
 			</classpath>
 		</scalac>
@@ -36,6 +38,7 @@
 		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/smtlib-classes">
 			<src path="scala-smtlib/src/main/scala/" />
 			<classpath>
+				<path refid="path.rt.jar" />
 				<path refid="benchmark.path.id" />
 				<path location="${root.project.basedir}/out/benchmarks/${benchmark.name}/cafesat-classes" />
 			</classpath>
