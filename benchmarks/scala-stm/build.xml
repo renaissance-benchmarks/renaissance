@@ -13,7 +13,7 @@
 		<equals arg1="${scala-stm-published-version}" arg2="${deps.version}" />
 	</condition>
 
-	<target name="-benchmark-build-deps" depends="ivy-init" unless="scala-stm-already-published">
+	<target name="-benchmark-build-deps" unless="scala-stm-already-published">
 		<taskdef-scalac ivy-config="${benchmark.scala.conf}" />
 
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-classes" />
@@ -39,7 +39,7 @@
 		</ivy:publish>
 	</target>
 
-	<target name="benchmark-build-deps" depends="ivy-init">
+	<target name="benchmark-build-deps">
 		<ivy:findrevision organisation="org.renaissance" module="scala-stm" revision="${deps.version}" property="already-published" />
 		<ant dir="." target="-benchmark-build-deps" inheritall="false">
 			<property name="scala-stm-published-version" value="${already-published}" />

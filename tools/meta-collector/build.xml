@@ -31,7 +31,7 @@
 		<touch file="${rns.meta.collector.jar}" />
 	</target>
 
-	<target name="compile" description="Compile meta collector." depends="ivy-init" unless="collector-uptodate">
+	<target name="compile" description="Compile meta collector." unless="collector-uptodate">
 		<mkdir dir="${root.project.basedir}/out/meta-collector/classes" />
 		<ivy:retrieve file="${root.project.basedir}/ivy.xml" conf="meta-collector" />
 		<ivy:cachepath pathid="collector.path.id" conf="meta-collector" />

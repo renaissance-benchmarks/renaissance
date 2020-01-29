@@ -95,7 +95,7 @@
 
 	<target name="compile" depends="toolchain,compile-core,jar-harness,compile-benchmarks" />
 
-	<target name="fatjar" depends="ivy-init,toolchain,compile-core,jar-harness,compile-benchmarks" description="Create fat JAR.">
+	<target name="fatjar" depends="toolchain,compile-core,jar-harness,compile-benchmarks" description="Create fat JAR.">
 		<ant dir="tools" antfile="ant-fatjar.xml" target="-fatjar" inheritall="false" />
 	</target>
 
@@ -119,25 +119,15 @@
 		</foreach-benchmark>
 	</target>
 
-	<target name="dist-clean" description="Remove generated files including Ivy.">
+	<target name="clean" description="Remove all generated files.">
 		<delete dir="out" />
 	</target>
-
-	<target name="clean" description="Remove generated files.">
-		<mkdir dir="out" />
-		<delete includeemptydirs="true">
-			<fileset dir="out">
-				<include name="**/*" />
-				<exclude name="ivy/" />
-			</fileset>
-		</delete>
-	</target>
 	
-	<target name="clean-ivy-resolve-cache" description="Clean Ivy cache" depends="ivy-init">
+	<target name="clean-ivy-resolve-cache" description="Clean Ivy cache">
 		<delete dir="out/ivy-resolve-cache" />
 	</target>
 
-	<target name="ivy-purge" description="Completely remove Ivy cache" depends="ivy-init">
+	<target name="ivy-purge" description="Completely remove Ivy cache">
 		<ivy:cleancache />
 	</target>
 </project>

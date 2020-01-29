@@ -24,7 +24,7 @@
 		<touch file="${rns.harness.jar}" />
 	</target>
 
-	<target name="compile" description="Compile suite harness." depends="ivy-init" unless="harness-uptodate">
+	<target name="compile" description="Compile suite harness." unless="harness-uptodate">
 		<taskdef-scalac ivy-config="scala" />
 
 		<mkdir dir="${root.project.basedir}/out/harness/classes" />

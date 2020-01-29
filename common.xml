@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." name="shared" xmlns:ivy="antlib:org.apache.ivy.ant">
-	<property name="ivy.install.version" value="2.5.0" />
-	<property name="ivy.jar.dir" value="${root.project.basedir}/out/ivy" />
-	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	<property name="ivy.jar.file" value="${root.project.basedir}/tools/ivy-2.5.0.jar" />
 	<property name="benchmark.scala.conf" value="scala" />
 	
 	<property file="${root.project.basedir}/renaissance.properties" />
@@ -53,20 +51,9 @@
 	</condition>
 
 	<path id="path.rt.jar" location="${use.exported.rt.jar}" />
-
-	<target name="ivy-fetch" unless="ivy.fetched">
-		<mkdir dir="${ivy.jar.dir}" />
-		<echo message="installing ivy..." />
-		<get src="https://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true" />
-	</target>
-
-	<target name="ivy-init" depends="ivy-fetch" unless="ivy.loaded">
-		<path id="ivy.lib.path">
-			<fileset dir="${ivy.jar.dir}" includes="*.jar" />
-		</path>
-		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
-		<ivy:settings file="${root.project.basedir}/ivysettings.xml"/>
-	</target>
+	
+	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpath="${ivy.jar.file}" />
+	<ivy:settings file="${root.project.basedir}/ivysettings.xml"/>
 
 	<uptodate property="bm-uptodate" targetfile="${root.project.basedir}/out/benchmarks/${benchmark.name}/jars/${benchmark.name}.jar">
 		<srcfiles dir="src" includes="**/*" />
@@ -181,7 +168,7 @@
 	<target name="benchmark-build-deps">
 	</target>
 
-	<target name="benchmark-compile" depends="-verbose,ivy-init,benchmark-build-deps,-benchmark-compile-java-scala,-benchmark-compile-java-only,-benchmark-compile-scala-only" unless="bm-uptodate">
+	<target name="benchmark-compile" depends="-verbose,benchmark-build-deps,-benchmark-compile-java-scala,-benchmark-compile-java-only,-benchmark-compile-scala-only" unless="bm-uptodate">
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachefileset setid="benchmark.path.id" conf="bm-${benchmark.name}" />
 		<pathconvert pathsep="," property="benchmark.path.id" refid="benchmark.path.id">
