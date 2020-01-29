@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." name="shared" xmlns:ivy="antlib:org.apache.ivy.ant">
-	<property name="ivy.install.version" value="2.4.0" />
+	<property name="ivy.install.version" value="2.5.0" />
 	<property name="ivy.jar.dir" value="${root.project.basedir}/out/ivy" />
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
-	<property name="ivy.jar.file.length" value="" />
 	<property name="benchmark.scala.conf" value="scala" />
 	
 	<property file="${root.project.basedir}/renaissance.properties" />
@@ -36,7 +35,7 @@
 			<resourceexists>
 				<file file="${ivy.jar.file}" />
 			</resourceexists>
-			<length file="${ivy.jar.file}" when="equal" length="1282424" />
+			<length file="${ivy.jar.file}" when="equal" length="1402646" />
 		</and>
 	</condition>
 	
