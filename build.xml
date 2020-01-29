@@ -85,6 +85,7 @@
 	<target name="-get-rt-jar" if="need.rt.jar">
 		<mkdir dir="out/misc" />
 		<echo message="Creating rt.jar from JDK9+ modules ..." />
+		<!-- https://github.com/retronym/java9-rt-export -->
 		<java jar="tools/java9-rt-export.jar" fork="true">
 			<arg value="out/misc/rt-export.jar" />
 		</java>
