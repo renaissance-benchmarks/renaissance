@@ -94,8 +94,8 @@ jobs:
 #      os: osx
 #      osx_image: xcode9.3
 #      jdk: oraclejdk9
-#    - <<: *bench
-#      jdk: openjdk8
+    - <<: *bench
+      jdk: openjdk8
 #    - <<: *bench
 #      jdk: oraclejdk8
 #    - <<: *bench
@@ -111,7 +111,7 @@ jobs:
 stages:
 #  - "Basic checks"
   - bundle
-#  - benchmark
+  - benchmark
 
 before_install:
   - 'if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install ant; fi'
@@ -132,7 +132,7 @@ before_script:
 cache:
   directories:
     - $HOME/.ivy2/cache
-#    - $HOME/.prebuilt
+    - $HOME/.prebuilt
 
 #before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
