@@ -90,19 +90,19 @@ jobs:
 #      env:
 #       - USE_JDK=openjdk13
 
-#    - <<: *bench
-#      os: osx
-#      osx_image: xcode9.3
-#      jdk: oraclejdk9
+    - <<: *bench
+      os: osx
+      osx_image: xcode9.3
+      jdk: oraclejdk9
     - <<: *bench
       jdk: openjdk8
-#    - <<: *bench
-#      jdk: oraclejdk8
-#    - <<: *bench
-#      jdk: oraclejdk9
-#    - <<: *bench
-#      env:
-#       - USE_JDK=openjdk11
+    - <<: *bench
+      jdk: oraclejdk8
+    - <<: *bench
+      jdk: oraclejdk9
+    - <<: *bench
+      env:
+       - USE_JDK=openjdk11
     # Disabled because of #131
     #- <<: *bench
     #  env:
