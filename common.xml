@@ -181,7 +181,7 @@
 		</pathconvert>
 		<pathconvert pathsep=" " property="benchmark.path.id.spaces" refid="benchmark.path.id">
 		</pathconvert>
-		<java fork="true" jar="${root.project.basedir}/out/meta-collector/jars/meta-collector.jar" output="${root.project.basedir}/out/benchmarks/${benchmark.name}/details.props" logError="true">
+		<java fork="true" jar="${root.project.basedir}/out/meta-collector/jars/meta-collector.jar" output="${root.project.basedir}/out/benchmarks/${benchmark.name}/benchmark-details.properties" logError="true">
 			<arg file="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 			<arg line="${benchmark.path.id.spaces}" />
 		</java>

@@ -14,7 +14,7 @@
 		<srcfiles file="${rns.meta.collector.jar}" />
 		<srcfiles dir="${root.project.basedir}/out/harness" includes="**/groups-jars.txt" />
 		<srcfiles dir="${root.project.basedir}/out/benchmarks" includes="**/groups-jars.txt" />
-		<srcfiles dir="${root.project.basedir}/out/benchmarks" includes="**/details.props" />
+		<srcfiles dir="${root.project.basedir}/out/benchmarks" includes="**/benchmark-details.properties" />
 		<srcfiles file="${root.project.basedir}/out/meta/groups-jars.txt" />
 		<srcfiles file="${root.project.basedir}/out/meta/benchmark-details.properties" />
 	</uptodate>
@@ -29,7 +29,7 @@
 		</concat>
 
 		<concat destfile="${root.project.basedir}/out/meta/benchmark-details.properties">
-			<fileset dir="${root.project.basedir}/out/benchmarks" includes="**/details.props" />
+			<fileset dir="${root.project.basedir}/out/benchmarks" includes="**/benchmark-details.properties" />
 		</concat>
 
 		<ivy:resolve log="queit" file="${root.project.basedir}/ivy.xml" />
@@ -73,15 +73,11 @@
 	<target name="-fatjar" depends="-fatjar-actual" />
 	
 	<target name="-onejar-actual">
-		<mkdir dir="${root.project.basedir}/out/one-${one.name}/meta" />
+		<mkdir dir="${root.project.basedir}/out/one-${one.name}" />
 
-        <concat destfile="${root.project.basedir}/out/one-${one.name}/meta/groups-jars.txt">
+        <concat destfile="${root.project.basedir}/out/one-${one.name}/groups-jars.txt">
             <fileset dir="${root.project.basedir}/out/harness" includes="**/groups-jars.txt" />
             <fileset dir="${root.project.basedir}/out/benchmarks/${one.name}/" includes="**/groups-jars.txt" />
-        </concat>
-		
-		<concat destfile="${root.project.basedir}/out/one-${one.name}/meta/benchmark-details.properties">
-            <fileset dir="${root.project.basedir}/out/benchmarks/${one.name}" includes="**/details.props" />
         </concat>
 
         <ivy:resolve log="queit" file="${root.project.basedir}/ivy.xml" conf="bm-${one.name},harness" />
@@ -90,7 +86,7 @@
         <jar destfile="${root.project.basedir}/out/fatjar/one-${one.name}.jar">
             <fileset dir="${root.project.basedir}/out/core/classes" />
             <fileset file="${root.project.basedir}/out/one-${one.name}/meta/groups-jars.txt" />
-            <fileset file="${root.project.basedir}/out/one-${one.name}/meta/benchmark-details.properties" />
+            <fileset file="${root.project.basedir}/out/benchmarks/${one.name}/benchmark-details.properties" />
             <mappedresources>
                 <fileset file="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
                 <globmapper from="*.jar" to="renaissance-harness/*.jar" />
