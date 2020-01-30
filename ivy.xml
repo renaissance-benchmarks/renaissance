@@ -21,6 +21,7 @@
         <conf name="bm-scala-sat" description="scala-sat benchmarks" extends="scala-2-11-7" />
         <conf name="bm-scala-stdlib" description="scala-stdlib benchmarks" />
         <conf name="bm-scala-stm" description="scala-stm benchmarks" extends="scala-2-12-3" />
+        <conf name="bm-scala-stm-deps" description="scala-stm benchmark dependencies" extends="scala-2-12-3" />
         <conf name="bm-twitter-finagle" description="twitter-finagle benchmarks" extends="scala-2-11-8" />
     </configurations>
     <dependencies>
@@ -85,7 +86,9 @@
         
         <dependency org="ch.epfl.lamp" name="dotty-compiler_0.12" rev="0.12.0" conf="bm-scala-dotty->default" />
 
-        <dependency org="org.renaissance" name="scala-stm" rev="20190417.1" conf="bm-scala-stm->default" />
+        <dependency org="org.renaissance" name="scala-stm" rev="20190417.2" conf="bm-scala-stm->default" />
+        <dependency org="junit" name="junit" rev="4.12" conf="bm-scala-stm-deps->default" />
+        <dependency org="org.scalatest" name="scalatest_2.12" rev="3.0.4" conf="bm-scala-stm-deps->default" />
         <dependency org="org.renaissance" name="scala-sat" rev="20190704.1" conf="bm-scala-sat->default" />
     </dependencies>
 </ivy-module>

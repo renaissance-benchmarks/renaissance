@@ -3,7 +3,7 @@
 	<property name="root.project.basedir" location="${basedir}/../../" />
 	<property name="benchmark.name" value="scala-stm" />
 	<property name="benchmark.scala.conf" value="scala-2-12-3" />
-	<property name="deps.version" value="20190417.1" />
+	<property name="deps.version" value="20190417.2" />
 	<import file="../../common.xml" />
 
 	<target name="main" depends="benchmark-compile" description="Default target: compile only.">
@@ -19,13 +19,15 @@
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-classes" />
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-jars" />
 
-		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="scala-2-12-3" />
+		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-scala-stm-deps" />
 		<ivy:cachepath pathid="benchmark.path.id" />
 
 		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/stmlib-classes">
 			<src path="scala-stm-library/src/main/scala/" />
+			<src path="scala-stm-library/src/test/scala/" />
 			<classpath>
 				<path refid="benchmark.path.id" />
+				<path location="scala-stm-library/lib/stmbench7-VELOX-1.2.jar" />
 			</classpath>
 		</scalac>
 
