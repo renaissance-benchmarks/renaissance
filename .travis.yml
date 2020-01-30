@@ -86,9 +86,9 @@ jobs:
     - <<: *bundle
       env:
        - USE_JDK=openjdk12
-    - <<: *bundle
-      env:
-       - USE_JDK=openjdk13
+#    - <<: *bundle
+#      env:
+#       - USE_JDK=openjdk13
 
 #    - <<: *bench
 #      os: osx
