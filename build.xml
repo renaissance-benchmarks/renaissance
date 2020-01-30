@@ -118,6 +118,18 @@
 			</nested>
 		</foreach-benchmark>
 	</target>
+	
+	<target name="compile-one-benchmark" depends="toolchain">
+		<fail unless="one.name" message="Specify one.name property with benchmark name." />
+		<ant dir="${root.project.basedir}/benchmarks/${one.name}" target="benchmark-jar" inheritall="false" />
+	</target>
+	
+	<target name="one" depends="toolchain,compile-core,jar-harness,compile-one-benchmark" description="Create fat JAR with one benchmark group only.">
+		<fail unless="one.name" message="Specify one.name property with benchmark name." />
+		<ant dir="tools" antfile="ant-fatjar.xml" target="-onejar-actual" inheritall="false">
+			<property name="one.name" value="${one.name}" />
+		</ant>
+	</target>
 
 	<target name="clean" description="Remove all generated files.">
 		<delete dir="out" />

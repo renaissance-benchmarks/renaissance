@@ -71,5 +71,55 @@
 	</target>
 
 	<target name="-fatjar" depends="-fatjar-actual" />
+	
+	<target name="-onejar-actual">
+		<mkdir dir="${root.project.basedir}/out/one-${one.name}/meta" />
+
+        <concat destfile="${root.project.basedir}/out/one-${one.name}/meta/groups-jars.txt">
+            <fileset dir="${root.project.basedir}/out/harness" includes="**/groups-jars.txt" />
+            <fileset dir="${root.project.basedir}/out/benchmarks/${one.name}/" includes="**/groups-jars.txt" />
+        </concat>
+		
+		<concat destfile="${root.project.basedir}/out/one-${one.name}/meta/benchmark-details.properties">
+            <fileset dir="${root.project.basedir}/out/benchmarks/${one.name}" includes="**/details.props" />
+        </concat>
+
+        <ivy:resolve log="queit" file="${root.project.basedir}/ivy.xml" conf="bm-${one.name},harness" />
+        <ivy:cachefileset setid="one.path.id" />
+
+        <jar destfile="${root.project.basedir}/out/fatjar/one-${one.name}.jar">
+            <fileset dir="${root.project.basedir}/out/core/classes" />
+            <fileset file="${root.project.basedir}/out/one-${one.name}/meta/groups-jars.txt" />
+            <fileset file="${root.project.basedir}/out/one-${one.name}/meta/benchmark-details.properties" />
+            <mappedresources>
+                <fileset file="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
+                <globmapper from="*.jar" to="renaissance-harness/*.jar" />
+            </mappedresources>
+
+            <mappedresources>
+                <fileset refid="one.path.id" />
+                <chainedmapper>
+                    <flattenmapper />
+                    <globmapper from="*.jar" to="lib/*.jar" />
+                </chainedmapper>
+            </mappedresources>
+
+            <mappedresources>
+                <fileset dir="${root.project.basedir}/out/benchmarks/${one.name}/jars/" includes="*.jar" />
+                <chainedmapper>
+                    <flattenmapper />
+                    <globmapper from="*.jar" to="benchmarks/*.jar" />
+                </chainedmapper>
+            </mappedresources>
+
+            <manifest>
+                <attribute name="Main-Class" value="org.renaissance.core.Launcher" />
+                <attribute name="Implementation-Version" value="${renaissance.version}" />
+                <attribute name="Specification-Title" value="Renaissance Benchmark Suite" />
+                <attribute name="Specification-Version" value="${renaissance.version}" />
+            </manifest>
+        </jar>
+        <touch file="${root.project.basedir}/out/fatjar/one-${one.name}.jar" />
+	</target>
 </project>
 
