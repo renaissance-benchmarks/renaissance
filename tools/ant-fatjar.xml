@@ -7,7 +7,7 @@
 	   <echo message="Not to be used directly!" />
 	</target>
 
-	<uptodate property="fatjar-uptodate" targetfile="${root.project.basedir}/out/fatjar/renaissance.jar">
+	<uptodate property="fatjar-uptodate" targetfile="${root.project.basedir}/out/renaissance-${renaissance.version}.jar">
 		<srcfiles dir="${root.project.basedir}/out/benchmarks/" includes="**/jars/*.jar" />
 		<srcfiles dir="${root.project.basedir}" includes="*.xml" />
 		<srcfiles dir="${root.project.basedir}/tools/" includes="ant-*.xml" />
@@ -20,7 +20,6 @@
 	</uptodate>
 
 	<target name="-fatjar-actual" unless="fatjar-uptodate">
-		<mkdir dir="${root.project.basedir}/out/fatjar/root" />
 		<mkdir dir="${root.project.basedir}/out/meta" />
 
 		<concat destfile="${root.project.basedir}/out/meta/groups-jars.txt">
@@ -35,7 +34,7 @@
 		<ivy:resolve log="queit" file="${root.project.basedir}/ivy.xml" />
 		<ivy:cachefileset setid="everything.path.id" />
 
-		<jar destfile="${root.project.basedir}/out/fatjar/renaissance.jar">
+		<jar destfile="${root.project.basedir}/out/renaissance-${renaissance.version}.jar">
 			<fileset dir="${root.project.basedir}/out/core/classes" />
 			<fileset file="${root.project.basedir}/out/meta/groups-jars.txt" />
 			<fileset file="${root.project.basedir}/out/meta/benchmark-details.properties" />
@@ -67,7 +66,7 @@
 				<attribute name="Specification-Version" value="${renaissance.version}" />
 			</manifest>
 		</jar>
-		<touch file="${root.project.basedir}/out/fatjar/renaissance.jar" />
+		<touch file="${root.project.basedir}/out/renaissance-${renaissance.version}.jar" />
 	</target>
 
 	<target name="-fatjar" depends="-fatjar-actual" />
@@ -83,9 +82,9 @@
         <ivy:resolve log="queit" file="${root.project.basedir}/ivy.xml" conf="bm-${one.name},harness" />
         <ivy:cachefileset setid="one.path.id" />
 
-        <jar destfile="${root.project.basedir}/out/fatjar/one-${one.name}.jar">
+        <jar destfile="${root.project.basedir}/out/one-${one.name}.jar">
             <fileset dir="${root.project.basedir}/out/core/classes" />
-            <fileset file="${root.project.basedir}/out/one-${one.name}/meta/groups-jars.txt" />
+            <fileset file="${root.project.basedir}/out/one-${one.name}/groups-jars.txt" />
             <fileset file="${root.project.basedir}/out/benchmarks/${one.name}/benchmark-details.properties" />
             <mappedresources>
                 <fileset file="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
@@ -115,7 +114,7 @@
                 <attribute name="Specification-Version" value="${renaissance.version}" />
             </manifest>
         </jar>
-        <touch file="${root.project.basedir}/out/fatjar/one-${one.name}.jar" />
+        <touch file="${root.project.basedir}/out/one-${one.name}.jar" />
 	</target>
 </project>
 
