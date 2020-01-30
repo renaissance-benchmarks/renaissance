@@ -27,7 +27,7 @@ refs:
       - 'ls "$HOME/.prebuilt"'
       - 'rm -f "$HOME/.prebuilt"/*.jar'
       # Store bundles in cache directory
-      - 'cp out/fatjar/renaissance.jar "$HOME/.prebuilt/$(git rev-parse HEAD).jar"'
+      - 'cp "out/renaissance-$RENAISSANCE_VERSION.jar" "$HOME/.prebuilt/$(git rev-parse HEAD).jar"'
       #- 'cp renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar "$HOME/.prebuilt/$(git rev-parse HEAD)-jmh-assembly.jar"'
 
   - &bench
@@ -36,16 +36,16 @@ refs:
       # Fail the script if any command fails
       - set -e
       # Get bundles from cache or build them
-      - mkdir -p out/fatjar
-      - CACHED_JAR_NAME="$HOME/.prebuilt/$(git rev-parse HEAD).jar"; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" out/fatjar/renaissance.jar; else ant fatjar; fi
+      - mkdir -p out
+      - CACHED_JAR_NAME="$HOME/.prebuilt/$(git rev-parse HEAD).jar"; if [ -e "$CACHED_JAR_NAME" ]; then cp "$CACHED_JAR_NAME" "out/renaissance-$RENAISSANCE_VERSION.jar"; else ant fatjar; fi
       #- mkdir -p renaissance-jmh/target/scala-2.12
       #- CACHED_JMH_JAR_NAME="$HOME/.prebuilt/$(git rev-parse HEAD)-jmh-assembly.jar"; if [ -e "$CACHED_JMH_JAR_NAME" ]; then cp "$CACHED_JMH_JAR_NAME" renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar; else ./tools/sbt/bin/sbt renaissanceJmh/jmh:assembly; fi
       # Ensure that the JMH bundle contains non-empty BenchmarkList
       #- 'test $(unzip -p renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar META-INF/BenchmarkList | wc -l) -gt 0'
       - 'java -version'
       # Test benchmarks under Renaissance harness
-      - 'java -jar out/fatjar/renaissance.jar --raw-list | grep -v "^dummy" >list.txt'
-      - 'for BENCH in $(cat list.txt); do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar out/fatjar/renaissance.jar -c test -r 1 --csv output.csv --json output.json "$BENCH" || exit 1; done'
+      - 'java -jar "out/renaissance-$RENAISSANCE_VERSION.jar" --raw-list | grep -v "^dummy" >list.txt'
+      - 'for BENCH in $(cat list.txt); do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar "out/renaissance-$RENAISSANCE_VERSION.jar" -c test -r 1 --csv output.csv --json output.json "$BENCH" || exit 1; done'
       # Test benchmarks under JMH harness
       #- 'java -Xms2500M -Xmx2500M -jar ./renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar -wi 0 -i 1 -f 1 -foe true'
 
