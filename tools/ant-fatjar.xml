@@ -64,6 +64,7 @@
 				<attribute name="Main-Class" value="org.renaissance.core.Launcher" />
 				<attribute name="Implementation-Version" value="${renaissance.version}" />
 				<attribute name="Specification-Title" value="Renaissance Benchmark Suite" />
+				<attribute name="Specification-Version" value="${renaissance.version}" />
 			</manifest>
 		</jar>
 		<touch file="${root.project.basedir}/out/fatjar/renaissance.jar" />
