@@ -7,6 +7,8 @@
 
 	<property name="rns.harness.jar" location="${root.project.basedir}/out/harness/renaissance-harness_2.12-0.10.0.jar" />
 	<property name="rns.meta.collector.jar" location="${root.project.basedir}/out/meta-collector/jars/meta-collector.jar" />
+	
+	<property name="rns.config.scalac.logging" value="none" />
 
 	<macrodef name="taskdef-scalac">
 		<attribute name="ivy-config" default="scala" />
@@ -100,7 +102,7 @@
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachepath pathid="benchmark.path.id" />
-		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="debug">
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="${rns.config.scalac.logging}">
 			<src path="src/main/scala" />
 			<classpath>
 				<path refid="path.rt.jar" />
@@ -132,7 +134,7 @@
 		<mkdir dir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" />
 		<ivy:resolve log="quiet" file="${root.project.basedir}/ivy.xml" conf="bm-${benchmark.name}" />
 		<ivy:cachepath pathid="benchmark.path.id" />
-		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="debug">
+		<scalac destdir="${root.project.basedir}/out/benchmarks/${benchmark.name}/classes" logging="${rns.config.scalac.logging}">
 			<src path="src/main/scala" />
 			<src path="src/main/java" />
 			<classpath>
