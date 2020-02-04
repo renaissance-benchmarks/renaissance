@@ -4,8 +4,8 @@ package org.renaissance;
  * Marker interface for harness plugins. Plugins are loaded dynamically and
  * each {@link Plugin} implementation must have a zero arguments constructor.
  * To actually plug into the benchmark execution sequence, a plugin needs to
- * one or more listener interfaces. Each listener interface corresponds to a
- * single point in the execution sequence and defines a single method which
+ * implement one or more listener interfaces. Each listener interface corresponds
+ * to a single point in the execution sequence and defines a single method which
  * receives parameters relevant to that point.
  */
 public interface Plugin {
