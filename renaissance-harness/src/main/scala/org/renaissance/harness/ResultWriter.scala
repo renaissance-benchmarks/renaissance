@@ -1,215 +1,382 @@
 package org.renaissance.harness
 
 import java.io.File
+import java.lang.management.MemoryUsage
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.TimeZone
 
+import com.sun.management.UnixOperatingSystemMXBean
 import org.apache.commons.io.FileUtils
 import org.renaissance.Benchmark
 import org.renaissance.Plugin.BeforeHarnessShutdownListener
 import org.renaissance.Plugin.BenchmarkFailureListener
 import org.renaissance.Plugin.MeasurementResultListener
-import spray.json._
 import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-/** Common functionality for JSON and CSV results writers.
+/** Provides common functionality for JSON and CSV result writers.
  *
- * This class takes care of registering a shutdown hook so that the results
- * are not lost when JVM is forcefully terminated.
+ * Registers a shutdown hook to avoid losing unsaved results in case
+ * the JVM is forcefully terminated.
  *
- * Descendants are expected to override only the store() method that
- * actually stores the collected data.
+ * Subclasses are expected to only override the [[store()]] method
+ * which actually stores the collected data.
  */
 private abstract class ResultWriter
   extends BeforeHarnessShutdownListener
   with MeasurementResultListener
   with BenchmarkFailureListener {
 
-  class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
+  private final class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
     override def run(): Unit = {
       results.storeResults(false)
     }
   }
 
-  val allResults = new mutable.HashMap[String, mutable.Map[String, mutable.ArrayBuffer[Long]]]
-  val failedBenchmarks = new mutable.ArrayBuffer[String]
-  val storeHook = new FlushOnShutdownThread(this)
+  private final val storeHook = new FlushOnShutdownThread(this)
 
   Runtime.getRuntime.addShutdownHook(storeHook)
 
-  protected def store(normalTermination: Boolean): Unit
+  // A result is a map of metric names to a sequence of metric values.
+  private final val resultsByBenchmarkName =
+    mutable.Map[String, mutable.Map[String, mutable.Buffer[Long]]]()
 
-  def storeResults(normalTermination: Boolean): Unit = this.synchronized {
+  private final val failedBenchmarkNames = mutable.Set[String]()
+
+  private final def storeResults(normalTermination: Boolean): Unit = this.synchronized {
     // This method is synchronized to ensure we do not overwrite
     // the results when user sends Ctrl-C when store() is already being
     // called (i.e. shutdown hook is still registered but is *almost*
     // no longer needed).
+    if (normalTermination) {
+      Runtime.getRuntime.removeShutdownHook(storeHook)
+    }
+
     store(normalTermination)
   }
 
-  override def beforeHarnessShutdown(): Unit = {
+  final override def beforeHarnessShutdown(): Unit = {
     storeResults(true)
-    Runtime.getRuntime.removeShutdownHook(storeHook)
   }
 
-  override def onMeasurementResult(benchmark: String, metric: String, value: Long): Unit = {
-    val benchStorage = allResults.getOrElse(benchmark, new mutable.HashMap)
-    allResults.update(benchmark, benchStorage)
-    val metricStorage = benchStorage.getOrElse(metric, new mutable.ArrayBuffer)
-    benchStorage.update(metric, metricStorage)
-    metricStorage += value
+  final override def onMeasurementResult(
+    benchmark: String,
+    metric: String,
+    value: Long
+  ): Unit = {
+    val metricsByName = resultsByBenchmarkName.getOrElseUpdate(benchmark, mutable.Map())
+    val metricValues = metricsByName.getOrElseUpdate(metric, mutable.Buffer())
+    metricValues += value
   }
 
-  override def onBenchmarkFailure(benchmark: String): Unit = {
-    failedBenchmarks += benchmark
+  final override def onBenchmarkFailure(benchmarkName: String): Unit = {
+    failedBenchmarkNames += benchmarkName
   }
 
-  def getBenchmarks: Iterable[String] = {
-    allResults.keys
+  protected final def getBenchmarkNames: Iterable[String] = {
+    resultsByBenchmarkName.keys
   }
 
-  def getColumns: Seq[String] = {
-    allResults.values.flatMap(_.keys).toSeq.distinct.sorted
+  protected final def getMetricNames: Seq[String] = {
+    val metricNames = resultsByBenchmarkName.values.flatMap(_.keys)
+    metricNames.toSeq.distinct.sorted
   }
 
-  def getResults
-    : Iterable[(String, Boolean, Map[String, mutable.ArrayBuffer[Long]], Iterable[Int])] =
+  protected final def getBenchmarkResults
+    : Iterable[(String, Boolean, Map[String, mutable.Buffer[Long]], Int)] =
     for {
-      benchName <- getBenchmarks
-      benchResults = allResults(benchName)
-      maxIndex = benchResults.values.map(_.size).max - 1
-    } yield
-      (
-        benchName,
-        !failedBenchmarks.contains(benchName),
-        benchResults.toMap,
-        0 to maxIndex
-      )
+      benchName <- getBenchmarkNames
+      metricsByName = resultsByBenchmarkName(benchName).toMap
+      benchFailed = failedBenchmarkNames.contains(benchName)
+      repetitionCount = metricsByName.values.map(_.size).max
+    } yield (benchName, benchFailed, metricsByName, repetitionCount)
+
+  protected final def writeToFile(fileName: String, string: String): Unit = {
+    FileUtils.write(new File(fileName), string, StandardCharsets.UTF_8, false)
+  }
+
+  //
+
+  protected def store(normalTermination: Boolean): Unit
 }
 
-private class CsvWriter(val filename: String) extends ResultWriter {
+private final class CsvWriter(val filename: String) extends ResultWriter {
 
-  def store(normalTermination: Boolean): Unit = {
+  override def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuffer
-    csv.append("benchmark")
-    val columns = new mutable.ArrayBuffer[String]
-    for (c <- getColumns) {
-      columns += c
-      csv.append(",").append(c)
-    }
-    csv.append("\n")
 
-    for ((benchmark, goodRuns, results, repetitions) <- getResults) {
-      for (i <- repetitions) {
-        val line = new StringBuffer
-        line.append(benchmark)
-        for (c <- columns) {
-          val values = results.getOrElse(c, new mutable.ArrayBuffer)
-          val score = if (i < values.size) values(i).toString else "NA"
-          line.append(",").append(score.toString)
+    val columns = getMetricNames
+    formatHeader(columns, csv)
+    formatResults(columns, csv)
+
+    writeToFile(filename, csv.toString)
+  }
+
+  private def formatHeader(metricNames: Seq[String], csv: StringBuffer): Unit = {
+    // There will always be at least one column after "benchmark".
+    csv.append("benchmark,").append(metricNames.mkString(",")).append(",vm_start_unix_ms\n")
+  }
+
+  private def formatResults(metricNames: Seq[String], csv: StringBuffer): Unit = {
+    val vmStartTime = management.ManagementFactory.getRuntimeMXBean.getStartTime
+    for ((benchmark, _, metricsByName, repetitionCount) <- getBenchmarkResults) {
+      for (i <- 0 until repetitionCount) {
+        csv.append(benchmark)
+
+        for (metricName <- metricNames) {
+          val values = metricsByName.get(metricName)
+          val stringValue = values.map(values => values(i).toString).getOrElse("NA")
+          csv.append(",").append(stringValue)
         }
-        csv.append(line).append("\n")
+
+        csv.append(",").append(vmStartTime).append("\n")
       }
     }
-
-    FileUtils.write(
-      new File(filename),
-      csv.toString,
-      StandardCharsets.UTF_8,
-      false
-    )
   }
+
 }
 
-private class JsonWriter(val filename: String) extends ResultWriter {
+private final class JsonWriter(val filename: String) extends ResultWriter {
 
-  def getEnvironment(termination: String): JsValue = {
-    val result = new mutable.HashMap[String, JsValue]
+  private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
-    val osInfo = new mutable.HashMap[String, JsValue]
-    osInfo.update("name", System.getProperty("os.name", "unknown").toJson)
-    osInfo.update("arch", System.getProperty("os.arch", "unknown").toJson)
-    osInfo.update("version", System.getProperty("os.version", "unknown").toJson)
-    result.update("os", osInfo.toMap.toJson)
+  private def pathsAsJson(pathSpec: String) = pathSpec.split(File.pathSeparator).toJson
 
-    val runtimeMxBean = management.ManagementFactory.getRuntimeMXBean
-    val vmArgs = runtimeMxBean.getInputArguments
-
-    val vmInfo = new mutable.HashMap[String, JsValue]
-    vmInfo.update("name", System.getProperty("java.vm.name", "unknown").toJson)
-    vmInfo.update("vm_version", System.getProperty("java.vm.version", "unknown").toJson)
-    vmInfo.update("jre_version", System.getProperty("java.version", "unknown").toJson)
-    vmInfo.update("args", vmArgs.asScala.toList.toJson)
-    vmInfo.update("termination", termination.toJson)
-    result.update("vm", vmInfo.toMap.toJson)
-
-    result.toMap.toJson
-  }
-
-  def getMainManifest: java.util.jar.Manifest = {
-    val klass = classOf[Benchmark]
-    val stream = klass.getResourceAsStream("/META-INF/MANIFEST.MF")
-    new java.util.jar.Manifest(stream)
-  }
-
-  def getSuiteInfo: JsValue = {
-    val result = new mutable.HashMap[String, JsValue]
-
-    val manifestAttrs = getMainManifest.getMainAttributes
-    val getManifestAttr = (key: String, defaultValue: String) => {
-      val tmp = manifestAttrs.getValue(key)
-      if (tmp == null) defaultValue.toJson else tmp.toJson
-    }
-
-    val git = new mutable.HashMap[String, JsValue]
-    git.update("commit_hash", getManifestAttr("Git-Head-Commit", "unknown"))
-    git.update("commit_date", getManifestAttr("Git-Head-Commit-Date", "unknown"))
-    git.update("dirty", getManifestAttr("Git-Uncommitted-Changes", "true"))
-
-    result.update("git", git.toMap.toJson)
-    result.update("name", getManifestAttr("Specification-Title", ""))
-    result.update("version", getManifestAttr("Specification-Version", ""))
-
-    result.toMap.toJson
-  }
-
-  def store(normalTermination: Boolean): Unit = {
-    val columns = getColumns
-
-    val tree = new mutable.HashMap[String, JsValue]
-    tree.update("format_version", 4.toJson)
-    tree.update("benchmarks", getBenchmarks.toList.toJson)
-    tree.update("environment", getEnvironment(if (normalTermination) "normal" else "forced"))
-    tree.update("suite", getSuiteInfo)
-
-    val dataTree = new mutable.HashMap[String, JsValue]
-    for ((benchmark, goodRuns, results, repetitions) <- getResults) {
-      val subtree = new mutable.ArrayBuffer[JsValue]
-      for (i <- repetitions) {
-        val scores = new mutable.HashMap[String, JsValue]
-        for (c <- columns) {
-          val values = results.getOrElse(c, new mutable.ArrayBuffer)
-          if (i < values.size) {
-            scores.update(c, values(i).toJson)
-          }
-        }
-        subtree += scores.toMap.toJson
-      }
-      val resultsTree = new mutable.HashMap[String, JsValue]
-      resultsTree.update("results", subtree.toList.toJson)
-      resultsTree.update("termination", (if (goodRuns) "normal" else "failure").toJson)
-      dataTree.update(benchmark, resultsTree.toMap.toJson)
-    }
-
-    tree.update("data", dataTree.toMap.toJson)
-
-    FileUtils.write(
-      new File(filename),
-      tree.toMap.toJson.prettyPrint,
-      java.nio.charset.StandardCharsets.UTF_8,
-      false
+  private def getEnvironment(normalTermination: Boolean) = {
+    Map(
+      "os" -> getOsInfo,
+      "vm" -> getVmInfo(normalTermination),
+      "jre" -> getJreInfo
     )
   }
+
+  private def getOsInfo = {
+    val os = management.ManagementFactory.getOperatingSystemMXBean
+
+    val result = mutable.Buffer(
+      "name" -> os.getName.toJson,
+      "arch" -> os.getArch.toJson,
+      "version" -> os.getVersion.toJson,
+      "available_processors" -> os.getAvailableProcessors.toJson
+    )
+
+    os match {
+      case unixOs: UnixOperatingSystemMXBean =>
+        result += (
+          "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
+          "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
+          "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,
+          "swap_space_total" -> unixOs.getTotalSwapSpaceSize.toJson,
+          "swap_space_free" -> unixOs.getFreeSwapSpaceSize.toJson,
+          "max_fd_count" -> unixOs.getMaxFileDescriptorCount.toJson,
+          "open_fd_count" -> unixOs.getOpenFileDescriptorCount.toJson
+        )
+    }
+
+    result.toMap
+  }
+
+  private def getVmInfo(normalTermination: Boolean) = {
+    val runtime = management.ManagementFactory.getRuntimeMXBean
+
+    Map(
+      "name" -> runtime.getVmName.toJson,
+      "vendor" -> runtime.getVmVendor.toJson,
+      "version" -> runtime.getVmVersion.toJson,
+      "spec_name" -> runtime.getSpecName.toJson,
+      "spec_vendor" -> runtime.getSpecVendor.toJson,
+      "spec_version" -> runtime.getSpecVersion.toJson,
+      "mode" -> systemPropertyAsJson("java.vm.info"),
+      "args" -> runtime.getInputArguments.asScala.toList.toJson,
+      "termination" -> (if (normalTermination) "normal" else "forced").toJson,
+      "start_unix_ms" -> runtime.getStartTime.toJson,
+      "start_iso" -> unixTimeAsIso(runtime.getStartTime).toJson,
+      "uptime_ms" -> runtime.getUptime.toJson,
+      "collectors" -> getCollectorInfo.toJson,
+      "compiler" -> getCompilationInfo.toJson,
+      "classloading" -> getClassLoadingInfo.toJson,
+      "memory" -> getMemoryInfo.toJson,
+      "pools" -> getMemoryPoolInfo.toJson,
+      "threads" -> getThreadInfo.toJson
+    )
+  }
+
+  private def getJreInfo = {
+    val runtime = management.ManagementFactory.getRuntimeMXBean
+
+    val result = mutable.Buffer(
+      "name" -> systemPropertyAsJson("java.runtime.name"),
+      "version" -> systemPropertyAsJson("java.runtime.version"),
+      "java_vendor" -> systemPropertyAsJson("java.vendor"),
+      "java_version" -> systemPropertyAsJson("java.version"),
+      "spec_name" -> systemPropertyAsJson("java.specification.name"),
+      "spec_vendor" -> systemPropertyAsJson("java.specification.vendor"),
+      "spec_version" -> systemPropertyAsJson("java.specification.version"),
+      "home" -> systemPropertyAsJson("java.home"),
+      "library_path" -> pathsAsJson(runtime.getLibraryPath),
+      "class_path" -> pathsAsJson(runtime.getClassPath)
+    )
+
+    if (runtime.isBootClassPathSupported) {
+      result += ("boot_class_path" -> pathsAsJson(runtime.getBootClassPath))
+    }
+
+    result.toMap
+  }
+
+  private def unixTimeAsIso(unixTime: Long) = {
+    val formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    formatter.setTimeZone(TimeZone.getTimeZone("UTC"))
+    formatter.format(new Date(unixTime))
+  }
+
+  private def getMemoryUsageInfo(usage: MemoryUsage) = {
+    Map(
+      "init" -> usage.getInit.toJson,
+      "used" -> usage.getUsed.toJson,
+      "committed" -> usage.getCommitted.toJson,
+      "max" -> usage.getMax.toJson
+    )
+  }
+
+  private def getMemoryInfo = {
+    val memory = management.ManagementFactory.getMemoryMXBean
+
+    Map(
+      "heap_usage" -> getMemoryUsageInfo(memory.getHeapMemoryUsage).toJson,
+      "nonheap_usage" -> getMemoryUsageInfo(memory.getNonHeapMemoryUsage).toJson,
+      "pending_finalization_count" -> memory.getObjectPendingFinalizationCount.toJson
+    )
+  }
+
+  private def getMemoryPoolInfo = {
+    management.ManagementFactory.getMemoryPoolMXBeans.asScala
+      .map(pool => {
+        Map(
+          "name" -> pool.getName.toJson,
+          "type" -> pool.getType.name().toJson,
+          "usage" -> getMemoryUsageInfo(pool.getUsage).toJson,
+          "peak_usage" -> getMemoryUsageInfo(pool.getPeakUsage).toJson
+        )
+      })
+      .toList
+  }
+
+  private def getCollectorInfo = {
+    management.ManagementFactory.getGarbageCollectorMXBeans.asScala
+      .map(gc => {
+        Map(
+          "name" -> gc.getName.toJson,
+          "collection_count" -> gc.getCollectionCount.toJson,
+          "collection_time_ms" -> gc.getCollectionTime.toJson
+        )
+      })
+      .toList
+  }
+
+  private def getCompilationInfo = {
+    // Compilation MX Bean is not available in interpreted mode.
+    Option(management.ManagementFactory.getCompilationMXBean).map(
+      info => {
+        val result = mutable.Buffer(
+          "name" -> info.getName.toJson
+        )
+
+        if (info.isCompilationTimeMonitoringSupported) {
+          result += ("compilation_time_ms" -> info.getTotalCompilationTime.toJson)
+        }
+
+        result.toMap
+      }
+    )
+  }
+
+  private def getClassLoadingInfo = {
+    val classLoading = management.ManagementFactory.getClassLoadingMXBean
+
+    Map(
+      "class_count" -> classLoading.getLoadedClassCount.toJson,
+      "classes_total" -> classLoading.getTotalLoadedClassCount.toJson
+    )
+  }
+
+  private def getThreadInfo = {
+    val threads = management.ManagementFactory.getThreadMXBean
+
+    Map(
+      "thread_count" -> threads.getThreadCount.toJson,
+      "thread_count_max" -> threads.getPeakThreadCount.toJson,
+      "daemon_thread_count" -> threads.getDaemonThreadCount.toJson,
+      "threads_total" -> threads.getTotalStartedThreadCount.toJson
+    )
+  }
+
+  private def getSuiteInfo = {
+    val manifest = {
+      val benchClass = classOf[Benchmark]
+      val stream = benchClass.getResourceAsStream("/META-INF/MANIFEST.MF")
+      new java.util.jar.Manifest(stream)
+    }
+
+    def manifestAttrAsJson(key: String, defaultValue: String = null) = {
+      Option(manifest.getMainAttributes.getValue(key)).orElse(Option(defaultValue)).toJson
+    }
+
+    val gitInfo = Map(
+      "commit_hash" -> manifestAttrAsJson("Git-Head-Commit"),
+      "commit_date" -> manifestAttrAsJson("Git-Head-Commit-Date"),
+      "dirty" -> manifestAttrAsJson("Git-Uncommitted-Changes", "true")
+    )
+
+    //
+
+    Map(
+      "git" -> gitInfo.toJson,
+      "name" -> manifestAttrAsJson("Specification-Title"),
+      "version" -> manifestAttrAsJson("Specification-Version")
+    )
+  }
+
+  override def store(normalTermination: Boolean): Unit = {
+    val result = Map(
+      "format_version" -> 5.toJson,
+      "benchmarks" -> getBenchmarkNames.toJson,
+      "environment" -> getEnvironment(normalTermination).toJson,
+      "suite" -> getSuiteInfo.toJson,
+      "data" -> getResultData.toJson
+    )
+
+    writeToFile(filename, result.toJson.prettyPrint)
+  }
+
+  private def getResultData = {
+    val metricNames = getMetricNames
+
+    val dataTree = mutable.Map[String, JsValue]()
+    for ((benchmark, benchFailed, metricsByName, repetitionCount) <- getBenchmarkResults) {
+      // For each repetition, collect (name -> value) tuples for metrics into a map.
+      val repetitions = (0 until repetitionCount).map(
+        i =>
+          metricNames
+            .map(name => metricsByName.get(name).map(values => (name -> values(i).toJson)))
+            .flatten
+            .toMap
+      )
+
+      val benchmarkTree = Map(
+        "results" -> repetitions.toJson,
+        "termination" -> (if (benchFailed) "failure" else "normal").toJson
+      )
+
+      dataTree.update(benchmark, benchmarkTree.toJson)
+    }
+
+    dataTree.toMap
+  }
+
 }

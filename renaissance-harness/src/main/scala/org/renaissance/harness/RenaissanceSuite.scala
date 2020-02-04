@@ -1,8 +1,9 @@
 package org.renaissance.harness
 
+import java.util.Locale
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
-import java.util.Locale
 
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
@@ -103,13 +104,15 @@ object RenaissanceSuite {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
+    val vmStartNanos = getVmStartNanos
+
     // Notify observers that the suite is set up.
     dispatcher.notifyAfterHarnessInit()
 
     try {
       for (benchInfo <- benchmarks) {
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
-        val driver = new ExecutionDriver(benchInfo, configurationName)
+        val driver = new ExecutionDriver(benchInfo, configurationName, vmStartNanos)
 
         try {
           driver.executeBenchmark(benchmark, dispatcher, policy)
@@ -143,6 +146,61 @@ object RenaissanceSuite {
         sys.exit(1)
       }
     }
+  }
+
+  private def getVmStartNanos = {
+    //
+    // Get two nanoTime() samples around currentTimeMillis() that are as
+    // close as possible to when the currentTimeMillis() result flips. Use
+    // the two straddling nanoTime() readings as an estimate of nanoTime()
+    // corresponding to the last currentTimeMillis() result.
+    //
+    // Repeat to minimize the difference between the two nanoTime() readings
+    // and stop when no improvement has been observed for several iterations.
+    //
+    // This avoids basing the estimate on first calls to native methods which
+    // tend to be slow, and has a chance to avoid scheduling artifacts.
+    //
+    val streakLengthMax = 10
+
+    var syncNanos = 0L
+    var syncMillis = 0L
+
+    var nanosDiffMin = Long.MaxValue
+    var streakLength = 0
+    do {
+      var nanosBefore = 0L
+      var currentMillis = 0L
+
+      val lastMillis = System.currentTimeMillis()
+      var nanosAfter = System.nanoTime()
+
+      do {
+        nanosBefore = nanosAfter;
+        currentMillis = System.currentTimeMillis()
+        nanosAfter = System.nanoTime()
+      } while (currentMillis == lastMillis)
+
+      streakLength += 1
+
+      val nanosDiff = nanosAfter - nanosBefore
+      if (nanosDiff < nanosDiffMin) {
+        nanosDiffMin = nanosDiff
+        streakLength = 0
+
+        // Record the corresponding nanoTime() estimate.
+        syncNanos = (nanosBefore + nanosAfter) / 2
+        syncMillis = currentMillis
+      }
+    } while (streakLength < streakLengthMax)
+
+    //
+    // Approximate nanoTime() value at VM start based on the millisecond
+    // timestamp available from the Runtime MX Bean.
+    //
+    val vmStartMillis = management.ManagementFactory.getRuntimeMXBean.getStartTime
+    val uptimeMillis = syncMillis - vmStartMillis
+    syncNanos - MILLISECONDS.toNanos(uptimeMillis)
   }
 
   def selectBenchmarks(
