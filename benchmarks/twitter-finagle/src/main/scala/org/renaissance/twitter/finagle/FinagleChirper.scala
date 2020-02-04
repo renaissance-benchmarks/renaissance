@@ -353,7 +353,9 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
-  val inputFile = File.separator + "new-years-resolution.csv"
+  // Start with / so it is treated as an absolute path
+  // (here, "/" is platform independent according to the JavaDoc)
+  val inputFile = "/new-years-resolution.csv"
 
   lazy val messages = IOUtils
     .toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
