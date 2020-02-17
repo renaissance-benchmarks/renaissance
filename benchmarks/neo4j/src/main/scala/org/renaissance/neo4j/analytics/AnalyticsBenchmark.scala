@@ -25,6 +25,11 @@ class AnalyticsBenchmark(
   val shortQueryCount: Option[Int],
   val mutatorQueryCount: Option[Int]
 ) {
+
+  class QueriesThread extends Thread {
+    var numQueries = 0
+  }
+
   private var db: GraphDatabaseService = _
 
   private val CPU_COUNT = Runtime.getRuntime.availableProcessors
@@ -35,8 +40,8 @@ class AnalyticsBenchmark(
 
   private val MUTATOR_QUERY_NUM = mutatorQueryCount.getOrElse(1)
 
-  implicit def val2Label(v : String) : Label = Label.label(v.toString)
-  implicit def val2Type(v : String) : RelationshipType = RelationshipType.withName(v.toString)
+  implicit def val2Label(v: String): Label = Label.label(v.toString)
+  implicit def val2Type(v: String): RelationshipType = RelationshipType.withName(v.toString)
 
   /** Must be called before calling `run`.
    */
@@ -50,7 +55,7 @@ class AnalyticsBenchmark(
     }
     db = new GraphDatabaseFactory()
       .newEmbeddedDatabaseBuilder(graphDir)
-      .setConfig(GraphDatabaseSettings.pagecache_memory,"500M")
+      .setConfig(GraphDatabaseSettings.pagecache_memory, "500M")
       .newGraphDatabase()
     Runtime.getRuntime.addShutdownHook(new Thread {
       override def run(): Unit = {
@@ -67,13 +72,16 @@ class AnalyticsBenchmark(
 
   /** Runs the benchmark.
    */
-  def run(): Unit = {
+  def run(): Int = {
     val longThreads = startLongQueryThreads(db)
     val shortThreads = startShortQueryThreads(db)
     val mutatorThreads = startMutatorQueryThreads(db)
     longThreads.foreach(_.join())
     shortThreads.foreach(_.join())
     mutatorThreads.foreach(_.join())
+    (longThreads ++ shortThreads ++ mutatorThreads).foldLeft(0) { (acc, el) =>
+      acc + el.numQueries
+    }
   }
 
   /** Must be called after calling `run`.
@@ -200,8 +208,16 @@ class AnalyticsBenchmark(
 
   private def map(r: Result) = r.asScala.map(m => m.asScala.toMap).toSeq
 
-  private def validate(msg:String, expected: Seq[Map[String,AnyRef]], r:Result) = {
-    Assert.assertEquals(expected, map(r), msg)
+  private def validate(msg: String, expected: Seq[Map[String, AnyRef]], r: Result) = {
+    val mapped_r = map(r)
+    if (expected.equals(mapped_r)) {
+      1
+    } else {
+      threadPrintln(
+        "Validation failure : expected '" + expected + "', but got '" + mapped_r + "'"
+      )
+      0
+    }
   }
 
   private def silentPrintln(s: String) = {}
@@ -214,69 +230,84 @@ class AnalyticsBenchmark(
     (
       """match (d: Director { name: $name })
         | set d.directorId = $directorId""".stripMargin,
-        Map("name" -> "Jim Steel", "directorId" -> "m.03d5q13"),
-      (r: Result) => threadPrintln("Done.")
+      Map("name" -> "Jim Steel", "directorId" -> "m.03d5q13"),
+      (r: Result) => 1
     ),
     (
       """match (d: Director)
         | where d.name starts with $name
         | set d.directorId = 'f1:' + d.name""".stripMargin,
-      Map("name"->"Don"),
-      (r: Result) => threadPrintln("Done.")
+      Map("name" -> "Don"),
+      (r: Result) => 1
     ),
     (
       """match (f: Film)
         | where $from <= f.release_date < $to
         |  set f.rname = reverse(f.name)""".stripMargin,
-      Map("from"->"2014","to"->"2015"),
-      (r: Result) => threadPrintln("Done.")
+      Map("from" -> "2014", "to" -> "2015"),
+      (r: Result) => 1
     )
   )
 
   private val shortQueries = Seq(
     (
       "match (d: Director) where d.name = $name return d.directorId",
-      Map("name"->"Jim Steel"),
+      Map("name" -> "Jim Steel"),
       (r: Result) => validate("Director ID: ", Seq(Map("d.directorId" -> "m.03d5q13")), r)
     ),
     (
       "match (f: Film) where f.name = $name return f.release_date",
-      Map("name"->"Hustlers #2"),
+      Map("name" -> "Hustlers #2"),
       (r: Result) => validate("Film Date: ", Seq(Map("f.release_date" -> "1996-02-01")), r)
     ),
     (
       "match (f: Film) where $from <= f.release_date < $to return count(f)",
-        Map("from"->"2014","to"->"2015"),
+      Map("from" -> "2014", "to" -> "2015"),
       (r: Result) => validate("Movies in 2014: ", Seq(Map("count(f)" -> Long.box(6321))), r)
     ),
     (
       "match (f: Film) where f.name starts with $name return count(f)",
-      Map("name"->"Don"),
-      (r: Result) => validate("The Don movies", Seq(Map("count(f)"->Long.box(462))), r)
+      Map("name" -> "Don"),
+      (r: Result) => validate("The Don movies", Seq(Map("count(f)" -> Long.box(462))), r)
     ),
     (
       """match (f: Film)-[: GENRE]->(g: Genre)
         | where f.name = $name
         | with g order by g.name
         | return collect(distinct g.name) as filmNames""".stripMargin,
-        Map("name"->"Forrest Gump"),
-      (r: Result) => validate("The genres of \"Forrest Gump\": ",
-        Seq(Map("filmNames"->List("Comedy", "Comedy-drama", "Drama", "Epic film", "Romance Film", "Romantic comedy").asJava)), r)
+      Map("name" -> "Forrest Gump"),
+      (r: Result) =>
+        validate(
+          "The genres of \"Forrest Gump\": ",
+          Seq(
+            Map(
+              "filmNames" -> List(
+                "Comedy",
+                "Comedy-drama",
+                "Drama",
+                "Epic film",
+                "Romance Film",
+                "Romantic comedy"
+              ).asJava
+            )
+          ),
+          r
+        )
     )
   )
 
-  private val longQueries: Seq[Tuple3[String,Map[String,AnyRef],(Result)=>Unit]] = Seq(
+  private val longQueries: Seq[Tuple3[String, Map[String, AnyRef], (Result) => Int]] = Seq(
     // Count the number of films.
     (
       "match (f: Film) return count(f)",
       Map(),
-      (r: Result) => validate("Films", Seq(Map("count(f)"->Long.box(233437))), r)
+      (r: Result) => validate("Films", Seq(Map("count(f)" -> Long.box(233437))), r)
     ),
     // Count the number of genres.
     (
       "match (g: Genre) return count(g)",
       Map(),
-      (r: Result) => validate("Genres", Seq(Map("count(g)"->Long.box(594))), r)
+      (r: Result) => validate("Genres", Seq(Map("count(g)" -> Long.box(594))), r)
     ),
     // Find how many directors directed at least 3 movies.
     (
@@ -284,8 +315,9 @@ class AnalyticsBenchmark(
         |with d, size((d)-[: FILMS]->()) as c
         |where c > $c
         |return count(d)""".stripMargin,
-      Map("c"->Long.box(3)),
-      (r: Result) => validate("Directors with 3 or more movies:", Seq(Map("count(d)"->Long.box(11619))), r)
+      Map("c" -> Long.box(3)),
+      (r: Result) =>
+        validate("Directors with 3 or more movies:", Seq(Map("count(d)" -> Long.box(11619))), r)
     ),
     // Find how many genres have at least 10 directors.
     (
@@ -294,8 +326,9 @@ class AnalyticsBenchmark(
         |where c > $c
         |return count(g)
         |""".stripMargin,
-      Map("c"->Long.box(10)),
-      (r: Result) => validate("Genres with at least 10 directors:", Seq(Map("count(g)"->Long.box(303))), r)
+      Map("c" -> Long.box(10)),
+      (r: Result) =>
+        validate("Genres with at least 10 directors:", Seq(Map("count(g)" -> Long.box(303))), r)
     ),
     // Find the genre with the most movies.
     (
@@ -304,8 +337,13 @@ class AnalyticsBenchmark(
         |order by filmCount desc
         |limit 1
         |return g.name, filmCount""".stripMargin,
-    Map(),
-      (r: Result) => validate("Most active genre:", Seq(Map("g.name"->"Drama","filmCount"->Long.box(70233))), r)
+      Map(),
+      (r: Result) =>
+        validate(
+          "Most active genre:",
+          Seq(Map("g.name" -> "Drama", "filmCount" -> Long.box(70233))),
+          r
+        )
     ),
     // Find three directors with the most comedies.
     (
@@ -316,8 +354,13 @@ class AnalyticsBenchmark(
         | limit 1
         |return d.name, filmCount
         |""".stripMargin,
-      Map("genre"->"Comedy"),
-      (r: Result) => validate("Funniest director: ", Seq(Map("d.name"->"Charles Lamont","filmCount"->Long.box(194))), r)
+      Map("genre" -> "Comedy"),
+      (r: Result) =>
+        validate(
+          "Funniest director: ",
+          Seq(Map("d.name" -> "Charles Lamont", "filmCount" -> Long.box(194))),
+          r
+        )
     ),
     // Find the number of directors that filmed a movie that had two directors
     // between 1985 and 2010.
@@ -325,9 +368,13 @@ class AnalyticsBenchmark(
       """match (d1: Director)-[: FILMS]->(film: Film)<-[: FILMS]-(d2: Director)
         |  where $from < film.release_date < $to
         |return count(distinct d1) as directors""".stripMargin,
-      Map("from"->"1985","to"->"2010"),
-      (r: Result) => validate("Had at least one 2-director movie in 1985-2010: ", Seq(Map("directors"->Long.box(11209))), r)
-
+      Map("from" -> "1985", "to" -> "2010"),
+      (r: Result) =>
+        validate(
+          "Had at least one 2-director movie in 1985-2010: ",
+          Seq(Map("directors" -> Long.box(11209))),
+          r
+        )
     ),
     // Find the number of 3-cliques of directors, in which directors are adjacent
     // if they made a movie together after 2005.
@@ -342,47 +389,47 @@ class AnalyticsBenchmark(
         |  and film2.release_date > $from
         |  and film3.release_date > $from
         |return count(distinct [d1x, d1y, d2y]) as cliques""".stripMargin,
-      Map("from"->"2005"),
-      (r: Result) => validate("Director 3-cliques: ", Seq(Map("cliques"->Long.box(1008))), r)
+      Map("from" -> "2005"),
+      (r: Result) => validate("Director 3-cliques: ", Seq(Map("cliques" -> Long.box(1008))), r)
     )
   )
 
   private def rotate[T](s: Seq[T], n: Int): Seq[T] =
     s.drop(n % s.length) ++ s.take(n % s.length)
 
-  private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
+  private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val mutatorCount = math.max(1, MUTATOR_QUERY_NUM)
     val threads = for (p <- 0 until mutatorCount)
       yield
-        new Thread {
+        new QueriesThread {
           override def run(): Unit = {
-            runQueries(db, mutatorQueries, 12, p)
+            this.numQueries += runQueries(db, mutatorQueries, 12, p)
           }
         }
     threads.foreach(_.start())
     threads
   }
 
-  private def startShortQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
+  private def startShortQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val shortCount = math.max(1, SHORT_QUERY_NUM)
     val threads = for (p <- 0 until shortCount)
       yield
-        new Thread {
+        new QueriesThread {
           override def run(): Unit = {
-            runQueries(db, shortQueries, 150, p)
+            this.numQueries += runQueries(db, shortQueries, 150, p)
           }
         }
     threads.foreach(_.start())
     threads
   }
 
-  private def startLongQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
+  private def startLongQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val longCount = math.max(1, LONG_QUERY_NUM)
     val threads = for (p <- 0 until longCount)
       yield
-        new Thread {
+        new QueriesThread {
           override def run(): Unit = {
-            runQueries(db, longQueries, 1, 3 * p)
+            this.numQueries += runQueries(db, longQueries, 1, 3 * p)
           }
         }
     threads.foreach(_.start())
@@ -391,25 +438,34 @@ class AnalyticsBenchmark(
 
   private def runQueries(
     db: GraphDatabaseService,
-    queries: Seq[(String, Map[String,AnyRef], Result => Unit)],
+    queries: Seq[(String, Map[String, AnyRef], Result => Int)],
     repeats: Int,
     offset: Int
-  ): Unit = {
+  ): Int = {
+    var numSuccessfulQueries = 0
     for (i <- 0 until repeats) {
       for ((query, params, action) <- rotate(queries, offset)) {
-        runQuery(db, query, params, action)
+        numSuccessfulQueries += runQuery(db, query, params, action)
       }
     }
+    numSuccessfulQueries
   }
 
-  private def runQuery(db: GraphDatabaseService, query: String, params: Map[String,AnyRef],f: Result => Unit): Unit = {
+  private def runQuery(
+    db: GraphDatabaseService,
+    query: String,
+    params: Map[String, AnyRef],
+    f: Result => Int
+  ): Int = {
     val tx = db.beginTx()
+    var numSuccessfulQueries = 0
     try {
-      val result = db.execute(query,params.asJava)
-      f(result)
+      val result = db.execute(query, params.asJava)
+      numSuccessfulQueries += f(result)
       tx.success()
     } finally {
       tx.close()
     }
+    numSuccessfulQueries
   }
 }
