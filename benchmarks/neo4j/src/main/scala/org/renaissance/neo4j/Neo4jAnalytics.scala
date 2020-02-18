@@ -62,10 +62,7 @@ final class Neo4jAnalytics extends Benchmark {
   }
 
   override def run(config: BenchmarkContext): BenchmarkResult = {
-    // TODO: Return something useful for validation
-    benchmark.run()
-
-    // TODO: add proper validation
-    Validators.dummy(benchmark)
+    val result = benchmark.run()
+    Validators.simple("NumSuccessfulQueries", 802, result.toLong)
   }
 }

@@ -3,6 +3,7 @@ package org.renaissance.neo4j.analytics
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util
+import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 
 import net.liftweb.json._
@@ -12,9 +13,11 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Result
-import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
+import org.renaissance.BenchmarkResult.Assert
 
 import scala.collection._
+import scala.collection.JavaConverters._
 
 class AnalyticsBenchmark(
   val graphDir: File,
@@ -22,7 +25,12 @@ class AnalyticsBenchmark(
   val shortQueryCount: Option[Int],
   val mutatorQueryCount: Option[Int]
 ) {
-  private var db: GraphDatabaseService = null
+
+  class QueriesThread extends Thread {
+    var numQueries = 0
+  }
+
+  private var db: GraphDatabaseService = _
 
   private val CPU_COUNT = Runtime.getRuntime.availableProcessors
 
@@ -32,30 +40,8 @@ class AnalyticsBenchmark(
 
   private val MUTATOR_QUERY_NUM = mutatorQueryCount.getOrElse(1)
 
-  private val GENRE = new RelationshipType {
-    override def name(): String = "GENRE"
-  }
-
-  private val FILMS = new RelationshipType {
-    override def name(): String = "FILMS"
-  }
-
-  private val relationshipTypes = Map(
-    "GENRE" -> GENRE,
-    "FILMS" -> FILMS
-  )
-
-  private val directorLabel = new Label {
-    override def name(): String = "Director"
-  }
-
-  private val filmLabel = new Label {
-    override def name(): String = "Film"
-  }
-
-  private val genreLabel = new Label {
-    override def name(): String = "Genre"
-  }
+  implicit def val2Label(v: String): Label = Label.label(v.toString)
+  implicit def val2Type(v: String): RelationshipType = RelationshipType.withName(v.toString)
 
   /** Must be called before calling `run`.
    */
@@ -67,29 +53,35 @@ class AnalyticsBenchmark(
       println("DB remnants detected, deleting ...")
       FileUtils.forceDelete(graphDir)
     }
-    db = new GraphDatabaseFactory().newEmbeddedDatabase(graphDir)
+    db = new GraphDatabaseFactory()
+      .newEmbeddedDatabaseBuilder(graphDir)
+      .setConfig(GraphDatabaseSettings.pagecache_memory, "500M")
+      .newGraphDatabase()
     Runtime.getRuntime.addShutdownHook(new Thread {
-      override def run() = {
+      override def run(): Unit = {
         db.shutdown()
         FileUtils.deleteDirectory(graphDir)
       }
     })
 
-    createIndices(db)
     val mapping = populateVertices(db)
     populateEdges(db, mapping)
+    createIndices(db)
     println("Graph database created.")
   }
 
   /** Runs the benchmark.
    */
-  def run(): Unit = {
+  def run(): Int = {
     val longThreads = startLongQueryThreads(db)
     val shortThreads = startShortQueryThreads(db)
     val mutatorThreads = startMutatorQueryThreads(db)
     longThreads.foreach(_.join())
     shortThreads.foreach(_.join())
     mutatorThreads.foreach(_.join())
+    (longThreads ++ shortThreads ++ mutatorThreads).foldLeft(0) { (acc, el) =>
+      acc + el.numQueries
+    }
   }
 
   /** Must be called after calling `run`.
@@ -113,7 +105,7 @@ class AnalyticsBenchmark(
         val label = (vertex \ "label").extract[String]
         val node = label match {
           case "Genre" =>
-            val node = db.createNode(genreLabel)
+            val node = db.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("genreId", (vertex \ "genreId").extract[String])
             node.setProperty("name", (vertex \ "name").extract[String])
@@ -124,14 +116,14 @@ class AnalyticsBenchmark(
             } else {
               (vertex \ "name").extract[String]
             }
-            val node = db.createNode(filmLabel)
+            val node = db.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("filmId", (vertex \ "filmId").extract[String])
             node.setProperty("name", filmName)
             node.setProperty("release_date", (vertex \ "release_date").extract[String])
             node
           case "Director" =>
-            val node = db.createNode(directorLabel)
+            val node = db.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("directorId", (vertex \ "directorId").extract[String])
             node.setProperty("name", (vertex \ "name").extract[String])
@@ -173,8 +165,7 @@ class AnalyticsBenchmark(
         if (destinationNode == null) {
           sys.error("Null destination node for: " + destination)
         }
-        val relationship =
-          sourceNode.createRelationshipTo(destinationNode, relationshipTypes(label))
+        sourceNode.createRelationshipTo(destinationNode, label)
       } catch {
         case e: Exception =>
           throw new RuntimeException("Error in: " + field, e)
@@ -187,10 +178,10 @@ class AnalyticsBenchmark(
 
   private def createIndices(db: GraphDatabaseService): Unit = {
     println("Creating indices...")
-    createIndex(db, directorLabel, "id")
-    createIndex(db, directorLabel, "name")
-    createIndex(db, filmLabel, "release_date")
-    createIndex(db, filmLabel, "name")
+    createIndex(db, "Director", "name")
+    createIndex(db, "Film", "release_date")
+    createIndex(db, "Film", "name")
+    createIndex(db, "Genre", "name")
   }
 
   private def createIndex(
@@ -198,26 +189,38 @@ class AnalyticsBenchmark(
     label: Label,
     property: String
   ): Unit = {
-    val tx = db.beginTx()
+    var tx = db.beginTx()
     val schema = db.schema()
-    schema
+    val index = schema
       .indexFor(label)
       .on(property)
       .create()
     tx.success()
     tx.close()
+
+    tx = db.beginTx()
+    db.schema().awaitIndexOnline(index, 1000, TimeUnit.SECONDS)
+    tx.success()
+    tx.close()
   }
 
-  private def flush(r: Result): String = {
-    val buffer = mutable.Buffer[String]()
-    r.stream()
-      .forEach(new Consumer[util.Map[String, AnyRef]] {
-        override def accept(t: util.Map[String, AnyRef]): Unit = {
-          buffer += t.toString
-        }
-      })
-    buffer.mkString("\n")
+  private def flush(r: Result) = map(r).mkString("\n")
+
+  private def map(r: Result) = r.asScala.map(m => m.asScala.toMap).toSeq
+
+  private def validate(msg: String, expected: Seq[Map[String, AnyRef]], r: Result) = {
+    val mapped_r = map(r)
+    if (expected.equals(mapped_r)) {
+      1
+    } else {
+      threadPrintln(
+        "Validation failure : expected '" + expected + "', but got '" + mapped_r + "'"
+      )
+      0
+    }
   }
+
+  private def silentPrintln(s: String) = {}
 
   private def threadPrintln(s: String) = {
     println("[" + Thread.currentThread.getName + "] " + s)
@@ -225,163 +228,208 @@ class AnalyticsBenchmark(
 
   private val mutatorQueries = Seq(
     (
-      "match (d: Director { name: 'Jim Steel' })" +
-        "set d.directorId = 'm.03d5q13'",
-      (r: Result) => threadPrintln("Done.")
+      """match (d: Director { name: $name })
+        | set d.directorId = $directorId""".stripMargin,
+      Map("name" -> "Jim Steel", "directorId" -> "m.03d5q13"),
+      (r: Result) => 1
     ),
     (
-      "match (d: Director) where d.name starts with 'Don' " +
-        "set d.directorId = 'f1:' + d.name",
-      (r: Result) => threadPrintln("Done.")
+      """match (d: Director)
+        | where d.name starts with $name
+        | set d.directorId = 'f1:' + d.name""".stripMargin,
+      Map("name" -> "Don"),
+      (r: Result) => 1
     ),
     (
-      "match (f: Film) " +
-        "where f.release_date >= '2014' and f.release_date < '2015' " +
-        "set f.name = reverse(f.name)",
-      (r: Result) => threadPrintln("Done.")
+      """match (f: Film)
+        | where $from <= f.release_date < $to
+        |  set f.rname = reverse(f.name)""".stripMargin,
+      Map("from" -> "2014", "to" -> "2015"),
+      (r: Result) => 1
     )
   )
-
-  private def silentPrintln(s: String) = {}
 
   private val shortQueries = Seq(
     (
-      "match (d: Director) where d.name = 'Jim Steel' return d.directorId",
-      (r: Result) => silentPrintln("Director ID: " + flush(r))
+      "match (d: Director) where d.name = $name return d.directorId",
+      Map("name" -> "Jim Steel"),
+      (r: Result) => validate("Director ID: ", Seq(Map("d.directorId" -> "m.03d5q13")), r)
     ),
     (
-      "match (f: Film) where f.name = 'Hustlers' return f.release_date",
-      (r: Result) => silentPrintln("Release date: " + flush(r))
+      "match (f: Film) where f.name = $name return f.release_date",
+      Map("name" -> "Hustlers #2"),
+      (r: Result) => validate("Film Date: ", Seq(Map("f.release_date" -> "1996-02-01")), r)
     ),
     (
-      "match (f: Film) where f.release_date >= '2014' and f.release_date < '2015' " +
-        "return count(f)",
-      (r: Result) => silentPrintln("Movies in 2014: " + flush(r))
+      "match (f: Film) where $from <= f.release_date < $to return count(f)",
+      Map("from" -> "2014", "to" -> "2015"),
+      (r: Result) => validate("Movies in 2014: ", Seq(Map("count(f)" -> Long.box(6321))), r)
     ),
     (
-      "match (f: Film) where f.name starts with 'Don' " +
-        "return count(f)",
-      (r: Result) => silentPrintln("The Don movies: " + flush(r))
+      "match (f: Film) where f.name starts with $name return count(f)",
+      Map("name" -> "Don"),
+      (r: Result) => validate("The Don movies", Seq(Map("count(f)" -> Long.box(462))), r)
     ),
     (
-      "match (f: Film)-[: GENRE]->(g: Genre) where f.name = 'The Journey' " +
-        "return collect(distinct g.name)",
-      (r: Result) => silentPrintln("The genres of The Journey: " + flush(r))
+      """match (f: Film)-[: GENRE]->(g: Genre)
+        | where f.name = $name
+        | with g order by g.name
+        | return collect(distinct g.name) as filmNames""".stripMargin,
+      Map("name" -> "Forrest Gump"),
+      (r: Result) =>
+        validate(
+          "The genres of \"Forrest Gump\": ",
+          Seq(
+            Map(
+              "filmNames" -> List(
+                "Comedy",
+                "Comedy-drama",
+                "Drama",
+                "Epic film",
+                "Romance Film",
+                "Romantic comedy"
+              ).asJava
+            )
+          ),
+          r
+        )
     )
   )
 
-  private val longQueries = Seq(
+  private val longQueries: Seq[Tuple3[String, Map[String, AnyRef], (Result) => Int]] = Seq(
     // Count the number of films.
     (
       "match (f: Film) return count(f)",
-      (r: Result) => threadPrintln("Films: " + flush(r))
+      Map(),
+      (r: Result) => validate("Films", Seq(Map("count(f)" -> Long.box(233437))), r)
     ),
     // Count the number of genres.
     (
       "match (g: Genre) return count(g)",
-      (r: Result) => threadPrintln("Genres: " + flush(r))
+      Map(),
+      (r: Result) => validate("Genres", Seq(Map("count(g)" -> Long.box(594))), r)
     ),
     // Find how many directors directed at least 3 movies.
     (
-      "match (d: Director)-[: FILMS]->(f: Film) " +
-        "with d, count(f) as c " +
-        "where c > 3 " +
-        "return count(d)",
-      (r: Result) => threadPrintln("Directors with 3 or more movies: " + flush(r))
+      """match (d: Director)
+        |with d, size((d)-[: FILMS]->()) as c
+        |where c > $c
+        |return count(d)""".stripMargin,
+      Map("c" -> Long.box(3)),
+      (r: Result) =>
+        validate("Directors with 3 or more movies:", Seq(Map("count(d)" -> Long.box(11619))), r)
     ),
     // Find how many genres have at least 10 directors.
     (
-      "match (d: Director)-[: FILMS]->(f: Film)-[: GENRE]->(g: Genre) " +
-        "with g, count(distinct d) as c " +
-        "where c > 10 " +
-        "return count(g)",
-      (r: Result) => threadPrintln("Genres with at least 10 directors: " + flush(r))
+      """match (d: Director)-[: FILMS]->(f: Film)-[: GENRE]->(g: Genre)
+        |with g, count(distinct d) as c
+        |where c > $c
+        |return count(g)
+        |""".stripMargin,
+      Map("c" -> Long.box(10)),
+      (r: Result) =>
+        validate("Genres with at least 10 directors:", Seq(Map("count(g)" -> Long.box(303))), r)
     ),
     // Find the genre with the most movies.
     (
-      "match (f: Film)-[: GENRE]->(g: Genre) " +
-        "with g, count(f) as filmCount " +
-        "order by filmCount desc " +
-        "limit 1 " +
-        "return g.name, filmCount",
-      (r: Result) => threadPrintln("Most active genre: " + flush(r))
+      """match (g: Genre)
+        |with g, size(()-[: GENRE]->(g)) as filmCount
+        |order by filmCount desc
+        |limit 1
+        |return g.name, filmCount""".stripMargin,
+      Map(),
+      (r: Result) =>
+        validate(
+          "Most active genre:",
+          Seq(Map("g.name" -> "Drama", "filmCount" -> Long.box(70233))),
+          r
+        )
     ),
     // Find three directors with the most comedies.
     (
-      "match (d: Director)-[: FILMS]->(f: Film)-[: GENRE]->(g: Genre) " +
-        "where g.name = 'Comedy' " +
-        "with d, count(f) as filmCount " +
-        "order by filmCount desc " +
-        "limit 1 " +
-        "return d.name, filmCount",
-      (r: Result) => threadPrintln("Funniest director: " + flush(r))
+      """match (d: Director)-[: FILMS]->(f: Film)-[: GENRE]->(g: Genre)
+        | where g.name = $genre
+        |with d, count(f) as filmCount
+        | order by filmCount desc
+        | limit 1
+        |return d.name, filmCount
+        |""".stripMargin,
+      Map("genre" -> "Comedy"),
+      (r: Result) =>
+        validate(
+          "Funniest director: ",
+          Seq(Map("d.name" -> "Charles Lamont", "filmCount" -> Long.box(194))),
+          r
+        )
     ),
     // Find the number of directors that filmed a movie that had two directors
     // between 1985 and 2010.
     (
-      "match (d1: Director)-[: FILMS]->(film: Film)<-[: FILMS]-(d2: Director) " +
-        "where d1 <> d2 and film.release_date > '1985' " +
-        "  and film.release_date < '2010' " +
-        "with distinct d1 as director " +
-        "return count(director)",
-      (r: Result) => {
-        threadPrintln("Had at least one 2-director movie in 1985-2010: " + flush(r))
-      }
+      """match (d1: Director)-[: FILMS]->(film: Film)<-[: FILMS]-(d2: Director)
+        |  where $from < film.release_date < $to
+        |return count(distinct d1) as directors""".stripMargin,
+      Map("from" -> "1985", "to" -> "2010"),
+      (r: Result) =>
+        validate(
+          "Had at least one 2-director movie in 1985-2010: ",
+          Seq(Map("directors" -> Long.box(11209))),
+          r
+        )
     ),
     // Find the number of 3-cliques of directors, in which directors are adjacent
     // if they made a movie together after 2005.
     (
-      "match (d1x: Director)-[: FILMS]->(film1: Film)<-[: FILMS]-(d1y: Director), " +
-        "  (d2x: Director)-[: FILMS]->(film2: Film)<-[: FILMS]-(d2y: Director), " +
-        "  (d3x: Director)-[: FILMS]->(film3: Film)<-[: FILMS]-(d3y: Director) " +
-        "where d1x <> d1y and d2x <> d2y and d3x <> d3y " +
-        "  and d1x = d2x and d1y = d3x and d2y = d3y " +
-        "  and film1 <> film2 and film1 <> film3 and film2 <> film3 " +
-        "  and film1.release_date > '2005' " +
-        "  and film2.release_date > '2005' " +
-        "  and film3.release_date > '2005' " +
-        "with distinct [d1x.name, d1y.name, d2y.name] as clique " +
-        "return count(clique)",
-      (r: Result) => threadPrintln("Director 3-cliques: " + flush(r))
+      """match (d1x: Director)-[: FILMS]->(film1: Film)<-[: FILMS]-(d1y: Director),
+        |  (d2x: Director)-[: FILMS]->(film2: Film)<-[: FILMS]-(d2y: Director),
+        |  (d3x: Director)-[: FILMS]->(film3: Film)<-[: FILMS]-(d3y: Director)
+        |where d1x <> d1y and d2x <> d2y and d3x <> d3y
+        |  and d1x = d2x and d1y = d3x and d2y = d3y
+        |  and film1 <> film2 and film1 <> film3 and film2 <> film3
+        |  and film1.release_date > $from
+        |  and film2.release_date > $from
+        |  and film3.release_date > $from
+        |return count(distinct [d1x, d1y, d2y]) as cliques""".stripMargin,
+      Map("from" -> "2005"),
+      (r: Result) => validate("Director 3-cliques: ", Seq(Map("cliques" -> Long.box(1008))), r)
     )
   )
 
   private def rotate[T](s: Seq[T], n: Int): Seq[T] =
     s.drop(n % s.length) ++ s.take(n % s.length)
 
-  private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
+  private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val mutatorCount = math.max(1, MUTATOR_QUERY_NUM)
     val threads = for (p <- 0 until mutatorCount)
       yield
-        new Thread {
+        new QueriesThread {
           override def run(): Unit = {
-            runQueries(db, mutatorQueries, 12, p)
+            this.numQueries += runQueries(db, mutatorQueries, 12, p)
           }
         }
     threads.foreach(_.start())
     threads
   }
 
-  private def startShortQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
+  private def startShortQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val shortCount = math.max(1, SHORT_QUERY_NUM)
     val threads = for (p <- 0 until shortCount)
       yield
-        new Thread {
+        new QueriesThread {
           override def run(): Unit = {
-            runQueries(db, shortQueries, 150, p)
+            this.numQueries += runQueries(db, shortQueries, 150, p)
           }
         }
     threads.foreach(_.start())
     threads
   }
 
-  private def startLongQueryThreads(db: GraphDatabaseService): Seq[Thread] = {
+  private def startLongQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val longCount = math.max(1, LONG_QUERY_NUM)
     val threads = for (p <- 0 until longCount)
       yield
-        new Thread {
+        new QueriesThread {
           override def run(): Unit = {
-            runQueries(db, longQueries, 1, 3 * p)
+            this.numQueries += runQueries(db, longQueries, 1, 3 * p)
           }
         }
     threads.foreach(_.start())
@@ -390,25 +438,34 @@ class AnalyticsBenchmark(
 
   private def runQueries(
     db: GraphDatabaseService,
-    queries: Seq[(String, Result => Unit)],
+    queries: Seq[(String, Map[String, AnyRef], Result => Int)],
     repeats: Int,
     offset: Int
-  ): Unit = {
+  ): Int = {
+    var numSuccessfulQueries = 0
     for (i <- 0 until repeats) {
-      for ((query, action) <- rotate(queries, offset)) {
-        runQuery(db, query, action)
+      for ((query, params, action) <- rotate(queries, offset)) {
+        numSuccessfulQueries += runQuery(db, query, params, action)
       }
     }
+    numSuccessfulQueries
   }
 
-  private def runQuery(db: GraphDatabaseService, query: String, f: Result => Unit): Unit = {
+  private def runQuery(
+    db: GraphDatabaseService,
+    query: String,
+    params: Map[String, AnyRef],
+    f: Result => Int
+  ): Int = {
     val tx = db.beginTx()
+    var numSuccessfulQueries = 0
     try {
-      val result = db.execute(query)
-      f(result)
+      val result = db.execute(query, params.asJava)
+      numSuccessfulQueries += f(result)
       tx.success()
     } finally {
       tx.close()
     }
+    numSuccessfulQueries
   }
 }
