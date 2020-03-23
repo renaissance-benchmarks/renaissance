@@ -144,7 +144,14 @@ layout: base
   <div class="container_16">
     <div class="grid_16">
       <div id="measurements" class="text-snippet">
-        <img src="https://github.com/renaissance-benchmarks/measurements/raw/master/stripe.png"/>
+        <ul id="jdk-tabs">
+
+          <li><a id="jdk8">JDK 8</a></li>
+          <li><a id="jdk11">JDK 11</a></li>
+
+        </ul>
+        <div class="jdk-container" id="jdk8C"><img src="https://github.com/renaissance-benchmarks/measurements/raw/master/stripe-jdk-8.png"/></div>
+        <div class="jdk-container" id="jdk11C"><img src="https://github.com/renaissance-benchmarks/measurements/raw/master/stripe-jdk-11.png"/></div>
         <p>
           Sample benchmark measurements showing performance of multiple JVM implementations against the <a href="https://openjdk.java.net">OpenJDK</a> baseline.
           Visit <a href="https://github.com/renaissance-benchmarks/measurements">the measurements repository</a> for more technical details about the measurements.
@@ -152,6 +159,26 @@ layout: base
       </div>
     </div>
   </div>
+  <script type='text/javascript'>
+  $(document).ready(function() {
+
+  $('#jdk-tabs li a:not(:first)').addClass('inactive');
+  $('.jdk-container').hide();
+  $('.jdk-container:first').show();
+
+  $('#jdk-tabs li a').click(function(){
+      var t = $(this).attr('id');
+    if($(this).hasClass('inactive')){ //this is the start of our condition
+      $('#jdk-tabs li a').addClass('inactive');
+      $(this).removeClass('inactive');
+
+      $('.jdk-container').hide();
+      $('#'+ t + 'C').fadeIn('slow');
+   }
+  });
+
+  });
+  </script>
 
   <br/>
   <br/>
