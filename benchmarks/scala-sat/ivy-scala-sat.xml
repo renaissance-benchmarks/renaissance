@@ -1,0 +1,7 @@
+<ivy-module version="2.0">
+    <info organisation="org.renaissance" module="scala-sat" />
+    <publications>
+        <artifact name="scala-smtlib" type="jar" ext="jar" />
+        <artifact name="cafesat" type="jar" ext="jar" />
+    </publications>
+</ivy-module>

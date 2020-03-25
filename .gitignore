@@ -3,4 +3,4 @@ target
 *.cfg
 *.iml
 tools/sbt/lib/local-preloaded/
-
+/out/

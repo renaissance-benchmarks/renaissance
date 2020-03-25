@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." name="jdk-concurrent" default="main" xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="root.project.basedir" location="${basedir}/../../" />
+	<property name="benchmark.name" value="jdk-concurrent" />
+	<property name="benchmark.scala.conf" value="scala" />
+	<import file="../../common.xml" />
+
+	<target name="main"
+			depends="benchmark-compile"
+			description="Default target: compile only."
+		>
+	</target>
+</project>
+
