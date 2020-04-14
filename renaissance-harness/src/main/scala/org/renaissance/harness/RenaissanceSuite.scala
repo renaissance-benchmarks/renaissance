@@ -44,11 +44,11 @@ object RenaissanceSuite {
     val allBenchmarks = BenchmarkRegistry.createDefault()
 
     if (config.printList) {
-      print(formatBenchmarkList(allBenchmarks))
+      print(formatBenchmarkList(selectNonDummyBenchmarks(allBenchmarks)))
     } else if (config.printRawList) {
-      println(formatRawBenchmarkList(allBenchmarks))
+      println(formatRawBenchmarkList(selectNonDummyBenchmarks(allBenchmarks)))
     } else if (config.printGroupList) {
-      println(formatGroupList(allBenchmarks))
+      println(formatGroupList(selectNonDummyBenchmarks(allBenchmarks)))
     } else if (config.benchmarkSpecifiers.isEmpty) {
       println(parser.usage())
     } else {
@@ -203,7 +203,11 @@ object RenaissanceSuite {
     syncNanos - MILLISECONDS.toNanos(uptimeMillis)
   }
 
-  def selectBenchmarks(
+  private def selectNonDummyBenchmarks(benchmarks: BenchmarkRegistry) = {
+    benchmarks.getAll.asScala.filter(_.group != "dummy").toSeq
+  }
+
+  private def selectBenchmarks(
     benchmarks: BenchmarkRegistry,
     specifiers: Seq[String]
   ): Seq[BenchmarkInfo] = {
@@ -217,7 +221,7 @@ object RenaissanceSuite {
         result ++= benchmarks.getGroup(specifier).asScala
       } else if (specifier == "all") {
         // Add all benchmarks except the dummy ones
-        result ++= benchmarks.getAll.asScala.filter(_.group != "dummy")
+        result ++= selectNonDummyBenchmarks(benchmarks)
       } else {
         Console.err.println(s"Benchmark (or group) '$specifier' does not exist.")
         sys.exit(1)
@@ -313,14 +317,14 @@ object RenaissanceSuite {
     result += line.toString
   }
 
-  private def formatRawBenchmarkList(benchmarks: BenchmarkRegistry) =
-    benchmarks.names().asScala.mkString("\n")
+  private def formatRawBenchmarkList(benchmarks: Seq[BenchmarkInfo]) =
+    benchmarks.map(_.name()).mkString("\n")
 
-  private def formatBenchmarkList(benchmarks: BenchmarkRegistry) = {
+  private def formatBenchmarkList(benchmarks: Seq[BenchmarkInfo]) = {
     val indent = "    "
 
     val result = new StringBuilder
-    for (bench <- benchmarks.getAll.asScala) {
+    for (bench <- benchmarks) {
       result.append(bench.name).append("\n")
       val summaryWords = bench.summary().split("\\s+")
       result.append(foldText(summaryWords, 65, indent).mkString("\n")).append("\n")
@@ -330,7 +334,7 @@ object RenaissanceSuite {
     result.toString
   }
 
-  private def formatGroupList(benchmarks: BenchmarkRegistry) =
-    benchmarks.groupNames().asScala.sorted.mkString("\n")
+  private def formatGroupList(benchmarks: Seq[BenchmarkInfo]) =
+    benchmarks.map(_.group()).distinct.sorted.mkString("\n")
 
 }
