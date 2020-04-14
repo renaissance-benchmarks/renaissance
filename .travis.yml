@@ -41,7 +41,7 @@ refs:
       - 'test $(unzip -p renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar META-INF/BenchmarkList | wc -l) -gt 0'
       - 'java -version'
       # Test benchmarks under Renaissance harness
-      - 'java -jar ./target/renaissance-gpl-$RENAISSANCE_VERSION.jar --raw-list | grep -v "^dummy" >list.txt'
+      - 'java -jar ./target/renaissance-gpl-$RENAISSANCE_VERSION.jar --raw-list >list.txt'
       - 'for BENCH in $(cat list.txt); do echo "====> $BENCH"; java -Xms2500M -Xmx2500M -jar ./target/renaissance-gpl-$RENAISSANCE_VERSION.jar -c test -r 1 --csv output.csv --json output.json "$BENCH" || exit 1; done'
       # Test benchmarks under JMH harness
       - 'java -Xms2500M -Xmx2500M -jar ./renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-$RENAISSANCE_VERSION.jar -wi 0 -i 1 -f 1 -foe true'

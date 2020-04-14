@@ -134,7 +134,6 @@ public final class BenchmarkRegistry {
     return benchmarksByName.get(name);
   }
 
-
   public List<BenchmarkInfo> getAll() {
     return new ArrayList<>(benchmarksByName.values());
   }
@@ -157,16 +156,6 @@ public final class BenchmarkRegistry {
 
   public Map<String, List<BenchmarkInfo>> byGroup() {
     return Collections.unmodifiableMap(benchmarksByGroup);
-  }
-
-
-  public List<String> names() {
-    return new ArrayList<>(benchmarksByName.keySet());
-  }
-
-
-  public List<String> groupNames() {
-    return new ArrayList<>(benchmarksByGroup.keySet());
   }
 
 
