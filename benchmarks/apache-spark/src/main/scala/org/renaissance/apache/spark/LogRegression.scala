@@ -107,7 +107,7 @@ final class LogRegression extends Benchmark with SparkUtil {
     sc = setUpSparkContext(tempDirPath, threadCountParam, "log-regression")
     prepareInput()
     loadData()
-    checkCaching(rdd)
+    ensureCaching(rdd)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

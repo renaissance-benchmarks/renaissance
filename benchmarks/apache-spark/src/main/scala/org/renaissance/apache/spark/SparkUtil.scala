@@ -62,7 +62,7 @@ trait SparkUtil {
     }
   }
 
-  def checkCaching[T](rdd: RDD[T]): Unit = {
+  def ensureCaching[T](rdd: RDD[T]): Unit = {
     if (!rdd.getStorageLevel.useMemory) {
       throw new Exception("Spark RDD must be cached !")
     }
