@@ -72,6 +72,8 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   var sc: SparkContext = _
 
+  val helper = new MovieLensHelper
+
   val movieLensPath = Paths.get("target", "movie-lens")
 
   val checkpointPath = movieLensPath.resolve("checkpoint")
@@ -125,7 +127,7 @@ final class MovieLens extends Benchmark with SparkUtil {
         personalRatings = personalRatingsIter.toSeq
       }
 
-      personalRatingsRDD = sc.parallelize(personalRatings, 1)
+      personalRatingsRDD = sc.parallelize(personalRatings, 1).cache()
     }
 
     def getFilteredRDDFromPath(inputPath: Path): RDD[String] = {
@@ -144,7 +146,7 @@ final class MovieLens extends Benchmark with SparkUtil {
           val fields = line.split(",")
           // Format: (timestamp % 10, Rating(userId, movieId, rating))
           (fields(3).toLong % 10, Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble))
-        }
+        }.cache()
 
       numRatings = ratings.count()
       numUsers = ratings.map(_._2.user).distinct().count()
@@ -165,26 +167,22 @@ final class MovieLens extends Benchmark with SparkUtil {
     }
 
     def splitRatings(numPartitions: Int, trainingThreshold: Int, validationThreshold: Int) = {
-
       training = ratings
         .filter(x => x._1 < trainingThreshold)
         .values
         .union(personalRatingsRDD)
-        .repartition(numPartitions)
-        .cache()
+        .repartition(numPartitions).cache()
       numTraining = training.count()
 
       validation = ratings
         .filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold)
         .values
-        .repartition(numPartitions)
-        .cache()
+        .repartition(numPartitions).cache()
       numValidation = validation.count()
 
       test = ratings
         .filter(x => x._1 >= validationThreshold)
-        .values
-        .cache()
+        .values.cache()
       numTest = test.count()
 
       println(
@@ -262,6 +260,13 @@ final class MovieLens extends Benchmark with SparkUtil {
       math.sqrt(predictionsAndRatings.map(x => (x._1 - x._2) * (x._1 - x._2)).reduce(_ + _) / n)
     }
 
+    def verifyCaches() = {
+      ensureCaching(ratings)
+      ensureCaching(personalRatingsRDD)
+      ensureCaching(training)
+      ensureCaching(test)
+      ensureCaching(validation)
+    }
   }
 
   def setUpLogger() = {
@@ -279,6 +284,11 @@ final class MovieLens extends Benchmark with SparkUtil {
     setUpLogger()
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "movie-lens")
     sc.setCheckpointDir(checkpointPath.toString)
+    loadData()
+    // Split ratings into train (60%), validation (20%), and test (20%) based on the
+    // last digit of the timestamp, add myRatings to train, and cache them.
+    helper.splitRatings(4, 6, 8)
+    helper.verifyCaches()
   }
 
   def writeResourceToFile(resourceStream: InputStream, outputPath: Path) = {
@@ -286,7 +296,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     FileUtils.write(outputPath.toFile, content, StandardCharsets.UTF_8, true)
   }
 
-  def loadData(helper: MovieLensHelper) = {
+  def loadData() = {
     FileUtils.deleteDirectory(bigFilesPath.toFile)
 
     helper.loadPersonalRatings(this.getClass.getResource(personalRatingsInputFile))
@@ -304,12 +314,6 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val helper = new MovieLensHelper
-    loadData(helper)
-
-    // Split ratings into train (60%), validation (20%), and test (20%) based on the
-    // last digit of the timestamp, add myRatings to train, and cache them.
-    helper.splitRatings(4, 6, 8)
     helper.trainModels(alsRanksParam, alsLambdasParam, alsIterationsParam)
     val recommendations = helper.recommendMovies()
 

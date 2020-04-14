@@ -86,6 +86,7 @@ final class Als extends Benchmark with SparkUtil {
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
     prepareInput()
     loadData()
+    ensureCaching(ratings)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {

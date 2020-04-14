@@ -109,7 +109,7 @@ final class PageRank extends Benchmark with SparkUtil {
     tempDirPath = c.generateTempDir("page_rank")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
     links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
-
+    ensureCaching(links)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

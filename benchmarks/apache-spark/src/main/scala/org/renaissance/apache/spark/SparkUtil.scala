@@ -8,6 +8,8 @@ import java.nio.file.Paths
 import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+
 
 trait SparkUtil {
 
@@ -57,6 +59,12 @@ trait SparkUtil {
         new FileOutputStream(winutilsPath.toString + winUtils)
       )
       System.setProperty("hadoop.home.dir", tempDirPath.toAbsolutePath.toString)
+    }
+  }
+
+  def ensureCaching[T](rdd: RDD[T]): Unit = {
+    if (!rdd.getStorageLevel.useMemory) {
+      throw new Exception("Spark RDD must be cached !")
     }
   }
 }
