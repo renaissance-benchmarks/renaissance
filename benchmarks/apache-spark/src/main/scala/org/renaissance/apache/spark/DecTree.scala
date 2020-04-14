@@ -118,7 +118,7 @@ final class DecTree extends Benchmark with SparkUtil {
 
     tempDirPath = c.generateTempDir("dec_tree")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "dec-tree")
-    training = prepareAndLoadInput(decisionTreePath, inputFile)
+    training = prepareAndLoadInput(decisionTreePath, inputFile).cache()
     pipeline = constructPipeline()
   }
 
