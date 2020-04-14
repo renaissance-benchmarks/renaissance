@@ -146,7 +146,8 @@ final class MovieLens extends Benchmark with SparkUtil {
           val fields = line.split(",")
           // Format: (timestamp % 10, Rating(userId, movieId, rating))
           (fields(3).toLong % 10, Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble))
-        }.cache()
+        }
+        .cache()
 
       numRatings = ratings.count()
       numUsers = ratings.map(_._2.user).distinct().count()
@@ -171,18 +172,21 @@ final class MovieLens extends Benchmark with SparkUtil {
         .filter(x => x._1 < trainingThreshold)
         .values
         .union(personalRatingsRDD)
-        .repartition(numPartitions).cache()
+        .repartition(numPartitions)
+        .cache()
       numTraining = training.count()
 
       validation = ratings
         .filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold)
         .values
-        .repartition(numPartitions).cache()
+        .repartition(numPartitions)
+        .cache()
       numValidation = validation.count()
 
       test = ratings
         .filter(x => x._1 >= validationThreshold)
-        .values.cache()
+        .values
+        .cache()
       numTest = test.count()
 
       println(
