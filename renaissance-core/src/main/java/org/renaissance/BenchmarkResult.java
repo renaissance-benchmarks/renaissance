@@ -48,6 +48,20 @@ public interface BenchmarkResult {
     }
 
     /**
+     * Creates a simple {@link BenchmarkResult} which checks if the {@code boolean}
+     * condition is true.
+     *
+     * @param name The name of the result (shown in the failure error message).
+     * @param condition The actual result of the condition.
+     * @return New {@link BenchmarkResult} instance.
+     */
+    public static BenchmarkResult simple(
+            final String name, final boolean condition
+    ) {
+      return () -> Assert.assertTrue(condition, name);
+    }
+
+    /**
      * Creates a simple {@link BenchmarkResult} which tests two
      * {@code long} values for equality.
      *
@@ -158,6 +172,28 @@ public interface BenchmarkResult {
   //
 
   final class Assert {
+
+    private static void assertCondition(
+            boolean expected, boolean actual, String subject
+    ) throws ValidationException {
+      if (expected != actual) {
+        throw new ValidationException(
+                "%s: expected %b but got %b", subject, expected, actual
+        );
+      }
+    }
+
+    public static void assertTrue(
+            boolean actual, String subject
+    ) throws ValidationException {
+      Assert.assertCondition(true, actual, subject);
+    }
+
+    public static void assertFalse(
+            boolean actual, String subject
+    ) throws ValidationException {
+      Assert.assertCondition(false, actual, subject);
+    }
 
     public static void assertEquals(
       int expected, int actual, String subject
