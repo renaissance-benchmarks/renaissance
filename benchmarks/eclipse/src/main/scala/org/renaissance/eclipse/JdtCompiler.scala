@@ -118,6 +118,15 @@ final class JdtCompiler extends Benchmark {
       null
     )
 
-    Validators.dummy()
+    if (!success) {
+      println("stdout :")
+      println(stdout.toString)
+      println("stderr :")
+      println(stderr.toString)
+    }
+    Validators.compound(
+      Validators.simple("ECJ compilation must succeed", success),
+      Validators.simple("Standard error must be of size zero", 0, stderr.toString.length)
+    )
   }
 }
