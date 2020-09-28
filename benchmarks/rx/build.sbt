@@ -5,7 +5,6 @@ lazy val scalaStdlib = (project in file("."))
     name := "rx",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := "2.11.8",
     libraryDependencies ++= Seq(
       "io.reactivex" % "rxjava" % "1.3.7",
