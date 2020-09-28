@@ -33,18 +33,16 @@ trait KmeansUtilities {
         val z = ((i + 7) % k) * 1.0 / k + randz.nextDouble() * 0.5
         new Point(x, y, z)
       })
-      .to[mutable.ArrayBuffer]
   }
 
   def initializeMeans(k: Int, points: Seq[Point]): Seq[Point] = {
     val rand = new Random(7)
     (0 until k)
       .map(_ => points(rand.nextInt(points.length)))
-      .to[mutable.ArrayBuffer]
   }
 
-  def findClosest(p: Point, means: GenSeq[Point]): Point = {
     assert(means.size > 0)
+  def findClosest(p: Point, means: Seq[Point]): Point = {
     var minDistance = p.squareDistance(means(0))
     var closest = means(0)
     for (mean <- means) {
@@ -58,17 +56,17 @@ trait KmeansUtilities {
   }
 
   def classify(
-    points: GenSeq[Point],
-    means: GenSeq[Point]
-  ): GenMap[Point, GenSeq[Point]] = {
+    points: Seq[Point],
+    means: Seq[Point]
+  ): Map[Point, Seq[Point]] = {
     val grouped = points.groupBy(p => findClosest(p, means))
     means.foldLeft(grouped) { (map, mean) =>
       if (map.contains(mean)) map else map.updated(mean, Seq())
     }
   }
 
-  def findAverage(oldMean: Point, points: GenSeq[Point]): Point =
     if (points.length == 0) oldMean
+  def findAverage(oldMean: Point, points: Seq[Point]): Point =
     else {
       var x = 0.0
       var y = 0.0
@@ -82,15 +80,15 @@ trait KmeansUtilities {
     }
 
   def update(
-    classified: GenMap[Point, GenSeq[Point]],
-    oldMeans: GenSeq[Point]
-  ): GenSeq[Point] = {
+    classified: Map[Point, Seq[Point]],
+    oldMeans: Seq[Point]
+  ): Seq[Point] = {
     oldMeans.map(mean => findAverage(mean, classified(mean)))
   }
 
   def converged(eta: Double)(
-    oldMeans: GenSeq[Point],
-    newMeans: GenSeq[Point]
+    oldMeans: Seq[Point],
+    newMeans: Seq[Point]
   ): Boolean = {
     (oldMeans zip newMeans)
       .map({
@@ -100,11 +98,12 @@ trait KmeansUtilities {
       .forall(_ <= eta)
   }
 
+  @annotation.tailrec
   final def kMeans(
-    points: GenSeq[Point],
-    means: GenSeq[Point],
+    points: Seq[Point],
+    means: Seq[Point],
     eta: Double
-  ): GenSeq[Point] = {
+  ): Seq[Point] = {
     val classifiedPoints = classify(points, means)
 
     val newMeans = update(classifiedPoints, means)
@@ -147,7 +146,7 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   private var points: Seq[Point] = _
 
-  private var means: GenSeq[Point] = _
+  private var means: Seq[Point] = _
 
   private val EXPECTED_RESULT_FULL = Seq(
     new Point(0.69, 0.54, 0.76),
@@ -213,7 +212,7 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
     means = initializeMeans(clusterCountParam, points)
   }
 
-  private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
+  private def validate(expected: Seq[Point], actual: Seq[Point]): Unit = {
     val EPSILON = 0.01
 
     Assert.assertEquals(expected.length, actual.length, "centers count")
