@@ -58,7 +58,7 @@ final class Reactors extends Benchmark {
     system.shutdown()
   }
 
-  override def run(c: BenchmarkContext) = {
+  override def run(c: BenchmarkContext): BenchmarkResult = {
 
     // TODO: Address workload scaling. One option is to tune dimensions so that each workload sends roughly equal number of messages.
 
@@ -79,7 +79,8 @@ final class Reactors extends Benchmark {
   }
 }
 
-/** Baseline benchmark workload.
+/**
+ * Baseline benchmark workload.
  *
  *  Exercise the basic reactor scheduler functionality.
  *  Wait for the system event stream to indicate that the reactor is no longer scheduled,
@@ -87,7 +88,7 @@ final class Reactors extends Benchmark {
  *
  *  Messages exchanged: sz
  */
-object Baseline {
+private object Baseline {
 
   def run(system: ReactorSystem, sz: Int) = {
     println("Baseline workload: Reactor scheduling events")
@@ -113,7 +114,8 @@ object Baseline {
   }
 }
 
-/** BigBench benchmark workload.
+/**
+ * BigBench benchmark workload.
  *
  *  Motivated by the Savina Big benchmark.
  *
@@ -122,7 +124,7 @@ object Baseline {
  *
  *  Messages exchanged: 2 * N * sz (ping, pong) + 2 * N (start, end)
  */
-object BigBench {
+private object BigBench {
 
   // The number of workers to create.
   val NUM_WORKERS = 1280
@@ -167,7 +169,7 @@ object BigBench {
       }
       self.main.events.onMatch {
         case Ping(ch) => ch ! "pong"
-        case Start()  => doPing()
+        case Start() => doPing()
         case End() =>
           self.main.seal()
           responses.seal()
@@ -179,7 +181,8 @@ object BigBench {
   }
 }
 
-/** CountingActor benchmark workload.
+/**
+ * CountingActor benchmark workload.
  *
  *  Motivated by the Savina Counting Actor benchmark.
  *
@@ -189,7 +192,7 @@ object BigBench {
  *
  *  Messages exchanged: sz (inc) + 1 (get)
  */
-object CountingActor {
+private object CountingActor {
   trait Cmd
   case class Increment() extends Cmd
   case class Get() extends Cmd
@@ -229,7 +232,8 @@ object CountingActor {
   }
 }
 
-/** Fibonacci benchmark workload.
+/**
+ * Fibonacci benchmark workload.
  *
  *  Motivated by the Savina Fibonacci benchmark.
  *
@@ -281,6 +285,7 @@ object Fibonacci {
   }
 
   def computeExpected(sz: Int): Int = {
+    @annotation.tailrec
     def computeWithTail(n: Int, one: Int, two: Int): Int = {
       n match {
         case 0 => one
@@ -291,7 +296,8 @@ object Fibonacci {
   }
 }
 
-/** ForkJoinCreation benchmark workload.
+/**
+ * ForkJoinCreation benchmark workload.
  *
  *  Motivated by the Savina Fork Join benchmark.
  *
@@ -299,7 +305,7 @@ object Fibonacci {
  *
  *  Messages exchanged: sz
  */
-object ForkJoinCreation {
+private object ForkJoinCreation {
 
   def run(system: ReactorSystem, sz: Int) = {
     println("ForkJoinCreation workload: Reactor creation performance")
@@ -331,7 +337,8 @@ object ForkJoinCreation {
   }
 }
 
-/** ForkJoinThroughput benchmark workload.
+/**
+ * ForkJoinThroughput benchmark workload.
  *
  *  Motivated by the Savina Fork Join benchmark.
  *
@@ -339,7 +346,7 @@ object ForkJoinCreation {
  *
  *  Messages exchanged: K * sz
  */
-object ForkJoinThroughput {
+private object ForkJoinThroughput {
 
   // The number of workers to create.
   val NUM_WORKERS = 256
@@ -385,7 +392,8 @@ object ForkJoinThroughput {
   }
 }
 
-/** PingPong benchmark workload.
+/**
+ * PingPong benchmark workload.
  *
  *  Motivated by the Savina Ping Pong benchmark.
  *
@@ -393,7 +401,7 @@ object ForkJoinThroughput {
  *
  *  Messages exchanged: 2 * sz (ping, pong)
  */
-object PingPong {
+private object PingPong {
 
   def run(system: ReactorSystem, sz: Int) = {
     println("PingPong workload: Reactor pair sequential ping pong performance")
@@ -430,7 +438,8 @@ object PingPong {
   }
 }
 
-/** StreamingPingPong benchmark workload.
+/**
+ * StreamingPingPong benchmark workload.
  *
  *  Motivated by the Savina Ping Pong benchmark.
  *
@@ -438,7 +447,7 @@ object PingPong {
  *
  *  Messages exchanged: 2 * sz (ping, pong)
  */
-object StreamingPingPong {
+private object StreamingPingPong {
 
   // How many ping pong exchanges to overlap.
   val WINDOW_SIZE = 128
@@ -482,13 +491,14 @@ object StreamingPingPong {
   }
 }
 
-/** Roundabout benchmark workload.
+/**
+ * Roundabout benchmark workload.
  *
  *  Creates a worker that listens on many channels and sends a constant total number of messages round robin to all those channels.
  *
  *  Messages exchanged: N
  */
-object Roundabout {
+private object Roundabout {
 
   // How many messages to send.
   val NUM_MESSAGES = 500000
@@ -536,7 +546,8 @@ object Roundabout {
   }
 }
 
-/** ThreadRing benchmark workload.
+/**
+ * ThreadRing benchmark workload.
  *
  *  Motivated by the Savina Thread Ring benchmark.
  *
@@ -544,7 +555,7 @@ object Roundabout {
  *
  *  Messages exchanged: sz (rounded to multiple of RING_SIZE)
  */
-object ThreadRing {
+private object ThreadRing {
 
   // Size of worker ring.
   val RING_SIZE = 1000

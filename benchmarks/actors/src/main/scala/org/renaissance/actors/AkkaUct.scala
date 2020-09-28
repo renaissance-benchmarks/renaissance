@@ -29,7 +29,7 @@ final class AkkaUct extends Benchmark {
 
   private var loopCountParam: Int = _
 
-  private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = null
+  private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     loopCountParam = c.intParameter("loop_count")
@@ -41,12 +41,12 @@ final class AkkaUct extends Benchmark {
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     if (bench != null) {
-      bench.cleanupIteration(false, 0)
+      bench.cleanupIteration(lastIteration = false, 0)
     }
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    for (i <- 0 until loopCountParam) {
+    for (_ <- 0 until loopCountParam) {
       bench.runIteration()
     }
 
