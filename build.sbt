@@ -7,8 +7,6 @@ import org.renaissance.core.Launcher
 
 import scala.collection._
 
-val renaissanceScalaVersion = "2.12.8"
-
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
