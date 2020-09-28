@@ -5,7 +5,6 @@ lazy val scalaDotty = (project in file("."))
     name := "scala-dotty",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := "2.12.8",
     libraryDependencies ++= Seq(
       "commons-io" % "commons-io" % "2.6",
