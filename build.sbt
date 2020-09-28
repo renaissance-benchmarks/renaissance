@@ -223,7 +223,6 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
     name := "renaissance-jmh",
     version := (version in renaissance).value,
     organization := (organization in renaissance).value,
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     nonGplOnly := (nonGplOnly in renaissance).value,
     mainClass in assembly := Some("org.openjdk.jmh.Main"),
     sourceGenerators in Compile := Def.taskDyn {
