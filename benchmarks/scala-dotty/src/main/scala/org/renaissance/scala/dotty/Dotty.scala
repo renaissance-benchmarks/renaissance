@@ -38,9 +38,9 @@ final class Dotty extends Benchmark {
 
   private val sources: mutable.Buffer[String] = mutable.Buffer[String]()
 
-  private var sourcePaths: mutable.Buffer[String] = null
+  private var sourcePaths: mutable.Buffer[String] = _
 
-  private def unzipSources() = {
+  private def unzipSources(): Unit = {
     val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + zipPath))
     val target = sourceCodePath.toFile
     var nextEntry = zis.getNextEntry
@@ -61,7 +61,7 @@ final class Dotty extends Benchmark {
     zis.close()
   }
 
-  private def setUpSourcePaths() = {
+  private def setUpSourcePaths(): Unit = {
     sourcePaths = sources.map(f => sourceCodePath.resolve(f).toString)
   }
 
@@ -105,7 +105,7 @@ final class Dotty extends Benchmark {
     val cp = Thread.currentThread.getContextClassLoader
       .asInstanceOf[URLClassLoader]
       .getURLs
-      .map(url => (new java.io.File(url.toURI)).getPath)
+      .map(url => new java.io.File(url.toURI).getPath)
       .mkString(File.pathSeparator)
     val args = Seq[String](
       DOTTY_ARG_CLASS_PATH,
