@@ -7,7 +7,7 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.License
 
-import scala.collection.JavaConverters
+import scala.jdk.CollectionConverters._
 
 @Name("scrabble")
 @Group("jdk-streams")
@@ -57,9 +57,7 @@ final class Scrabble extends Benchmark {
         "best words count"
       )
 
-      for ((expected, actual) <- expectedResultParam zip JavaConverters.asScalaBuffer(
-             actualWords
-           )) {
+      for ((expected, actual) <- expectedResultParam zip actualWords.asScala) {
         Assert.assertEquals(expected, actual, "best words")
       }
     }
