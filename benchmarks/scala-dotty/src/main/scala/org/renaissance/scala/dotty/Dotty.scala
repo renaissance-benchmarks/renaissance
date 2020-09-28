@@ -1,7 +1,6 @@
 package org.renaissance.scala.dotty
 
 import java.io._
-import java.io.FileOutputStream
 import java.net.URLClassLoader
 import java.nio.file.Paths
 import java.util.zip.ZipInputStream
@@ -76,8 +75,7 @@ final class Dotty extends Benchmark {
   private val DOTTY_ARG_CLASS_FILE_DESTINATION = "-d"
 
   /**
-   * Enable implicit conversions in dotty during compilation which
-   * allows the compiler to automatically perform implicit type conversions.
+   * Allows the compiler to automatically perform implicit type conversions.
    */
   private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
 
@@ -102,14 +100,15 @@ final class Dotty extends Benchmark {
      * but that seems to be impossible with current API (see discussion
      * at https://github.com/renaissance-benchmarks/renaissance/issues/176).
      */
-    val cp = Thread.currentThread.getContextClassLoader
+    val classPath = Thread.currentThread.getContextClassLoader
       .asInstanceOf[URLClassLoader]
       .getURLs
       .map(url => new java.io.File(url.toURI).getPath)
       .mkString(File.pathSeparator)
+
     val args = Seq[String](
       DOTTY_ARG_CLASS_PATH,
-      cp,
+      classPath,
       DOTTY_ARG_TYPE_CONVERSION,
       DOTTY_ARG_CLASS_FILE_DESTINATION,
       outputPath.toString
