@@ -115,7 +115,8 @@ final class Dotty extends Benchmark {
       outputPath.toString
     )
 
-    sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
+    // Call dotc.Main through a Java bridge method.
+    sourcePaths.map(p => args :+ p).foreach(x => JavaDotty.process(x.toArray))
 
     // TODO: add proper validation
     Validators.dummy()
