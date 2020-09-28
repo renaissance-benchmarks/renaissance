@@ -16,10 +16,11 @@ import org.renaissance.Plugin.MeasurementResultListener
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
-/** Provides common functionality for JSON and CSV result writers.
+/**
+ * Provides common functionality for JSON and CSV result writers.
  *
  * Registers a shutdown hook to avoid losing unsaved results in case
  * the JVM is forcefully terminated.
@@ -167,7 +168,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     os match {
       case unixOs: UnixOperatingSystemMXBean =>
-        result += (
+        result ++= Seq(
           "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
           "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
           "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,

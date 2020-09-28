@@ -16,7 +16,7 @@ import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
 import scopt.OptionParser
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
@@ -161,7 +161,7 @@ object MarkdownGenerator {
 
       try {
         writer.write(value)
-        println(file + " updated.");
+        println(file + " updated.")
 
       } finally {
         writer.close()

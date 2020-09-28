@@ -48,7 +48,7 @@ private final class Config {
 
   def withPolicy(specifier: String) = {
     policyType = PolicyType.EXTERNAL
-    policyPlugin = specifier;
+    policyPlugin = specifier
     withPlugin(specifier)
   }
 

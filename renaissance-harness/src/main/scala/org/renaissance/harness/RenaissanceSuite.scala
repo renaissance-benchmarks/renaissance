@@ -17,7 +17,7 @@ import org.renaissance.harness.ExecutionPolicies.FixedOpCount
 import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection._
 
 object RenaissanceSuite {
@@ -176,7 +176,7 @@ object RenaissanceSuite {
       var nanosAfter = System.nanoTime()
 
       do {
-        nanosBefore = nanosAfter;
+        nanosBefore = nanosAfter
         currentMillis = System.currentTimeMillis()
         nanosAfter = System.nanoTime()
       } while (currentMillis == lastMillis)
