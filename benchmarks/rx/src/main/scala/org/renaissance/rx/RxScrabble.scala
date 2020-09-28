@@ -52,7 +52,7 @@ final class RxScrabble extends Benchmark {
     val result = bench.runScrabble()
 
     new BenchmarkResult {
-      override def validate() = {
+      override def validate(): Unit = {
         val actualWords = RxScrabbleImplementation.prepareForValidation(result)
         Validators.hashing(expectedHashParam, actualWords).validate()
       }
