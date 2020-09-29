@@ -5,7 +5,6 @@ lazy val neo4j = (project in file("."))
     name := "neo4j",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := "2.11.12",
     scalacOptions += "-target:jvm-1.8",
     libraryDependencies ++= Seq(
