@@ -12,9 +12,9 @@ lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
 
 val benchmarkProjects = for {
-  // Hint: add .filter(Seq("group1", "group2").contains(_)) to compile
-  // selected benchmark groups only (this can significantly speed-up
-  // compilation/assembly when debugging the harness).
+  // Hint: add .filter(_ == "group") to compile with selected group only
+  // (can significantly speed-up compilation/assembly when debugging harness).
+  dir <- file("benchmarks").list()
   if dir != null && file("benchmarks/" + dir + "/build.sbt").exists()
 } yield {
   RootProject(uri("benchmarks/" + dir))
