@@ -5,7 +5,7 @@ lazy val jdkConcurrent = (project in file("."))
     name := "jdk-concurrent",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalaVersion := "2.13.3",
+    scalaVersion := "2.13.4",
     libraryDependencies ++= Seq(
       "io.jenetics" % "jenetics" % "4.4.0"
     )
