@@ -23,7 +23,7 @@ lazy val root = (project in file(""))
   .settings(
     name := "CafeSat",
     version := "0.01",
-    scalaVersion := "2.11.7",
+    scalaVersion := "2.11.12",
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     javaOptions in IntegrationTest ++= Seq("-Xss10M"),
     fork in IntegrationTest := true,
