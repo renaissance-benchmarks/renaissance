@@ -9,7 +9,6 @@ lazy val scalaSat = (project in file("."))
     name := "scala-sat",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     scalaVersion := "2.11.7"
   )
   .dependsOn(
