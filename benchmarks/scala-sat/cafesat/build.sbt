@@ -29,13 +29,8 @@ lazy val root = (project in file(""))
     fork in IntegrationTest := true,
     logBuffered in IntegrationTest := false,
     parallelExecution in Test := true,
+    libraryDependencies += "com.regblanc" %% "scala-smtlib" % "0.2.2",
     libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test,it"
   )
   .configs(IntegrationTest)
   .settings(Defaults.itSettings: _*)
-  .dependsOn(
-    scalaSMTLib % "compile->compile;compile->test"
-  )
-  .aggregate(
-    scalaSMTLib
-  )
