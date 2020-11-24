@@ -23,14 +23,15 @@ lazy val root = (project in file(""))
   .settings(
     name := "CafeSat",
     version := "0.01",
-    scalaVersion := "2.11.12",
+    scalaVersion := "2.12.12",
     scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
     javaOptions in IntegrationTest ++= Seq("-Xss10M"),
     fork in IntegrationTest := true,
     logBuffered in IntegrationTest := false,
     parallelExecution in Test := true,
     libraryDependencies += "com.regblanc" %% "scala-smtlib" % "0.2.2",
-    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test,it"
+    // Starting with 3.1.x, scalatest produces a number of deprecation warnings
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.9" % "test,it"
   )
   .configs(IntegrationTest)
   .settings(Defaults.itSettings: _*)
