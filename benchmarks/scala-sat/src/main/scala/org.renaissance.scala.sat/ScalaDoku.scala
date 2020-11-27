@@ -138,12 +138,20 @@ final class ScalaDoku extends Benchmark {
 
   final class DokuResult(actual: Option[Array[Array[Int]]], expected: Array[Array[Int]])
     extends BenchmarkResult {
-    override def validate(): Unit = {
-      if (actual.isEmpty)
-        throw new ValidationException("Result array does not exist.")
 
-      if (expected.deep != actual.get.deep)
-        throw new ValidationException("Result array differs from expected solution.")
+    override def validate(): Unit = {
+      if (actual.isEmpty) {
+        throw new ValidationException("Result array does not exist.")
+      }
+
+      for ((expectedSlice, index) <- expected.zipWithIndex) {
+        val actualSlice = actual.get(index)
+        if (!expectedSlice.sameElements(actualSlice)) {
+          throw new ValidationException(
+            s"Result row ${index} does not match the expected solution: actual ${actualSlice.toSeq}, expected ${expectedSlice.toSeq}"
+          )
+        }
+      }
     }
   }
 
