@@ -43,7 +43,7 @@ class StopWatch private (tag: String) {
   def seconds: Double = elapsed/1e9
   def nano: Long = elapsed
 
-  def reset() {
+  def reset() : Unit = {
     elapsed = 0
   }
 

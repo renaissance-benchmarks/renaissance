@@ -50,7 +50,7 @@ object Formulas {
     def ||(that: Formula): Formula = new Formula(Or(this.formula, that.formula))
 
     /** Returns the negation of `this`. */
-    def unary_!(): Formula = new Formula(Not(this.formula))
+    def unary_! : Formula = new Formula(Not(this.formula))
 
     /** Returns a formula representing the equivalence of `this` and `that`. */
     def iff(that: Formula): Formula = new Formula(Or(

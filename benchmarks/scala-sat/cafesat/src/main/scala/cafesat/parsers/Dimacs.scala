@@ -37,7 +37,7 @@ object Dimacs {
     var nbVariables = 0
 
     val bufferInput = new BufferedReader(input)
-    val lines = Stream.continually(bufferInput.readLine()).takeWhile(_ != null)
+    val lines = LazyList.continually(bufferInput.readLine()).takeWhile(_ != null)
 
     for(line <- lines) {
       val length = line.size

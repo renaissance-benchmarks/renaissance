@@ -23,7 +23,7 @@ class FixedIntStack(maxSize: Int) {
   private val stack: Array[Int] = new Array(maxSize)
   private var topIndex: Int = -1
 
-  def push(el: Int) {
+  def push(el: Int): Unit = {
     topIndex += 1
     stack(topIndex) = el
   }

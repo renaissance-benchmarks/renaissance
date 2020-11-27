@@ -1,8 +1,8 @@
 package cafesat.sat
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class InterpolationSuite extends FunSuite {
+class InterpolationSuite extends AnyFunSuite {
 
   private val a = new Literal(0, true)
   private val na = new Literal(0, false)

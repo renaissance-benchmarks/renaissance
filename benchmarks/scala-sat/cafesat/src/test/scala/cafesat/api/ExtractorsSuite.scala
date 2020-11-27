@@ -3,10 +3,10 @@ package cafesat.api
 import FormulaBuilder._
 import Extractors._
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 
-class ExtractorsSuite extends FunSuite {
+class ExtractorsSuite extends AnyFunSuite {
 
   private val x1 = propVar()
   private val x2 = propVar()

@@ -4,9 +4,9 @@ package sat
 import Solver.Results._
 import Solver.Clause
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class IncrementalSuite extends FunSuite {
+class IncrementalSuite extends AnyFunSuite {
 
   private implicit val emptyContext = Context(util.SilentLogger)
 

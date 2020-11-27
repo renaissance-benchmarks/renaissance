@@ -1,11 +1,11 @@
 package cafesat
 package theories.adt
 
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.reflect.ClassTag
 
-class AdtSolverMultiConstructorsTests extends FlatSpec with AdtSolverSpecHelpers {
+class AdtSolverMultiConstructorsTests extends AnyFlatSpec with AdtSolverSpecHelpers {
 
   import Types._
 

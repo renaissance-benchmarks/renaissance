@@ -463,7 +463,7 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
     private var maxLearnt: Int = nbClauses / 3
     private val maxLearntFactor: Double = 1.1
 
-    def augmentMaxLearnt() {
+    def augmentMaxLearnt(): Unit = {
       maxLearnt = (maxLearnt*maxLearntFactor + 1).toInt
     }
 
@@ -487,42 +487,42 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
     val vsidsQueue = new FixedIntDoublePriorityQueue(nbVar)
     initVSIDS()
 
-    def initVSIDS() {
+    def initVSIDS(): Unit = {
       originalClauses.foreach(cl => cl.lits.foreach(lit => {
         vsidsQueue.incScore(lit >> 1, vsidsInc)
       }))
     }
 
-    def incVSIDS(id: Int) {
+    def incVSIDS(id: Int): Unit = {
       val newScore = vsidsQueue.incScore(id, vsidsInc)
       if(newScore > 1e100)
         rescaleVSIDS()
     }
 
-    def rescaleVSIDS() {
+    def rescaleVSIDS(): Unit = {
       vsidsQueue.rescaleScores(1e-100)
       vsidsInc *= 1e-100
     }
 
-    def decayVSIDS() {
+    def decayVSIDS(): Unit = {
       vsidsInc *= vsidsDecay
     }
 
-    def incVSIDSClause(cl: Clause) {
+    def incVSIDSClause(cl: Clause): Unit = {
       cl.activity = cl.activity + vsidsClauseInc
       if(cl.activity > 1e100)
         rescaleVSIDSClause()
     }
-    def rescaleVSIDSClause() {
+    def rescaleVSIDSClause(): Unit = {
       for(cl <- learntClauses)
         cl.activity = cl.activity*1e-100
       vsidsClauseInc *= 1e-100
     }
-    def decayVSIDSClause() {
+    def decayVSIDSClause(): Unit = {
       vsidsClauseInc *= vsidsClauseDecay
     }
 
-    def learn(clause: Clause) {
+    def learn(clause: Clause): Unit = {
       assert(clause.size > 1)
 
       learntClauses ::= clause
@@ -541,7 +541,7 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
         reduceLearntClauses()
     }
 
-    def reduceLearntClauses() {
+    def reduceLearntClauses(): Unit = {
       val sortedLearntClauses = learntClauses.sortWith((cl1, cl2) => cl1.activity < cl2.activity)
       val (forgotenClauses, keptClauses) = sortedLearntClauses.splitAt(maxLearnt/2)
       learntClauses = keptClauses
@@ -562,12 +562,12 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
     override def toString: String = (learntClauses ++ originalClauses).mkString("{\n", "\n", "\n}")
   }
 
-  private[this] def recordClause(cl: Clause) {
+  private[this] def recordClause(cl: Clause): Unit = {
     watched(cl.lits(0)).append(cl)
     watched(cl.lits(1)).append(cl)
   }
 
-  private[this] def unrecordClause(cl: Clause) {
+  private[this] def unrecordClause(cl: Clause): Unit = {
     watched(cl.lits(0)).remove(cl)
     watched(cl.lits(1)).remove(cl)
   }
@@ -577,7 +577,7 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
    * even those returned as t-consequences. This makes the overall invariants
    * much easier to maintain and consistant.
    */
-  private[this] def enqueueLiteral(lit: Int, from: Clause = null) {
+  private[this] def enqueueLiteral(lit: Int, from: Clause = null): Unit = {
     logger.trace(
       "Enqueuing literal [" + literals(lit) + "] from clause: " +
       (if(from == null) "null" else from.lits.map(literals(_)).mkString("[", ", ", "]")))
@@ -597,7 +597,7 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
     levels(id) = decisionLevel
   }
 
-  private[this] def decide() {
+  private[this] def decide(): Unit = {
     if(cnfFormula.vsidsQueue.isEmpty) {
       logger.debug("VSIDS queue is empty, model found")
       status = Satisfiable
@@ -646,7 +646,7 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
     }
   }
 
-  private[this] def backtrack() {
+  private[this] def backtrack(): Unit = {
     if(decisionLevel == 0)
       status = Unsatisfiable
     else {

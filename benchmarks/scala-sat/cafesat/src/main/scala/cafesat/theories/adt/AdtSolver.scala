@@ -127,7 +127,7 @@ class AdtSolver {
   protected var instantiated      = new ArrayBuffer[Boolean]
 
   protected val potentialInst     = new mutable.HashSet[TermRef]
-  protected val downSet           = new mutable.ArrayStack[(TermRef, TermRef)]
+  protected val downSet           = new mutable.Stack[(TermRef, TermRef)]
 
   var debug = false
   var debug_didSplit = false
@@ -174,9 +174,9 @@ class AdtSolver {
     val _inEdges      = new ArrayBuffer[mutable.HashSet[TermRef]](inEdges.size) ++=
       inEdges.map(_.clone())
     val _sharedSets   = new mutable.HashMap[(TermRef, TermRef), mutable.HashSet[Index]] ++=
-      sharedSets.mapValues(_.clone())
+      sharedSets.view.mapValues(_.clone())
     val _selectorsOf  = new mutable.HashMap[TermRef, SelectorMap]() ++=
-      selectorsOf.mapValues(_.clone())
+      selectorsOf.view.mapValues(_.clone())
 
     val state = State(
       nextTermId, maxVarId,
@@ -259,7 +259,7 @@ class AdtSolver {
         //TODO: selectee is head?
         val selectee = subTermRefs.head
         if (instantiated(selectee)) {
-          downSet.push(id, outEdges(selectee)(index0))
+          downSet.push((id, outEdges(selectee)(index0)))
         } else {
           selectorsOf.getOrElseUpdate(selectee, new mutable.HashMap) += (sort, ctor, index0) -> term
 //          potentialInst add id
@@ -488,7 +488,7 @@ class AdtSolver {
           val keysi = selectorsi.keySet
           val keysj = selectorsj.keySet
           for (key <- keysi intersect keysj)
-            downSet push (ref(selectorsi(key)), ref(selectorsj(key)))
+            downSet push ((ref(selectorsi(key)), ref(selectorsj(key))))
           for (key <- keysj diff keysi)
             selectorsi += key -> selectorsj(key)
           // FIXME: Why would we need this? Isn't it covered by label()?
@@ -497,15 +497,19 @@ class AdtSolver {
 
         // Merge selectors with children
         case (Some(selectors), _) if esj.nonEmpty =>
-          ctorOf(rj) match { case Some((sort, ctor)) =>
-            for (((`sort`, `ctor`, index), sel) <- selectors)
-              downSet push (ref(sel), esj(index))
+          ctorOf(rj) match {
+            case Some((sort, ctor)) =>
+              for (((`sort`, `ctor`, index), sel) <- selectors)
+                downSet push ((ref(sel), esj(index)))
+            case _ => ???
           }
           selectorsOf.remove(ri)
         case (_, Some(selectors)) if esi.nonEmpty =>
-          ctorOf(ri) match { case Some((sort, ctor)) =>
-            for (((`sort`, `ctor`, index), sel) <- selectors)
-              downSet push (ref(sel), esi(index))
+          ctorOf(ri) match {
+            case Some((sort, ctor)) =>
+              for (((`sort`, `ctor`, index), sel) <- selectors)
+                downSet push ((ref(sel), esi(index)))
+            case _ => ???
           }
           // No need to remove selectors of rj, since ri will be the representative
 
@@ -580,7 +584,7 @@ class AdtSolver {
               })
             }
             val newConstructor = Constructor(sort, ctor, args.toList)
-            downSet push (t, registerTerm(newConstructor))
+            downSet push ((t, registerTerm(newConstructor)))
             // Kind of ugly, but we can only do this after registering the term:
             for ((index,v) <- freshVars) {
               val argSort = sig.argSort(sort, ctor, index)
@@ -614,7 +618,7 @@ class AdtSolver {
     declaredTypes = inst.declaredTypes
 
     inst.allTopLevelTerms foreach registerTerm
-    sig.allDesignatedTerms foreach registerTerm
+    sig.allDesignatedTerms() foreach registerTerm
     printDebug(dumpTerms())
 
     // Actual algorithm
@@ -637,7 +641,7 @@ class AdtSolver {
     //  (note difference between sort(v) vs. sort of tester)
     // FIXME: ACTUALLY, neither makes sense.
     inst.negtests foreach {case Tester(sort, ctor, t) =>
-      val ctorRefs = sig.ctorRefs(sort) - ctor
+      val ctorRefs = sig.ctorRefs(sort).diff(Set(ctor))
       val res = label(ref(t), sort, ctorRefs)
       if (res.isDefined)
         return Unsat(res.head)
@@ -671,7 +675,7 @@ class AdtSolver {
               case Right(unsatReason) =>
                 lastUnsatReason = Some(unsatReason)
                 downSet.clear()
-                break
+                break()
               case _ =>
               //
             }
@@ -706,7 +710,7 @@ class AdtSolver {
                     case Right(unsatReason) =>
                       lastUnsatReason = Some(unsatReason)
                       downSet.clear()
-                      break
+                      break()
                     case _ =>
                     //
                   }
@@ -772,13 +776,13 @@ class AdtSolver {
                 for (otherSort <- sig.sortRefs.reverseIterator if otherSort != sort)
                   pushState((r, otherSort, sig.ctorRefs(otherSort)))
                 if (sig.sorts(sort).size > 1)
-                  pushState((r, sort, sig.ctorRefs(sort) - ctor))
+                  pushState((r, sort, sig.ctorRefs(sort).diff(Set(ctor))))
                 (sort, ctor)
               case Some((sort, ctors)) =>
                 printDebug(s"\tsplitting on $r=<${niceTerm(r)}>: [$sort $ctors]")
                 val ctor = ctors.head
                 if (ctors.size > 1)
-                  pushState((r, sort, ctors - ctor))
+                  pushState((r, sort, ctors.diff(Set(ctor))))
                 (sort, ctor)
             }
             // Apply guessed labeling

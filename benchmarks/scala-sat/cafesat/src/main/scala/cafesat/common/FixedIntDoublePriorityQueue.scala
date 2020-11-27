@@ -33,7 +33,7 @@ class FixedIntDoublePriorityQueue(val maxSize: Int) {
   }
 
   //careful, should not modify heap(0) since it is used by caller
-  private def siftUp(pos: Int, score: Double) {
+  private def siftUp(pos: Int, score: Double): Unit = {
     val element = heapElements(pos)
 
     var i = pos
@@ -50,7 +50,7 @@ class FixedIntDoublePriorityQueue(val maxSize: Int) {
     index(element) = i
   }
 
-  private def siftDown(pos: Int, score: Double) {
+   def siftDown(pos: Int, score: Double): Unit = {
     val element = heapElements(pos)
 
     var i = pos

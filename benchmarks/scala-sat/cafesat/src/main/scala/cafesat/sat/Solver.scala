@@ -84,7 +84,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
   private[this] val find1UIPStopWatch = StopWatch("backtrack.conflictanalysis.find1uip")
   private[this] val clauseMinimizationStopWatch = StopWatch("backtrack.conflictanalysis.clauseminimization")
 
-  def resetSolver() {
+  def resetSolver(): Unit = {
     nbConflicts = 0
     nbDecisions = 0
     nbPropagations = 0
@@ -110,7 +110,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     clauseMinimizationStopWatch.reset()
   }
 
-  def initClauses(clauses: List[Clause]) {
+  def initClauses(clauses: List[Clause]): Unit = {
     var newClauses: List[Clause] = Nil
     clauses.foreach(cl => {
       val litsUnique = cl.lits.toSet
@@ -367,7 +367,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     private var maxLearnt: Int = nbClauses / 3
     private val maxLearntFactor: Double = 1.1
 
-    def augmentMaxLearnt() {
+    def augmentMaxLearnt(): Unit = {
       maxLearnt = (maxLearnt*maxLearntFactor + 1).toInt
     }
 
@@ -391,42 +391,42 @@ class Solver(nbVars: Int)(implicit context: Context) {
     val vsidsQueue = new FixedIntDoublePriorityQueue(nbVar)
     initVSIDS()
 
-    def initVSIDS() {
+    def initVSIDS(): Unit = {
       originalClauses.foreach(cl => cl.lits.foreach(lit => {
         vsidsQueue.incScore(lit >> 1, vsidsInc)
       }))
     }
 
-    def incVSIDS(id: Int) {
+    def incVSIDS(id: Int): Unit = {
       val newScore = vsidsQueue.incScore(id, vsidsInc)
       if(newScore > 1e100)
         rescaleVSIDS()
     }
 
-    def rescaleVSIDS() {
+    def rescaleVSIDS(): Unit = {
       vsidsQueue.rescaleScores(1e-100)
       vsidsInc *= 1e-100
     }
 
-    def decayVSIDS() {
+    def decayVSIDS(): Unit = {
       vsidsInc *= vsidsDecay
     }
 
-    def incVSIDSClause(cl: Clause) {
+    def incVSIDSClause(cl: Clause): Unit = {
       cl.activity = cl.activity + vsidsClauseInc
       if(cl.activity > 1e100)
         rescaleVSIDSClause()
     }
-    def rescaleVSIDSClause() {
+    def rescaleVSIDSClause(): Unit = {
       for(cl <- learntClauses)
         cl.activity = cl.activity*1e-100
       vsidsClauseInc *= 1e-100
     }
-    def decayVSIDSClause() {
+    def decayVSIDSClause(): Unit = {
       vsidsClauseInc *= vsidsClauseDecay
     }
 
-    def learn(clause: Clause) {
+    def learn(clause: Clause): Unit = {
       assert(clause.size > 1)
 
       learntClauses ::= clause
@@ -445,7 +445,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
         reduceLearntClauses()
     }
 
-    def reduceLearntClauses() {
+    def reduceLearntClauses(): Unit = {
       val sortedLearntClauses = learntClauses.sortWith((cl1, cl2) => cl1.activity < cl2.activity)
       val (forgotenClauses, keptClauses) = sortedLearntClauses.splitAt(maxLearnt/2)
       learntClauses = keptClauses
@@ -466,18 +466,18 @@ class Solver(nbVars: Int)(implicit context: Context) {
     override def toString: String = (learntClauses ++ originalClauses).mkString("{\n", "\n", "\n}")
   }
 
-  private[this] def recordClause(cl: Clause) {
+  private[this] def recordClause(cl: Clause): Unit = {
     watched(cl.lits(0)).append(cl)
     watched(cl.lits(1)).append(cl)
   }
 
-  private[this] def unrecordClause(cl: Clause) {
+  private[this] def unrecordClause(cl: Clause): Unit = {
     watched(cl.lits(0)).remove(cl)
     watched(cl.lits(1)).remove(cl)
   }
 
 
-  private[this] def enqueueLiteral(lit: Int, from: Clause = null) {
+  private[this] def enqueueLiteral(lit: Int, from: Clause = null): Unit = {
     val id = lit >> 1
     val pol = (lit & 1) ^ 1
     assert(model(id) == -1)
@@ -494,7 +494,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     levels(id) = decisionLevel
   }
 
-  private[this] def decide() {
+  private[this] def decide(): Unit = {
     if(cnfFormula.vsidsQueue.isEmpty) {
       status = Satisfiable
     } else {
@@ -539,7 +539,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     }
   }
 
-  private[this] def backtrack() {
+  private[this] def backtrack(): Unit = {
     if(decisionLevel == 0)
       status = Unsatisfiable
     else {
@@ -592,7 +592,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
   }
 
 
-  private[this] def backtrackTo(lvl: Int) {
+  private[this] def backtrackTo(lvl: Int): Unit = {
     while(decisionLevel > lvl && !trail.isEmpty) {
       val head = trail.pop()
       decisionLevel = levels(head >> 1)
@@ -605,7 +605,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     decisionLevel = lvl
   }
 
-  private[this] def undo(lit: Int) {
+  private[this] def undo(lit: Int): Unit = {
     assert(isSat(lit))
     val id = lit>>1
     cnfFormula.vsidsQueue.insert(id)
@@ -618,7 +618,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     }
   }
 
-  private[this] def deduce() {
+  private[this] def deduce(): Unit = {
 
     while(qHead < trail.size) {
 
@@ -689,7 +689,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
   //some debugging assertions that can be introduced in the code to check for correctness
 
   //assert that there is no unit clauses in the database
-  def assertNoUnits() {
+  def assertNoUnits(): Unit = {
 
     assert(qHead == trail.size) //we assume that all unit clauses queued have been processed
 
@@ -703,7 +703,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
   }
 
   //assert the invariant of watched literal is correct
-  def assertWatchedInvariant() {
+  def assertWatchedInvariant(): Unit = {
     for(cl <- (cnfFormula.originalClauses ::: cnfFormula.learntClauses)) {
       if(!watched(cl.lits(0)).contains(cl)) {
         println("clause " + cl + " is not correctly watched on " + cl.lits(0))
@@ -733,7 +733,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
     }
   }
 
-  def assertTrailInvariant() {
+  def assertTrailInvariant(): Unit = {
     val seen: Array[Boolean] = Array.fill(cnfFormula.nbVar)(false) // default value of false
     var lst: List[Int] = Nil
     var currentLevel = decisionLevel

@@ -21,7 +21,7 @@ class Literal(private val id: Int, private var offset: Int, val polInt: Int, val
   // getId must be extended when there are more LiteralType
   def getID = id + offset
 
-  def setOffset(offset: Int) {
+  def setOffset(offset: Int): Unit = {
     this.offset = offset
   }
 

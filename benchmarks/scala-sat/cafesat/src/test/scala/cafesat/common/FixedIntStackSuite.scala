@@ -1,8 +1,8 @@
 package cafesat.common
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class FixedIntStackSuite extends FunSuite {
+class FixedIntStackSuite extends AnyFunSuite {
 
   test("a new stack is empty") {
     val s = new FixedIntStack(5)

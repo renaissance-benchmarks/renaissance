@@ -1,8 +1,8 @@
 package cafesat.sat
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class EvalSuite extends FunSuite {
+class EvalSuite extends AnyFunSuite {
 
   private val l1 = new Literal(0, true)
   private val l2 = new Literal(0, false)
