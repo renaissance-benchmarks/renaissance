@@ -12,7 +12,6 @@ class Lexer(reader: java.io.Reader) {
 
   private def isNewLine(c: Char) = c == '\n' || c == '\r'
   private def isBlank(c: Char) = c == '\n' || c == '\r' || c == ' '
-  private def isSeparator(c: Char) = isBlank(c) || c == ')' || c == '('
 
   /*
    * Note that we do not start reading the input until the next function is called.
@@ -103,15 +102,17 @@ class Lexer(reader: java.io.Reader) {
     val currentPosition = Position(_currentLine, _currentCol)
 
     val res: Token = c match {
-      case '(' => OParen()
-      case ')' => CParen()
+      case '(' => Token(OParen)
+      case ')' => Token(CParen)
       case ':' => Keyword(readSymbol(nextChar))
       case '"' => {
         val buffer = new scala.collection.mutable.ArrayBuffer[Char]
         var c = nextChar
-        while(c != '"') {
-          if(c == '\\' && (peek == '"' || peek == '\\'))
+        while(c != '"' || peek == '"') {
+          if(c == '"') {
+            assert(peek == '"')
             c = nextChar
+          }
           buffer.append(c)
           c = nextChar
         }
@@ -149,6 +150,11 @@ class Lexer(reader: java.io.Reader) {
         val res = toReserved(sym)
         res.getOrElse(SymbolLit(sym))
       }
+      case c => {
+        throw new UnexpectedCharException(c,
+          Position(_currentLine, _currentCol), 
+          "not a valid start for a token")
+      }
     }
 
     res.setPos(currentPosition)
@@ -166,21 +172,15 @@ class Lexer(reader: java.io.Reader) {
       var c = nextChar
       while(c != '|') {
         if(c == '\\')
-          c = nextChar
+          throw new UnexpectedCharException(c, 
+                                            Position(_currentLine, _currentCol),
+                                            "Quoted symbols cannot contain backslashes")
         buffer.append(c)
         c = nextChar
       }
     } else {
       buffer.append(currentChar)
-      while(isSymbolChar(peek.toChar) || peek == '\\') {
-        if(peek == '\\') { //TODO: check what we should do here
-          /*
-	         * Escaped char was intended to be interpreted in its actual case.
-	         * Probably not making a lot of sense in the SMT-LIB standard, but we
-	         * are ignoring the backslash and recording the escaped char.
-	         */
-          nextChar
-	      }
+      while(isSymbolChar(peek.toChar)) {
         buffer.append(nextChar)
       }
     }
@@ -189,16 +189,26 @@ class Lexer(reader: java.io.Reader) {
 
   private def readInt(currentChar: Char, r: Int): BigInt = {
     require(r > 1 && r <= 36)
+
+    val pos = Position(_currentLine, _currentCol)
+
+    var literal: String = currentChar.toString
     var acc: BigInt = currentChar.asDigit //asDigit works for 'A', 'F', ...
     while(isDigit(peek.toChar, r)) {
       acc *= r
-      acc += nextChar.asDigit
+      val c = nextChar
+      acc += c.asDigit
+      literal += c.toString
     }
+
+    if(literal.head == '0' && literal.size > 1)
+      throw new IllegalTokenException(literal, pos, "Numeral should not have leading 0")
+
     acc
   }
 
   private def readBinary(): Seq[Boolean] = {
-    var res = new ListBuffer[Boolean]
+    val res = new ListBuffer[Boolean]
     if(peek != '1' && peek != '0')
       throw new Exception
     while(peek == '1' || peek == '0') {
@@ -207,6 +217,7 @@ class Lexer(reader: java.io.Reader) {
     }
     res.toList
   }
+
   private def readHexadecimal(): Hexadecimal = {
     var res = ""
     if(peek == -1 || !isHexa(peek.toChar))
@@ -217,62 +228,54 @@ class Lexer(reader: java.io.Reader) {
     Hexadecimal.fromString(res).get
   }
 
-  private var extraSymbolChars = Set('+', '-', '*', '/', '@', '$', '%', '^', '&', '_', 
-                                     '!', '?', '[', ']', '{', '}', '=', '<', '>', '~', '.')
-  private def isSymbolChar(c: Char): Boolean =
-    c.isDigit || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || extraSymbolChars.contains(c)
 
-  private def isHexa(c: Char): Boolean =
-    c.isDigit || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+  protected def toReserved(s: String): Option[Token] = {
+    val str2tok: PartialFunction[String, Token] = {
+      case "BINARY" => Token(BINARY)
+      case "DECIMAL" => Token(DECIMAL)
+      case "HEXADECIMAL" => Token(HEXADECIMAL)
+      case "NUMERAL" => Token(NUMERAL)
+      case "STRING" => Token(STRING)
+      case "_" => Token(Underscore)
+      case "!" => Token(ExclamationMark)
+      case "as" => Token(As)
+      case "let" => Token(Let)
+      case "forall" => Token(Forall)
+      case "exists" => Token(Exists)
+      case "par" => Token(Par)
 
+      case "assert" => Token(Assert)
+      case "check-sat" => Token(CheckSat)
+      case "check-sat-assuming" => Token(CheckSatAssuming)
+      case "declare-const" => Token(DeclareConst)
+      case "declare-fun" => Token(DeclareFun)
+      case "declare-sort" => Token(DeclareSort)
+      case "define-fun" => Token(DefineFun)
+      case "define-fun-rec" => Token(DefineFunRec)
+      case "define-funs-rec" => Token(DefineFunsRec)
+      case "define-sort" => Token(DefineSort)
+      case "echo" => Token(Echo)
+      case "exit" => Token(Exit)
+      case "get-assertions" => Token(GetAssertions)
+      case "get-assignment" => Token(GetAssignment)
+      case "get-info" => Token(GetInfo)
+      case "get-model" => Token(GetModel)
+      case "get-option" => Token(GetOption)
+      case "get-proof" => Token(GetProof)
+      case "get-unsat-assumptions" => Token(GetUnsatAssumptions)
+      case "get-unsat-core" => Token(GetUnsatCore)
+      case "get-value" => Token(GetValue)
+      case "pop" => Token(Pop)
+      case "push" => Token(Push)
+      case "reset" => Token(Reset)
+      case "reset-assertions" => Token(ResetAssertions)
+      case "set-info" => Token(SetInfo)
+      case "set-logic" => Token(SetLogic)
+      case "set-option" => Token(SetOption)
 
-  /* if c is digit in radix r (1 < r <= 36) */
-  private def isDigit(c: Char, r: Int): Boolean = {
-    require(r > 1 && r <= 36)
-    val d = (c - '0').toInt
-    if(d < 10 && d >= 0)
-      d < r
-    else {
-      val ld = (c.toLower - 'a').toInt
-      ld >= 0 && ld < r - 10
+      case "declare-datatypes" => Token(DeclareDatatypes)
     }
-  }
-
-  private def toReserved(s: String): Option[Token] = s match {
-    case "par" => Some(Par())
-    case "NUMERAL" => Some(NUMERAL())
-    case "DECIMAL" => Some(DECIMAL())
-    case "STRING" => Some(STRING())
-    case "_" => Some(Underscore())
-    case "!" => Some(ExclamationMark())
-    case "as" => Some(As())
-    case "let" => Some(Let())
-    case "forall" => Some(ForAll())
-    case "exists" => Some(Exists())
-
-    case "assert" => Some(Assert())
-    case "check-sat" => Some(CheckSat())
-    case "declare-sort" => Some(DeclareSort())
-    case "declare-fun" => Some(DeclareFun())
-    case "define-sort" => Some(DefineSort())
-    case "define-fun" => Some(DefineFun())
-    case "exit" => Some(Exit())
-    case "get-assertions" => Some(GetAssertions())
-    case "get-assignment" => Some(GetAssignment())
-    case "get-info" => Some(GetInfo())
-    case "get-option" => Some(GetOption())
-    case "get-proof" => Some(GetProof())
-    case "get-unsat-core" => Some(GetUnsatCore())
-    case "get-value" => Some(GetValue())
-    case "pop" => Some(Pop())
-    case "push" => Some(Push())
-    case "set-logic" => Some(SetLogic())
-    case "set-info" => Some(SetInfo())
-    case "set-option" => Some(SetOption())
-
-    case "declare-datatypes" => Some(DeclareDatatypes())
-
-    case _ => None
+    str2tok.lift(s)
   }
 
 }
@@ -284,4 +287,28 @@ object Lexer {
 
   class UnexpectedEOFException(val position: Position) extends Exception
 
+  class IllegalTokenException(val token: String, val position: Position, msg: String) extends Exception(s"Illegal token [$token] at $position: $msg")
+
+
+  private val extraSymbolChars = Set('+', '-', '*', '/', '@', '$', '%', '^', '&',
+                                     '_', '!', '?', '=', '<', '>', '~', '.')
+
+  def isSymbolChar(c: Char): Boolean =
+    c.isDigit || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || extraSymbolChars.contains(c)
+
+  def isHexa(c: Char): Boolean =
+    c.isDigit || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+
+
+  /* if c is digit in radix r (1 < r <= 36) */
+  def isDigit(c: Char, r: Int): Boolean = {
+    require(r > 1 && r <= 36)
+    val d = (c - '0')
+    if(d < 10 && d >= 0)
+      d < r
+    else {
+      val ld = (c.toLower - 'a')
+      ld >= 0 && ld < r - 10
+    }
+  }
 }

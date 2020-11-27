@@ -1,489 +1,200 @@
 package smtlib
 package theories
 
-import parser.Terms._
+import trees.Terms._
 import common._
+
+import Operations._
 
 object FixedSizeBitVectors {
 
-
   object BitVectorSort {
-
-    def apply(length: Int): Sort = {
+    def apply(length: BigInt): Sort = {
       require(length > 0)
-      Sort(Identifier(SSymbol("BitVec"), Seq(length)))
+      Sort(Identifier(SSymbol("BitVec"), Seq(SNumeral(length))))
     }
-
-    def unapply(sort: Sort): Option[Int] = sort match {
-      case Sort(Identifier(SSymbol("BitVec"), Seq(n)), Seq()) if n > 0 => Some(n)
+    def unapply(sort: Sort): Option[BigInt] = sort match {
+      case Sort(Identifier(SSymbol("BitVec"), Seq(SNumeral(n))), Seq()) if n > 0 => Some(n)
       case _ => None
     }
-
   }
 
   object BitVectorLit {
-
     def apply(content: List[Boolean]): Term = SBinary(content)
 
+    /** Construct a bit-vector literal from an hexadecimal
+      *
+      * The bitvector theory interprets the hexadecimal literals
+      * as a bit vector of size 4 times the length of the hexadecimal
+      * representation
+      */
     def apply(content: Hexadecimal): Term = SHexadecimal(content)
-    
-    //TODO: going from List[Boolean] to Integer
+
     def unapply(term: Term): Option[List[Boolean]] = term match {
       case SBinary(content) => Some(content)
       case SHexadecimal(hexa) => Some(hexa.toBinary)
       case _ => None
     }
-
   }
 
+  /**
+    * shorthand notation (_ bv13 32) for the number 13 with 32 bits
+    */
+  object BitVectorConstant {
+    def apply(x: BigInt, n: BigInt): Term =
+      QualifiedIdentifier(Identifier(SSymbol("bv" + x), Seq(SNumeral(n))))
+    //TODO: BigInt is not the best data representation for a bitvector, we should probably use a list of boolean kind of representation
+    def unapply(term: Term): Option[(BigInt, BigInt)] = term match {
+      case QualifiedIdentifier(
+        Identifier(SSymbol(cst), Seq(SNumeral(size))),
+        None
+      ) if cst startsWith "bv" =>
+        Some(BigInt(cst drop 2) -> size)
 
-  object Concat {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("concat"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("concat"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
       case _ => None
     }
-
   }
 
-  object Extract {
 
-    def apply(i: Int, j: Int, t: Term): Term =
+  object Concat extends Operation2 { override val name = "concat" }
+
+  object Not extends Operation1 { override val name = "bvnot" }
+  object Neg extends Operation1 { override val name = "bvneg" }
+  object And extends Operation2 { override val name = "bvand" }
+  object Or extends Operation2 { override val name = "bvor" }
+  object NAnd extends Operation2 { override val name = "bvnand" }
+  object NOr extends Operation2 { override val name = "bvnor" }
+  object XOr extends Operation2 { override val name = "bvxor" }
+  object XNOr extends Operation2 { override val name = "bvxnor" }
+
+  object Comp extends Operation2 { override val name = "bvcomp" }
+  object Add extends Operation2 { override val name = "bvadd" }
+  object Sub extends Operation2 { override val name = "bvsub" }
+  object Mul extends Operation2 { override val name = "bvmul" }
+  object UDiv extends Operation2 { override val name = "bvudiv" }
+  object SDiv extends Operation2 { override val name = "bvsdiv" }
+  object URem extends Operation2 { override val name = "bvurem" }
+  object SRem extends Operation2 { override val name = "bvsrem" }
+  object SMod extends Operation2 { override val name = "bvsmod" }
+
+  object ULessThan extends Operation2 { override val name = "bvult" }
+  object ULessEquals extends Operation2 { override val name = "bvule" }
+  object UGreaterThan extends Operation2 { override val name = "bvugt" }
+  object UGreaterEquals extends Operation2 { override val name = "bvuge" }
+  object SLessThan extends Operation2 { override val name = "bvslt" }
+  object SLessEquals extends Operation2 { override val name = "bvsle" }
+  object SGreaterThan extends Operation2 { override val name = "bvsgt" }
+  object SGreaterEquals extends Operation2 { override val name = "bvsge" }
+
+  object ShiftLeft extends Operation2 { override val name = "bvshl" }
+  object LShiftRight extends Operation2 { override val name = "bvlshr" }
+  object AShiftRight extends Operation2 { override val name = "bvashr" }
+
+
+  object Extract {
+    def apply(i: BigInt, j: BigInt, t: Term): Term =
       FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("extract"), Seq(i, j))),
+        QualifiedIdentifier(Identifier(SSymbol("extract"), Seq(SNumeral(i), SNumeral(j)))),
         Seq(t)
       )
-    
-    def unapply(term: Term): Option[(Int, Int, Term)] = term match {
+    def unapply(term: Term): Option[(BigInt, BigInt, Term)] = term match {
       case FunctionApplication(
         QualifiedIdentifier(
-          Identifier(SSymbol("extract"), Seq(i, j)),
+          Identifier(SSymbol("extract"), Seq(SNumeral(i), SNumeral(j))),
           None
         ), Seq(t)) => Some((i, j, t))
       case _ => None
     }
-
   }
 
-  object And {
-
-    def apply(t1: Term, t2: Term): Term =
+  object Repeat {
+    def apply(i: BigInt, t: Term): Term = {
+      require(i >= 1)
       FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvand"))),
-        Seq(t1, t2)
+        QualifiedIdentifier(Identifier(SSymbol("repeat"), Seq(SNumeral(i)))),
+        Seq(t)
       )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
+    }
+    def unapply(term: Term): Option[(BigInt, Term)] = term match {
       case FunctionApplication(
         QualifiedIdentifier(
-          Identifier(SSymbol("bvand"), Seq()),
+          Identifier(SSymbol("repeat"), Seq(SNumeral(i))),
           None
-        ), Seq(t1, t2)) => Some((t1, t2))
+        ), Seq(t)) => Some((i, t))
       case _ => None
     }
-
   }
 
-  object Or {
-
-    def apply(t1: Term, t2: Term): Term =
+  object ZeroExtend {
+    def apply(i: BigInt, t: Term): Term = {
+      require(i >= 0)
       FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvor"))),
-        Seq(t1, t2)
+        QualifiedIdentifier(Identifier(SSymbol("zero_extend"), Seq(SNumeral(i)))),
+        Seq(t)
       )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvor"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
     }
-
-  }
-
-  object Not {
-
-    def apply(t: Term): Term = 
-      FunctionApplication(QualifiedIdentifier(Identifier(SSymbol("bvnot"))), Seq(t))
-    
-    def unapply(term: Term): Option[Term] = term match {
+    def unapply(term: Term): Option[(BigInt, Term)] = term match {
       case FunctionApplication(
         QualifiedIdentifier(
-          Identifier(SSymbol("bvnot"), Seq()),
+          Identifier(SSymbol("zero_extend"), Seq(SNumeral(i))),
           None
-        ), Seq(t)) => Some(t)
+        ), Seq(t)) => Some((i, t))
       case _ => None
     }
   }
 
-  object NAnd {
-
-    def apply(t1: Term, t2: Term): Term =
+  object SignExtend {
+    def apply(i: BigInt, t: Term): Term = {
+      require(i >= 0)
       FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvnand"))),
-        Seq(t1, t2)
+        QualifiedIdentifier(Identifier(SSymbol("sign_extend"), Seq(SNumeral(i)))),
+        Seq(t)
       )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
+    }
+    def unapply(term: Term): Option[(BigInt, Term)] = term match {
       case FunctionApplication(
         QualifiedIdentifier(
-          Identifier(SSymbol("bvnand"), Seq()),
+          Identifier(SSymbol("sign_extend"), Seq(SNumeral(i))),
           None
-        ), Seq(t1, t2)) => Some((t1, t2))
+        ), Seq(t)) => Some((i, t))
       case _ => None
     }
-
   }
 
-  object NOr {
-
-    def apply(t1: Term, t2: Term): Term =
+  object RotateLeft {
+    def apply(i: BigInt, t: Term): Term = {
+      require(i >= 0)
       FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvnor"))),
-        Seq(t1, t2)
+        QualifiedIdentifier(Identifier(SSymbol("rotate_left"), Seq(SNumeral(i)))),
+        Seq(t)
       )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
+    }
+    def unapply(term: Term): Option[(BigInt, Term)] = term match {
       case FunctionApplication(
         QualifiedIdentifier(
-          Identifier(SSymbol("bvnor"), Seq()),
+          Identifier(SSymbol("rotate_left"), Seq(SNumeral(i))),
           None
-        ), Seq(t1, t2)) => Some((t1, t2))
+        ), Seq(t)) => Some((i, t))
       case _ => None
     }
-
   }
 
-  object XOr {
-
-    def apply(t1: Term, t2: Term): Term =
+  object RotateRight {
+    def apply(i: BigInt, t: Term): Term = {
+      require(i >= 0)
       FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvxor"))),
-        Seq(t1, t2)
+        QualifiedIdentifier(Identifier(SSymbol("rotate_right"), Seq(SNumeral(i)))),
+        Seq(t)
       )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvxor"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
     }
-
-  }
-
-  object XNOr {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvxnor"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
+    def unapply(term: Term): Option[(BigInt, Term)] = term match {
       case FunctionApplication(
         QualifiedIdentifier(
-          Identifier(SSymbol("bvxnor"), Seq()),
+          Identifier(SSymbol("rotate_right"), Seq(SNumeral(i))),
           None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object Comp {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvcomp"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvcomp"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object Neg {
-
-    def apply(t: Term): Term = 
-      FunctionApplication(QualifiedIdentifier(Identifier(SSymbol("bvneg"))), Seq(t))
-    
-    def unapply(term: Term): Option[Term] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvneg"), Seq()),
-          None
-        ), Seq(t)) => Some(t)
+        ), Seq(t)) => Some((i, t))
       case _ => None
     }
   }
 
-  object Add {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvadd"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvadd"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object Sub {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvsub"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvsub"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-
-  object Mul {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvmul"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvmul"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object UDiv {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvudiv"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvudiv"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object URem {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvurem"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvurem"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object ULessThan {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvult"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvult"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object ULessEquals {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvule"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvule"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object UGreaterThan {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvugt"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvugt"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object UGreaterEquals {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvuge"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvuge"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object SLessThan {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvslt"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvslt"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object SLessEquals {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvsle"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvsle"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object SGreaterThan {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvsgt"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvsgt"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-
-  object SGreaterEquals {
-
-    def apply(t1: Term, t2: Term): Term =
-      FunctionApplication(
-        QualifiedIdentifier(Identifier(SSymbol("bvsge"))),
-        Seq(t1, t2)
-      )
-    
-    def unapply(term: Term): Option[(Term, Term)] = term match {
-      case FunctionApplication(
-        QualifiedIdentifier(
-          Identifier(SSymbol("bvsge"), Seq()),
-          None
-        ), Seq(t1, t2)) => Some((t1, t2))
-      case _ => None
-    }
-
-  }
-      
 }
