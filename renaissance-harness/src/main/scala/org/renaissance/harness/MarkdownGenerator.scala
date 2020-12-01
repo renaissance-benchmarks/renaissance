@@ -71,7 +71,7 @@ object MarkdownGenerator {
 
     parser.parse(args, new LocalConfig) match {
       case Some(config) => config
-      case None         => sys.exit(1)
+      case None => sys.exit(1)
     }
   }
 

@@ -37,7 +37,7 @@ object RenaissanceSuite {
 
     val config = parser.parse(args) match {
       case Some(c) => c
-      case None    => sys.exit(1)
+      case None => sys.exit(1)
     }
 
     // Load information about available benchmarks.

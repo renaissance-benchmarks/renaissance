@@ -12,7 +12,6 @@ import scala.util.Properties._
 import scala.util.{Failure, Success}
 
 /**
- *
  * @author <a href="http://shams.web.rice.edu/">Shams Imam</a> (shams@rice.edu)
  */
 abstract class AkkaActor[MsgType] extends Actor {
@@ -105,20 +104,23 @@ object AkkaActorState {
   object actorLatch {
     private var count = 0
 
-    def countDown(): Unit = this.synchronized {
-      count -= 1
-      if (count == 0) this.notifyAll()
-    }
-
-    def countUp(): Unit = this.synchronized {
-      count += 1
-    }
-
-    def await(): Unit = this.synchronized {
-      while (count != 0) {
-        this.wait()
+    def countDown(): Unit =
+      this.synchronized {
+        count -= 1
+        if (count == 0) this.notifyAll()
       }
-    }
+
+    def countUp(): Unit =
+      this.synchronized {
+        count += 1
+      }
+
+    def await(): Unit =
+      this.synchronized {
+        while (count != 0) {
+          this.wait()
+        }
+      }
   }
 
   private val mailboxTypeKey = "actors.mailboxType"

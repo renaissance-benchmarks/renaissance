@@ -37,14 +37,14 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def projectJars = Def.taskDyn {
-  // Each generated task returns tuple of
-  // (project path, all JAR files, all JAR files without renaissance core JAR*)
-  // * because renaissance core classes are shared across all benchmarks
-  val projectJarTasks = for {
-    p <- subProjects
-  } yield
-    Def.task {
+def projectJars =
+  Def.taskDyn {
+    // Each generated task returns tuple of
+    // (project path, all JAR files, all JAR files without renaissance core JAR*)
+    // * because renaissance core classes are shared across all benchmarks
+    val projectJarTasks = for {
+      p <- subProjects
+    } yield Def.task {
       val mainJar = (packageBin in (p, Compile)).value
       val coreJar = (packageBin in (renaissanceCore, Runtime)).value
       val depJars = (dependencyClasspath in (p, Compile)).value.map(_.data).filter(_.isFile)
@@ -59,46 +59,47 @@ def projectJars = Def.taskDyn {
       }
       (project, jarFiles, loadedJarFiles)
     }
-  flattenTasks(projectJarTasks)
-}
+    flattenTasks(projectJarTasks)
+  }
 
-def jarsAndListGenerator = Def.taskDyn {
-  val nonGpl = nonGplOnly.value
-  val logger = streams.value.log
+def jarsAndListGenerator =
+  Def.taskDyn {
+    val nonGpl = nonGplOnly.value
+    val logger = streams.value.log
 
-  // Flatten list and create a groups-jars file and the benchmark-details file.
-  projectJars.map { groupJars =>
-    // Add the benchmarks from the different project groups.
-    val jarListContent = new StringBuilder
-    val benchDetails = new java.util.Properties
+    // Flatten list and create a groups-jars file and the benchmark-details file.
+    projectJars.map { groupJars =>
+      // Add the benchmarks from the different project groups.
+      val jarListContent = new StringBuilder
+      val benchDetails = new java.util.Properties
 
-    for ((project, allJars, loadedJars) <- groupJars) {
-      val jarLine = loadedJars.map(jar => project + "/" + jar.getName).mkString(",")
-      val projectShort = project.stripPrefix("benchmarks/")
-      jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
+      for ((project, allJars, loadedJars) <- groupJars) {
+        val jarLine = loadedJars.map(jar => project + "/" + jar.getName).mkString(",")
+        val projectShort = project.stripPrefix("benchmarks/")
+        jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
 
-      // Scan project jars for benchmarks and fill the property file.
-      for (benchInfo <- Benchmarks.listBenchmarks(allJars, Some(logger))) {
-        if (!nonGpl || benchInfo.distro() == License.MIT) {
-          for ((k, v) <- benchInfo.toMap()) {
-            benchDetails.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
+        // Scan project jars for benchmarks and fill the property file.
+        for (benchInfo <- Benchmarks.listBenchmarks(allJars, Some(logger))) {
+          if (!nonGpl || benchInfo.distro() == License.MIT) {
+            for ((k, v) <- benchInfo.toMap()) {
+              benchDetails.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
+            }
           }
         }
       }
-    }
 
-    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
-    IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
+      val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
+      IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
 
-    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
-    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
-    benchDetails.store(benchDetailsStream, "Benchmark details")
+      val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
+      val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
+      benchDetails.store(benchDetailsStream, "Benchmark details")
 
-    benchDetailsFile +: jarListFile +: groupJars.flatMap {
-      case (_, jars, _) => jars
+      benchDetailsFile +: jarListFile +: groupJars.flatMap {
+        case (_, jars, _) => jars
+      }
     }
   }
-}
 
 addCommandAlias("renaissanceFormat", ";scalafmt;scalafmtSbt")
 
@@ -178,7 +179,7 @@ lazy val renaissance: Project = {
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-        case _                                   => MergeStrategy.singleOrError
+        case _ => MergeStrategy.singleOrError
       },
       javaOptions in Compile ++= {
         if (remoteDebug.value) {

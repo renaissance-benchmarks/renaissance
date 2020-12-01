@@ -43,7 +43,8 @@ class AnalyticsBenchmark(
   implicit def val2Label(v: String): Label = Label.label(v.toString)
   implicit def val2Type(v: String): RelationshipType = RelationshipType.withName(v.toString)
 
-  /** Must be called before calling `run`.
+  /**
+   * Must be called before calling `run`.
    */
   def setupAll(): Unit = {
     // TODO: Unify how the scratch directories are handled throughout the suite.
@@ -70,7 +71,8 @@ class AnalyticsBenchmark(
     println("Graph database created.")
   }
 
-  /** Runs the benchmark.
+  /**
+   * Runs the benchmark.
    */
   def run(): Int = {
     val longThreads = startLongQueryThreads(db)
@@ -84,7 +86,8 @@ class AnalyticsBenchmark(
     }
   }
 
-  /** Must be called after calling `run`.
+  /**
+   * Must be called after calling `run`.
    */
   def tearAll(): Unit = {
     db.shutdown()
@@ -399,9 +402,9 @@ class AnalyticsBenchmark(
 
   private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val mutatorCount = math.max(1, MUTATOR_QUERY_NUM)
-    val threads = for (p <- 0 until mutatorCount)
-      yield
-        new QueriesThread {
+    val threads =
+      for (p <- 0 until mutatorCount)
+        yield new QueriesThread {
           override def run(): Unit = {
             this.numQueries += runQueries(db, mutatorQueries, 12, p)
           }
@@ -412,9 +415,9 @@ class AnalyticsBenchmark(
 
   private def startShortQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val shortCount = math.max(1, SHORT_QUERY_NUM)
-    val threads = for (p <- 0 until shortCount)
-      yield
-        new QueriesThread {
+    val threads =
+      for (p <- 0 until shortCount)
+        yield new QueriesThread {
           override def run(): Unit = {
             this.numQueries += runQueries(db, shortQueries, 150, p)
           }
@@ -425,9 +428,9 @@ class AnalyticsBenchmark(
 
   private def startLongQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
     val longCount = math.max(1, LONG_QUERY_NUM)
-    val threads = for (p <- 0 until longCount)
-      yield
-        new QueriesThread {
+    val threads =
+      for (p <- 0 until longCount)
+        yield new QueriesThread {
           override def run(): Unit = {
             this.numQueries += runQueries(db, longQueries, 1, 3 * p)
           }

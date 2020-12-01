@@ -83,21 +83,18 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 
   def parameters(): Map[String, String] = {
     getAnnotations(classOf[Parameter])
-      .flatMap(
-        p =>
-          Array(
-            (s"parameter.${p.name}.default" -> p.defaultValue),
-            (s"parameter.${p.name}.summary" -> p.summary)
-          )
+      .flatMap(p =>
+        Array(
+          (s"parameter.${p.name}.default" -> p.defaultValue),
+          (s"parameter.${p.name}.summary" -> p.summary)
+        )
       )
       .toMap
   }
 
   private def parameterDefaults(confName: String) = {
     getAnnotations(classOf[Parameter])
-      .map(
-        p => s"configuration.${confName}.${p.name}" -> p.defaultValue()
-      )
+      .map(p => s"configuration.${confName}.${p.name}" -> p.defaultValue())
       .toMap
   }
 

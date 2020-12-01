@@ -41,10 +41,9 @@ private final class ConfigParser(tags: Map[String, String]) {
         .text(
           "Use policy plugin to control repetition of measured operation execution."
         )
-        .validate(
-          v =>
-            if (v.count(_ == '!') == 1) success
-            else failure("expected <class-path>!<class-name> in external policy specification")
+        .validate(v =>
+          if (v.count(_ == '!') == 1) success
+          else failure("expected <class-path>!<class-name> in external policy specification")
         )
         .action((v, c) => c.withPolicy(v))
         .maxOccurs(1)
@@ -55,10 +54,9 @@ private final class ConfigParser(tags: Map[String, String]) {
           "Load external plugin. Can appear multiple times."
         )
         .action((v, c) => c.withPlugin(v))
-        .validate(
-          v =>
-            if (v.count(_ == '!') == 1) success
-            else failure("expected <class-path>!<class-name> in external plugin specification")
+        .validate(v =>
+          if (v.count(_ == '!') == 1) success
+          else failure("expected <class-path>!<class-name> in external plugin specification")
         )
         .unbounded()
 

@@ -14,13 +14,15 @@ import org.renaissance.License
 
 object Solver {
 
-  /** Solver take a sudoku problem as a matrix of optional int,
+  /**
+   * Solver take a sudoku problem as a matrix of optional int,
    *  its goal is to fill out the matrix with missing integer
    *  to form a correct sudoku grid.
    */
   def solve(sudoku: Array[Array[Option[Int]]]): Option[Array[Array[Int]]] = {
 
-    /** Each slot on the sudoku board has 9 variables V0..V8 associated with it,
+    /**
+     * Each slot on the sudoku board has 9 variables V0..V8 associated with it,
      *  each variable Vi denoting whether the digit Vi was chosen for the respective slot.
      */
     require(sudoku.size == 9)
@@ -28,7 +30,8 @@ object Solver {
 
     val vars = sudoku.map(row => row.map(el => Array.fill(9)(propVar())))
 
-    /** There should be at least one digit chosen for each sudoku slot.
+    /**
+     * There should be at least one digit chosen for each sudoku slot.
      */
     val onePerEntry = vars.flatMap(row => row.map(vs => or(vs: _*)))
 
@@ -39,32 +42,39 @@ object Solver {
      * columns within the 3x3 table.
      */
     val uniqueInGrid1 =
-      for (k <- 0 to 8; i <- 0 to 2; j <- 0 to 2; r <- 0 to 2;
-           c1 <- 0 to 1; c2 <- c1 + 1 to 2)
+      for (
+        k <- 0 to 8; i <- 0 to 2; j <- 0 to 2; r <- 0 to 2;
+        c1 <- 0 to 1; c2 <- c1 + 1 to 2
+      )
         yield !vars(3 * i + r)(3 * j + c1)(k) || !vars(3 * i + r)(3 * j + c2)(k)
 
     val uniqueInGrid2 =
-      for (k <- 0 to 8; i <- 0 to 2; j <- 0 to 2; r1 <- 0 to 2;
-           c1 <- 0 to 2; c2 <- 0 to 2; r2 <- r1 + 1 to 2)
+      for (
+        k <- 0 to 8; i <- 0 to 2; j <- 0 to 2; r1 <- 0 to 2;
+        c1 <- 0 to 2; c2 <- 0 to 2; r2 <- r1 + 1 to 2
+      )
         yield !vars(3 * i + r1)(3 * j + c1)(k) || !vars(3 * i + r2)(3 * j + c2)(k)
 
     /**
      * In the respective column, there should be at most one unique digit.
      */
-    val uniqueInColumns = for (c <- 0 to 8; k <- 0 to 8; r1 <- 0 to 7; r2 <- r1 + 1 to 8)
-      yield !vars(r1)(c)(k) || !vars(r2)(c)(k)
+    val uniqueInColumns =
+      for (c <- 0 to 8; k <- 0 to 8; r1 <- 0 to 7; r2 <- r1 + 1 to 8)
+        yield !vars(r1)(c)(k) || !vars(r2)(c)(k)
 
     /**
      * In the respective row, there should be at most one unique digit.
      */
-    val uniqueInRows = for (r <- 0 to 8; k <- 0 to 8; c1 <- 0 to 7; c2 <- c1 + 1 to 8)
-      yield !vars(r)(c1)(k) || !vars(r)(c2)(k)
+    val uniqueInRows =
+      for (r <- 0 to 8; k <- 0 to 8; c1 <- 0 to 7; c2 <- c1 + 1 to 8)
+        yield !vars(r)(c1)(k) || !vars(r)(c2)(k)
 
     /**
      * Force entry with a possible number.
      */
-    val forcedEntries = for (r <- 0 to 8; c <- 0 to 8 if sudoku(r)(c) != None)
-      yield or(vars(r)(c)(sudoku(r)(c).get - 1))
+    val forcedEntries =
+      for (r <- 0 to 8; c <- 0 to 8 if sudoku(r)(c) != None)
+        yield or(vars(r)(c)(sudoku(r)(c).get - 1))
 
     /**
      * All constraints for a soduko problem.
