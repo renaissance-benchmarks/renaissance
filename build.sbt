@@ -17,7 +17,7 @@ val benchmarkProjects = for {
   // compilation/assembly when debugging the harness).
   dir <- file("benchmarks")
     .list()
-    .filterNot(Seq("apache-spark", "database", "twitter-finagle").contains(_))
+    .filterNot(Seq("database", "twitter-finagle").contains(_))
   if dir != null && file("benchmarks/" + dir + "/build.sbt").exists()
 } yield {
   RootProject(uri("benchmarks/" + dir))
