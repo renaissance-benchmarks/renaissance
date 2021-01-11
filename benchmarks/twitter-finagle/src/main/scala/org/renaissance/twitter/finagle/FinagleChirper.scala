@@ -82,9 +82,14 @@ final class FinagleChirper extends Benchmark {
     def hashStartCountInAllFeeds(allFeeds: Seq[Seq[String]]): Long = {
       var result = 0L
       for (feed <- allFeeds) {
-        result += analyze[Long](feed, 0, s => {
-          if (s.length > 0 && s.charAt(0) == '#') 1 else 0
-        }, _ + _)
+        result += analyze[Long](
+          feed,
+          0,
+          s => {
+            if (s.length > 0 && s.charAt(0) == '#') 1 else 0
+          },
+          _ + _
+        )
       }
       result
     }
@@ -92,11 +97,16 @@ final class FinagleChirper extends Benchmark {
     def longestRechirpInAllFeeds(allFeeds: Seq[Seq[String]]): String = {
       var result = ""
       for (feed <- allFeeds) {
-        val s = analyze[String](feed, "", s => {
-          if (s.length >= 2 && s.charAt(0) == 'R' && s.charAt(1) == 'T') s else ""
-        }, (x, y) => {
-          if (x.length > y.length) x else y
-        })
+        val s = analyze[String](
+          feed,
+          "",
+          s => {
+            if (s.length >= 2 && s.charAt(0) == 'R' && s.charAt(1) == 'T') s else ""
+          },
+          (x, y) => {
+            if (x.length > y.length) x else y
+          }
+        )
         if (s.length > result.length) result = s
       }
       result
@@ -140,100 +150,105 @@ final class FinagleChirper extends Benchmark {
         .toLong
     }
 
-    override def apply(req: Request): Future[Response] = lock.synchronized {
-      requestCount += 1
+    override def apply(req: Request): Future[Response] =
+      lock.synchronized {
+        requestCount += 1
 
-      req.path match {
-        case "/api/feed" =>
-          val username = req.getParam("username")
-          feeds.get(username) match {
-            case Some(feed) =>
-              var length = 0
-              for (msg <- feed) length += msg.length + 1
-              length += 1
-              val bytes = new Array[Byte](length)
-              var i = 0
-              for (msg <- feed) {
-                for (j <- 0 until msg.length) {
-                  bytes(i) = msg(j).toByte
+        req.path match {
+          case "/api/feed" =>
+            val username = req.getParam("username")
+            feeds.get(username) match {
+              case Some(feed) =>
+                var length = 0
+                for (msg <- feed) length += msg.length + 1
+                length += 1
+                val bytes = new Array[Byte](length)
+                var i = 0
+                for (msg <- feed) {
+                  for (j <- 0 until msg.length) {
+                    bytes(i) = msg(j).toByte
+                    i += 1
+                  }
+                  bytes(i) = '\n'
                   i += 1
                 }
-                bytes(i) = '\n'
-                i += 1
-              }
+                val buf = Buf.ByteArray.Owned(bytes)
+                val response = Response(req.version, Status.Ok, BufReader(buf))
+                Future.value(response)
+              case None =>
+                feeds(username) = new mutable.ArrayBuffer[String]
+                val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
+                Future.value(response)
+            }
+          case "/api/post" =>
+            postCount += 1
+            val username = req.getParam("username")
+            val ord = req.getIntParam("ord")
+            val buf = req.content
+            val content = Buf.Utf16.unapply(buf).get
+            feeds.putIfAbsent(username, new mutable.ArrayBuffer[String])
+            val feed = feeds(username)
+            feed += content
+            val responseBuf = Buf.ByteArray.Owned(Array[Byte]('o', 'k'))
+            val response = Response(req.version, Status.Ok, BufReader(responseBuf))
+            Future.value(response)
+          case "/api/stats/longest" =>
+            val allFeeds =
+              for ((_, feed) <- feeds.readOnlySnapshot())
+                yield feed.view.take(feed.length)
+            FuturePool.unboundedPool {
+              val message = longestMessageInAllFeeds(allFeeds.toSeq)
+              val bytes = message.getBytes("UTF-8")
               val buf = Buf.ByteArray.Owned(bytes)
-              val response = Response(req.version, Status.Ok, BufReader(buf))
-              Future.value(response)
-            case None =>
-              feeds(username) = new mutable.ArrayBuffer[String]
-              val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
-              Future.value(response)
-          }
-        case "/api/post" =>
-          postCount += 1
-          val username = req.getParam("username")
-          val ord = req.getIntParam("ord")
-          val buf = req.content
-          val content = Buf.Utf16.unapply(buf).get
-          feeds.putIfAbsent(username, new mutable.ArrayBuffer[String])
-          val feed = feeds(username)
-          feed += content
-          val responseBuf = Buf.ByteArray.Owned(Array[Byte]('o', 'k'))
-          val response = Response(req.version, Status.Ok, BufReader(responseBuf))
-          Future.value(response)
-        case "/api/stats/longest" =>
-          val allFeeds = for ((_, feed) <- feeds.readOnlySnapshot())
-            yield feed.view.take(feed.length)
-          FuturePool.unboundedPool {
-            val message = longestMessageInAllFeeds(allFeeds.toSeq)
-            val bytes = message.getBytes("UTF-8")
-            val buf = Buf.ByteArray.Owned(bytes)
-            Response(req.version, Status.Ok, BufReader(buf))
-          }
-        case "/api/stats/hash-tag-count" =>
-          val allFeeds = for ((_, feed) <- feeds.readOnlySnapshot())
-            yield feed.view.take(feed.length)
-          FuturePool.unboundedPool {
-            val count = hashStartCountInAllFeeds(allFeeds.toSeq)
-            val buffer = ByteBuffer.allocate(8)
-            buffer.putLong(count)
-            val bytes = buffer.array()
-            val buf = Buf.ByteArray.Owned(bytes)
-            Response(req.version, Status.Ok, BufReader(buf))
-          }
-        case "/api/stats/longest-rechirp" =>
-          val allFeeds = for ((_, feed) <- feeds.readOnlySnapshot())
-            yield feed.view.take(feed.length)
-          FuturePool.unboundedPool {
-            val message = longestRechirpInAllFeeds(allFeeds.toSeq)
-            val bytes = message.getBytes("UTF-8")
-            val buf = Buf.ByteArray.Owned(bytes)
-            Response(req.version, Status.Ok, BufReader(buf))
-          }
-        case "/api/stats/most-rechirps" =>
-          val allFeeds = for ((username, feed) <- feeds.readOnlySnapshot())
-            yield (username, feed.view.take(feed.length))
-          FuturePool.unboundedPool {
-            val count = mostRechirpsInAllFeeds(allFeeds.toSeq)
-            val buffer = ByteBuffer.allocate(8)
-            buffer.putLong(count)
-            val bytes = buffer.array()
-            val buf = Buf.ByteArray.Owned(bytes)
-            Response(req.version, Status.Ok, BufReader(buf))
-          }
-        case "/api/reset" =>
-          feeds.clear()
-          for (username <- userNames) {
-            val hash = byteswap32(username.length + username.charAt(0))
-            val offset = math.abs(hash) % (messages.length - startingFeedSize)
-            val startingMessages = messages.slice(offset, offset + startingFeedSize)
-            feeds(username) = startingMessages.to[mutable.ArrayBuffer]
-          }
-          println("Resetting master, feed map size: " + feeds.size)
-          val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
-          Future.value(response)
+              Response(req.version, Status.Ok, BufReader(buf))
+            }
+          case "/api/stats/hash-tag-count" =>
+            val allFeeds =
+              for ((_, feed) <- feeds.readOnlySnapshot())
+                yield feed.view.take(feed.length)
+            FuturePool.unboundedPool {
+              val count = hashStartCountInAllFeeds(allFeeds.toSeq)
+              val buffer = ByteBuffer.allocate(8)
+              buffer.putLong(count)
+              val bytes = buffer.array()
+              val buf = Buf.ByteArray.Owned(bytes)
+              Response(req.version, Status.Ok, BufReader(buf))
+            }
+          case "/api/stats/longest-rechirp" =>
+            val allFeeds =
+              for ((_, feed) <- feeds.readOnlySnapshot())
+                yield feed.view.take(feed.length)
+            FuturePool.unboundedPool {
+              val message = longestRechirpInAllFeeds(allFeeds.toSeq)
+              val bytes = message.getBytes("UTF-8")
+              val buf = Buf.ByteArray.Owned(bytes)
+              Response(req.version, Status.Ok, BufReader(buf))
+            }
+          case "/api/stats/most-rechirps" =>
+            val allFeeds =
+              for ((username, feed) <- feeds.readOnlySnapshot())
+                yield (username, feed.view.take(feed.length))
+            FuturePool.unboundedPool {
+              val count = mostRechirpsInAllFeeds(allFeeds.toSeq)
+              val buffer = ByteBuffer.allocate(8)
+              buffer.putLong(count)
+              val bytes = buffer.array()
+              val buf = Buf.ByteArray.Owned(bytes)
+              Response(req.version, Status.Ok, BufReader(buf))
+            }
+          case "/api/reset" =>
+            feeds.clear()
+            for (username <- userNames) {
+              val hash = byteswap32(username.length + username.charAt(0))
+              val offset = math.abs(hash) % (messages.length - startingFeedSize)
+              val startingMessages = messages.slice(offset, offset + startingFeedSize)
+              feeds(username) = startingMessages.to[mutable.ArrayBuffer]
+            }
+            println("Resetting master, feed map size: " + feeds.size)
+            val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
+            Future.value(response)
+        }
       }
-    }
   }
 
   class Cache(val index: Int, val service: Service[Request, Response])
@@ -268,26 +283,38 @@ final class FinagleChirper extends Benchmark {
     var postCount = 0
 
     val statVariants = Seq[(Int, Service[Request, Response] => Unit)](
-      (20, master => {
-        val query = "/api/stats/longest"
-        val request = Request(Method.Get, query)
-        digest += Await.result(master.apply(request)).content.length
-      }),
-      (20, master => {
-        val query = "/api/stats/hash-tag-count"
-        val request = Request(Method.Get, query)
-        digest += Await.result(master.apply(request)).content.length
-      }),
-      (20, master => {
-        val query = "/api/stats/longest-rechirp"
-        val request = Request(Method.Get, query)
-        digest += Await.result(master.apply(request)).content.length
-      }),
-      (50, master => {
-        val query = "/api/stats/most-rechirps"
-        val request = Request(Method.Get, query)
-        digest += Await.result(master.apply(request)).content.length
-      })
+      (
+        20,
+        master => {
+          val query = "/api/stats/longest"
+          val request = Request(Method.Get, query)
+          digest += Await.result(master.apply(request)).content.length
+        }
+      ),
+      (
+        20,
+        master => {
+          val query = "/api/stats/hash-tag-count"
+          val request = Request(Method.Get, query)
+          digest += Await.result(master.apply(request)).content.length
+        }
+      ),
+      (
+        20,
+        master => {
+          val query = "/api/stats/longest-rechirp"
+          val request = Request(Method.Get, query)
+          digest += Await.result(master.apply(request)).content.length
+        }
+      ),
+      (
+        50,
+        master => {
+          val query = "/api/stats/most-rechirps"
+          val request = Request(Method.Get, query)
+          digest += Await.result(master.apply(request)).content.length
+        }
+      )
     )
 
     val statMultiplicities: Seq[Service[Request, Response] => Unit] = for {
@@ -424,8 +451,9 @@ final class FinagleChirper extends Benchmark {
     requestCountParam = c.intParameter("request_count")
     userCountParam = c.intParameter("user_count")
 
-    userNames = for (i <- 0 until userCountParam)
-      yield usernameBases(i % usernameBases.length) + i
+    userNames =
+      for (i <- 0 until userCountParam)
+        yield usernameBases(i % usernameBases.length) + i
 
     master = Http.serve(":0", new Master)
     /* TODO
@@ -457,8 +485,9 @@ final class FinagleChirper extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val clients = for (i <- 0 until clientCount)
-      yield new Client(userNames(i % userNames.length) + i)
+    val clients =
+      for (i <- 0 until clientCount)
+        yield new Client(userNames(i % userNames.length) + i)
     clients.foreach(_.start())
     clients.foreach(_.join())
 
