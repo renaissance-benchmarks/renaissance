@@ -6,7 +6,7 @@ lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 // and avoid the benchmarking of a moving target.
 val sparkScalaVersion = "2.12.12"
 
-val sparkVersion = "2.4.7"
+val sparkVersion = "3.0.1"
 
 lazy val apacheSpark = (project in file("."))
   .settings(
