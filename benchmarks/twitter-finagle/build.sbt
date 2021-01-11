@@ -10,11 +10,9 @@ lazy val twitterFinagle = (project in file("."))
       "com.twitter" %% "finagle-http" % "19.4.0",
       "com.twitter" %% "finagle-stats" % "19.4.0",
       "com.twitter" %% "finagle-core" % "19.4.0",
-      "com.twitter" %% "twitter-server" % "19.4.0",
-      "com.twitter.common" % "metrics" % "0.0.39",
-      "com.twitter.common" % "io" % "0.0.69",
       "com.twitter" %% "util-core" % "19.4.0",
-      "com.twitter" %% "util-events" % "7.0.0"
+      "com.google.guava" % "guava" % "19.0",
+      "commons-io" % "commons-io" % "2.4"
     )
   )
   .dependsOn(
