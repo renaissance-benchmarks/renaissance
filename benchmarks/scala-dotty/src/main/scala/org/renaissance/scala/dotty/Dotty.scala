@@ -1,11 +1,5 @@
 package org.renaissance.scala.dotty
 
-import java.io._
-import java.net.URLClassLoader
-import java.nio.file.Paths
-import java.util.zip.ZipInputStream
-
-import org.apache.commons.io.IOUtils
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -13,7 +7,17 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
+import java.io._
+import java.net.URLClassLoader
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
+import java.util.zip.ZipInputStream
 import scala.collection._
+
+// Keep for cross-compilation with Scala 2.11 and 2.12.
+import scala.collection.compat._
 
 @Name("dotty")
 @Group("scala-dotty")
@@ -35,51 +39,37 @@ final class Dotty extends Benchmark {
 
   private val outputPath = dottyPath.resolve("output")
 
-  private val sources: mutable.Buffer[String] = mutable.Buffer[String]()
+  private var dottyBaseArgs: Seq[String] = _
 
-  private var sourcePaths: mutable.Buffer[String] = _
+  private var dottyInvocations: Seq[Array[String]] = _
 
-  private def unzipSources(): Unit = {
+  private val batchCompile = false
+
+  private def unzipSources() = {
+    val sources = mutable.Buffer[Path]()
+
     val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + zipPath))
-    val target = sourceCodePath.toFile
-    var nextEntry = zis.getNextEntry
-    while (nextEntry != null) {
-      val name = nextEntry.getName
-      val f = new File(target, name)
-      if (!f.isDirectory) {
-        // Create directories.
-        val parent = f.getParentFile
-        if (parent != null) parent.mkdirs
-        val targetStream = new FileOutputStream(f)
-        IOUtils.copy(zis, targetStream)
-        targetStream.close()
-        sources += name
-        nextEntry = zis.getNextEntry
-      }
-    }
-    zis.close()
-  }
+    try {
+      LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { zipEntry =>
+        if (!zipEntry.isDirectory) {
+          val target = sourceCodePath.resolve(zipEntry.getName)
+          val parent = target.getParent
+          if (parent != null && Files.notExists(parent)) {
+            Files.createDirectories(parent)
+          }
 
-  private def setUpSourcePaths(): Unit = {
-    sourcePaths = sources.map(f => sourceCodePath.resolve(f).toString)
+          Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING)
+          sources += target
+        }
+      }
+    } finally {
+      zis.close()
+    }
+
+    sources.toSeq
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    outputPath.toFile.mkdirs()
-    unzipSources()
-    setUpSourcePaths()
-  }
-
-  private val DOTTY_ARG_CLASS_PATH = "-classpath"
-
-  private val DOTTY_ARG_CLASS_FILE_DESTINATION = "-d"
-
-  /**
-   * Allows the compiler to automatically perform implicit type conversions.
-   */
-  private val DOTTY_ARG_TYPE_CONVERSION = "-language:implicitConversions"
-
-  override def run(c: BenchmarkContext): BenchmarkResult = {
     /*
      * Construct the classpath for the compiler. Unfortunately, Dotty is
      * unable to use current classloader (either of this class or this
@@ -106,15 +96,32 @@ final class Dotty extends Benchmark {
       .map(url => new java.io.File(url.toURI).getPath)
       .mkString(File.pathSeparator)
 
-    val args = Seq[String](
-      DOTTY_ARG_CLASS_PATH,
+    dottyBaseArgs = Seq[String](
+      "-classpath",
       classPath,
-      DOTTY_ARG_TYPE_CONVERSION,
-      DOTTY_ARG_CLASS_FILE_DESTINATION,
+      // Allow the compiler to automatically perform implicit type conversions.
+      "-language:implicitConversions",
+      // Output directory for compiled classes.
+      "-d",
       outputPath.toString
     )
 
-    sourcePaths.map(p => args :+ p).foreach(x => dotty.tools.dotc.Main.process(x.toArray))
+    Files.createDirectories(outputPath)
+    val sourcePaths = unzipSources()
+
+    if (batchCompile) {
+      val dottyArgs = (dottyBaseArgs ++ sourcePaths.map(_.toString)).toArray
+      dottyInvocations = Seq(dottyArgs)
+    } else {
+      // Compile sources one-by-one.
+      dottyInvocations = sourcePaths.map(p => (dottyBaseArgs :+ p.toString).toArray)
+    }
+  }
+
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    dottyInvocations.foreach { dottyArgs =>
+      dotty.tools.dotc.Main.process(dottyArgs)
+    }
 
     // TODO: add proper validation
     Validators.dummy()

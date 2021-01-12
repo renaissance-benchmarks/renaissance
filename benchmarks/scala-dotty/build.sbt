@@ -8,7 +8,7 @@ lazy val scalaDotty = (project in file("."))
     scalaVersion := "2.13.4",
     scalacOptions += "-Ytasty-reader",
     libraryDependencies ++= Seq(
-      "commons-io" % "commons-io" % "2.6",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.3.2",
       "org.scala-lang" % "scala3-compiler_3.0.0-M1" % "3.0.0-M1"
     )
   )
