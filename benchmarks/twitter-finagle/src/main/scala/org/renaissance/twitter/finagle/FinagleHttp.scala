@@ -30,30 +30,21 @@ import org.renaissance.License
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(
-      name = "request_count",
-      defaultValue = "12000",
-      summary = "Number of requests sent during the execution of the benchmark"
-    ),
-    new Parameter(
-      name = "client_count",
-      defaultValue = "$cpu.count",
-      summary = "Number of clients that are simultaneously sending the requests"
-    )
-  )
+@Parameter(
+  name = "request_count",
+  defaultValue = "12000",
+  summary = "Number of requests sent during the execution of the benchmark"
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array("request_count = 150", "client_count = 2")
-    ),
-    new Configuration(name = "jmh")
-  )
+@Parameter(
+  name = "client_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of clients that are simultaneously sending the requests"
 )
+@Configuration(
+  name = "test",
+  settings = Array("request_count = 150", "client_count = 2")
+)
+@Configuration(name = "jmh")
 final class FinagleHttp extends Benchmark {
 
   class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {

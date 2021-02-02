@@ -29,29 +29,20 @@ import scala.io.Source
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "input_file", defaultValue = "/ratings.csv"),
-    new Parameter(name = "als_ranks", defaultValue = "8, 12"),
-    new Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0"),
-    new Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Parameter(name = "input_file", defaultValue = "/ratings.csv")
+@Parameter(name = "als_ranks", defaultValue = "8, 12")
+@Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0")
+@Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Configuration(
+  name = "test",
+  settings = Array(
+    "input_file = /ratings-small.csv",
+    "als_ranks = 12",
+    "als_lambdas = 10.0",
+    "als_iterations = 10"
   )
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array(
-        "input_file = /ratings-small.csv",
-        "als_ranks = 12",
-        "als_lambdas = 10.0",
-        "als_iterations = 10"
-      )
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "jmh")
 final class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.

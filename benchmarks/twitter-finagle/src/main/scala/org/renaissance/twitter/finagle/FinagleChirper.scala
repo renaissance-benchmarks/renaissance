@@ -1,6 +1,5 @@
 package org.renaissance.twitter.finagle
 
-import java.io.File
 import java.net.InetSocketAddress
 import java.net.URLEncoder
 import java.nio.ByteBuffer
@@ -39,19 +38,10 @@ import scala.util.hashing.byteswap32
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(90)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "request_count", defaultValue = "1250"),
-    new Parameter(name = "user_count", defaultValue = "5000")
-  )
-)
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("request_count = 10", "user_count = 10")),
-    new Configuration(name = "jmh")
-  )
-)
+@Parameter(name = "request_count", defaultValue = "1250")
+@Parameter(name = "user_count", defaultValue = "5000")
+@Configuration(name = "test", settings = Array("request_count = 10", "user_count = 10"))
+@Configuration(name = "jmh")
 final class FinagleChirper extends Benchmark {
 
   class Master extends Service[Request, Response] {

@@ -24,8 +24,8 @@ import scala.collection.compat._
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+@Configuration(name = "test")
+@Configuration(name = "jmh")
 final class Dotty extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.

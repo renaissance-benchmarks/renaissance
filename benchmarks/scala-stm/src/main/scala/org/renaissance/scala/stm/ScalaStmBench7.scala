@@ -13,8 +13,8 @@ import org.renaissance.License
 @Licenses(Array(License.BSD3, License.GPL2))
 @Repetitions(60)
 @Parameter(name = "thread_count", defaultValue = "$cpu.count")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+@Configuration(name = "test")
+@Configuration(name = "jmh")
 final class ScalaStmBench7 extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
