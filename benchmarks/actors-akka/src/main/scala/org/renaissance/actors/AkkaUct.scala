@@ -10,18 +10,13 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("akka-uct")
-@Groups(Array(new Group("actors"), new Group("scala")))
+@Group("actors")
 @Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
 @Licenses(Array(License.MIT))
 @Repetitions(24)
 @Parameter(name = "loop_count", defaultValue = "10")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("loop_count = 2")),
-    new Configuration(name = "jmh", settings = Array("loop_count = 1"))
-  )
-)
+@Configuration(name = "test", settings = Array("loop_count = 2"))
+@Configuration(name = "jmh", settings = Array("loop_count = 1"))
 final class AkkaUct extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
