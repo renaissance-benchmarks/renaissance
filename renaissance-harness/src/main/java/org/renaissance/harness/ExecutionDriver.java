@@ -119,7 +119,7 @@ final class ExecutionDriver implements BenchmarkContext {
   private void printStartInfo(int index, BenchmarkInfo benchInfo, String confName) {
     System.out.printf(
       "====== %s (%s) [%s], iteration %d started ======\n",
-      benchInfo.name(), benchInfo.group(), confName ,index
+      benchInfo.name(), benchInfo.module(), confName ,index
     );
   }
 
@@ -133,7 +133,7 @@ final class ExecutionDriver implements BenchmarkContext {
     System.out.printf(
       (Locale) null,
       "====== %s (%s) [%s], iteration %d completed (%.3f ms) ======\n",
-      benchInfo.name(), benchInfo.group(), confName, index, durationMillis
+      benchInfo.name(), benchInfo.module(), confName, index, durationMillis
     );
   }
 

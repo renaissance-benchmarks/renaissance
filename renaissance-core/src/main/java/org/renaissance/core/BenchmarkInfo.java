@@ -6,11 +6,13 @@ import java.util.NoSuchElementException;
 
 public final class BenchmarkInfo {
 
+  final String module;
+
   final String className;
 
   final String name;
 
-  final String group;
+  final String[] groups;
 
   final String summary;
 
@@ -26,14 +28,16 @@ public final class BenchmarkInfo {
 
 
   BenchmarkInfo(
-    String className, String name, String group,
+    String module, String className,
+    String name, String[] groups,
     String summary, String description,
     int repetitions, String[] licenses, String distro,
     Map<String, Map<String, String>> configurations
   ) {
+    this.module = module;
     this.className = className;
     this.name = name;
-    this.group = group;
+    this.groups = groups;
     this.summary = summary;
     this.description = description;
     this.repetitions = repetitions;
@@ -42,10 +46,11 @@ public final class BenchmarkInfo {
     this.configurations = configurations;
   }
 
+  public String module() { return module; }
 
   public String name() { return name; }
 
-  public String group() { return group; }
+  public String[] groups() { return Arrays.copyOf(groups, groups.length); }
 
   public String summary() { return summary; }
 
@@ -97,5 +102,4 @@ public final class BenchmarkInfo {
   public String[] licenses() {
     return Arrays.copyOf(licenses, licenses.length);
   }
-
 }
