@@ -216,7 +216,7 @@ object AkkaActorState {
   def awaitTermination(system: ActorSystem) {
     try {
       actorLatch.await()
-      system.shutdown()
+      system.terminate()
     } catch {
       case ex: InterruptedException => {
         ex.printStackTrace()

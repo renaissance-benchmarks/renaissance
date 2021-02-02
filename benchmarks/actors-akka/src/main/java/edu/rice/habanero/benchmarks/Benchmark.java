@@ -26,7 +26,7 @@ public abstract class Benchmark {
 
   public final String runtimeInfo() {
     final String javaVersion = System.getProperty("java.version");
-    return "Java:" + javaVersion + "::Scala:2.11.0";
+    return "Java:" + javaVersion + "::Scala:2.13.4";
   }
 
   public abstract void initialize(String[] args) throws IOException;
