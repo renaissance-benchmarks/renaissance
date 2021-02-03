@@ -45,7 +45,14 @@ public final class Launcher {
 
   private static int launchHarnessClass(String className, String[] args) {
     try {
-      Path scratchBaseDir = Paths.get(System.getProperty("java.io.tmpdir", "."));
+      //
+      // Use the current directory as the scratch directory base. Even though
+      // it is more obvious to put the scratch base in the system temporary
+      // directory, it is often backed by "tmpfs" file system (on Linux) and
+      // storing data there may create artificial memory pressure, causing the
+      // system to swap other things out and impact the results.
+      //
+      Path scratchBaseDir = Paths.get("");
       logger.fine(() -> "Creating scratch directory in: "+ scratchBaseDir);
       scratchRootDir = Files.createTempDirectory(scratchBaseDir, "renaissance-");
 
