@@ -24,13 +24,8 @@ import scala.util.Random
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
 @Parameter(name = "rating_count", defaultValue = "20000")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("rating_count = 500")),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "test", settings = Array("rating_count = 500"))
+@Configuration(name = "jmh")
 final class Als extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.

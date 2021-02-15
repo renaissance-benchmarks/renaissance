@@ -12,23 +12,14 @@ import org.renaissance.License
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(80)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "input_path", defaultValue = "/shakespeare.txt"),
-    new Parameter(name = "expected_hash", defaultValue = "7527985ec20d9aab")
-  )
+@Parameter(name = "input_path", defaultValue = "/shakespeare.txt")
+@Parameter(name = "expected_hash", defaultValue = "7527985ec20d9aab")
+@Configuration(
+  name = "test",
+  settings =
+    Array("input_path = /shakespeare-truncated.txt", "expected_hash = a7b6836b27dbdf0f")
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings =
-        Array("input_path = /shakespeare-truncated.txt", "expected_hash = a7b6836b27dbdf0f")
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "jmh")
 final class RxScrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.

@@ -96,8 +96,8 @@ object Solver {
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(20)
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+@Configuration(name = "test")
+@Configuration(name = "jmh")
 final class ScalaDoku extends Benchmark {
 
   /*

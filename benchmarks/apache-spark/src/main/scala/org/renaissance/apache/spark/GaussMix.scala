@@ -24,27 +24,15 @@ import scala.util.Random
 @Summary("Computes a Gaussian mixture model using expectation-maximization.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
-    new Parameter(name = "number_count", defaultValue = "15000"),
-    new Parameter(
-      name = "max_iterations",
-      defaultValue = "15",
-      summary = "The maximum number of iterations allowed"
-    )
-  )
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "number_count", defaultValue = "15000")
+@Parameter(
+  name = "max_iterations",
+  defaultValue = "15",
+  summary = "The maximum number of iterations allowed"
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array("number_count = 7", "max_iterations = 3")
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "test", settings = Array("number_count = 7", "max_iterations = 3"))
+@Configuration(name = "jmh")
 final class GaussMix extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.

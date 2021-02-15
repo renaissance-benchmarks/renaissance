@@ -52,7 +52,7 @@ public final class ModuleLoader {
    * of JAR file paths as the value.
    */
   private static Map<String, Set<String>> loadModuleJarPaths(String resourceName) {
-    logger.config(() -> String.format (
+    logger.fine(() -> String.format (
       "Loading module JAR sets from resource '%s'", resourceName
     ));
 
