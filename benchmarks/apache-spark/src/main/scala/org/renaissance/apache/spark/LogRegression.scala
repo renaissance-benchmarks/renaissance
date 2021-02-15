@@ -24,19 +24,10 @@ import org.renaissance.License
 @Summary("Runs the logistic regression workload from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
-    new Parameter(name = "copy_count", defaultValue = "400")
-  )
-)
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("copy_count = 5")),
-    new Configuration(name = "jmh")
-  )
-)
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "copy_count", defaultValue = "400")
+@Configuration(name = "test", settings = Array("copy_count = 5"))
+@Configuration(name = "jmh")
 final class LogRegression extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.

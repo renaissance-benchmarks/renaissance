@@ -18,13 +18,8 @@ import org.renaissance.License
 @Licenses(Array(License.APACHE2))
 @Repetitions(16)
 @Parameter(name = "rw_entry_count", defaultValue = "500000")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("rw_entry_count = 10000")),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "test", settings = Array("rw_entry_count = 10000"))
+@Configuration(name = "jmh")
 final class DbShootout extends Benchmark {
 
   /**

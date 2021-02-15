@@ -176,8 +176,8 @@ lazy val renaissance: Project = {
         sbt.Package.ManifestAttributes(
           ("Specification-Title", "Renaissance Benchmark Suite"),
           // Consider Specification-Version to mark sets of active benchmarks
-          ("Git-Head-Commit", git.gitHeadCommit.value.get),
-          ("Git-Head-Commit-Date", git.gitHeadCommitDate.value.get),
+          ("Git-Head-Commit", git.gitHeadCommit.value.getOrElse("unknown")),
+          ("Git-Head-Commit-Date", git.gitHeadCommitDate.value.getOrElse("unknown")),
           ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString)
         )
       ),
