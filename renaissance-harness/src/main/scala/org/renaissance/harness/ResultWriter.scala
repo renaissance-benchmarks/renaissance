@@ -176,6 +176,9 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
           "max_fd_count" -> unixOs.getMaxFileDescriptorCount.toJson,
           "open_fd_count" -> unixOs.getOpenFileDescriptorCount.toJson
         )
+
+      // No extra information to collect on non-Unix systems.
+      case _ =>
     }
 
     result.toMap
