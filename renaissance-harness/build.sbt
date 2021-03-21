@@ -5,7 +5,7 @@ lazy val renaissanceHarness = (project in file("."))
     name := "renaissance-harness",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalaVersion := "2.13.4",
+    scalaVersion := "2.13.5",
     libraryDependencies ++= Seq(
       "commons-io" % "commons-io" % "2.6",
       "com.github.scopt" %% "scopt" % "4.0.0-RC2",
