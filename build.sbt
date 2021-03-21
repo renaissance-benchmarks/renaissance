@@ -49,9 +49,8 @@ def projectJars =
     val projectJarTasks = for {
       project <- subProjects
     } yield Def.task {
-      val mainJar = (packageBin in (project, Compile)).value
-      val depJars =
-        (dependencyClasspath in (project, Compile)).value.map(_.data).filter(_.isFile)
+      val mainJar = (project / Compile / packageBin).value
+      val depJars = (project / Compile / dependencyClasspathAsJars).value.map(_.data)
       val loadedJars = mainJar +: depJars
       val allJars = mainJar +: coreJar +: depJars
 
