@@ -13,8 +13,6 @@ lazy val scalaSAT = (project in file("."))
   )
   .dependsOn(
     renaissanceCore,
-    scalaCafeSAT % "compile->compile;compile->test"
-  )
-  .aggregate(
+    scalaSMTLib,
     scalaCafeSAT
   )
