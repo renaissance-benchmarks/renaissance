@@ -1,6 +1,6 @@
-target
-.idea
+target/
+.bsp/
+.idea/
 *.cfg
 *.iml
 tools/sbt/lib/local-preloaded/
-

@@ -9,7 +9,7 @@
 .ensime_cache
 
 # sbt
-target
+target/
 /project/build
 /leon
 /setupenv
