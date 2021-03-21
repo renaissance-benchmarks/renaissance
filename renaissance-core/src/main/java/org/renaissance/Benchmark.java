@@ -33,6 +33,21 @@ public interface Benchmark {
 
 
   /**
+   * Container for {@link Group} annotations. Does not have to be
+   * used explicitly since Java 8 which introduced the {@link Repeatable}
+   * annotation. However, older Scala versions do not support annotations
+   * types tagged as {@link Repeatable}, therefore the container type has
+   * to be used explicitly.
+   */
+  @Documented
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface Groups {
+    Group[] value() default {};
+  }
+
+
+  /**
    * Name of the group the benchmark belongs to. Defaults to dash-separated
    * package names under org.renaissance. For example, the group name for a
    * benchmark class in the {@code org.renaissance.jdk.concurrent} package
@@ -40,6 +55,7 @@ public interface Benchmark {
    */
   @Documented
   @Target(ElementType.TYPE)
+  @Repeatable(Groups.class)
   @Retention(RetentionPolicy.RUNTIME)
   @interface Group {
     String value();

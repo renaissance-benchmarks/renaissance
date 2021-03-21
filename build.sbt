@@ -40,25 +40,32 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
 
 def projectJars =
   Def.taskDyn {
+    val rootJarBase = (resourceManaged in Compile).value
+    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
+
     // Each generated task returns tuple of
-    // (project path, all JAR files, all JAR files without renaissance core JAR*)
+    // (project name, project path, all JAR files, all JAR files without renaissance core JAR*)
     // * because renaissance core classes are shared across all benchmarks
     val projectJarTasks = for {
-      p <- subProjects
+      project <- subProjects
     } yield Def.task {
-      val mainJar = (packageBin in (p, Compile)).value
-      val coreJar = (packageBin in (renaissanceCore, Runtime)).value
-      val depJars = (dependencyClasspath in (p, Compile)).value.map(_.data).filter(_.isFile)
-      val loadedJarFiles = mainJar +: depJars
+      val mainJar = (project / Compile / packageBin).value
+      val depJars = (project / Compile / dependencyClasspathAsJars).value.map(_.data)
+      val loadedJars = mainJar +: depJars
       val allJars = mainJar +: coreJar +: depJars
-      val project = p.asInstanceOf[RootProject].build.getPath
-      val jarFiles = for (jar <- allJars) yield {
-        val dest = (resourceManaged in Compile).value / project / jar.getName
-        dest.getParentFile.mkdirs()
+
+      val projectPath = project.asInstanceOf[RootProject].build.getPath
+      val jarBase = rootJarBase / projectPath
+      jarBase.mkdirs()
+
+      val allJarFiles = for (jar <- allJars) yield {
+        val dest = jarBase / jar.getName
         Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
         dest
       }
-      (project, jarFiles, loadedJarFiles)
+
+      val projectName = (name in project).value
+      (projectName, projectPath, allJarFiles, loadedJars)
     }
     flattenTasks(projectJarTasks)
   }
@@ -68,36 +75,38 @@ def jarsAndListGenerator =
     val nonGpl = nonGplOnly.value
     val logger = streams.value.log
 
-    // Flatten list and create a groups-jars file and the benchmark-details file.
     projectJars.map { groupJars =>
-      // Add the benchmarks from the different project groups.
-      val jarListContent = new StringBuilder
-      val benchDetails = new java.util.Properties
+      // Create the "modules.properties" file.
+      val modulesProps = new java.util.Properties
+      for ((projectName, projectPath, _, loadedJars) <- groupJars) {
+        val jarLine = loadedJars.map(jar => projectPath + "/" + jar.getName).mkString(",")
+        modulesProps.setProperty(projectName, jarLine)
+      }
 
-      for ((project, allJars, loadedJars) <- groupJars) {
-        val jarLine = loadedJars.map(jar => project + "/" + jar.getName).mkString(",")
-        val projectShort = project.stripPrefix("benchmarks/")
-        jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
+      val modulesPropsFile = (resourceManaged in Compile).value / "modules.properties"
+      val modulesPropsStream = new java.io.FileOutputStream(modulesPropsFile)
+      modulesProps.store(modulesPropsStream, "Module jars")
 
-        // Scan project jars for benchmarks and fill the property file.
-        for (benchInfo <- Benchmarks.listBenchmarks(allJars, Some(logger))) {
+      // Create the "benchmark.properties" file.
+      // Scan project jars for benchmarks and fill the property file.
+      // Use all project jars to ensure that the benchmark class be be loaded.
+      val benchmarksProps = new java.util.Properties
+      for ((projectName, _, allJars, _) <- groupJars) {
+        for (benchInfo <- Benchmarks.listBenchmarks(projectName, allJars, Some(logger))) {
           if (!nonGpl || benchInfo.distro() == License.MIT) {
             for ((k, v) <- benchInfo.toMap()) {
-              benchDetails.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
+              benchmarksProps.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
             }
           }
         }
       }
 
-      val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
-      IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
+      val benchmarksPropsFile = (resourceManaged in Compile).value / "benchmarks.properties"
+      val benchmarksPropsStream = new java.io.FileOutputStream(benchmarksPropsFile)
+      benchmarksProps.store(benchmarksPropsStream, "Benchmark details")
 
-      val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
-      val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
-      benchDetails.store(benchDetailsStream, "Benchmark details")
-
-      benchDetailsFile +: jarListFile +: groupJars.flatMap {
-        case (_, jars, _) => jars
+      benchmarksPropsFile +: modulesPropsFile +: groupJars.flatMap {
+        case (_, _, jars, _) => jars
       }
     }
   }

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Reactor System -- {{ reactor-system.url }}</title>
+
+    <!-- Environment variables -->
+    <script>
+      var reactorsVersion = {{ reactor-system.version }};
+      var configurationExtensions = {{ debugger-ui.configuration }};
+    </script>
+
+    <!-- Base definitions -->
+    @@library(io/reactors/debugger/js/base.js)
+
+    <!-- Imports -->
+    @@style(io/reactors/debugger/lib/bootstrap/css/bootstrap.min.css)
+    @@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+    @@library(io/reactors/debugger/lib/bootstrap/js/bootstrap.min.js)
+    @@library(io/reactors/debugger/lib/vuejs/vue.min.js)
+    @@component(io/reactors/debugger/com/debugger.html)
+
+    <!-- Transitive imports -->
+    {{{ debugger-ui.imports }}}
+
+    <!-- Debugger plugins -->
+    {{{ debugger-ui.plugins }}}
+
+    <script>
+      var vm;
+      $(document).ready(function() {
+        Vue.config.debug = true;
+        vm = new Vue({
+          el: "body"
+        });
+      });
+    </script>
+    <style>
+      html, body {
+        height: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <x-debugger></x-debugger>
+  </body>
+</html>

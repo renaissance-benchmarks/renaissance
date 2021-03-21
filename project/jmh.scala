@@ -1,9 +1,10 @@
-import java.io.File
-import java.nio.charset.StandardCharsets
-
 import org.renaissance.License
+import sbt.RootProject
 import sbt.io.IO
 import sbt.util.Logger
+
+import java.io.File
+import java.nio.charset.StandardCharsets
 
 object RenaissanceJmh {
 
@@ -40,20 +41,20 @@ public class ${jmhClassName} extends JmhRenaissanceBenchmark {
     outputDir: File,
     logger: Logger,
     nonGpl: Boolean,
-    groupJars: Seq[(String, Seq[File], Seq[File])]
+    groupJars: Seq[(String, String, Seq[File], Seq[File])]
   ) = {
     val perProjectBenchmarkClasses = for {
-      (project, allJars, loadedJars) <- groupJars
+      (projectName, projectPath, allJars, _) <- groupJars
       // TODO: Filter projects in the build file if possible
-      if project.startsWith("benchmarks/")
+      if projectPath.startsWith("benchmarks/")
     } yield {
       // Scan project jars for benchmarks and fill the property file.
-      logger.info(s"Generating JMH wrappers for project $project")
+      logger.info(s"Generating JMH wrappers for project $projectPath")
       for {
-        info <- Benchmarks.listBenchmarks(allJars, None)
+        info <- Benchmarks.listBenchmarks(projectName, allJars, None)
         // TODO: Filter projects in the build file if possible
         if (!nonGpl || info.distro() == License.MIT) &&
-          (!info.name.startsWith("dummy") || info.name == "dummy-empty")
+          (!info.groups.contains("dummy") || info.name == "dummy-empty")
       } yield {
         generateJmhWrapperBenchmarkClass(info, outputDir)
       }

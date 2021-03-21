@@ -1,0 +1,35 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >
+<!--
+2016-7-17: Created with FontForge (http://fontforge.org)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+<metadata>
+Created by FontForge 20150603 at Sun Jul 17 15:19:59 2016
+ By icons8
+
+</metadata>
+<defs>
+<font id="Purchased" horiz-adv-x="200" >
+  <font-face 
+    font-family="Purchased"
+    font-weight="400"
+    font-stretch="normal"
+    units-per-em="512"
+    panose-1="2 0 5 3 0 0 0 0 0 0"
+    ascent="448"
+    descent="-64"
+    bbox="0 -64 512 448"
+    underline-thickness="25.6"
+    underline-position="-51.2"
+    unicode-range="U+0020-F100"
+  />
+    <missing-glyph />
+    <glyph glyph-name="space" unicode=" " 
+ />
+    <glyph glyph-name="timeline" unicode="&#xf100;" horiz-adv-x="512" 
+d="M0 448h39.3848v-98.4619h149.538l29.5391 29.5391c9.8457 9.8457 25.9688 9.8457 33.8457 0l29.5381 -29.5391h230.154v-39.3838h-228.308l-31.3848 -31.3848c-9.8457 -9.84668 -25.9688 -9.84668 -33.8457 0l-31.3848 31.3848h-147.692v-98.4619h346.461
+l29.5391 29.5381c9.8457 9.84668 25.9688 9.84668 33.8457 0l29.5391 -29.5381h33.2305v-39.3848h-31.3848l-31.3848 -31.3848c-9.8457 -9.8457 -25.9688 -9.8457 -33.8457 0l-31.3848 31.3848h-344.615v-98.4619h31.3848l29.5381 29.5391
+c9.84668 9.8457 25.9697 9.8457 33.8467 0l29.5381 -29.5391h348.308v-39.3838h-346.462l-31.3838 -31.3848c-9.84668 -9.84668 -25.9697 -9.84668 -33.8467 0l-31.3848 31.3848h-29.5381v-98.4619h-39.3848v512z" />
+  </font>
+</defs></svg>

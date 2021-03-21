@@ -1,0 +1,111 @@
+@@style(io/reactors/debugger/css/vars.css)
+
+.panel-default {
+  border: 0px solid transparent;
+  border-radius: 0px;
+}
+
+.panel {
+  background-color: var(--widget-background-color);
+  margin-bottom: 0px;
+}
+
+.panel-body {
+  padding: 0px;
+}
+
+select.input-sm {
+  line-height: 24px;
+  height: 24px;
+}
+
+select.input-sm option {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.input-sm {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  border-radius: 0px;
+  height: 24px;
+}
+
+.form-control {
+  background-color: var(--widget-background-color);
+  border: var(--widget-border);
+}
+
+.btn,
+.btn-primary,
+.open > .dropdown-toggle.btn,
+.open > .dropdown-toggle.btn-primary {
+  background-color: var(--widget-background-color);
+  background-image: none;
+  border: var(--widget-border);
+  border-radius: 0px;
+  font-size: 10px;
+  color: var(--widget-font-color);
+  outline: none;
+  padding: 4px;
+  transition: 0.3s;
+}
+
+.btn:hover,
+.btn-primary:hover {
+  background-color: var(--widget-background-color-hovered);
+  background-image: none;
+  border: var(--widget-border);
+  border-radius: 0px;
+  font-size: 10px;
+  color: var(--widget-font-color);
+  outline: none;
+}
+
+.btn:active,
+.btn-primary:active {
+  background-color: var(--widget-background-color-active);
+  background-image: none;
+  border: var(--widget-border-bright);
+  color: var(--widget-font-color);
+  outline: none;
+}
+
+.dropdown-toggle.btn:focus,
+.btn-primary.dropdown-toggle:focus,
+.open > .dropdown-toggle.btn:focus,
+.open > .dropdown-toggle.btn-primary:focus {
+  background-color: var(--widget-background-color-selected);
+  background-image: none;
+  color: var(--widget-font-color);
+  border: var(--widget-border-bright);
+  outline: none;
+}
+
+.dropdown-toggle.btn:active,
+.btn-primary.dropdown-toggle:active,
+.open > .dropdown-toggle.btn:active,
+.open > .dropdown-toggle.btn-primary:active {
+  background-color: var(--widget-background-color-active);
+  background-image: none;
+  color: var(--widget-font-color);
+  border: var(--widget-border-bright);
+  outline: none;
+}
+
+.dropdown-menu {
+  background-color: var(--widget-background-color-dim);
+  border-radius: 0px;
+  border: var(--widget-border);
+  padding: 2px;
+  font-size: 12px;
+}
+
+.dropdown-menu > li {
+  cursor: pointer;
+  padding: 2px;
+  transition: 0.3s;
+}
+
+.dropdown-menu > li:hover {
+  background-color: var(--widget-background-color-hovered);
+}

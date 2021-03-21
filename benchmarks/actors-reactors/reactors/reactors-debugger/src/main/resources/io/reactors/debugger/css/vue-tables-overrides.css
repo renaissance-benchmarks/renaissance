@@ -1,0 +1,90 @@
+
+@@style(io/reactors/debugger/css/vars.css)
+
+.VueTables__search input {
+  padding: 2px;
+  font-size: 12px;
+  line-height: 1.1;
+  height: 28px;
+  margin-bottom: 4px;
+}
+
+.VueTables__limit select {
+  padding: 2px;
+  font-size: 12px;
+  line-height: 1.1;
+  height: 28px;
+  margin-bottom: 4px;
+}
+
+.VueTables__table.table-bordered {
+  border: var(--widget-border-dim);
+}
+
+.VueTables__sortable {
+  border: var(--widget-border-dim);
+  border-bottom-width: 1px;
+  padding: 2px;
+}
+
+.table-bordered > thead > tr > th,
+.table-bordered > tbody > tr > th,
+.table-bordered > tfoot > tr > th,
+.table-bordered > thead > tr > td,
+.table-bordered > tbody > tr > td,
+.table-bordered > tfoot > tr > td {
+  border: var(--widget-border-dim);
+  padding: 2px;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--widget-background-color-dim);
+}
+
+.table-striped > tbody > tr:nth-of-type(even) {
+  background-color: var(--widget-background-color);
+}
+
+.VueTables__table-wrapper {
+  overflow-y: scroll;
+  height: calc(100% - 80px);
+}
+
+.form-group {
+  margin-bottom: 4px;
+}
+
+.pagination > .disabled > span,
+.pagination > .disabled > span:hover,
+.pagination > .disabled > span:focus,
+.pagination > .disabled > a,
+.pagination > .disabled > a:hover,
+.pagination > .disabled > a:focus {
+  background-color: var(--widget-background-color);
+  border: var(--widget-border);
+}
+
+.pagination > li > a:hover, 
+.pagination > li > span:hover, 
+.pagination > li > a:focus, 
+.pagination > li > span:focus {
+  background-color: var(--widget-background-color);
+  border: var(--widget-border);
+}
+
+
+.pagination > .active > a, 
+.pagination > .active > span, 
+.pagination > .active > a:hover, 
+.pagination > .active > span:hover, 
+.pagination > .active > a:focus,
+.pagination > .active > span:focus {
+  background-color: var(--widget-background-color);
+  border: var(--widget-border);
+}
+
+.pagination > li > a,
+.pagination > li > span {
+  background-color: var(--widget-background-color);
+  border: var(--widget-border);
+}

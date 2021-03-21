@@ -204,7 +204,7 @@ object RenaissanceSuite {
   }
 
   private def selectNonDummyBenchmarks(benchmarks: BenchmarkRegistry) = {
-    benchmarks.getAll.asScala.filter(_.group != "dummy").toSeq
+    benchmarks.getAll.asScala.filterNot(_.groups().contains("dummy")).toSeq
   }
 
   private def selectBenchmarks(
@@ -335,6 +335,6 @@ object RenaissanceSuite {
   }
 
   private def formatGroupList(benchmarks: Seq[BenchmarkInfo]) =
-    benchmarks.map(_.group()).distinct.sorted.mkString("\n")
+    benchmarks.flatMap(_.groups()).distinct.sorted.mkString("\n")
 
 }

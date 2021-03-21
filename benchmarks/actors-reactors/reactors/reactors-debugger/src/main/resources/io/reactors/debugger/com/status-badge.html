@@ -1,0 +1,132 @@
+@@style(io/reactors/debugger/css/vars.css)
+@@style(io/reactors/debugger/lib/bootstrap/css/bootstrap.min.css)
+@@style(io/reactors/debugger/lib/font-awesome/css/font-awesome.css)
+@@library(io/reactors/debugger/js/util.js)
+@@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+@@library(io/reactors/debugger/lib/bootstrap/js/bootstrap.min.js)
+
+
+<template id="x-status-badge">
+  <div class="x-status-badge-root">
+    <div :id="'x-status-badge-content-' + uid" class="x-status-badge-content">
+      <span :class="statusClass">
+        <i class="fa fa-circle" aria-hidden="true"></i>
+      </span>
+      <span class="x-status-badge-text">{{ text }}</span>
+    </div>
+  </div>
+</template>
+
+
+<script>
+  var StatusBadge = Vue.extend({
+    template: "#x-status-badge",
+    props: ["config", "canvasClass"],
+    data: function() {
+      return {
+        status: "none",
+        text: "",
+        uid: Uid.num()
+      };
+    },
+    computed: {
+      statusClass: function() {
+        switch(this.status) {
+          case "ok":
+          case "done":
+            return "x-status-badge-ok x-status-badge-glow";
+          case "loading":
+          case "pending":
+            return "x-status-badge-loading x-status-badge-glow";
+          case "error":
+          case "failed":
+            return "x-status-badge-error x-status-badge-glow";
+          case "none":
+          default:
+            return "x-status-badge-none x-status-badge-glow";
+        }
+      }
+    },
+    attached: function() {
+    },
+    methods: {
+      set: function(v, text) {
+        this.status = v;
+        if (text) this.text = text;
+      }
+    }
+  });
+
+  Vue.component("x-status-badge", StatusBadge);
+</script>
+
+
+<style type="text/css">
+  .x-status-badge-root {
+  }
+
+  .x-status-badge-content {
+  }
+
+  .x-status-badge-text {
+    width: 60px;
+    overflow: hidden;
+    font-size: 10px;
+  }
+
+  .x-status-badge-glow {
+    display: inline-block;
+    min-width: 9px;
+    padding-left: 1px;
+    padding-bottom: 1px;
+    line-height: 8px;
+    font-size: 8px;
+    border-radius: 8px;
+  }
+
+  .x-status-badge-ok {
+    color: var(--status-badge-ok-color);
+    box-shadow: 0 0 6px var(--status-badge-ok-color),
+      inset 0 0 8px var(--status-badge-ok-color);
+    animation: slow-glowing 4s infinite steps(1, start);
+    animation-timing-function: ease;
+  }
+
+  .x-status-badge-loading {
+    color: var(--status-badge-loading-color);
+    box-shadow: 0 0 8px var(--status-badge-loading-color),
+      inset 0 0 8px var(--status-badge-loading-color);
+    animation: glowing 1s infinite steps(1, start);
+    animation-timing-function: ease;
+  }
+
+  .x-status-badge-error {
+    color: var(--status-badge-error-color);
+    box-shadow: 0 0 8px var(--status-badge-error-color),
+      inset 0 0 8px var(--status-badge-error-color);
+  }
+
+  .x-status-badge-none {
+    color: var(--status-badge-none-color);
+    box-shadow: 0 0 8px var(--status-badge-none-color),
+      inset 0 0 8px var(--status-badge-none-color);
+  }
+
+  @keyframes glowing {
+    0%, 100% {
+      opacity: 1.0;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes slow-glowing {
+    0%, 100% {
+      opacity: 1.0;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+</style>

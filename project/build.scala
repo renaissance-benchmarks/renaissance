@@ -11,7 +11,7 @@ import sbt.util.Logger
 
 import scala.collection._
 
-class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
+class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
 
   private def kebabCase(s: String): String = {
     val camelCaseName = if (s.last == '$') s.init else s
@@ -35,7 +35,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     benchClass.getDeclaredAnnotationsByType(annotationClass)
   }
 
-  def className = benchClass.getName
+  def className: String = benchClass.getName
 
   def name(): String = {
     val annotation = getAnnotation(classOf[Name])
@@ -46,14 +46,14 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     }
   }
 
-  def group(): String = {
-    val annotation = getAnnotation(classOf[Group])
-    if (annotation != null) {
-      annotation.value()
-    } else {
-      val groupPkg = getPackageRelativeTo(benchClass, classOf[Benchmark])
-      groupPkg.replaceAll("[.]", "-")
-    }
+  def groups(): Seq[String] = {
+    val gs = getAnnotations(classOf[Group])
+    if (gs.isEmpty) Seq(getDefaultGroup()) else gs.map(_.value)
+  }
+
+  private def getDefaultGroup(): String = {
+    val groupPkg = getPackageRelativeTo(benchClass, classOf[Benchmark])
+    groupPkg.replaceAll("[.]", "-")
   }
 
   private def getPackageRelativeTo(target: Class[_], base: Class[_]): String = {
@@ -64,6 +64,10 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     } else {
       targetPkg
     }
+  }
+
+  def printableGroups(): String = {
+    groups.mkString(",")
   }
 
   def summary(): String = {
@@ -139,7 +143,7 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
   }
 
   def printableLicenses(): String = {
-    licenses.map(l => l.toString).mkString(",")
+    licenses.map(_.toString).mkString(",")
   }
 
   // Determine target Renaissance distro based on the licenses
@@ -160,9 +164,10 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 
   def toMap(): Map[String, String] = {
     Map(
+      "module" -> module,
       "class" -> className,
       "name" -> name,
-      "group" -> group,
+      "groups" -> printableGroups,
       "summary" -> summary,
       "description" -> description,
       "licenses" -> printableLicenses,
@@ -176,14 +181,18 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 object Benchmarks {
 
   // Return tuples with (name, distro license, all licenses, description and default repetitions)
-  def listBenchmarks(classpath: Seq[File], logger: Option[Logger]): Seq[BenchmarkInfo] = {
+  def listBenchmarks(
+    projectName: String,
+    classPath: Seq[File],
+    logger: Option[Logger]
+  ): Seq[BenchmarkInfo] = {
     //
     // Load the benchmark base class and create a class loader for the project
     // with the class loader of the base class as its parent. This will allow
     // us to use core classes here.
     //
     val benchBase = classOf[Benchmark]
-    val urls = classpath.map(_.toURI.toURL).toArray
+    val urls = classPath.map(_.toURI.toURL).toArray
     val loader = new URLClassLoader(urls, benchBase.getClassLoader)
     val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]core)")
 
@@ -192,7 +201,7 @@ object Benchmarks {
     // the benchmark interface and collect metadata from class annotations.
     //
     val result = new mutable.ArrayBuffer[BenchmarkInfo]
-    for (jarFile <- classpath.map(jar => new JarFile(jar))) {
+    for (jarFile <- classPath.map(jar => new JarFile(jar))) {
       for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
         if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
           val benchClassName = entry.getName
@@ -206,7 +215,7 @@ object Benchmarks {
           if (isEligible) {
             // Print info to see what benchmarks are picked up by the build.
             val benchClass = clazz.asSubclass(benchBase)
-            val info = new BenchmarkInfo(benchClass)
+            val info = new BenchmarkInfo(projectName, benchClass)
             if (logger.nonEmpty) logBenchmark(info, logger.get)
             result += info
           }
@@ -219,7 +228,7 @@ object Benchmarks {
 
   def logBenchmark(b: BenchmarkInfo, logger: Logger) = {
     logger.info(s"class: ${b.className}")
-    logger.info(s"\tbenchmark: ${b.group}/${b.name}")
+    logger.info(s"\tbenchmark: ${b.name} (${b.printableGroups})")
     logger.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
     logger.info(s"\trepetitions: ${b.repetitions}")
     logger.info(s"\tsummary: ${b.summary}")

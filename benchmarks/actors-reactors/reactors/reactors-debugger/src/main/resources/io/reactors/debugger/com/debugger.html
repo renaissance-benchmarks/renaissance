@@ -1,0 +1,226 @@
+@@style(io/reactors/debugger/lib/ionicons/css/ionicons.min.css)
+@@style(io/reactors/debugger/css/main.css)
+@@style(io/reactors/debugger/css/reactor-icons.css)
+@@library(io/reactors/debugger/js/util.js)
+@@library(io/reactors/debugger/js/ctx.js)
+@@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+@@component(io/reactors/debugger/com/config.html)
+@@component(io/reactors/debugger/com/api.html)
+@@component(io/reactors/debugger/com/model.html)
+@@component(io/reactors/debugger/com/graph.html)
+@@component(io/reactors/debugger/com/log-window.html)
+@@component(io/reactors/debugger/com/shell.html)
+@@component(io/reactors/debugger/com/horizontal-tabber.html)
+@@component(io/reactors/debugger/com/vertical-tabber.html)
+@@component(io/reactors/debugger/com/tabbar.html)
+
+
+<template id="x-debugger">
+  <div class="x-debugger-root">
+    <!-- debugger -->
+    <x-config v-ref:config>
+    </x-config>
+    <x-api v-ref:api
+      :config="$refs.config.state">
+    </x-api>
+    <x-model v-ref:model
+      :ctx="ctx"
+      :config="$refs.config.state"
+      :api="$refs.api.adapter"
+      @critical-error="onCriticalError">
+    </x-model>
+    <x-graph v-ref:graph
+      :ctx="ctx"
+      :config="$refs.config.state"
+      :model="$refs.model.state"
+      :events="$refs.model.events"
+      :canvas-class="'x-debugger-graph'">
+    </x-graph>
+    <div class="x-debugger-panel-container">
+      <div class="x-debugger-left-panel-container">
+        <div class="x-debugger-left-panel">
+          <x-vertical-tabber :panels="leftPanelInfo">
+          </x-vertical-tabber>
+        </div>
+      </div>
+      <div class="x-debugger-bottom-panel-container">
+        <div class="x-debugger-bottom-panel">
+          <x-horizontal-tabber :panels="bottomPanelInfo">
+            <x-log-window v-ref:log-window
+              slot="0"
+              :config="$refs.config.state"
+              :history="$refs.model.history"
+              :model="$refs.model.state"
+              :graph="$refs.graph">
+            </x-log-window>
+            <x-tabbar v-ref:shell-tabbar
+              slot="1"
+              :tab-factories="shellFactories"
+              :initial-selection="shellFactories[0]">
+            </x-tabbar>
+          </x-horizontal-tabber>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+
+<script>
+  var Debugger = Vue.extend({
+    template: "#x-debugger",
+    data: function() {
+      return {
+        ctx: new Ctx(),
+        errors: [],
+        leftPanelInfo: [
+          {
+            icon: "<span class='glyphicon glyphicon-sort-by-alphabet'></span>"
+          },
+          {
+            icon: "<i class='fa fa-cogs' aria-hidden='true'></i>"
+          },
+          {
+            icon: "<span class='glyphicon glyphicon-cloud'></span>"
+          }
+        ],
+        bottomPanelInfo: [
+          {
+            icon: "<span class='glyphicon glyphicon-list-alt'></span>",
+            text: "Log",
+            id: "x-debugger-button-log",
+            onSelected: () => this.$refs.logWindow.onSelected(),
+            onDeselected: () => {}
+          },
+          {
+            icon: "<span class='glyphicon glyphicon-console'></span>",
+            text: "Shell",
+            id: "x-debugger-button-shell",
+            onSelected: () => this.$refs.shellTabbar.onSelected(),
+            onDeselected: () => this.$refs.shellTabbar.onDeselected()
+          },
+          {
+            icon: "<span class='glyphicon glyphicon-record'></span>",
+            text: "Breakpoints",
+            id: "x-debugger-button-breakpoints",
+            onSelected: () => {},
+            onDeselected: () => {}
+          },
+          {
+            icon: "<i class='reactor-icons reactor-icons-timeline'></i>",
+            text: "Timeline",
+            id: "x-debugger-button-timeline",
+            onSelected: () => {},
+            onDeselected: () => {}
+          },
+          {
+            icon: "<i class='fa fa-line-chart' aria-hidden='true'></i>",
+            text: "Metrics",
+            id: "x-debugger-button-metrics",
+            onSelected: () => {},
+            onDeselected: () => {}
+          },
+          {
+            icon: "<i class='icon ion-settings'></i>",
+            text: "Tools",
+            id: "x-debugger-button-tools",
+            onSelected: () => {},
+            onDeselected: () => {}
+          }
+        ],
+        shellFactories: [
+          {
+            name: "Scala",
+            create: () => {
+              var config = this.$refs.config.state;
+              var api = this.$refs.api.adapter;
+              var model = this.$refs.model.state;
+              return {
+                name: "[" + Uid.labelNum("shell") + "] Scala",
+                icon: "<img height='16px' src='img/icon/scala-mono.png'/>",
+                content: new Shell({
+                  data: {
+                    config: config,
+                    api: api,
+                    model: model
+                  }
+                }),
+                onBlur: (shell) => shell.onBlur(),
+                onFocus: (shell) => shell.onFocus(),
+                onClose: (shell) => shell.onClose()
+              };
+            }
+          }
+        ]
+      };
+    },
+    attached: function() {
+    },
+    methods: {
+      onCriticalError: function(msg) {
+        this.$refs.model.stop();
+        this.errors.push(msg);
+      }
+    }
+  });
+
+  Vue.component("x-debugger", Debugger);
+</script>
+
+
+<style type="text/css">
+  .x-debugger-root {
+    height: 100%;
+    position: relative;
+  }
+
+  .x-debugger-graph {
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  .x-debugger-panel-container {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+  }
+
+  .x-debugger-left-panel-container {
+    height: 100%;
+    float: left;
+    margin-right: 0px;
+    pointer-events: all;
+  }
+
+  .x-debugger-left-panel {
+    height: 100%;
+    padding: 6px;
+    padding-right: 0px;
+  }
+
+  .x-debugger-bottom-panel-container {
+    width: 100%;
+    overflow: hidden;
+    height: 100%;
+    position: relative;
+  }
+
+  .x-debugger-bottom-panel {
+    width: 100%;
+    padding: 6px;
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+    pointer-events: all;
+  }
+
+  .x-debugger-min-height-panel {
+    min-height: 150px;
+  }
+</style>
