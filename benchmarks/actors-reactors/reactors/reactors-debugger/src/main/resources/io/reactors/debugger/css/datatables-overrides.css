@@ -1,0 +1,55 @@
+
+@@style(io/reactors/debugger/css/vars.css)
+
+.paginate_button {
+  font-size: 12px;
+}
+
+.pagination > .disabled > a,
+.pagination > .disabled > a:hover,
+.pagination > .disabled > a:focus,
+.pagination > .disabled > span,
+.pagination > .disabled > span:hover,
+.pagination > .disabled > span:focus {
+  border-color: rgba(60, 60, 60, 0.3);
+}
+
+ul.pagination {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
+.pagination > li > a,
+.pagination > li > span {
+  outline: none;
+  padding: 2px;
+}
+
+.pagination > li:first-child > a,
+.pagination > li:first-child > span {
+  border-bottom-left-radius: 3px;
+  border-top-left-radius: 3px;
+}
+
+.pagination > li:last-child > a,
+.pagination > li:last-child > span {
+  border-bottom-right-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+div.dataTables_wrapper div.dataTables_info {
+  padding-top: 2px;
+}
+
+table.dataTable {
+  margin-top: 2px !important;
+  margin-bottom: 2px !important;
+}
+
+.dataTables_scrollHead {
+  border-bottom: var(--widget-border-dimmer) !important;
+}
+
+.dataTables_scrollHeadInner {
+  width: 100%;
+}

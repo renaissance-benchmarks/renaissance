@@ -1,0 +1,212 @@
+@@style(io/reactors/debugger/css/vars.css)
+@@style(io/reactors/debugger/lib/bootstrap/css/bootstrap.min.css)
+@@style(io/reactors/debugger/css/bootstrap-overrides.css)
+@@style(io/reactors/debugger/lib/jquery-terminal/jquery.terminal-0.10.12.min.css)
+@@style(io/reactors/debugger/css/jquery-terminal-overrides.css)
+@@library(io/reactors/debugger/js/util.js)
+@@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+@@library(io/reactors/debugger/lib/bootstrap/js/bootstrap.min.js)
+@@library(io/reactors/debugger/lib/jquery-terminal/jquery.terminal-0.10.12.min.js)
+@@library(io/reactors/debugger/lib/jquery-terminal/unix_formatting.js)
+@@component(io/reactors/debugger/com/status-badge.html)
+
+
+<template id="x-shell">
+  <div class="x-shell-root">
+    <div class="x-shell-container">
+      <div class="x-shell-scroll-pane">
+        <div class="x-shell-status-container">
+          <x-status-badge v-ref:status-badge>
+          </x-status-badge>
+        </div>
+        <div class="x-shell-main-window" :id="'x-shell-main-window-' + uid">
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+
+<script>
+  "use strict";
+
+  class ScalaShellAdapter extends ShellAdapter {
+    constructor(uid, v) {
+      super(uid);
+      var y = new Date().getFullYear();
+
+      this.prompt = "scala> ";
+      this.name = "Scala";
+      this.greetings = (
+        "    ____                  __                    ________ \n" +
+        "   / __ \\___  ____ ______/ /_____  __________  /  _/ __ \\\n" +
+        "  / /_/ / _ \\/ __ `/ ___/ __/ __ \\/ ___/ ___/  / // / / /\n" +
+        " / _, _/  __/ /_/ / /__/ /_/ /_/ / /  (__  ) _/ // /_/ / \n" +
+        "/_/ |_|\\___/\\__,_/\\___/\\__/\\____/_/  /____(_)___/\\____/ " + v +"\n" +
+        "                                                            \n" +
+        "                        Reactors.IO Interactive Scala Shell \n" +
+        "                                              (c) 2014-" + y + " \n"
+      );
+    }
+  }
+
+  var Shell = Vue.extend({
+    template: "#x-shell",
+    props: ["config", "api", "model"],
+    data: function() {
+      return {
+        uid: Uid.num(),
+        shellType: null,
+        shell: null,
+        focusedHint: true,
+        terminatedHint: false
+      };
+    },
+    attached: function() {
+      this.shellType = this.config.shell.defaultAdapter;
+      this.$refs.statusBadge.set("loading");
+      this.api.replGet("", this.shellType).then((initialReply) => {
+        this.$refs.statusBadge.set("done");
+        Vue.set(this.model.shellPendingOutput, initialReply.repluid, []);
+        this.shell = this.createShell(initialReply.repluid, this.shellType);
+
+        if (this.terminatedHint) {
+          this.shell.close(this.api);
+          return;
+        }
+
+        var executeCommand = (command, term, forceNewline) => {
+          term.pause();
+          this.$refs.statusBadge.set("loading");
+          this.shell.eval(this.api, command).then((reply) => {
+            this.$refs.statusBadge.set("done");
+            term.echo(reply.output);
+            if (!reply["need-more"]) {
+              term.echo(" ");
+            } else if (forceNewline) {
+              term.echo(reply.prompt + command);
+            }
+            term.set_prompt(reply.prompt);
+            term.resume();
+          });
+        };
+        this.term = $("#x-shell-main-window-" + this.uid).terminal(executeCommand, {
+          prompt: this.shell.prompt,
+          name: this.shell.name,
+          greetings: this.shell.greetings,
+          enabled: this.focusedHint,
+          onInit: (term) => {
+          },
+          onFocus: (term) => {
+          },
+          onBlur: (term) => {
+            return false;
+          },
+          keydown: (event, term) => {
+            if (event.key == "d" && event.ctrlKey) {
+              var cmd = term.get_command();
+              term.set_command("");
+              executeCommand(cmd + "\u0004", term, true);
+              return false;
+            }
+          },
+          completion: (term, command, callback) => {
+            term.pause();
+            this.$refs.statusBadge.set("loading");
+            this.shell.eval(this.api, command + "\t").then((reply) => {
+              this.$refs.statusBadge.set("done");
+              var suggestions = reply.output.split(/\s+/);
+              callback(suggestions);
+              term.resume();
+            });
+          }
+        });
+      });
+    },
+    methods: {
+      createShell: function(uid, tpe) {
+        var v = "v" + this.config.global.version;
+        switch (tpe) {
+          case "Scala":
+            var adapter = new ScalaShellAdapter(uid, v);
+            return adapter;
+          default:
+            Log.error("Unknown shell type: " + tpe);
+        }
+      },
+      terminalPrint: function(line) {
+        if (this.term) {
+          var enabled = this.term.enabled();
+          if (enabled) this.term.pause();
+          this.term.echo(line);
+          if (enabled) this.term.resume();
+        }
+      },
+      onFocus: function() {
+        this.focusedHint = true;
+        if (this.term) this.term.enable();
+      },
+      onBlur: function() {
+        this.focusedHint = false;
+        if (this.term) this.term.disable();
+      },
+      onClose: function() {
+        this.focusedHint = false;
+        if (this.term) this.term.disable();
+        this.terminatedHint = true;
+        if (this.shell) this.shell.close(this.api);
+      }
+    },
+    watch: {
+      "model.shellPendingOutput[shell.uid]": {
+        handler: function(nv) {
+          if (this.shell != null) {
+            if (nv.length > 0) {
+              var output = "";
+              for (var i = 0; i < nv.length; i++) {
+                var line = nv[i];
+                output = output + line;
+                this.terminalPrint(output);
+              }
+              nv.splice(0, nv.length);
+            }
+          }
+        },
+        deep: true
+      }
+    }
+  });
+
+  Vue.component("x-shell", Shell);
+</script>
+
+
+<style type="text/css">
+  .x-shell-root {
+    width: 100%;
+  }
+
+  .x-shell-container {
+    margin-bottom: 4px;
+    height: 250px;
+  }
+
+  .x-shell-scroll-pane {
+    height: 100%;
+    position: relative;
+  }
+
+  .x-shell-main-window {
+    height: 100%;
+    background-color: var(--widget-background-color-dim);
+    border: var(--widget-border);
+    box-shadow: inset 0px 1px 8px 1px rgba(0,0,0,0.1);
+  }
+
+  .x-shell-status-container {
+    position: absolute;
+    top: 12px;
+    right: 24px;
+    z-index: 1;
+  }
+</style>

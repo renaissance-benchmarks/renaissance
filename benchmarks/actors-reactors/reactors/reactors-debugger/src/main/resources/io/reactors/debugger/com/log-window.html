@@ -1,0 +1,71 @@
+@@style(io/reactors/debugger/css/vars.css)
+@@style(io/reactors/debugger/lib/bootstrap/css/bootstrap.min.css)
+@@style(io/reactors/debugger/lib/datatables/datatables.min.css)
+@@style(io/reactors/debugger/css/bootstrap-overrides.css)
+@@style(io/reactors/debugger/css/datatables-overrides.css)
+@@style(io/reactors/debugger/css/vue-tables-overrides.css)
+@@library(io/reactors/debugger/js/util.js)
+@@library(io/reactors/debugger/js/event-bus.js)
+@@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+@@library(io/reactors/debugger/lib/bootstrap/js/bootstrap.min.js)
+@@library(io/reactors/debugger/lib/vue-tables/vue-tables.min.js)
+
+
+<template id="x-log-window">
+  <div class="x-log-window-root">
+    <div class="x-log-window-table-container">
+      <v-client-table :data="history" :columns="tableColumns" :options="tableOptions"
+        class="x-log-window-table cell-border">
+      </v-client-table>
+    </div>
+  </div>
+</template>
+
+
+<script>
+  Vue.use(VueTables.client, {});
+
+  var LogWindow = Vue.extend({
+    template: "#x-log-window",
+    props: ["config", "history", "model"],
+    data: function() {
+      return {
+        uid: Uid.num(),
+        tableColumns: ["Event", "Time", "Message"],
+        tableOptions: {
+          orderBy: {
+            ascending: false,
+            column: "Time"
+          }
+        }
+      };
+    },
+    attached: function() {
+    },
+    methods: {
+      onSelected: function() {
+      }
+    }
+  });
+
+  Vue.component("x-log-window", LogWindow);
+</script>
+
+
+<style type="text/css">
+  .x-log-window-root {
+    width: 100%;
+  }
+
+  .x-log-window-table {
+    width: 100%;
+    background-color: var(--widget-background-color);
+    // border: var(--widget-border);
+    padding: 4px;
+    height: 260px;
+  }
+
+  .x-log-window-table-container {
+    margin-bottom: 4px;
+  }
+</style>

@@ -1,0 +1,170 @@
+@@style(io/reactors/debugger/css/vars.css)
+@@style(io/reactors/debugger/lib/bootstrap/css/bootstrap.min.css)
+@@style(io/reactors/debugger/css/bootstrap-overrides.css)
+@@library(io/reactors/debugger/js/util.js)
+@@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+@@library(io/reactors/debugger/lib/bootstrap/js/bootstrap.min.js)
+@@library(io/reactors/debugger/lib/underscorejs/underscore-min.js)
+
+
+<template id="x-horizontal-tabber">
+  <div class="x-horizontal-tabber-root">
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <div v-show="selected == 0" class="x-horizontal-tabber-slot" transition>
+          <slot name="0"></slot>
+        </div>
+        <div v-show="selected == 1" class="x-horizontal-tabber-slot" transition>
+          <slot name="1"></slot>
+        </div>
+        <div v-show="selected == 2" class="x-horizontal-tabber-slot" transition>
+          <slot name="2"></slot>
+        </div>
+        <div v-show="selected == 3" class="x-horizontal-tabber-slot" transition>
+          <slot name="3"></slot>
+        </div>
+        <div v-show="selected == 4" class="x-horizontal-tabber-slot" transition>
+          <slot name="4"></slot>
+        </div>
+        <div v-show="selected == 5" class="x-horizontal-tabber-slot" transition>
+          <slot name="5"></slot>
+        </div>
+        <div v-show="selected == 6" class="x-horizontal-tabber-slot" transition>
+          <slot name="6"></slot>
+        </div>
+        <div v-show="selected == 7" class="x-horizontal-tabber-slot" transition>
+          <slot name="7"></slot>
+        </div>
+      </div>
+      <div class="x-horizontal-tabber-button-pane">
+        <ul class="x-horizontal-tabber-tabs">
+          <li v-for="(index, panel) in panels"
+            :id="panel.id"
+            class="{{ active(index) }}" @click="onTabClick(index)">
+            <span>
+              {{{ panel.icon }}} {{ panel.text }}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>
+
+
+<script>
+  var HorizontalTabber = Vue.extend({
+    template: "#x-horizontal-tabber",
+    props: ["panels"],
+    data: function() {
+      return {
+        uid: Uid.num(),
+        selected: 0
+      };
+    },
+    attached: function() {
+    },
+    methods: {
+      active: function(i) {
+        if (i == this.selected) {
+          return "x-horizontal-tabber-selected";
+        } else {
+          return "";
+        }
+      },
+      onTabClick: function(i) {
+        if (this.selected && this.panels[this.selected]) {
+          this.panels[this.selected].onDeselected();
+        }
+        if (this.selected == i) this.selected = -1;
+        else {
+          this.selected = i;
+          this.panels[i].onSelected();
+        }
+      }
+    }
+  });
+
+  Vue.component("x-horizontal-tabber", HorizontalTabber);
+</script>
+
+
+<style type="text/css">
+  .x-horizontal-tabber-root {
+    border-radius: 5px;
+    box-shadow: 0px 2px 3px 3px rgba(0,0,0,0.2);
+  }
+
+  ul.x-horizontal-tabber-tabs {
+    border-top: 4px solid #68b;
+    list-style: none;
+    padding-left: 0px;
+  }
+
+  ul.x-horizontal-tabber-tabs > li {
+    display: inline-block;
+    background-color: var(--widget-background-color);
+    padding: 8px;
+    border-right: var(--widget-border);
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+  }
+
+  ul.x-horizontal-tabber-tabs > li:hover {
+    background-color: var(--widget-background-color-hovered);
+    border-right: var(--widget-border-transparent);
+    box-shadow: inset 0 2px 0 #68a, inset 0px 0px 3px 1px rgba(0,0,0,0.08);
+  }
+
+  ul.x-horizontal-tabber-tabs > li.x-horizontal-tabber-selected {
+    box-shadow: inset 0 3px 0 #48a, inset 0 0 4px 1px #d5d5d5;
+    background-color: var(--widget-background-color-selected);
+    border-right: var(--widget-border-transparent);
+    box-shadow: inset 0 2px 0 #68a, inset 0px 0px 3px 1px rgba(0,0,0,0.08);
+  }
+
+  ul.x-horizontal-tabber-tabs > li > span {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .x-horizontal-tabber-button-pane {
+    margin-top: -4px;
+  }
+
+  .x-horizontal-tabber-slot {
+  }
+
+  .x-horizontal-tabber-slot.v-enter {
+    bottom: 0;
+    animation: fadein .25s;
+  }
+
+  .x-horizontal-tabber-slot.v-leave {
+    position: relative;
+    bottom: 0;
+    animation: fadeout .0s;
+  }
+
+  @keyframes fadein {
+    0% {
+      opacity: 0.0;
+    }
+    100% {
+      opacity: 1.0;
+    }
+  }
+
+  @keyframes fadeout {
+    0% {
+      opacity: 1.0;
+    }
+    100% {
+      opacity: 0.0;
+    }
+  }
+</style>
