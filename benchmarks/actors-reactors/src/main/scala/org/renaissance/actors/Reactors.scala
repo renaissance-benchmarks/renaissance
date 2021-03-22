@@ -24,13 +24,8 @@ import scala.util.Random
 @Licenses(Array(License.MIT))
 @Repetitions(10)
 @Parameter(name = "scaling_factor", defaultValue = "1.0")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("scaling_factor = 0.1")),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "test", settings = Array("scaling_factor = 0.1"))
+@Configuration(name = "jmh")
 final class Reactors extends Benchmark {
 
   // Code based on https://github.com/reactors-io/reactors
