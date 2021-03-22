@@ -4,7 +4,7 @@ lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 // If we want to target a different Spark version, we should instead clone this subproject.
 // That way, we make it convenient to run the old versions,
 // and avoid the benchmarking of a moving target.
-val sparkScalaVersion = "2.12.12"
+val sparkScalaVersion = "2.12.13"
 
 val sparkVersion = "3.0.1"
 
