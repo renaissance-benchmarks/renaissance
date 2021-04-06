@@ -76,7 +76,7 @@ final class Neo4jAnalytics extends Benchmark {
   }
 
   private def createGraphDatabase(graphDbDir: Path) = {
-    println(s"Creating graph database in $graphDbDir")
+    println("Creating graph database...")
     Files.createDirectory(graphDbDir)
 
     dbms.set(
