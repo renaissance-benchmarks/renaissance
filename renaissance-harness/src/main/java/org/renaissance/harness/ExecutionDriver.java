@@ -7,6 +7,9 @@ import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.Plugin.ExecutionPolicy;
 import org.renaissance.core.BenchmarkInfo;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 /**
@@ -17,19 +20,28 @@ import java.util.Locale;
  */
 final class ExecutionDriver implements BenchmarkContext {
 
+  /** Information about the benchmark to execute. */
   private final BenchmarkInfo benchInfo;
 
+  /** Name of the benchmark configuration to use. */
   private final String configName;
+
+  /** Harness scratch root directory. */
+  private final Path scratchRoot;
 
   /** The value of {@link System#nanoTime()} at VM start. */
   private final long vmStartNanos;
 
+  /** Benchmark scratch directory. */
+  private Path scratchDir;
+
   public ExecutionDriver(
     final BenchmarkInfo benchInfo, final String configName,
-    final long vmStartNanos
+    final Path scratchRoot, final long vmStartNanos
   ) {
     this.benchInfo = benchInfo;
     this.configName = configName;
+    this.scratchRoot = scratchRoot;
     this.vmStartNanos = vmStartNanos;
   }
 
@@ -154,6 +166,23 @@ final class ExecutionDriver implements BenchmarkContext {
   @Override
   public String stringParameter(String name) {
     return benchInfo.parameter(configName, name);
+  }
+
+
+  @Override
+  public Path scratchDirectory() {
+    if (scratchDir == null) {
+      try {
+        scratchDir = Files.createDirectories(
+          scratchRoot.resolve(benchInfo.name()).resolve("scratch")
+        ).normalize();
+      } catch (IOException e) {
+        // This is a problem, fail the benchmark.
+        throw new RuntimeException("failed to create benchmark scratch directory", e);
+      }
+    }
+
+    return scratchDir;
   }
 
 }

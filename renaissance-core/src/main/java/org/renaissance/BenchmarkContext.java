@@ -44,6 +44,16 @@ public interface BenchmarkContext {
    */
   String stringParameter(final String name);
 
+  /**
+   * Provides a path to the benchmark-specific scratch directory that will be
+   * deleted (or not, depending on harness settings) after the harness exits.
+   * The benchmark can do whatever it wants in the subtree below the scratch
+   * directory, but should not modify anything outside that subtree.
+   *
+   * @return {@link Path} to benchmark-specific scratch directory.
+   */
+  Path scratchDirectory();
+
   //
   // File system operations
   //

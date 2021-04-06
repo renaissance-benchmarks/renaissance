@@ -85,6 +85,15 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((v, c) => c.withConfiguration(v))
         .maxOccurs(1)
 
+      opt[String]("scratch-base")
+        .valueName("<dir>")
+        .text("Create scratch directories in <dir>.")
+        .action((v, c) => c.withScratchBase(v))
+
+      opt[Unit]("keep-scratch")
+        .text("Do not delete the contents of scratch directories on exit.")
+        .action((_, c) => c.withKeepScratch())
+
       opt[Unit]("no-forced-gc")
         .text("Do not force garbage collection before each measured operation.")
         .action((_, c) => c.withoutForcedGc())

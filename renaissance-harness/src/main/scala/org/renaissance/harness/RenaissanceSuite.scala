@@ -4,27 +4,24 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
-
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.Plugin
 import org.renaissance.Plugin.ExecutionPolicy
-import org.renaissance.core.BenchmarkInfo
-import org.renaissance.core.BenchmarkRegistry
-import org.renaissance.core.ModuleLoader
+import org.renaissance.core.{BenchmarkInfo, BenchmarkRegistry, DirUtils, ModuleLoader}
 import org.renaissance.core.ModuleLoader.ModuleLoadingException
 import org.renaissance.harness.ExecutionPolicies.FixedOpCount
 import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
 
+import java.nio.file.{Files, Path}
 import scala.jdk.CollectionConverters._
 import scala.collection._
 
 object RenaissanceSuite {
 
   def main(args: Array[String]): Unit = {
-    // Reset locale to have repeatable output across
-    // different environments.
+    // Ensure repeatable output across different environments.
     Locale.setDefault(Locale.ROOT)
 
     val benchmarkPkg = classOf[Benchmark].getPackage
@@ -39,6 +36,13 @@ object RenaissanceSuite {
       case Some(c) => c
       case None => sys.exit(1)
     }
+
+    // Create harness scratch directory in scratch base.
+    val scratchRoot = DirUtils.createScratchDirectory(
+      config.scratchBase,
+      "harness-",
+      config.keepScratch
+    )
 
     // Load information about available benchmarks.
     val allBenchmarks = BenchmarkRegistry.createDefault()
@@ -91,13 +95,14 @@ object RenaissanceSuite {
       val dispatcher = createEventDispatcher(plugins, writers)
 
       // Note: no access to Config beyond this point.
-      runBenchmarks(benchmarks, config.configuration, policy, dispatcher)
+      runBenchmarks(benchmarks, config.configuration, scratchRoot, policy, dispatcher)
     }
   }
 
   private def runBenchmarks(
     benchmarks: Seq[BenchmarkInfo],
     configurationName: String,
+    scratchRoot: Path,
     policy: ExecutionPolicy,
     dispatcher: EventDispatcher
   ): Unit = {
@@ -112,7 +117,8 @@ object RenaissanceSuite {
     try {
       for (benchInfo <- benchmarks) {
         val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
-        val driver = new ExecutionDriver(benchInfo, configurationName, vmStartNanos)
+        val driver =
+          new ExecutionDriver(benchInfo, configurationName, scratchRoot, vmStartNanos)
 
         try {
           driver.executeBenchmark(benchmark, dispatcher, policy)

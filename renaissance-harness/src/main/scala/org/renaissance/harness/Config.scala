@@ -1,5 +1,6 @@
 package org.renaissance.harness
 
+import java.nio.file.{FileSystem, FileSystems, Path, Paths}
 import scala.collection.mutable
 
 private final class Config {
@@ -34,6 +35,17 @@ private final class Config {
    * can then trigger GC during operation.
    */
   var forceGc = true
+
+  /**
+   * The directory to use for scratch files. Must be provided by the launcher.
+   */
+  var scratchBase: Path = Path.of(".")
+
+  /**
+   * Do not delete the contents of the scratch directory after the VM exits.
+   * This is useful for debugging and is disabled by default.
+   */
+  var keepScratch = false
 
   def withBenchmarkSpecification(v: String) = {
     benchmarkSpecifiers ++= v.split(",").map(_.trim)
@@ -109,6 +121,17 @@ private final class Config {
     forceGc = false
     this
   }
+
+  def withScratchBase(name: String) = {
+    scratchBase = Paths.get(name)
+    this
+  }
+
+  def withKeepScratch() = {
+    keepScratch = true
+    this
+  }
+
 }
 
 private object PolicyType extends Enumeration {
