@@ -37,7 +37,9 @@ private final class Config {
   var forceGc = true
 
   /**
-   * The directory to use for scratch files. Must be provided by the launcher.
+   * The directory to use for scratch files. Uses current directory by default
+   * to avoid storing data to (potentially tmpfs-backed temporary directory),
+   * which could create artificial memory pressure.
    */
   var scratchBase: Path = Path.of(".")
 
