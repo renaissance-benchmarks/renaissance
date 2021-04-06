@@ -100,7 +100,7 @@ public final class BenchmarkRegistry {
       getter.apply("groups", "").split(","),
       getter.apply("summary", ""),
       getter.apply("description", ""),
-      Integer.valueOf(getter.apply("repetitions", "20")),
+      Integer.parseInt(getter.apply("repetitions", "20")),
       getter.apply("licenses", "").split(","),
       getter.apply("distro", ""),
       getConfigurations(name, mapper, properties)
