@@ -1,6 +1,6 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-lazy val scalaStdlib = (project in file("."))
+lazy val rx = (project in file("."))
   .settings(
     name := "rx",
     version := (version in renaissanceCore).value,
