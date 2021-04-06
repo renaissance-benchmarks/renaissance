@@ -8,17 +8,20 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 import static org.renaissance.core.ModuleLoader.createClassLoaderForModule;
 
 public final class Launcher {
+  private static final Logger logger = Logging.getPackageLogger(Launcher.class);
+
   private static final String MARKDOWN_GENERATOR = "org.renaissance.harness.MarkdownGenerator";
   private static final String RENAISSANCE_SUITE = "org.renaissance.harness.RenaissanceSuite";
-  private static final Logger logger = Logging.getPackageLogger(Launcher.class);
+
 
   /**
    * The root of the scratch directory.
@@ -28,79 +31,133 @@ public final class Launcher {
   static Path scratchRootDir;
 
   public static void main(String[] args) {
-    if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
-      final Package benchmarkPkg = Benchmark.class.getPackage();
-      final String[] generatorArgs = new String[] {
-        "--title", benchmarkPkg.getSpecificationTitle(),
-        "--version", benchmarkPkg.getImplementationVersion()
-      };
+    try {
+      if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
+        final Package benchmarkPkg = Benchmark.class.getPackage();
+        final String[] generatorArgs = new String[] {
+          "--title", benchmarkPkg.getSpecificationTitle(),
+          "--version", benchmarkPkg.getImplementationVersion()
+        };
 
-      // TODO Launch the generator from the build system.
-      System.exit(launchHarnessClass(MARKDOWN_GENERATOR, generatorArgs));
-    } else {
-      System.exit(launchHarnessClass(RENAISSANCE_SUITE, args));
+        // TODO Launch the generator from the build system.
+        launchHarnessClass(MARKDOWN_GENERATOR, generatorArgs);
+      } else {
+        launchHarnessClass(RENAISSANCE_SUITE, args);
+      }
+
+    } catch (LaunchException e) {
+      logger.severe(prefixStackTrace(
+        e.getMessage(), Optional.of(e.getCause())
+      ));
+
+      System.exit(1);
     }
   }
 
 
-  private static int launchHarnessClass(String className, String[] args) {
+  private static void launchHarnessClass(String className, String[] args) throws LaunchException {
     try {
       //
-      // Use the current directory as the scratch directory base. Even though
-      // it is more obvious to put the scratch base in the system temporary
-      // directory, it is often backed by "tmpfs" file system (on Linux) and
-      // storing data there may create artificial memory pressure, causing the
-      // system to swap other things out and impact the results.
+      // Determine the launcher scratch base directory, in which to create the
+      // actual scratch directory. By default, we use the current directory as
+      // the scratch base, even though it may seem tempting to put it in the
+      // system temporary directory. However, temporary directory (on Linux) is
+      // often backed by "tmpfs" file system and storing data there may create
+      // artificial memory pressure, causing the system to swap other things
+      // out and impact the results.
       //
-      Path scratchBaseDir = Paths.get("");
-      logger.fine(() -> "Creating scratch directory in: "+ scratchBaseDir);
-      scratchRootDir = Files.createTempDirectory(scratchBaseDir, "renaissance-");
+      Path scratchBaseDir = getScratchBase(args);
+
+      logger.config(() -> "Scratch base: "+ printable(scratchBaseDir));
+      scratchRootDir = DirUtils.createScratchDirectory(
+        scratchBaseDir, "launcher-", getKeepScratch(args)
+      );
 
       // The scratch root MUST be initialized at this point.
-      logger.config(() -> "Scratch directory root: " + scratchRootDir);
-      return loadAndInvokeHarnessClass(className, args);
+      logger.config(() -> "Scratch root (launcher): " + printable(scratchRootDir));
+      loadAndInvokeHarnessClass(className, args);
 
     } catch (IOException e) {
-      logger.severe(prefixStackTrace("Failed to create scratch directory: ", e));
-      return 1;
+      throw new LaunchException(e, "Failed to create scratch directory: ");
+    }
+  }
 
-    } finally {
-      logger.fine("Deleting scratch directory: " + scratchRootDir);
-      DirUtils.deleteTempDir(scratchRootDir);
+  private static Path printable(Path path) {
+    return path.toAbsolutePath().normalize();
+  }
+
+  private static Path getScratchBase(String[] args) throws LaunchException {
+    // The '--scratch-base' option needs to be kept in sync with the harness.
+    final Optional<Integer> optIndex = arrayIndexOf(args, s -> "--scratch-base".equalsIgnoreCase(s));
+
+    if (optIndex.isPresent()) {
+      int valIndex = optIndex.get() + 1;
+      if (valIndex >= args.length) {
+        throw new LaunchException("Missing directory after --scratch-base option!");
+      }
+
+      return Paths.get(args[valIndex]);
+    } else {
+      return Paths.get("");
     }
   }
 
 
-  private static int loadAndInvokeHarnessClass(String className, String[] args) {
+  private static boolean getKeepScratch(String[] args) {
+    // The '--keep-scratch' option needs to be kept in sync with the harness.
+    return arrayIndexOf(args, s -> "--keep-scratch".equalsIgnoreCase(s)).isPresent();
+  }
+
+
+  private static void loadAndInvokeHarnessClass(String className, String[] args) throws LaunchException {
     try {
       ClassLoader loader = createClassLoaderForModule("renaissance-harness");
       Class<?> suiteClass = loader.loadClass(className);
       Method suiteMain = suiteClass.getMethod("main", String[].class);
       suiteMain.invoke(null, new Object[] { args });
-      return 0;
 
     } catch (ModuleLoadingException e) {
-      logger.severe(prefixStackTrace("Failed to load harness: ", e));
+      throw new LaunchException(e, "Failed to load harness: ");
     } catch (InvocationTargetException e) {
       // Catch this before the more general ReflectiveOperationException.
-      logger.severe(prefixStackTrace("Harness failed with ", e.getCause()));
+      throw new LaunchException(e.getCause(), "Harness failed with ");
     } catch (ReflectiveOperationException e) {
-      logger.severe(prefixStackTrace("Failed to initialize harness: ", e));
+      throw new LaunchException(e, "Failed to initialize harness: ");
     }
-
-    return 1;
   }
 
 
-  private static String prefixStackTrace(final String prefix, Throwable cause) {
+  private static <T> Optional<Integer> arrayIndexOf(T[] array, Predicate<T> matcher) {
+    for (int index = 0; index < array.length; index++) {
+      if (matcher.test(array[index])) {
+        return Optional.of(index);
+      }
+    }
+
+    return Optional.empty();
+  }
+
+
+  private static String prefixStackTrace(final String prefix, Optional<Throwable> optionalCause) {
     final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     final PrintStream printer = new PrintStream(bytes);
 
     printer.append(prefix);
-    cause.printStackTrace(printer);
+    optionalCause.ifPresent(cause -> cause.printStackTrace(printer));
     printer.close();
 
     return bytes.toString();
+  }
+
+
+  private static final class LaunchException extends Exception {
+    LaunchException(String message) {
+      super(message);
+    }
+
+    LaunchException(Throwable cause, String message) {
+      super(message, cause);
+    }
   }
 
 }
