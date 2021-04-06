@@ -68,34 +68,38 @@ private final class ConfigParser(tags: Map[String, String]) {
         .unbounded()
 
       opt[String]("csv")
-        .valueName("<file-path>")
-        .text("Output results to CSV file.")
+        .valueName("<csv-file>")
+        .text("Output results as CSV to <csv-file>.")
         .action((v, c) => c.withCsvOutput(v))
         .maxOccurs(1)
 
       opt[String]("json")
-        .valueName("<file-path>")
-        .text("Output results to JSON file.")
+        .valueName("<json-file>")
+        .text("Output results as JSON to <json-file>.")
         .action((v, c) => c.withJsonOutput(v))
         .maxOccurs(1)
 
       opt[String]('c', "configuration")
-        .valueName("<name>")
-        .text("Run benchmarks with given named configuration.")
+        .valueName("<conf-name>")
+        .text("Use benchmark parameters from configuration <conf-name>.")
         .action((v, c) => c.withConfiguration(v))
         .maxOccurs(1)
 
       opt[String]("scratch-base")
         .valueName("<dir>")
-        .text("Create scratch directories in <dir>.")
+        .text("Create scratch directories in <dir>. Defaults to current directory.")
         .action((v, c) => c.withScratchBase(v))
 
       opt[Unit]("keep-scratch")
-        .text("Do not delete the contents of scratch directories on exit.")
+        .text(
+          "Keep the scratch directories after VM exit. Defaults to deleting scratch directories."
+        )
         .action((_, c) => c.withKeepScratch())
 
       opt[Unit]("no-forced-gc")
-        .text("Do not force garbage collection before each measured operation.")
+        .text(
+          "Do not force garbage collection before each measured operation. Defaults to forced GC."
+        )
         .action((_, c) => c.withoutForcedGc())
 
       opt[Unit]("list")
@@ -103,11 +107,11 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((_, c) => c.withList)
 
       opt[Unit]("raw-list")
-        .text("Print list of benchmarks (each benchmark name on separate line).")
+        .text("Print list of benchmarks (one benchmark name per line).")
         .action((_, c) => c.withRawList)
 
       opt[Unit]("group-list")
-        .text("Print list of benchmark groups (each group name on separate line).")
+        .text("Print list of benchmark groups (one group name per line).")
         .action((_, c) => c.withGroupList)
 
       arg[String]("benchmark-specification")
