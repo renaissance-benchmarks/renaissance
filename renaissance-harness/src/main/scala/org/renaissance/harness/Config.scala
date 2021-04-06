@@ -1,6 +1,6 @@
 package org.renaissance.harness
 
-import java.nio.file.{FileSystem, FileSystems, Path, Paths}
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable
 
 private final class Config {
@@ -41,7 +41,7 @@ private final class Config {
    * to avoid storing data to (potentially tmpfs-backed temporary directory),
    * which could create artificial memory pressure.
    */
-  var scratchBase: Path = Path.of(".")
+  var scratchBase: Path = Paths.get("")
 
   /**
    * Do not delete the contents of the scratch directory after the VM exits.

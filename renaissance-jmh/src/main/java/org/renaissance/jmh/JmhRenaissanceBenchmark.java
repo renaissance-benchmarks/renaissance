@@ -17,6 +17,7 @@ import org.renaissance.core.DirUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -32,7 +33,7 @@ public abstract class JmhRenaissanceBenchmark {
     BenchmarkInfo benchInfo = BenchmarkRegistry.createDefault().get(name);
     benchmark = BenchmarkRegistry.loadBenchmark(benchInfo);
     context = createBenchmarkContext(benchInfo);
-    scratchBase = Path.of(".");
+    scratchBase = Paths.get("");
   }
 
   @Setup(Level.Trial)
