@@ -80,10 +80,13 @@ Usage: renaissance [options] [benchmark-specification]
   --scratch-base <dir>     Create scratch directories in <dir>. Defaults to current directory.
   --keep-scratch           Keep the scratch directories after VM exit. Defaults to deleting scratch directories.
   --no-forced-gc           Do not force garbage collection before each measured operation. Defaults to forced GC.
-  --list                   Print list of benchmarks with their description.
-  --raw-list               Print list of benchmarks (one benchmark name per line).
-  --group-list             Print list of benchmark groups (one group name per line).
-  benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed (or all).
+  --no-jvm-check           Do not check benchmark JVM version requirements (always execute selected benchmarks).
+  --list                   Print the names and descriptions of all benchmarks.
+  --raw-list               Print the names of all benchmarks (one per line).
+  --raw-list-compatible    Print the names of benchmarks compatible with this JVM (one per line).
+  --group-list             Print the names of all benchmark groups (one per line).
+  benchmark-specification  List of benchmarks (or groups) to execute (or 'all').
+
 ```
 
 
