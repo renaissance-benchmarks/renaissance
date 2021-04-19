@@ -2,15 +2,30 @@ package org.renaissance.core;
 
 import org.renaissance.Benchmark;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.stream.Collectors.*;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.renaissance.core.ModuleLoader.createClassLoaderForModule;
 
 /**
@@ -78,7 +93,7 @@ public final class BenchmarkRegistry {
 
   private BenchmarkInfo createBenchmarkInfo(final Properties properties, String name) {
     BiFunction<String, String, String> getter = (key, defaultValue) ->
-      properties.getProperty("benchmark." + name + "." + key, defaultValue);
+      properties.getProperty("benchmark." + name + "." + key, defaultValue).trim();
 
     Function<String, String> mapper = value -> {
       if (value.startsWith("$")) {
@@ -103,7 +118,16 @@ public final class BenchmarkRegistry {
       Integer.parseInt(getter.apply("repetitions", "20")),
       getter.apply("licenses", "").split(","),
       getter.apply("distro", ""),
+      parseJvmVersion(getter.apply("jvm_version_min", "")),
+      parseJvmVersion(getter.apply("jvm_version_max", "")),
       getConfigurations(name, mapper, properties)
+    );
+  }
+
+
+  private Optional<Version> parseJvmVersion(String stringVersion) {
+    return Optional.ofNullable(
+      !stringVersion.isEmpty() ? Version.parse(stringVersion) : null
     );
   }
 
@@ -134,13 +158,19 @@ public final class BenchmarkRegistry {
     return benchmarksByName.get(name);
   }
 
+
   public List<BenchmarkInfo> getAll() {
     return new ArrayList<>(benchmarksByName.values());
   }
 
 
+  public List<BenchmarkInfo> getMatching(Predicate<BenchmarkInfo> matcher) {
+    return benchmarksByName.values().stream().filter(matcher).collect(toList());
+  }
+
+
   public List<BenchmarkInfo> getGroup(final String groupName) {
-    return Collections.unmodifiableList(benchmarksByPrimaryGroup.get(groupName));
+    return unmodifiableList(benchmarksByPrimaryGroup.get(groupName));
   }
 
 
@@ -155,7 +185,7 @@ public final class BenchmarkRegistry {
 
 
   public Map<String, List<BenchmarkInfo>> byGroup() {
-    return Collections.unmodifiableMap(benchmarksByPrimaryGroup);
+    return unmodifiableMap(benchmarksByPrimaryGroup);
   }
 
 
@@ -176,7 +206,7 @@ public final class BenchmarkRegistry {
   }
 
 
-  public static void main(String... args) {
+  static void main(String... args) {
     File prefix = new File(new File("target"), "classes");
     File detailsFile = new File(prefix, BENCHMARK_PROPERTIES);
 

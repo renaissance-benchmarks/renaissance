@@ -1,6 +1,13 @@
 package org.renaissance;
 
-import java.lang.annotation.*;
+import org.renaissance.core.Version;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Represents a Renaissance benchmark. Defines the methods that need to be
@@ -187,6 +194,48 @@ public interface Benchmark {
     String name();
     String defaultValue() default "";
     String summary() default "";
+  }
+
+
+  /**
+   * The minimum JVM specification version required (inclusive).
+   * <p>
+   * Indicates that a benchmark requires a JVM with a specification version
+   * greater than or equal to the given minimum. If the underlying JVM does
+   * not meet the requirement, the benchmark will be excluded from execution
+   * and (raw) listing.
+   * <p>
+   * Version numbers can only consist of one or more non-negative integers
+   * separated by dots ('.'), e.g., {@code "1.8"}, or {@code "11"}.
+   * <p>
+   * Defaults to {@code "1.8"} if unspecified.
+   */
+  @Documented
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface RequiresJvm {
+    String value();
+  }
+
+
+  /**
+   * The maximum JVM specification version supported (inclusive).
+   * <p>
+   * Indicates that a benchmark supports a JVM with a specification version
+   * lower than or equal to the given maximum. If the underlying JVM does
+   * not meet the requirement, the benchmark will be excluded from execution
+   * and (raw) listing.
+   * <p>
+   * Version numbers can only consist of one or more non-negative integers
+   * separated by dots ('.'), e.g., {@code "1.8"}, or {@code "11"}.
+   * <p>
+   * If unspecified, the maximum JVM specification version is unbounded.
+   */
+  @Documented
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  @interface SupportsJvm {
+    String value();
   }
 
   //

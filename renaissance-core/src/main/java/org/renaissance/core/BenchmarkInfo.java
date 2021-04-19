@@ -3,7 +3,15 @@ package org.renaissance.core;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
+/**
+ * Stores metadata associated with a particular benchmark.
+ * The class is intended to provide access to benchmark metadata without
+ * having to load the benchmark class to inspect the annotations.
+ * Consequently, it is expected to be initialized with metadata extracted
+ * from benchmark annotations at build time.
+ */
 public final class BenchmarkInfo {
 
   final String module;
@@ -24,6 +32,12 @@ public final class BenchmarkInfo {
 
   final String distro;
 
+  /** Minimum JVM version required. Can be unspecified. */
+  final Optional<Version> jvmVersionMin;
+
+  /** Maximum JVM version supported. Can be unspecified. */
+  final Optional<Version> jvmVersionMax;
+
   final Map<String, Map<String, String>> configurations;
 
 
@@ -32,6 +46,7 @@ public final class BenchmarkInfo {
     String name, String[] groups,
     String summary, String description,
     int repetitions, String[] licenses, String distro,
+    Optional<Version> jvmVersionMin, Optional<Version> jvmVersionMax,
     Map<String, Map<String, String>> configurations
   ) {
     this.module = module;
@@ -43,6 +58,8 @@ public final class BenchmarkInfo {
     this.repetitions = repetitions;
     this.licenses = licenses;
     this.distro = distro;
+    this.jvmVersionMin = jvmVersionMin;
+    this.jvmVersionMax = jvmVersionMax;
     this.configurations = configurations;
   }
 
@@ -58,6 +75,9 @@ public final class BenchmarkInfo {
 
   public int repetitions() { return repetitions; }
 
+  public Optional<Version> jvmVersionMin() { return jvmVersionMin; }
+
+  public Optional<Version> jvmVersionMax() { return jvmVersionMax; }
 
   public boolean isConfigurable() { return !configurations.isEmpty(); }
 
