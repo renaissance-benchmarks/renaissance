@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static java.util.Collections.emptyMap;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
@@ -33,13 +33,43 @@ public final class ModuleLoader {
   private static final Class<?> thisClass = ModuleLoader.class;
   private static final Logger logger = Logging.getPackageLogger(thisClass);
 
+
+  /**
+   * The root of the scratch directory for this module loader.
+   */
+  private final Path scratchRootDir;
+
   /**
    * Map of module names to sets of JAR files representing the class path of
    * each module. There may be multiple benchmark classes in one module, but
    * each will be instantiated using a separate class loader.
    */
-  private static final Map<String, Set<String>> jarPathsByModule =
-    loadModuleJarPaths(resourceAbsolutePath("modules.properties"));
+  private final Map<String, Set<String>> jarPathsByModule;
+
+
+  ModuleLoader(Path scratchRootDir, Map<String, Set<String>> jarPathsByModule) {
+    this.scratchRootDir = scratchRootDir;
+    this.jarPathsByModule = jarPathsByModule;
+  }
+
+
+  /**
+   * Creates a module loader with a given scratch root directory. The module
+   * loader loads a property file with a module description and allows loading
+   * modules using independent class loaders.
+   *
+   * @param scratchRootDir The root of the scratch directory where module
+   * module dependencies are extracted.
+   */
+  public static ModuleLoader create(Path scratchRootDir) {
+    logger.fine(() -> String.format(
+      "Creating module loader with scratch root '%s'", scratchRootDir
+    ));
+
+    String moduleProperties = resourceAbsolutePath("modules.properties");
+    final Map<String, Set<String>> moduleJarPaths = loadModuleJarPaths(moduleProperties);
+    return new ModuleLoader(scratchRootDir, moduleJarPaths);
+  }
 
 
   /**
@@ -70,9 +100,10 @@ public final class ModuleLoader {
     } catch (IOException e) {
       // Fail gracefully with an empty collection.
       logger.severe("Failed to load module JAR paths: "+ e.getMessage());
-      return Collections.emptyMap();
+      return emptyMap();
     }
   }
+
 
   private static Map<String, Set<String>> loadModuleProperties(InputStream stream)
   throws IOException {
@@ -108,7 +139,7 @@ public final class ModuleLoader {
   }
 
 
-  static ClassLoader createClassLoaderForModule(String name) throws ModuleLoadingException {
+  ClassLoader createClassLoaderForModule(String name) throws ModuleLoadingException {
     logger.fine(() -> String.format("Creating class loader for module '%s'", name));
 
     //
@@ -147,10 +178,10 @@ public final class ModuleLoader {
   }
 
 
-  private static Path createModuleJarsDirectory(String name) throws IOException {
-    // Module directory goes under the 'lib' directory of scratch root.
+  private Path createModuleJarsDirectory(String name) throws IOException {
+    // Create '<module-name>/lib' directory in scratch root.
     Path result = Files.createDirectories(
-      Launcher.scratchRootDir.resolve("lib").resolve(name)
+      scratchRootDir.resolve(name).resolve("lib")
     );
 
     logger.config(String.format(
@@ -351,19 +382,13 @@ public final class ModuleLoader {
   //
 
   public static final class ModuleLoadingException extends Exception {
-
     ModuleLoadingException(String message) {
       super(message);
-    }
-
-    ModuleLoadingException(Throwable cause, String message) {
-      super(message, cause);
     }
 
     ModuleLoadingException(String format, Object... args) {
       super(String.format(format, args));
     }
-
   }
 
 }

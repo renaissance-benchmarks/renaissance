@@ -111,6 +111,9 @@ object RenaissanceSuite {
     policy: ExecutionPolicy,
     dispatcher: EventDispatcher
   ): Unit = {
+    // Initialize harness module loader.
+    val moduleLoader = ModuleLoader.create(scratchRoot)
+
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
 
@@ -121,7 +124,7 @@ object RenaissanceSuite {
 
     try {
       for (benchInfo <- benchmarks) {
-        val benchmark = BenchmarkRegistry.loadBenchmark(benchInfo)
+        val benchmark = benchInfo.loadBenchmarkModule(moduleLoader)
         val driver =
           new ExecutionDriver(benchInfo, configurationName, scratchRoot, vmStartNanos)
 

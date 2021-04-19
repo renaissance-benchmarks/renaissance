@@ -1,13 +1,10 @@
 package org.renaissance.core;
 
-import org.renaissance.Benchmark;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +23,6 @@ import static java.util.Collections.unmodifiableMap;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.renaissance.core.ModuleLoader.createClassLoaderForModule;
 
 /**
  * A registry of benchmark metadata. By default, this registry is initialized
@@ -40,6 +36,7 @@ public final class BenchmarkRegistry {
   private final Map<String, BenchmarkInfo> benchmarksByName;
 
   private final Map<String, List<BenchmarkInfo>> benchmarksByPrimaryGroup;
+
 
   private BenchmarkRegistry(final Properties properties) {
     // Keep benchmarks ordered by name.
@@ -186,23 +183,6 @@ public final class BenchmarkRegistry {
 
   public Map<String, List<BenchmarkInfo>> byGroup() {
     return unmodifiableMap(benchmarksByPrimaryGroup);
-  }
-
-
-  public static Benchmark loadBenchmark(BenchmarkInfo benchInfo) {
-    try {
-      final ClassLoader loader = createClassLoaderForModule(benchInfo.module);
-      final Class<?> loadedClass = loader.loadClass(benchInfo.className);
-      final Class<? extends Benchmark> benchClass = loadedClass.asSubclass(Benchmark.class);
-      final Constructor<? extends Benchmark> benchCtor = benchClass.getDeclaredConstructor();
-
-      // Make the current thread as independent of the harness as possible.
-      Thread.currentThread().setContextClassLoader(loader);
-      return benchCtor.newInstance();
-
-    } catch (Exception e) {
-      throw new RuntimeException("failed to load benchmark " + benchInfo.name, e);
-    }
   }
 
 

@@ -14,21 +14,12 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 
-import static org.renaissance.core.ModuleLoader.createClassLoaderForModule;
-
 public final class Launcher {
   private static final Logger logger = Logging.getPackageLogger(Launcher.class);
 
   private static final String MARKDOWN_GENERATOR = "org.renaissance.harness.MarkdownGenerator";
   private static final String RENAISSANCE_SUITE = "org.renaissance.harness.RenaissanceSuite";
 
-
-  /**
-   * The root of the scratch directory.
-   *
-   * TODO Move into harness-wide context.
-   */
-  static Path scratchRootDir;
 
   public static void main(String[] args) {
     try {
@@ -55,7 +46,9 @@ public final class Launcher {
   }
 
 
-  private static void launchHarnessClass(String className, String[] args) throws LaunchException {
+  private static void launchHarnessClass(
+    String className, String[] args
+  ) throws LaunchException {
     try {
       //
       // Determine the launcher scratch base directory, in which to create the
@@ -69,13 +62,14 @@ public final class Launcher {
       Path scratchBaseDir = getScratchBase(args);
 
       logger.config(() -> "Scratch base: "+ printable(scratchBaseDir));
-      scratchRootDir = DirUtils.createScratchDirectory(
+      Path scratchRootDir = DirUtils.createScratchDirectory(
         scratchBaseDir, "launcher-", getKeepScratch(args)
       );
 
-      // The scratch root MUST be initialized at this point.
+      // Create module loader with launcher-specific scratch root.
       logger.config(() -> "Scratch root (launcher): " + printable(scratchRootDir));
-      loadAndInvokeHarnessClass(className, args);
+      ModuleLoader loader = ModuleLoader.create(scratchRootDir);
+      loadAndInvokeHarnessClass(loader, className, args);
 
     } catch (IOException e) {
       throw new LaunchException(e, "Failed to create scratch directory: ");
@@ -88,7 +82,7 @@ public final class Launcher {
 
   private static Path getScratchBase(String[] args) throws LaunchException {
     // The '--scratch-base' option needs to be kept in sync with the harness.
-    final Optional<Integer> optIndex = arrayIndexOf(args, s -> "--scratch-base".equalsIgnoreCase(s));
+    final Optional<Integer> optIndex = arrayIndexOf(args, "--scratch-base"::equalsIgnoreCase);
 
     if (optIndex.isPresent()) {
       int valIndex = optIndex.get() + 1;
@@ -105,14 +99,16 @@ public final class Launcher {
 
   private static boolean getKeepScratch(String[] args) {
     // The '--keep-scratch' option needs to be kept in sync with the harness.
-    return arrayIndexOf(args, s -> "--keep-scratch".equalsIgnoreCase(s)).isPresent();
+    return arrayIndexOf(args, "--keep-scratch"::equalsIgnoreCase).isPresent();
   }
 
 
-  private static void loadAndInvokeHarnessClass(String className, String[] args) throws LaunchException {
+  private static void loadAndInvokeHarnessClass(
+    ModuleLoader loader, String className, String[] args
+  ) throws LaunchException {
     try {
-      ClassLoader loader = createClassLoaderForModule("renaissance-harness");
-      Class<?> suiteClass = loader.loadClass(className);
+      ClassLoader classLoader = loader.createClassLoaderForModule("renaissance-harness");
+      Class<?> suiteClass = classLoader.loadClass(className);
       Method suiteMain = suiteClass.getMethod("main", String[].class);
       suiteMain.invoke(null, new Object[] { args });
 

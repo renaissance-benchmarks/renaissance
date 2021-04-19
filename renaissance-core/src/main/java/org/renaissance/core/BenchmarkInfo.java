@@ -1,5 +1,8 @@
 package org.renaissance.core;
 
+import org.renaissance.Benchmark;
+
+import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -62,6 +65,26 @@ public final class BenchmarkInfo {
     this.jvmVersionMax = jvmVersionMax;
     this.configurations = configurations;
   }
+
+  /**
+   * Loads this benchmark using the given module loader.
+   */
+  public Benchmark loadBenchmarkModule(ModuleLoader loader) {
+    try {
+      ClassLoader classLoader = loader.createClassLoaderForModule(module);
+      Class<?> loadedClass = classLoader.loadClass(className);
+      Class<? extends Benchmark> benchClass = loadedClass.asSubclass(Benchmark.class);
+      Constructor<? extends Benchmark> benchCtor = benchClass.getDeclaredConstructor();
+
+      // Make the current thread as independent of the harness as possible.
+      Thread.currentThread().setContextClassLoader(classLoader);
+      return benchCtor.newInstance();
+
+    } catch (Exception e) {
+      throw new RuntimeException("failed to load benchmark "+ name, e);
+    }
+  }
+
 
   public String module() { return module; }
 
