@@ -3,5 +3,6 @@ lazy val renaissanceCore = (project in file("."))
     name := "renaissance-core",
     organization := "org.renaissance",
     crossPaths := false,
-    autoScalaLibrary := false
+    autoScalaLibrary := false,
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
   )
