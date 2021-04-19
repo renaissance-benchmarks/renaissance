@@ -16,6 +16,8 @@ import scala.io.{Codec, Source}
 @Group("neo4j")
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
+@RequiresJvm("11")
+@SupportsJvm("15")
 @Repetitions(20)
 @Parameter(name = "long_query_threads", defaultValue = "2")
 @Parameter(name = "long_query_repeats", defaultValue = "1")
@@ -23,7 +25,8 @@ import scala.io.{Codec, Source}
 @Parameter(name = "short_query_repeats", defaultValue = "150")
 @Parameter(name = "mutator_query_threads", defaultValue = "1")
 @Parameter(name = "mutator_query_repeats", defaultValue = "12")
-@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+@Configuration(name = "test")
+@Configuration(name = "jmh")
 final class Neo4jAnalytics extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
