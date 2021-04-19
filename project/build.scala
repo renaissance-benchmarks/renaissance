@@ -28,7 +28,7 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
   }
 
   private def getAnnotation[A <: Annotation](annotationClass: Class[A]) = {
-    benchClass.getDeclaredAnnotation(annotationClass)
+    Option(benchClass.getDeclaredAnnotation(annotationClass))
   }
 
   private def getAnnotations[A <: Annotation](annotationClass: Class[A]) = {
@@ -38,12 +38,7 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
   def className: String = benchClass.getName
 
   def name(): String = {
-    val annotation = getAnnotation(classOf[Name])
-    if (annotation != null) {
-      annotation.value()
-    } else {
-      kebabCase(benchClass.getSimpleName)
-    }
+    getAnnotation(classOf[Name]).map(_.value()).getOrElse(kebabCase(benchClass.getSimpleName))
   }
 
   def groups(): Seq[String] = {
@@ -67,30 +62,27 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
   }
 
   def printableGroups(): String = {
-    groups.mkString(",")
+    groups().mkString(",")
   }
 
   def summary(): String = {
-    val annotation = getAnnotation(classOf[Summary])
-    if (annotation != null) annotation.value() else ""
+    getAnnotation(classOf[Summary]).map(_.value()).getOrElse("")
   }
 
-  def description(): String = {
-    val annotation = getAnnotation(classOf[Description])
-    if (annotation != null) annotation.value() else ""
+  def description: String = {
+    getAnnotation(classOf[Description]).map(_.value()).getOrElse("")
   }
 
-  def repetitions(): Int = {
-    val annotation = getAnnotation(classOf[Repetitions])
-    if (annotation != null) annotation.value() else 20
+  def repetitions: Int = {
+    getAnnotation(classOf[Repetitions]).map(_.value()).getOrElse(20)
   }
 
   def parameters(): Map[String, String] = {
     getAnnotations(classOf[Parameter])
       .flatMap(p =>
         Array(
-          (s"parameter.${p.name}.default" -> p.defaultValue),
-          (s"parameter.${p.name}.summary" -> p.summary)
+          s"parameter.${p.name}.default" -> p.defaultValue,
+          s"parameter.${p.name}.summary" -> p.summary
         )
       )
       .toMap
@@ -137,9 +129,17 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
     result.toMap
   }
 
+  def jvmVersionMin(): String = {
+    // Require at least JVM 1.8 where unspecified.
+    getAnnotation(classOf[RequiresJvm]).map(_.value()).getOrElse("1.8")
+  }
+
+  def jvmVersionMax(): String = {
+    getAnnotation(classOf[SupportsJvm]).map(_.value()).getOrElse("")
+  }
+
   def licenses(): Array[License] = {
-    val annotation = getAnnotation(classOf[Licenses])
-    if (annotation != null) annotation.value() else Array()
+    getAnnotation(classOf[Licenses]).map(_.value()).getOrElse(Array())
   }
 
   def printableLicenses(): String = {
@@ -172,7 +172,9 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
       "description" -> description,
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
-      "distro" -> distro.toString
+      "distro" -> distro().toString,
+      "jvm_version_min" -> jvmVersionMin(),
+      "jvm_version_max" -> jvmVersionMax()
     ) ++ parameters ++ configurations()
   }
 
