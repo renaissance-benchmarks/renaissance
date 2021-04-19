@@ -14,26 +14,37 @@ import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.core.BenchmarkInfo;
 import org.renaissance.core.BenchmarkRegistry;
 import org.renaissance.core.DirUtils;
+import org.renaissance.core.ModuleLoader;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class JmhRenaissanceBenchmark {
+  private final Path scratchRootDir;
   private final org.renaissance.Benchmark benchmark;
   private final BenchmarkContext context;
-  private final Path scratchBase;
 
   private BenchmarkResult result;
   private Path scratchDir;
 
   protected JmhRenaissanceBenchmark(final String name) {
+    try {
+      scratchRootDir = DirUtils.createScratchDirectory(
+        Paths.get(""), "jmh-", false
+      );
+
+    } catch (IOException e) {
+      throw new RuntimeException("failed to create scratch root", e);
+    }
+
+    final ModuleLoader moduleLoader = ModuleLoader.create(scratchRootDir);
     BenchmarkInfo benchInfo = BenchmarkRegistry.createDefault().get(name);
-    benchmark = BenchmarkRegistry.loadBenchmark(benchInfo);
+    benchmark = benchInfo.loadBenchmarkModule(moduleLoader);
     context = createBenchmarkContext(benchInfo);
-    scratchBase = Paths.get("");
   }
 
   @Setup(Level.Trial)
@@ -77,12 +88,10 @@ public abstract class JmhRenaissanceBenchmark {
         return Integer.parseInt(stringParameter(name));
       }
 
-
       @Override
       public double doubleParameter(String name) {
         return Double.parseDouble(stringParameter(name));
       }
-
 
       @Override
       public String stringParameter(String name) {
@@ -93,8 +102,9 @@ public abstract class JmhRenaissanceBenchmark {
       public Path scratchDirectory() {
         if (scratchDir == null) {
           try {
-            final String prefix = "jmh-"+ benchInfo.name() +"-";
-            scratchDir = DirUtils.createScratchDirectory(scratchBase, prefix, false);
+            scratchDir = Files.createDirectories(
+              scratchRootDir.resolve(benchInfo.name()).resolve("scratch")
+            ).normalize();
           } catch (IOException e) {
             // This is a problem, fail the benchmark.
             throw new RuntimeException("failed to create benchmark scratch directory", e);
