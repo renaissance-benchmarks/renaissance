@@ -25,6 +25,7 @@ private final class Config {
 
   var printList = false
   var printRawList = false
+  var printRawListCompatible = false
   var printGroupList = false
 
   var configuration = "default"
@@ -35,6 +36,14 @@ private final class Config {
    * can then trigger GC during operation.
    */
   var forceGc = true
+
+  /**
+   * Check the JVM specification version requirements in the benchmarks
+   * selected for execution. This is enabled by default to avoid running
+   * benchmarks on an incompatible/unsupported JVM. Can be disabled for
+   * testing purposes.
+   */
+  var checkJvm = true
 
   /**
    * The directory to use for scratch files. Uses current directory by default
@@ -109,6 +118,11 @@ private final class Config {
     this
   }
 
+  def withRawListCompatible = {
+    printRawListCompatible = true
+    this
+  }
+
   def withGroupList = {
     printGroupList = true
     this
@@ -121,6 +135,11 @@ private final class Config {
 
   def withoutForcedGc() = {
     forceGc = false
+    this
+  }
+
+  def withoutJvmCheck() = {
+    checkJvm = false
     this
   }
 

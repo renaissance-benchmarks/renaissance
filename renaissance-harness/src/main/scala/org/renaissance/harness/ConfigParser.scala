@@ -102,20 +102,30 @@ private final class ConfigParser(tags: Map[String, String]) {
         )
         .action((_, c) => c.withoutForcedGc())
 
+      opt[Unit]("no-jvm-check")
+        .text(
+          "Do not check benchmark JVM version requirements (always execute selected benchmarks)."
+        )
+        .action((_, c) => c.withoutJvmCheck())
+
       opt[Unit]("list")
-        .text("Print list of benchmarks with their description.")
+        .text("Print the names and descriptions of all benchmarks.")
         .action((_, c) => c.withList)
 
       opt[Unit]("raw-list")
-        .text("Print list of benchmarks (one benchmark name per line).")
+        .text("Print the names of all benchmarks (one per line).")
         .action((_, c) => c.withRawList)
 
+      opt[Unit]("raw-list-compatible")
+        .text("Print the names of benchmarks compatible with this JVM (one per line).")
+        .action((_, c) => c.withRawListCompatible)
+
       opt[Unit]("group-list")
-        .text("Print list of benchmark groups (one group name per line).")
+        .text("Print the names of all benchmark groups (one per line).")
         .action((_, c) => c.withGroupList)
 
       arg[String]("benchmark-specification")
-        .text("Comma-separated list of benchmarks (or groups) that must be executed (or all).")
+        .text("List of benchmarks (or groups) to execute (or 'all').")
         .action((v, c) => c.withBenchmarkSpecification(v))
         .unbounded()
         .optional()
@@ -124,6 +134,6 @@ private final class ConfigParser(tags: Map[String, String]) {
 
   def parse(args: Array[String]): Option[Config] = parser.parse(args, new Config)
 
-  def usage(): String = parser.usage
+  def usage(): String = parser.usage + "\n"
 
 }
