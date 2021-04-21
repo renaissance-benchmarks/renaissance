@@ -57,13 +57,6 @@ public interface BenchmarkContext {
   //
   // File system operations
   //
-  // TODO: Allow benchmarks to ask for per-bench/per-operation temp directories
-  // TODO: Delete temp directories automatically after bench/operation finishes
-  //
-  default Path getTempDir(String name) {
-    throw new UnsupportedOperationException("not implemented yet");
-  }
-
   @Deprecated
   default Path generateTempDir(String name) {
     return DirUtils.generateTempDir(name);
