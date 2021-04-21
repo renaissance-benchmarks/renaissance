@@ -328,13 +328,13 @@ abstract class SimpleTreeTransformer extends PrePostTreeTransformer {
   final def transform(term: Term): Term = transform(term, ())._1
   final def transform(sort: Sort): Sort = transform(sort, ())._1
 
-  override final def transform(id: Identifier, c: C): (Identifier, R) = transform(id, c)
+  override final def transform(id: Identifier, c: C): (Identifier, R) = super.transform(id, c)
   final def transform(id: Identifier): Identifier = transform(id, ())._1
 
-  override final def transform(varBinding: VarBinding, c: C): (VarBinding, R) = transform(varBinding, c)
+  override final def transform(varBinding: VarBinding, c: C): (VarBinding, R) = super.transform(varBinding, c)
   final def transform(varBinding: VarBinding): VarBinding = transform(varBinding, ())._1
 
-  override final def transform(sortedVar: SortedVar, c: C): (SortedVar, R) = transform(sortedVar, c)
+  override final def transform(sortedVar: SortedVar, c: C): (SortedVar, R) = super.transform(sortedVar, c)
   final def transform(sortedVar: SortedVar): SortedVar = transform(sortedVar, ())._1
 
 }

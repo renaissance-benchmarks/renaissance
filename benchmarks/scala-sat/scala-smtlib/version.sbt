@@ -1,1 +1,1 @@
-version := "0.2.1-50-g8def962"
+version := "0.2.1-52-ga71d6b0"

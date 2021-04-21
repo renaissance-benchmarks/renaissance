@@ -75,7 +75,7 @@ object Constructors {
     }
   }
 
-  def or(t1: Term, t2: Term, ts: Term*): Term = and(t1 +: t2 +: ts)
+  def or(t1: Term, t2: Term, ts: Term*): Term = or(t1 +: t2 +: ts)
   def or(ts: Seq[Term]): Term = {
     val flat = ts.flatMap{
       case Or(es@_*) => es
