@@ -190,10 +190,13 @@ object MarkdownGenerator {
 
   private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
     def formatRow(b: BenchmarkInfo) = {
-      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} |"
+      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} " +
+        s"| ${b.jvmVersionMin.map(_.toString).orElse("")} " +
+        s"| ${b.jvmVersionMax().map(_.toString).orElse("")} |"
     }
 
-    benchmarks.getAll.asScala.map(formatRow).mkString("\n")
+    // Don't list dummy benchmarks in the benchmark table to reduce clutter.
+    benchmarks.getMatching(!_.groups().contains("dummy")).asScala.map(formatRow).mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
@@ -404,8 +407,8 @@ have less restrictive licenses.
 Depending on your needs, you can use either of the two distributions.
 The following table contains the licensing information of all the benchmarks:
 
-| Benchmark     | Licenses      | Renaissance Distro |
-| ------------- | ------------- |:------------------:|
+| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
+| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
 ${tags("benchmarksTable")}
 
 

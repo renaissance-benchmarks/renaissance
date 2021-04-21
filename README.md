@@ -321,39 +321,33 @@ have less restrictive licenses.
 Depending on your needs, you can use either of the two distributions.
 The following table contains the licensing information of all the benchmarks:
 
-| Benchmark     | Licenses      | Renaissance Distro |
-| ------------- | ------------- |:------------------:|
-| akka-uct | MIT | MIT |
-| als | APACHE2 | MIT |
-| chi-square | APACHE2 | MIT |
-| db-shootout | APACHE2 | MIT |
-| dec-tree | APACHE2 | MIT |
-| dotty | BSD3 | MIT |
-| dummy-empty | MIT | MIT |
-| dummy-failing | MIT | MIT |
-| dummy-param | MIT | MIT |
-| dummy-setup-failing | MIT | MIT |
-| dummy-teardown-failing | MIT | MIT |
-| dummy-validation-failing | MIT | MIT |
-| finagle-chirper | APACHE2 | MIT |
-| finagle-http | APACHE2 | MIT |
-| fj-kmeans | APACHE2 | MIT |
-| future-genetic | APACHE2 | MIT |
-| gauss-mix | APACHE2 | MIT |
-| log-regression | APACHE2 | MIT |
-| mnemonics | MIT | MIT |
-| movie-lens | APACHE2 | MIT |
-| naive-bayes | APACHE2 | MIT |
-| neo4j-analytics | GPL3 | GPL3 |
-| page-rank | APACHE2 | MIT |
-| par-mnemonics | MIT | MIT |
-| philosophers | BSD3 | MIT |
-| reactors | MIT | MIT |
-| rx-scrabble | GPL2 | GPL3 |
-| scala-doku | MIT | MIT |
-| scala-kmeans | MIT | MIT |
-| scala-stm-bench7 | BSD3, GPL2 | GPL3 |
-| scrabble | GPL2 | GPL3 |
+| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
+| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
+| akka-uct | MIT | MIT | 1.8 |  |
+| als | APACHE2 | MIT | 1.8 |  |
+| chi-square | APACHE2 | MIT | 1.8 |  |
+| db-shootout | APACHE2 | MIT | 1.8 |  |
+| dec-tree | APACHE2 | MIT | 1.8 |  |
+| dotty | BSD3 | MIT | 1.8 |  |
+| finagle-chirper | APACHE2 | MIT | 1.8 |  |
+| finagle-http | APACHE2 | MIT | 1.8 |  |
+| fj-kmeans | APACHE2 | MIT | 1.8 |  |
+| future-genetic | APACHE2 | MIT | 1.8 |  |
+| gauss-mix | APACHE2 | MIT | 1.8 |  |
+| log-regression | APACHE2 | MIT | 1.8 |  |
+| mnemonics | MIT | MIT | 1.8 |  |
+| movie-lens | APACHE2 | MIT | 1.8 |  |
+| naive-bayes | APACHE2 | MIT | 1.8 |  |
+| neo4j-analytics | GPL3 | GPL3 | 11 | 15 |
+| page-rank | APACHE2 | MIT | 1.8 |  |
+| par-mnemonics | MIT | MIT | 1.8 |  |
+| philosophers | BSD3 | MIT | 1.8 |  |
+| reactors | MIT | MIT | 1.8 |  |
+| rx-scrabble | GPL2 | GPL3 | 1.8 |  |
+| scala-doku | MIT | MIT | 1.8 |  |
+| scala-kmeans | MIT | MIT | 1.8 |  |
+| scala-stm-bench7 | BSD3, GPL2 | GPL3 | 1.8 |  |
+| scrabble | GPL2 | GPL3 | 1.8 |  |
 
 
 ### Design overview
