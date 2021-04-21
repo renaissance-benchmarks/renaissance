@@ -1,4 +1,4 @@
-package org.renaissance.scala.sat.doku
+package org.renaissance.scala.sat
 
 import cafesat.api.FormulaBuilder.and
 import cafesat.api.FormulaBuilder.or
