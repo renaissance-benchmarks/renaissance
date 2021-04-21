@@ -66,9 +66,9 @@ final class GaussMix extends Benchmark with SparkUtil {
   var tempDirPath: Path = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    numberCountParam = c.intParameter("number_count")
-    maxIterationsParam = c.intParameter("max_iterations")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    numberCountParam = c.parameter("number_count").toPositiveInteger
+    maxIterationsParam = c.parameter("max_iterations").toPositiveInteger
 
     tempDirPath = c.generateTempDir("gauss_mix")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "gauss-mix")

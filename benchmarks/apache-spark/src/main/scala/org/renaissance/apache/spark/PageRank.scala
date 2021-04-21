@@ -92,10 +92,10 @@ final class PageRank extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    inputLineCountParam = c.intParameter("input_line_count")
-    expectedRankCountParam = c.intParameter("expected_rank_count")
-    expectedRankHashParam = c.stringParameter("expected_rank_hash")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    inputLineCountParam = c.parameter("input_line_count").toInteger
+    expectedRankCountParam = c.parameter("expected_rank_count").toInteger
+    expectedRankHashParam = c.parameter("expected_rank_hash").value
 
     tempDirPath = c.generateTempDir("page_rank")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")

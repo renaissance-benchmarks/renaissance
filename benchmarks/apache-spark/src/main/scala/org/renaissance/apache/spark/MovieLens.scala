@@ -23,6 +23,7 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.io.Source
+import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
 @Name("movie-lens")
 @Group("apache-spark")
@@ -270,10 +271,10 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputFileParam = c.stringParameter("input_file")
-    alsRanksParam = c.stringParameter("als_ranks").split(",").map(_.trim.toInt).toList
-    alsLambdasParam = c.stringParameter("als_lambdas").split(",").map(_.trim.toDouble).toList
-    alsIterationsParam = c.stringParameter("als_iterations").split(",").map(_.trim.toInt).toList
+    inputFileParam = c.parameter("input_file").value
+    alsRanksParam = c.parameter("als_ranks").toList(_.toInt).asScala.toList
+    alsLambdasParam = c.parameter("als_lambdas").toList(_.toDouble).asScala.toList
+    alsIterationsParam = c.parameter("als_iterations").toList(_.toInt).asScala.toList
 
     tempDirPath = c.generateTempDir("movie_lens")
     setUpLogger()

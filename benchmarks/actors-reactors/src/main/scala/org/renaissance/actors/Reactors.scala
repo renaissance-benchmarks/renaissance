@@ -41,7 +41,7 @@ final class Reactors extends Benchmark {
   private var expectedFibonacci: Int = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    scalingFactorParam = c.doubleParameter("scaling_factor")
+    scalingFactorParam = c.parameter("scaling_factor").toDouble
 
     // Instantiate the default reactor system used throughout the benchmark.
     system = ReactorSystem.default("bench-system")

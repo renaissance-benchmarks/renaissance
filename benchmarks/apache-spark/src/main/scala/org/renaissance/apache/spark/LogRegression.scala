@@ -92,8 +92,8 @@ final class LogRegression extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    copyCountParam = c.intParameter("copy_count")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    copyCountParam = c.parameter("copy_count").toPositiveInteger
 
     tempDirPath = c.generateTempDir("log_regression")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "log-regression")

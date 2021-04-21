@@ -33,8 +33,8 @@ final class Philosophers extends Benchmark {
   private var mealCountParam: Int = _
 
   override def setUpBeforeAll(c: BenchmarkContext) = {
-    threadCountParam = c.intParameter("thread_count")
-    mealCountParam = c.intParameter("meal_count")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    mealCountParam = c.parameter("meal_count").toPositiveInteger
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

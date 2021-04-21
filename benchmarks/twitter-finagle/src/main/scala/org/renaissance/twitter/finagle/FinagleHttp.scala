@@ -99,8 +99,8 @@ final class FinagleHttp extends Benchmark {
   var threadBarrier: CountDownLatch = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    requestCountParam = c.intParameter("request_count")
-    clientCountParam = c.intParameter("client_count")
+    requestCountParam = c.parameter("request_count").toPositiveInteger
+    clientCountParam = c.parameter("client_count").toPositiveInteger
 
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")

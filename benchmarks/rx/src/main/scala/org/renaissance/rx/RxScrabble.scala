@@ -25,8 +25,6 @@ final class RxScrabble extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var inputPathParam: String = _
-
   private var expectedHashParam: String = _
 
   private val scrabblePath: String = "/scrabble.txt"
@@ -34,8 +32,8 @@ final class RxScrabble extends Benchmark {
   private var bench: RxScrabbleImplementation = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputPathParam = c.stringParameter("input_path")
-    expectedHashParam = c.stringParameter("expected_hash")
+    val inputPathParam = c.parameter("input_path").value
+    expectedHashParam = c.parameter("expected_hash").value
     bench = new RxScrabbleImplementation(scrabblePath, inputPathParam)
   }
 

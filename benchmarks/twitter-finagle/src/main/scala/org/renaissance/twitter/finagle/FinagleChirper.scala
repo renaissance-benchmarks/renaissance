@@ -438,8 +438,8 @@ final class FinagleChirper extends Benchmark {
   private var userNames: Seq[String] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    requestCountParam = c.intParameter("request_count")
-    userCountParam = c.intParameter("user_count")
+    requestCountParam = c.parameter("request_count").toPositiveInteger
+    userCountParam = c.parameter("user_count").toPositiveInteger
 
     userNames =
       for (i <- 0 until userCountParam)

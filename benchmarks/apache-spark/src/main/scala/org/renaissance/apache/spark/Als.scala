@@ -75,7 +75,7 @@ final class Als extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    ratingCountParam = c.intParameter("rating_count")
+    ratingCountParam = c.parameter("rating_count").toPositiveInteger
 
     tempDirPath = c.generateTempDir("als")
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")

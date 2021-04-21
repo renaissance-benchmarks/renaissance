@@ -24,6 +24,11 @@ import scala.collection.compat._
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
+@Parameter(
+  name = "batch_compilation",
+  defaultValue = "true",
+  summary = "Compiles all source files in batch mode instead of one by one."
+)
 @Configuration(name = "test")
 @Configuration(name = "jmh")
 final class Dotty extends Benchmark {
@@ -42,8 +47,6 @@ final class Dotty extends Benchmark {
   private var dottyBaseArgs: Seq[String] = _
 
   private var dottyInvocations: Seq[Array[String]] = _
-
-  private val batchCompile = false
 
   private def unzipSources() = {
     val sources = mutable.Buffer[Path]()
@@ -109,7 +112,9 @@ final class Dotty extends Benchmark {
     Files.createDirectories(outputPath)
     val sourcePaths = unzipSources()
 
-    if (batchCompile) {
+    val batchCompilation = c.parameter("batch_compilation").toBoolean
+    if (batchCompilation) {
+      // Compile all sources as a batch.
       val dottyArgs = (dottyBaseArgs ++ sourcePaths.map(_.toString)).toArray
       dottyInvocations = Seq(dottyArgs)
     } else {

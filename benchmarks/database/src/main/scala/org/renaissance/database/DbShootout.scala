@@ -32,8 +32,6 @@ final class DbShootout extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var readWriteEntryCountParam: Int = _
-
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
@@ -59,7 +57,7 @@ final class DbShootout extends Benchmark {
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     tempDirPath = c.generateTempDir("db_shootout")
-    readWriteEntryCountParam = c.intParameter("rw_entry_count")
+    val readWriteEntryCountParam = c.parameter("rw_entry_count").toPositiveInteger
 
     mapDb = new MapDb
     mapDbReader = new MapDb.Reader

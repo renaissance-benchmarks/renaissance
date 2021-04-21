@@ -41,8 +41,8 @@ final class FutureGenetic extends Benchmark {
   private var benchmark: JavaJenetics = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    chromosomeCountParam = c.intParameter("chromosome_count")
-    generationCountParam = c.intParameter("generation_count")
+    chromosomeCountParam = c.parameter("chromosome_count").toPositiveInteger
+    generationCountParam = c.parameter("generation_count").toPositiveInteger
 
     benchmark = new JavaJenetics(
       GENE_MIN_VALUE,

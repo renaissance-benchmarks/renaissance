@@ -27,7 +27,7 @@ final class AkkaUct extends Benchmark {
   private var bench: UctAkkaActorBenchmark.UctAkkaActorBenchmark = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    loopCountParam = c.intParameter("loop_count")
+    loopCountParam = c.parameter("loop_count").toPositiveInteger
 
     bench = new UctAkkaActorBenchmark.UctAkkaActorBenchmark
     bench.initialize(new Array[String](0))

@@ -198,8 +198,8 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
   private var expectedResult: Seq[Point] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    pointCountParam = c.intParameter("point_count")
-    clusterCountParam = c.intParameter("cluster_count")
+    pointCountParam = c.parameter("point_count").toPositiveInteger
+    clusterCountParam = c.parameter("cluster_count").toPositiveInteger
 
     if (EXPECTED_RESULT_FULL.length == clusterCountParam) {
       expectedResult = EXPECTED_RESULT_FULL

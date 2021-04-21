@@ -41,8 +41,8 @@ final class Scrabble extends Benchmark {
   private var scrabble: JavaScrabble = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputPathParam = c.stringParameter("input_path")
-    expectedResultParam = c.stringParameter("expected_result").split(",").map(_.trim).toSeq
+    inputPathParam = c.parameter("input_path").value
+    expectedResultParam = c.parameter("expected_result").toList().asScala.toSeq
     scrabble = new JavaScrabble(inputPathParam, scrabblePath)
   }
 

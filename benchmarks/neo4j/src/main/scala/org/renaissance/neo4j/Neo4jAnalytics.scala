@@ -39,10 +39,6 @@ final class Neo4jAnalytics extends Benchmark {
   private val dbms = new AtomicReference[DatabaseManagementService]()
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    def requirePositiveCount(name: String) = {
-      math.max(1, c.intParameter(name))
-    }
-
     def loadResource(name: String) = {
       implicit val defaultCodec = Codec.UTF8
       Source.createBufferedSource(getClass.getResourceAsStream(name))
@@ -53,12 +49,12 @@ final class Neo4jAnalytics extends Benchmark {
 
     benchmark = new AnalyticsBenchmark(
       graphDb,
-      requirePositiveCount("long_query_threads"),
-      requirePositiveCount("long_query_repeats"),
-      requirePositiveCount("short_query_threads"),
-      requirePositiveCount("short_query_repeats"),
-      requirePositiveCount("mutator_query_threads"),
-      requirePositiveCount("mutator_query_repeats")
+      c.parameter("long_query_threads").toPositiveInteger,
+      c.parameter("long_query_repeats").toPositiveInteger,
+      c.parameter("short_query_threads").toPositiveInteger,
+      c.parameter("short_query_repeats").toPositiveInteger,
+      c.parameter("mutator_query_threads").toPositiveInteger,
+      c.parameter("mutator_query_repeats").toPositiveInteger
     )
 
     benchmark.populateDatabase(

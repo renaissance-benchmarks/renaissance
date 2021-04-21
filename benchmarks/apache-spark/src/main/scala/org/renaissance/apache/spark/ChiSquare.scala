@@ -85,8 +85,8 @@ final class ChiSquare extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    numberCountParam = c.intParameter("number_count")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    numberCountParam = c.parameter("number_count").toPositiveInteger
 
     tempDirPath = c.generateTempDir("chi_square")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "chi-square")
