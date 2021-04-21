@@ -15,15 +15,15 @@ import org.renaissance.License
 object Solver {
 
   /**
-   * Solver take a sudoku problem as a matrix of optional int,
-   *  its goal is to fill out the matrix with missing integer
-   *  to form a correct sudoku grid.
+   * Solver takes a sudoku problem as a matrix of optional integers
+   * and fills in the missing values to form a correct Sudoku grid.
    */
   def solve(sudoku: Array[Array[Option[Int]]]): Option[Array[Array[Int]]] = {
 
     /**
-     * Each slot on the sudoku board has 9 variables V0..V8 associated with it,
-     *  each variable Vi denoting whether the digit Vi was chosen for the respective slot.
+     * Each slot on the Sudoku board has 9 associated variables (V0..V8),
+     * each variable Vi denoting whether the digit Vi was chosen for the
+     * respective slot.
      */
     require(sudoku.size == 9)
     require(sudoku.forall(row => row.size == 9))
