@@ -36,7 +36,7 @@ final class Dotty extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private val zipPath = "sources.zip"
+  private val zipResourcePath = "/sources.zip"
 
   private val dottyPath = Paths.get("target", "dotty")
 
@@ -51,7 +51,7 @@ final class Dotty extends Benchmark {
   private def unzipSources() = {
     val sources = mutable.Buffer[Path]()
 
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream("/" + zipPath))
+    val zis = new ZipInputStream(this.getClass.getResourceAsStream(zipResourcePath))
     try {
       LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { zipEntry =>
         if (!zipEntry.isDirectory) {
