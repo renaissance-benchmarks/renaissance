@@ -2,6 +2,7 @@ package org.renaissance.harness;
 
 import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkContext;
+import org.renaissance.BenchmarkParameter;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.Plugin.ExecutionPolicy;
@@ -152,19 +153,7 @@ final class ExecutionDriver implements BenchmarkContext {
   // BenchmarkContext methods
 
   @Override
-  public int intParameter(String name) {
-    return Integer.parseInt(stringParameter(name));
-  }
-
-
-  @Override
-  public double doubleParameter(String name) {
-    return Double.parseDouble(stringParameter(name));
-  }
-
-
-  @Override
-  public String stringParameter(String name) {
+  public BenchmarkParameter parameter(String name) {
     return benchInfo.parameter(configName, name);
   }
 

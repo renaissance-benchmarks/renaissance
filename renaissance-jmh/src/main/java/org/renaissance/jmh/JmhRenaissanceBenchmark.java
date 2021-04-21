@@ -9,6 +9,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.renaissance.BenchmarkContext;
+import org.renaissance.BenchmarkParameter;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.core.BenchmarkInfo;
@@ -147,17 +148,7 @@ public abstract class JmhRenaissanceBenchmark {
     return new BenchmarkContext() {
 
       @Override
-      public int intParameter(String name) {
-        return Integer.parseInt(stringParameter(name));
-      }
-
-      @Override
-      public double doubleParameter(String name) {
-        return Double.parseDouble(stringParameter(name));
-      }
-
-      @Override
-      public String stringParameter(String name) {
+      public BenchmarkParameter parameter(String name) {
         return benchInfo.parameter("jmh", name);
       }
 
