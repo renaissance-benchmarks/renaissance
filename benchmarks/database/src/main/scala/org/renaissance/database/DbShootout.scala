@@ -37,25 +37,25 @@ final class DbShootout extends Benchmark {
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  var tempDirPath: Path = null
+  var tempDirPath: Path = _
 
-  var mapDb: MapDb = null
+  var mapDb: MapDb = _
 
-  var mapDbReader: MapDb.Reader = null
+  var mapDbReader: MapDb.Reader = _
 
-  var mapDbWriter: MapDb.Writer = null
+  var mapDbWriter: MapDb.Writer = _
 
-  var chronicle: Chronicle = null
+  var chronicle: Chronicle = _
 
-  var chronicleReader: Chronicle.Reader = null
+  var chronicleReader: Chronicle.Reader = _
 
-  var chronicleWriter: Chronicle.Writer = null
+  var chronicleWriter: Chronicle.Writer = _
 
-  var mvStore: MvStore = null
+  var mvStore: MvStore = _
 
-  var mvStoreReader: MvStore.Reader = null
+  var mvStoreReader: MvStore.Reader = _
 
-  var mvStoreWriter: MvStore.Writer = null
+  var mvStoreWriter: MvStore.Writer = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     tempDirPath = c.generateTempDir("db_shootout")
