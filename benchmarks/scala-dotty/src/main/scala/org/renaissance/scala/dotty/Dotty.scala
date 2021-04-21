@@ -75,19 +75,18 @@ final class Dotty extends Benchmark {
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     /*
      * Construct the classpath for the compiler. Unfortunately, Dotty is
-     * unable to use current classloader (either of this class or this
-     * thread) and thus we have to explicitly pass it. Note that
-     * -usejavacp would not work here as that reads from java.class.path
+     * unable to use the current classloader (either of this class or this
+     * thread), so we have to pass the classpath to it explicitly. Note
+     * that -usejavacp would not work as that reads from java.class.path
      * property and we do not want to modify global properties here.
      *
-     * Therefore, we leverage the fact that we know that our classloader
-     * is actually a URLClassLoader that loads the benchmark JARs
-     * from temporary directory. And we convert all the URLs to
-     * plain file paths.
+     * Because we know that our classloader is actually an URLClassLoader
+     * which loads the benchmark JARs from a temporary directory, we just
+     * convert all the URLs to plain file paths.
      *
-     * Note that using URLs as-is is not possible as that prepends the
-     * "file:/" protocol that is not handled well on Windows when
-     * on classpath.
+     * Note that using the URLs directly is not possible, because they
+     * contain the "file://" protocol prefix, which is not handled well
+     * on Windows (when on the classpath).
      *
      * Note that it would be best to pass the classloader to the compiler
      * but that seems to be impossible with current API (see discussion
