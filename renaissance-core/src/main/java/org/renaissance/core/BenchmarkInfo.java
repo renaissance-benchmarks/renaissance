@@ -124,7 +124,7 @@ public final class BenchmarkInfo {
       return configurations.get(confName);
     } else {
       throw new NoSuchElementException(String.format(
-        "no such configuration in benchmark %s: %s", name, confName
+        "no such configuration in benchmark '%s': %s", name, confName
       ));
     }
   }
@@ -136,8 +136,7 @@ public final class BenchmarkInfo {
       return conf.get(paramName);
     } else {
       throw new NoSuchElementException(String.format(
-        "no such parameter in benchmark %s configuration %s: %s",
-        name, confName, paramName
+        "no such parameter in configuration '%s': %s", confName, paramName
       ));
     }
   }
