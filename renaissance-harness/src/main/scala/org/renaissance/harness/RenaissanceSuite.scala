@@ -48,10 +48,11 @@ object RenaissanceSuite {
     if (config.printList) {
       print(formatBenchmarkList(realBenchmarks))
     } else if (config.printRawList) {
-      print(formatRawBenchmarkList(realBenchmarks))
-    } else if (config.printRawListCompatible) {
-      val compatibleBenchmarks = realBenchmarks.filter(benchmarkIsCompatible)
-      print(formatRawBenchmarkList(compatibleBenchmarks))
+      val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
+      val listedBenchmarks =
+        if (config.checkJvm) realBenchmarks.filter(benchmarkIsCompatible(_, jvmVersion))
+        else realBenchmarks
+      print(formatRawBenchmarkList(listedBenchmarks))
     } else if (config.printGroupList) {
       print(formatGroupList(realBenchmarks))
     } else if (config.benchmarkSpecifiers.isEmpty) {
@@ -264,7 +265,7 @@ object RenaissanceSuite {
     // Exclude incompatible benchmarks with a warning.
     benchmarks
       .filter(b => {
-        val isCompatible = benchmarkIsCompatible(b)
+        val isCompatible = benchmarkIsCompatible(b, jvmVersion)
         if (!isCompatible) {
           Console.err.println(
             s"Benchmark '${b.name()}' excluded: requires JVM version ${versionRange(b)} (found $jvmVersion)."
@@ -367,25 +368,38 @@ object RenaissanceSuite {
 
   private def formatBenchmarkList(benchmarks: Seq[BenchmarkInfo]) = {
     val indent = "    "
+    val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
 
     val result = new StringBuilder
     for (bench <- benchmarks) {
-      result.append(bench.name).append("\n")
+      result.append(bench.name)
+      if (!benchmarkIsCompatible(bench, jvmVersion)) {
+        result.append(s" (not compatible with this JVM)")
+      }
+      result.append("\n")
 
       val summaryWords = bench.summary().split("\\s+")
       result.append(foldText(summaryWords, 65, indent).mkString("\n")).append("\n")
 
       bench
         .jvmVersionMin()
-        .ifPresent(v =>
-          result.append(s"${indent}Minimum JVM version required: $v").append("\n")
-        )
+        .ifPresent(v => {
+          result.append(s"${indent}Minimum JVM version required: $v")
+          if (jvmVersion.compareTo(v) < 0) {
+            result.append(s" (found $jvmVersion)");
+          }
+          result.append("\n")
+        })
 
       bench
         .jvmVersionMax()
-        .ifPresent(v =>
-          result.append(s"${indent}Maximum JVM version supported: $v").append("\n")
-        )
+        .ifPresent(v => {
+          result.append(s"${indent}Maximum JVM version supported: $v")
+          if (jvmVersion.compareTo(v) > 0) {
+            result.append(s" (found $jvmVersion)");
+          }
+          result.append("\n")
+        })
 
       result.append(s"${indent}Default repetitions: ${bench.repetitions}").append("\n")
       result.append("\n")
@@ -401,11 +415,10 @@ object RenaissanceSuite {
     !b.groups().contains("dummy")
   }
 
-  private def benchmarkIsCompatible(b: BenchmarkInfo) = {
+  private def benchmarkIsCompatible(b: BenchmarkInfo, jvmVersion: Version) = {
     def compare(v1: Version, maybeV2: Optional[Version]) =
       maybeV2.map((v2: Version) => v1.compareTo(v2)).orElse(0)
 
-    val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
     val minSatisfied = compare(jvmVersion, b.jvmVersionMin) >= 0
     val maxSatisfied = compare(jvmVersion, b.jvmVersionMax) <= 0
     minSatisfied && maxSatisfied

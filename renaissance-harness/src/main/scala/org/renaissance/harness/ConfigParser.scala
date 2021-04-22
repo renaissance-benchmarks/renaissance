@@ -103,9 +103,7 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((_, c) => c.withoutForcedGc())
 
       opt[Unit]("no-jvm-check")
-        .text(
-          "Do not check benchmark JVM version requirements (always execute selected benchmarks)."
-        )
+        .text("Do not check benchmark JVM version requirements (for execution or raw-list).")
         .action((_, c) => c.withoutJvmCheck())
 
       opt[Unit]("list")
@@ -113,12 +111,8 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((_, c) => c.withList)
 
       opt[Unit]("raw-list")
-        .text("Print the names of all benchmarks (one per line).")
-        .action((_, c) => c.withRawList)
-
-      opt[Unit]("raw-list-compatible")
         .text("Print the names of benchmarks compatible with this JVM (one per line).")
-        .action((_, c) => c.withRawListCompatible)
+        .action((_, c) => c.withRawList)
 
       opt[Unit]("group-list")
         .text("Print the names of all benchmark groups (one per line).")

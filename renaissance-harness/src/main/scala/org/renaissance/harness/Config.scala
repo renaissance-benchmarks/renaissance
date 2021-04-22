@@ -25,7 +25,6 @@ private final class Config {
 
   var printList = false
   var printRawList = false
-  var printRawListCompatible = false
   var printGroupList = false
 
   var configuration = "default"
@@ -115,11 +114,6 @@ private final class Config {
 
   def withRawList = {
     printRawList = true
-    this
-  }
-
-  def withRawListCompatible = {
-    printRawListCompatible = true
     this
   }
 
