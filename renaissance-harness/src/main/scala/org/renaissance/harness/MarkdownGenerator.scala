@@ -405,7 +405,8 @@ while the MIT distribution includes only those benchmarks that themselves
 have less restrictive licenses.
 
 Depending on your needs, you can use either of the two distributions.
-The following table contains the licensing information of all the benchmarks:
+The following table contains the licensing information (and JVM version
+requirements) for all the benchmarks:
 
 | Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
 | :--------------- | :--------- | :----: | :----------------: | :-----------------: |
