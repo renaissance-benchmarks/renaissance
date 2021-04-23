@@ -12,7 +12,7 @@ declare -a print_sbt_script_version
 declare -a original_args
 declare java_cmd=java
 declare java_version
-declare init_sbt_version=1.4.8
+declare init_sbt_version=1.4.9
 declare sbt_default_mem=1024
 declare -r default_sbt_opts=""
 declare -r default_java_opts="-Dfile.encoding=UTF-8"
