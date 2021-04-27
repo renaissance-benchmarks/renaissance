@@ -28,8 +28,8 @@ final class ParMnemonics extends Benchmark {
   private var coder: MnemonicsCoderWithStream = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    coderInputParam = c.stringParameter("coder_input")
-    expectedHashParam = c.stringParameter("expected_hash")
+    coderInputParam = c.parameter("coder_input").value
+    expectedHashParam = c.parameter("expected_hash").value
 
     // TODO Unify Mnemonics and ParMnemonics setup
     coder = new MnemonicsCoderWithStream(

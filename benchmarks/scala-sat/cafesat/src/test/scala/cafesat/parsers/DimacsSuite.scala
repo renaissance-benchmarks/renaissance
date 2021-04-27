@@ -3,11 +3,11 @@ package cafesat.parsers
 import java.io.Reader
 import java.io.StringReader
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.language.implicitConversions
 
-class DimacsSuite extends FunSuite {
+class DimacsSuite extends AnyFunSuite {
 
   private implicit def stringToInputReader(value: String): Reader = new StringReader(value)
 

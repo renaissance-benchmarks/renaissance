@@ -3,6 +3,7 @@ package org.renaissance;
 import org.renaissance.core.DirUtils;
 
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 
 /**
  * Represents a benchmark execution context. Allows a benchmark to access
@@ -13,47 +14,30 @@ import java.nio.file.Path;
 public interface BenchmarkContext {
 
   /**
-   * Returns the value of the given named parameter in the currently selected
-   * benchmark configuration as {@code int}. The method fails (with an
-   * exception) if the parameter does not exist or cannot be converted to the
-   * desired type.
+   * Returns the given named parameter in the currently selected benchmark
+   * configuration. The method fails (with an exception) if the parameter
+   * does not exist.
    *
    * @param name Parameter name.
-   * @return Parameter value as {@code int} value.
+   * @return {@link BenchmarkParameter} instance.
+   * @throws NoSuchElementException if the parameter does not exist.
    */
-  int intParameter(final String name);
+  BenchmarkParameter parameter(final String name);
+
 
   /**
-   * Returns the value of the given named parameter in the currently selected
-   * benchmark configuration as {@code double}. The method fails (with an
-   * exception) if the parameter does not exist or cannot be converted to the
-   * desired type.
+   * Provides a path to the benchmark-specific scratch directory that will be
+   * deleted (or not, depending on harness settings) after the harness exits.
+   * The benchmark can do whatever it wants in the subtree below the scratch
+   * directory, but should not modify anything outside that subtree.
    *
-   * @param name Parameter name.
-   * @return Parameter value as {@code double} value.
+   * @return {@link Path} to benchmark-specific scratch directory.
    */
-  double doubleParameter(final String name);
-
-  /**
-   * Returns the value of the given named parameter in the currently selected
-   * benchmark configuration as {@link String}. The method fails (with an
-   * exception) if the parameter does not exist.
-   *
-   * @param name Parameter name.
-   * @return Parameter value as {@code double} value.
-   */
-  String stringParameter(final String name);
+  Path scratchDirectory();
 
   //
   // File system operations
   //
-  // TODO: Allow benchmarks to ask for per-bench/per-operation temp directories
-  // TODO: Delete temp directories automatically after bench/operation finishes
-  //
-  default Path getTempDir(String name) {
-    throw new UnsupportedOperationException("not implemented yet");
-  }
-
   @Deprecated
   default Path generateTempDir(String name) {
     return DirUtils.generateTempDir(name);

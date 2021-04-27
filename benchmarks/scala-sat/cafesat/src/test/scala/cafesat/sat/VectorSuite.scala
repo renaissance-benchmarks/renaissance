@@ -1,8 +1,8 @@
 package cafesat.sat
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class VectorSuite extends FunSuite {
+class VectorSuite extends AnyFunSuite {
 
   test("init with append") {
     val v1 = new Vector[Int](50)

@@ -1,11 +1,11 @@
 package cafesat
 package theories.adt
 
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.reflect.ClassTag
 
-class AdtSolverIntsTests extends FlatSpec with AdtSolverSpecHelpers {
+class AdtSolverIntsTests extends AnyFlatSpec with AdtSolverSpecHelpers {
 
   trait SIntSig extends FreshSolver {
     def Succ(pred: Term) = Constructor(0,0,List(pred))

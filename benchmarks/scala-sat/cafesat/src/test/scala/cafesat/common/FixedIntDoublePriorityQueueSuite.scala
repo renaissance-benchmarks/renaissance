@@ -1,8 +1,8 @@
 package cafesat.common
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class FixedIntDoublePriorityQueueSuite extends FunSuite {
+class FixedIntDoublePriorityQueueSuite extends AnyFunSuite {
 
 
   test("incScore and max") {

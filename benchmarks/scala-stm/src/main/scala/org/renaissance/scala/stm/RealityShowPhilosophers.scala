@@ -71,17 +71,18 @@ object RealityShowPhilosophers {
      * We want to print exactly one image of the final state, so we check
      * completion at the same time as building the image.
      */
-    def image: (String, Boolean) = atomic { implicit txn =>
-      val buf = new StringBuilder
-      for (i <- forks.indices)
-        buf ++= "fork %d is owned by %s\n".format(i, forks(i).owner.single())
-      var done = true
-      for (p <- philosophers) {
-        buf ++= p.toString += '\n'
-        done &&= p.done
+    def image: (String, Boolean) =
+      atomic { implicit txn =>
+        val buf = new StringBuilder
+        for (i <- forks.indices)
+          buf ++= "fork %d is owned by %s\n".format(i, forks(i).owner.single())
+        var done = true
+        for (p <- philosophers) {
+          buf ++= p.toString += '\n'
+          done &&= p.done
+        }
+        (buf.toString, done)
       }
-      (buf.toString, done)
-    }
   }
 
   def time(philosopherCount: Int, meals: Int): Long = {

@@ -22,29 +22,26 @@ trait KmeansUtilities {
     override def toString = s"(${round(x)}, ${round(y)}, ${round(z)})"
   }
 
-  def generatePoints(k: Int, num: Int): Seq[Point] = {
-    val randx = new Random(1)
-    val randy = new Random(3)
-    val randz = new Random(5)
-    (0 until num)
-      .map({ i =>
-        val x = ((i + 1) % k) * 1.0 / k + randx.nextDouble() * 0.5
-        val y = ((i + 5) % k) * 1.0 / k + randy.nextDouble() * 0.5
-        val z = ((i + 7) % k) * 1.0 / k + randz.nextDouble() * 0.5
-        new Point(x, y, z)
-      })
-      .to[mutable.ArrayBuffer]
+  def generatePoints(k: Int, pointsCount: Int): Seq[Point] = {
+    val randX = new Random(1)
+    val randY = new Random(3)
+    val randZ = new Random(5)
+    (0 until pointsCount).map({ i =>
+      val x = ((i + 1) % k) * 1.0 / k + randX.nextDouble() * 0.5
+      val y = ((i + 5) % k) * 1.0 / k + randY.nextDouble() * 0.5
+      val z = ((i + 7) % k) * 1.0 / k + randZ.nextDouble() * 0.5
+      new Point(x, y, z)
+    })
   }
 
   def initializeMeans(k: Int, points: Seq[Point]): Seq[Point] = {
     val rand = new Random(7)
     (0 until k)
       .map(_ => points(rand.nextInt(points.length)))
-      .to[mutable.ArrayBuffer]
   }
 
-  def findClosest(p: Point, means: GenSeq[Point]): Point = {
-    assert(means.size > 0)
+  def findClosest(p: Point, means: Seq[Point]): Point = {
+    assert(means.nonEmpty)
     var minDistance = p.squareDistance(means(0))
     var closest = means(0)
     for (mean <- means) {
@@ -58,22 +55,24 @@ trait KmeansUtilities {
   }
 
   def classify(
-    points: GenSeq[Point],
-    means: GenSeq[Point]
-  ): GenMap[Point, GenSeq[Point]] = {
+    points: Seq[Point],
+    means: Seq[Point]
+  ): Map[Point, Seq[Point]] = {
     val grouped = points.groupBy(p => findClosest(p, means))
+
+    // Add "unused" means to the result.
     means.foldLeft(grouped) { (map, mean) =>
       if (map.contains(mean)) map else map.updated(mean, Seq())
     }
   }
 
-  def findAverage(oldMean: Point, points: GenSeq[Point]): Point =
-    if (points.length == 0) oldMean
+  def findAverage(oldMean: Point, points: Seq[Point]): Point =
+    if (points.isEmpty) oldMean
     else {
       var x = 0.0
       var y = 0.0
       var z = 0.0
-      points.seq.foreach { p =>
+      points.foreach { p =>
         x += p.x
         y += p.y
         z += p.z
@@ -81,16 +80,16 @@ trait KmeansUtilities {
       new Point(x / points.length, y / points.length, z / points.length)
     }
 
-  def update(
-    classified: GenMap[Point, GenSeq[Point]],
-    oldMeans: GenSeq[Point]
-  ): GenSeq[Point] = {
+  def updateMeans(
+    classified: Map[Point, Seq[Point]],
+    oldMeans: Seq[Point]
+  ): Seq[Point] = {
     oldMeans.map(mean => findAverage(mean, classified(mean)))
   }
 
   def converged(eta: Double)(
-    oldMeans: GenSeq[Point],
-    newMeans: GenSeq[Point]
+    oldMeans: Seq[Point],
+    newMeans: Seq[Point]
   ): Boolean = {
     (oldMeans zip newMeans)
       .map({
@@ -100,14 +99,15 @@ trait KmeansUtilities {
       .forall(_ <= eta)
   }
 
+  @annotation.tailrec
   final def kMeans(
-    points: GenSeq[Point],
-    means: GenSeq[Point],
+    points: Seq[Point],
+    means: Seq[Point],
     eta: Double
-  ): GenSeq[Point] = {
+  ): Seq[Point] = {
     val classifiedPoints = classify(points, means)
 
-    val newMeans = update(classifiedPoints, means)
+    val newMeans = updateMeans(classifiedPoints, means)
 
     if (!converged(eta)(means, newMeans)) {
       kMeans(points, newMeans, eta)
@@ -147,15 +147,15 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   private var points: Seq[Point] = _
 
-  private var means: GenSeq[Point] = _
+  private var means: Seq[Point] = _
 
   private val EXPECTED_RESULT_FULL = Seq(
     new Point(0.69, 0.54, 0.76),
     new Point(0.97, 1.09, 0.37),
-    new Point(0.89, 1.0, 0.75),
+    new Point(0.89, 1.00, 0.75),
     new Point(1.13, 0.18, 0.19),
     new Point(0.34, 0.36, 0.68),
-    new Point(0.56, 0.88, 0.7),
+    new Point(0.56, 0.88, 0.70),
     new Point(0.46, 0.47, 0.36),
     new Point(0.53, 0.72, 0.88),
     new Point(0.38, 0.62, 0.77),
@@ -165,9 +165,9 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
     new Point(0.79, 0.89, 1.22),
     new Point(0.74, 0.71, 1.01),
     new Point(0.32, 0.38, 0.45),
-    new Point(1.3, 0.41, 0.49),
+    new Point(1.30, 0.41, 0.49),
     new Point(0.16, 0.54, 0.36),
-    new Point(0.83, 1.11, 1.0),
+    new Point(0.83, 1.11, 1.00),
     new Point(0.73, 0.95, 0.88),
     new Point(0.53, 0.56, 0.56),
     new Point(1.04, 0.87, 1.16),
@@ -178,7 +178,7 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
     new Point(1.01, 1.16, 1.31),
     new Point(1.09, 1.04, 0.99),
     new Point(1.16, 1.24, 1.22),
-    new Point(0.84, 1.1, 1.22),
+    new Point(0.84, 1.10, 1.22),
     new Point(0.98, 1.26, 1.02),
     new Point(1.25, 0.43, 0.22),
     new Point(1.11, 1.23, 0.23)
@@ -197,23 +197,23 @@ final class ScalaKmeans extends Benchmark with KmeansUtilities {
 
   private var expectedResult: Seq[Point] = _
 
-  override def setUpBeforeAll(c: BenchmarkContext) = {
-    pointCountParam = c.intParameter("point_count")
-    clusterCountParam = c.intParameter("cluster_count")
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    pointCountParam = c.parameter("point_count").toPositiveInteger
+    clusterCountParam = c.parameter("cluster_count").toPositiveInteger
 
     if (EXPECTED_RESULT_FULL.length == clusterCountParam) {
       expectedResult = EXPECTED_RESULT_FULL
     } else if (EXPECTED_RESULT_TEST.length == clusterCountParam) {
       expectedResult = EXPECTED_RESULT_TEST
     } else {
-      throw new AssertionError(s"no expected result for ${clusterCountParam} clusters")
+      throw new AssertionError(s"no expected result for $clusterCountParam clusters")
     }
 
     points = generatePoints(clusterCountParam, pointCountParam)
     means = initializeMeans(clusterCountParam, points)
   }
 
-  private def validate(expected: Seq[Point], actual: GenSeq[Point]) = {
+  private def validate(expected: Seq[Point], actual: Seq[Point]): Unit = {
     val EPSILON = 0.01
 
     Assert.assertEquals(expected.length, actual.length, "centers count")

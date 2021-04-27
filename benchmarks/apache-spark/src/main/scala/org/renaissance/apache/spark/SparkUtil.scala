@@ -22,14 +22,26 @@ trait SparkUtil {
     benchName: String
   ): SparkContext = {
     setUpHadoop(dirPath)
+
+    //
+    // We bind Spark explicitly to localhost to avoid all sorts of trouble:
+    // https://github.com/renaissance-benchmarks/renaissance/issues/66
+    //
+    // However, setting spark.driver.bindAddress to "127.0.0.1" does not
+    // seem to work on Spark 2.4.7, whereas setting spark.driver.host to
+    // "localhost" or "127.0.0.1" does, so does setting the SPARK_LOCAL_IP
+    // environment variable (but we cannot do it from here).
+    //
     val conf = new SparkConf()
       .setAppName(benchName)
       .setMaster(s"local[$threadsPerExecutor]")
+      .set("spark.driver.host", "localhost")
+      .set("spark.driver.bindAddress", "127.0.0.1")
       .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
-      .set("spark.driver.bindAddress", "127.0.0.1")
       .set("spark.executor.instances", "4")
       .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
+
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
     sc
@@ -42,12 +54,13 @@ trait SparkUtil {
   }
 
   /**
-   * For Spark version on renaissance (2.0.0) the Hadoop version is 2.2.0
-   * For Windows, the binary zip is not included in the dependencies
-   * We include in the resource winutils.exe from
-   * https://github.com/srccodes/hadoop-common-2.2.0-bin
-   * If Spark version is updated in future releases of renaissance,
-   * the file must be upgraded to the corresponding Hadoop version.
+   * Spark version 2.4.7 uses Hadoop version 2.6.5. The dependencies
+   * do not include a binary zip for Hadoop on Windows. Instead,
+   * Renaissance includes winutils.exe as a resource, downloaded from
+   * https://github.com/cdarlint/winutils/tree/master/hadoop-2.6.5/bin
+   *
+   * When updating Spark in Renaissance, the file must be upgraded to the
+   * corresponding Hadoop version from https://github.com/cdarlint/winutils
    */
   def setUpHadoop(tempDirPath: Path): Any = {
     if (sys.props.get("os.name").toString.contains("Windows")) {

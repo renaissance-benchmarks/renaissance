@@ -14,7 +14,7 @@ class Vector[A : ClassTag](initialSize: Int = 50) {
   def size = next
 
   /* Can be called manually for optimal performance */
-  def allocate(space: Int) {
+  def allocate(space: Int): Unit = {
     require(space > 0)
     val newSize = underlying.size + space
     val newArray = new Array[A](newSize)
@@ -22,31 +22,31 @@ class Vector[A : ClassTag](initialSize: Int = 50) {
     underlying = newArray
   }
 
-  def append(el: A) {
+  def append(el: A): Unit = {
     if(next >= underlying.size)
       allocate(underlying.size)
     underlying(next) = el
     next += 1
   }
 
-  def apply(i: Int) = {
+  def apply(i: Int): A = {
     require(i >= 0 && i < next)
     underlying(i)
   }
 
-  def update(i: Int, el: A) {
+  def update(i: Int, el: A): Unit = {
     require(i >= 0 && i < next)
     underlying(i) = el
   }
 
   /* Remove n last elements of the vector */
-  def shrink(n: Int) {
+  def shrink(n: Int): Unit = {
     require(n >= 0 && n <= size)
     next -= n        
   }
 
   /* Linear remove algorithm, requires to find el and shift remaining */
-  def remove(el: A) {
+  def remove(el: A): Unit = {
     var i = 0
     var j = 0
     while(i < next) {

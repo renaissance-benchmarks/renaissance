@@ -1,111 +1,64 @@
 package org.renaissance.neo4j.analytics
 
-import java.io.File
-import java.nio.charset.StandardCharsets
-import java.util
-import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
-
 import net.liftweb.json._
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.Label
-import org.neo4j.graphdb.RelationshipType
-import org.neo4j.graphdb.Result
-import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
-import org.renaissance.BenchmarkResult.Assert
+import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType, Result}
 
-import scala.collection._
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
+import scala.collection.{Seq, _}
+import scala.io.BufferedSource
 
 class AnalyticsBenchmark(
-  val graphDir: File,
-  val longQueryCount: Option[Int],
-  val shortQueryCount: Option[Int],
-  val mutatorQueryCount: Option[Int]
+  private val graphDb: GraphDatabaseService,
+  private val longQueryThreads: Int,
+  private val longQueryRepeats: Int,
+  private val shortQueryThreads: Int,
+  private val shortQueryRepeats: Int,
+  private val mutatorQueryThreads: Int,
+  private val mutatorQueryRepeats: Int
 ) {
 
-  class QueriesThread extends Thread {
-    var numQueries = 0
-  }
-
-  private var db: GraphDatabaseService = _
-
-  private val CPU_COUNT = Runtime.getRuntime.availableProcessors
-
-  private val LONG_QUERY_NUM = longQueryCount.getOrElse(2)
-
-  private val SHORT_QUERY_NUM = shortQueryCount.getOrElse(1)
-
-  private val MUTATOR_QUERY_NUM = mutatorQueryCount.getOrElse(1)
-
-  implicit def val2Label(v: String): Label = Label.label(v.toString)
-  implicit def val2Type(v: String): RelationshipType = RelationshipType.withName(v.toString)
-
-  /** Must be called before calling `run`.
+  /**
+   * Populates the database with data. Must be called before `run()`.
    */
-  def setupAll(): Unit = {
-    // TODO: Unify how the scratch directories are handled throughout the suite.
-    //  See: https://github.com/D-iii-S/renaissance-benchmarks/issues/13
-    println("Checking previous DB remnants in " + graphDir.getAbsoluteFile)
-    if (graphDir.exists) {
-      println("DB remnants detected, deleting ...")
-      FileUtils.forceDelete(graphDir)
+  def populateDatabase(verticesSources: BufferedSource, edgesSource: BufferedSource): Unit = {
+    def parseAsJsonFields(source: BufferedSource) = {
+      parse(source.mkString).asInstanceOf[JObject].obj
     }
-    db = new GraphDatabaseFactory()
-      .newEmbeddedDatabaseBuilder(graphDir)
-      .setConfig(GraphDatabaseSettings.pagecache_memory, "500M")
-      .newGraphDatabase()
-    Runtime.getRuntime.addShutdownHook(new Thread {
-      override def run(): Unit = {
-        db.shutdown()
-        FileUtils.deleteDirectory(graphDir)
-      }
-    })
 
-    val mapping = populateVertices(db)
-    populateEdges(db, mapping)
-    createIndices(db)
-    println("Graph database created.")
+    println("Populating database...")
+    val vertices = parseAsJsonFields(verticesSources)
+    val vertexNodeIds = populateVertices(graphDb, vertices)
+    val edges = parseAsJsonFields(edgesSource)
+    populateEdges(graphDb, edges, vertexNodeIds)
+
+    println("Creating indices...")
+    createIndices(graphDb)
+
+    println(s"Database initialized with ${vertices.length} vertices and ${edges.length} edges.")
   }
 
-  /** Runs the benchmark.
-   */
-  def run(): Int = {
-    val longThreads = startLongQueryThreads(db)
-    val shortThreads = startShortQueryThreads(db)
-    val mutatorThreads = startMutatorQueryThreads(db)
-    longThreads.foreach(_.join())
-    shortThreads.foreach(_.join())
-    mutatorThreads.foreach(_.join())
-    (longThreads ++ shortThreads ++ mutatorThreads).foldLeft(0) { (acc, el) =>
-      acc + el.numQueries
-    }
-  }
+  implicit def string2Label(v: String): Label = Label.label(v.toString)
 
-  /** Must be called after calling `run`.
-   */
-  def tearAll(): Unit = {
-    db.shutdown()
-  }
+  implicit def string2Relationship(v: String): RelationshipType =
+    RelationshipType.withName(v.toString)
 
-  private def populateVertices(db: GraphDatabaseService): Map[Integer, Long] = {
-    println("Populating vertices...")
-    val mapping = mutable.Map[Integer, Long]()
+  private def populateVertices(
+    db: GraphDatabaseService,
+    vertices: List[JField]
+  ): Map[Integer, Long] = {
     val tx = db.beginTx()
     try {
-      val rawVertices =
-        IOUtils.toString(getClass.getResourceAsStream("/vertices.json"), StandardCharsets.UTF_8)
-      val vertices = parse(rawVertices)
-      implicit val formats = DefaultFormats
-      for (field <- vertices.asInstanceOf[JObject].obj) try {
+      implicit val defaultFormats = DefaultFormats
+
+      val mapping = mutable.Map[Integer, Long]()
+      for (field <- vertices) try {
         val id = field.name.toInt
         val vertex = field.value
         val label = (vertex \ "label").extract[String]
         val node = label match {
           case "Genre" =>
-            val node = db.createNode(label)
+            val node = tx.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("genreId", (vertex \ "genreId").extract[String])
             node.setProperty("name", (vertex \ "name").extract[String])
@@ -116,14 +69,14 @@ class AnalyticsBenchmark(
             } else {
               (vertex \ "name").extract[String]
             }
-            val node = db.createNode(label)
+            val node = tx.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("filmId", (vertex \ "filmId").extract[String])
             node.setProperty("name", filmName)
             node.setProperty("release_date", (vertex \ "release_date").extract[String])
             node
           case "Director" =>
-            val node = db.createNode(label)
+            val node = tx.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
             node.setProperty("directorId", (vertex \ "directorId").extract[String])
             node.setProperty("name", (vertex \ "name").extract[String])
@@ -136,48 +89,55 @@ class AnalyticsBenchmark(
         case e: Exception =>
           throw new RuntimeException("Error in: " + field, e)
       }
+
+      tx.commit()
       mapping
+
     } finally {
-      tx.success()
       tx.close()
     }
   }
 
-  private def populateEdges(db: GraphDatabaseService, mapping: Map[Integer, Long]): Unit = {
-    println("Populating edges...")
+  private def populateEdges(
+    db: GraphDatabaseService,
+    edges: List[JField],
+    vertices: Map[Integer, Long]
+  ) = {
     val tx = db.beginTx()
     try {
-      val rawEdges =
-        IOUtils.toString(getClass.getResourceAsStream("/edges.json"), StandardCharsets.UTF_8)
-      val vertices = parse(rawEdges)
       implicit val formats = DefaultFormats
-      for (field <- vertices.asInstanceOf[JObject].obj) try {
-        val name = field.name
-        val vertex = field.value
-        val source = mapping((vertex \ "source").extract[Int])
-        val destination = mapping((vertex \ "destination").extract[Int])
-        val label = (vertex \ "label").extract[String]
-        val sourceNode = db.getNodeById(source)
+
+      for (field <- edges) try {
+        val edge = field.value
+        val source = vertices((edge \ "source").extract[Int])
+        val destination = vertices((edge \ "destination").extract[Int])
+        val label = (edge \ "label").extract[String]
+
+        val sourceNode = tx.getNodeById(source)
         if (sourceNode == null) {
           sys.error("Null source node for: " + source)
         }
-        val destinationNode = db.getNodeById(destination)
+
+        val destinationNode = tx.getNodeById(destination)
         if (destinationNode == null) {
           sys.error("Null destination node for: " + destination)
         }
+
         sourceNode.createRelationshipTo(destinationNode, label)
+
       } catch {
         case e: Exception =>
           throw new RuntimeException("Error in: " + field, e)
       }
+
+      tx.commit()
+
     } finally {
-      tx.success()
       tx.close()
     }
   }
 
   private def createIndices(db: GraphDatabaseService): Unit = {
-    println("Creating indices...")
     createIndex(db, "Director", "name")
     createIndex(db, "Film", "release_date")
     createIndex(db, "Film", "name")
@@ -189,26 +149,32 @@ class AnalyticsBenchmark(
     label: Label,
     property: String
   ): Unit = {
-    var tx = db.beginTx()
-    val schema = db.schema()
-    val index = schema
-      .indexFor(label)
-      .on(property)
-      .create()
-    tx.success()
-    tx.close()
+    val indexTx = db.beginTx()
+    try {
+      val index = indexTx.schema().indexFor(label).on(property).create()
+      indexTx.commit()
 
-    tx = db.beginTx()
-    db.schema().awaitIndexOnline(index, 1000, TimeUnit.SECONDS)
-    tx.success()
-    tx.close()
+      val queryTx = db.beginTx()
+      try {
+        queryTx.schema().awaitIndexOnline(index, 100, TimeUnit.SECONDS)
+        queryTx.commit()
+
+      } finally {
+        queryTx.close()
+      }
+
+    } finally {
+      indexTx.close()
+    }
   }
 
-  private def flush(r: Result) = map(r).mkString("\n")
-
-  private def map(r: Result) = r.asScala.map(m => m.asScala.toMap).toSeq
-
   private def validate(msg: String, expected: Seq[Map[String, AnyRef]], r: Result) = {
+    def map(r: Result) = r.asScala.map(m => m.asScala.toMap).toSeq
+
+    def threadPrintln(s: String) = {
+      println("[" + Thread.currentThread.getName + "] " + s)
+    }
+
     val mapped_r = map(r)
     if (expected.equals(mapped_r)) {
       1
@@ -220,13 +186,7 @@ class AnalyticsBenchmark(
     }
   }
 
-  private def silentPrintln(s: String) = {}
-
-  private def threadPrintln(s: String) = {
-    println("[" + Thread.currentThread.getName + "] " + s)
-  }
-
-  private val mutatorQueries = Seq(
+  private val mutatorQueries: Seq[(String, Map[String, AnyRef], (Result) => Int)] = Seq(
     (
       """match (d: Director { name: $name })
         | set d.directorId = $directorId""".stripMargin,
@@ -249,7 +209,7 @@ class AnalyticsBenchmark(
     )
   )
 
-  private val shortQueries = Seq(
+  private val shortQueries: Seq[(String, Map[String, AnyRef], (Result) => Int)] = Seq(
     (
       "match (d: Director) where d.name = $name return d.directorId",
       Map("name" -> "Jim Steel"),
@@ -296,7 +256,7 @@ class AnalyticsBenchmark(
     )
   )
 
-  private val longQueries: Seq[Tuple3[String, Map[String, AnyRef], (Result) => Int]] = Seq(
+  private val longQueries: Seq[(String, Map[String, AnyRef], (Result) => Int)] = Seq(
     // Count the number of films.
     (
       "match (f: Film) return count(f)",
@@ -394,46 +354,49 @@ class AnalyticsBenchmark(
     )
   )
 
-  private def rotate[T](s: Seq[T], n: Int): Seq[T] =
-    s.drop(n % s.length) ++ s.take(n % s.length)
+  // Workload in terms of threads and query types.
+  private val queryWorkload = Seq(
+    (longQueryThreads, longQueries, longQueryRepeats, (i: Int) => 3 * i),
+    (shortQueryThreads, shortQueries, shortQueryRepeats, (i: Int) => i),
+    (mutatorQueryThreads, mutatorQueries, mutatorQueryRepeats, (i: Int) => i)
+  )
 
-  private def startMutatorQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
-    val mutatorCount = math.max(1, MUTATOR_QUERY_NUM)
-    val threads = for (p <- 0 until mutatorCount)
-      yield
-        new QueriesThread {
-          override def run(): Unit = {
-            this.numQueries += runQueries(db, mutatorQueries, 12, p)
-          }
-        }
-    threads.foreach(_.start())
-    threads
+  /**
+   * Calculates the total number of queries to be performed.
+   */
+  def totalQueryCount(): Int = {
+    queryWorkload
+      .map(t => {
+        val (count, queries, repeats, _) = t
+        count * queries.length * repeats
+      })
+      .sum
   }
 
-  private def startShortQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
-    val shortCount = math.max(1, SHORT_QUERY_NUM)
-    val threads = for (p <- 0 until shortCount)
-      yield
-        new QueriesThread {
-          override def run(): Unit = {
-            this.numQueries += runQueries(db, shortQueries, 150, p)
-          }
-        }
-    threads.foreach(_.start())
-    threads
+  class QueriesThread extends Thread {
+    var numQueries = 0
   }
 
-  private def startLongQueryThreads(db: GraphDatabaseService): Seq[QueriesThread] = {
-    val longCount = math.max(1, LONG_QUERY_NUM)
-    val threads = for (p <- 0 until longCount)
-      yield
-        new QueriesThread {
-          override def run(): Unit = {
-            this.numQueries += runQueries(db, longQueries, 1, 3 * p)
-          }
+  /**
+   * Runs the benchmark.
+   */
+  def run(): Int = {
+    // Create different threads for different query types.
+    val queryThreads = queryWorkload.flatMap(t => {
+      val (count, queries, repeats, offset) = t
+      for (threadIndex <- 0 until count) yield new QueriesThread {
+        override def run(): Unit = {
+          numQueries += runQueries(graphDb, queries, repeats, offset(threadIndex))
         }
-    threads.foreach(_.start())
-    threads
+      }
+    })
+
+    // Start query threads and wait until they finish.
+    queryThreads.foreach(_.start())
+    queryThreads.foreach(_.join())
+
+    // Sum the number of successful queries across all threads.
+    queryThreads.map(_.numQueries).sum
   }
 
   private def runQueries(
@@ -451,21 +414,26 @@ class AnalyticsBenchmark(
     numSuccessfulQueries
   }
 
+  private def rotate[T](s: Seq[T], n: Int): Seq[T] =
+    s.drop(n % s.length) ++ s.take(n % s.length)
+
   private def runQuery(
     db: GraphDatabaseService,
     query: String,
     params: Map[String, AnyRef],
     f: Result => Int
   ): Int = {
-    val tx = db.beginTx()
     var numSuccessfulQueries = 0
+
+    val tx = db.beginTx()
     try {
-      val result = db.execute(query, params.asJava)
+      val result = tx.execute(query, params.asJava)
       numSuccessfulQueries += f(result)
-      tx.success()
+      tx.commit()
     } finally {
       tx.close()
     }
+
     numSuccessfulQueries
   }
 }

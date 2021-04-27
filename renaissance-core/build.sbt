@@ -4,5 +4,5 @@ lazy val renaissanceCore = (project in file("."))
     organization := "org.renaissance",
     crossPaths := false,
     autoScalaLibrary := false,
-    scalafmtConfig := Some(file(".scalafmt.conf"))
+    javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
   )

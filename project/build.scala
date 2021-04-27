@@ -11,7 +11,7 @@ import sbt.util.Logger
 
 import scala.collection._
 
-class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
+class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
 
   private def kebabCase(s: String): String = {
     val camelCaseName = if (s.last == '$') s.init else s
@@ -28,32 +28,27 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
   }
 
   private def getAnnotation[A <: Annotation](annotationClass: Class[A]) = {
-    benchClass.getDeclaredAnnotation(annotationClass)
+    Option(benchClass.getDeclaredAnnotation(annotationClass))
   }
 
   private def getAnnotations[A <: Annotation](annotationClass: Class[A]) = {
     benchClass.getDeclaredAnnotationsByType(annotationClass)
   }
 
-  def className = benchClass.getName
+  def className: String = benchClass.getName
 
   def name(): String = {
-    val annotation = getAnnotation(classOf[Name])
-    if (annotation != null) {
-      annotation.value()
-    } else {
-      kebabCase(benchClass.getSimpleName)
-    }
+    getAnnotation(classOf[Name]).map(_.value()).getOrElse(kebabCase(benchClass.getSimpleName))
   }
 
-  def group(): String = {
-    val annotation = getAnnotation(classOf[Group])
-    if (annotation != null) {
-      annotation.value()
-    } else {
-      val groupPkg = getPackageRelativeTo(benchClass, classOf[Benchmark])
-      groupPkg.replaceAll("[.]", "-")
-    }
+  def groups(): Seq[String] = {
+    val gs = getAnnotations(classOf[Group])
+    if (gs.isEmpty) Seq(getDefaultGroup()) else gs.map(_.value)
+  }
+
+  private def getDefaultGroup(): String = {
+    val groupPkg = getPackageRelativeTo(benchClass, classOf[Benchmark])
+    groupPkg.replaceAll("[.]", "-")
   }
 
   private def getPackageRelativeTo(target: Class[_], base: Class[_]): String = {
@@ -66,38 +61,36 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     }
   }
 
+  def printableGroups(): String = {
+    groups().mkString(",")
+  }
+
   def summary(): String = {
-    val annotation = getAnnotation(classOf[Summary])
-    if (annotation != null) annotation.value() else ""
+    getAnnotation(classOf[Summary]).map(_.value()).getOrElse("")
   }
 
-  def description(): String = {
-    val annotation = getAnnotation(classOf[Description])
-    if (annotation != null) annotation.value() else ""
+  def description: String = {
+    getAnnotation(classOf[Description]).map(_.value()).getOrElse("")
   }
 
-  def repetitions(): Int = {
-    val annotation = getAnnotation(classOf[Repetitions])
-    if (annotation != null) annotation.value() else 20
+  def repetitions: Int = {
+    getAnnotation(classOf[Repetitions]).map(_.value()).getOrElse(20)
   }
 
   def parameters(): Map[String, String] = {
     getAnnotations(classOf[Parameter])
-      .flatMap(
-        p =>
-          Array(
-            (s"parameter.${p.name}.default" -> p.defaultValue),
-            (s"parameter.${p.name}.summary" -> p.summary)
-          )
+      .flatMap(p =>
+        Array(
+          s"parameter.${p.name}.default" -> p.defaultValue,
+          s"parameter.${p.name}.summary" -> p.summary
+        )
       )
       .toMap
   }
 
   private def parameterDefaults(confName: String) = {
     getAnnotations(classOf[Parameter])
-      .map(
-        p => s"configuration.${confName}.${p.name}" -> p.defaultValue()
-      )
+      .map(p => s"configuration.${confName}.${p.name}" -> p.defaultValue())
       .toMap
   }
 
@@ -136,13 +129,21 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
     result.toMap
   }
 
+  def jvmVersionMin(): String = {
+    // Require at least JVM 1.8 where unspecified.
+    getAnnotation(classOf[RequiresJvm]).map(_.value()).getOrElse("1.8")
+  }
+
+  def jvmVersionMax(): String = {
+    getAnnotation(classOf[SupportsJvm]).map(_.value()).getOrElse("")
+  }
+
   def licenses(): Array[License] = {
-    val annotation = getAnnotation(classOf[Licenses])
-    if (annotation != null) annotation.value() else Array()
+    getAnnotation(classOf[Licenses]).map(_.value()).getOrElse(Array())
   }
 
   def printableLicenses(): String = {
-    licenses.map(l => l.toString).mkString(",")
+    licenses.map(_.toString).mkString(",")
   }
 
   // Determine target Renaissance distro based on the licenses
@@ -163,14 +164,17 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 
   def toMap(): Map[String, String] = {
     Map(
+      "module" -> module,
       "class" -> className,
       "name" -> name,
-      "group" -> group,
+      "groups" -> printableGroups,
       "summary" -> summary,
       "description" -> description,
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
-      "distro" -> distro.toString
+      "distro" -> distro().toString,
+      "jvm_version_min" -> jvmVersionMin(),
+      "jvm_version_max" -> jvmVersionMax()
     ) ++ parameters ++ configurations()
   }
 
@@ -179,14 +183,18 @@ class BenchmarkInfo(val benchClass: Class[_ <: Benchmark]) {
 object Benchmarks {
 
   // Return tuples with (name, distro license, all licenses, description and default repetitions)
-  def listBenchmarks(classpath: Seq[File], logger: Option[Logger]): Seq[BenchmarkInfo] = {
+  def listBenchmarks(
+    projectName: String,
+    classPath: Seq[File],
+    logger: Option[Logger]
+  ): Seq[BenchmarkInfo] = {
     //
     // Load the benchmark base class and create a class loader for the project
     // with the class loader of the base class as its parent. This will allow
     // us to use core classes here.
     //
     val benchBase = classOf[Benchmark]
-    val urls = classpath.map(_.toURI.toURL).toArray
+    val urls = classPath.map(_.toURI.toURL).toArray
     val loader = new URLClassLoader(urls, benchBase.getClassLoader)
     val excludePattern = Pattern.compile("org[.]renaissance(|[.]harness|[.]core)")
 
@@ -195,7 +203,7 @@ object Benchmarks {
     // the benchmark interface and collect metadata from class annotations.
     //
     val result = new mutable.ArrayBuffer[BenchmarkInfo]
-    for (jarFile <- classpath.map(jar => new JarFile(jar))) {
+    for (jarFile <- classPath.map(jar => new JarFile(jar))) {
       for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
         if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
           val benchClassName = entry.getName
@@ -209,7 +217,7 @@ object Benchmarks {
           if (isEligible) {
             // Print info to see what benchmarks are picked up by the build.
             val benchClass = clazz.asSubclass(benchBase)
-            val info = new BenchmarkInfo(benchClass)
+            val info = new BenchmarkInfo(projectName, benchClass)
             if (logger.nonEmpty) logBenchmark(info, logger.get)
             result += info
           }
@@ -222,7 +230,7 @@ object Benchmarks {
 
   def logBenchmark(b: BenchmarkInfo, logger: Logger) = {
     logger.info(s"class: ${b.className}")
-    logger.info(s"\tbenchmark: ${b.group}/${b.name}")
+    logger.info(s"\tbenchmark: ${b.name} (${b.printableGroups})")
     logger.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
     logger.info(s"\trepetitions: ${b.repetitions}")
     logger.info(s"\tsummary: ${b.summary}")

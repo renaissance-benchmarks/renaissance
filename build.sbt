@@ -7,16 +7,16 @@ import org.renaissance.core.Launcher
 
 import scala.collection._
 
-val renaissanceScalaVersion = "2.12.8"
-
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
 
 val benchmarkProjects = for {
-  // Hint: add .filter(_ == "group") to compile with selected group only
-  // (can significantly speed-up compilation/assembly when debugging harness).
-  dir <- file("benchmarks").list()
+  // Hint: add .filter(Seq("group1", "group2").contains(_)) to compile
+  // selected benchmark groups only (this can significantly speed-up
+  // compilation/assembly when debugging the harness).
+  dir <- file("benchmarks")
+    .list()
   if dir != null && file("benchmarks/" + dir + "/build.sbt").exists()
 } yield {
   RootProject(uri("benchmarks/" + dir))
@@ -38,68 +38,78 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def projectJars = Def.taskDyn {
-  // Each generated task returns tuple of
-  // (project path, all JAR files, all JAR files without renaissance core JAR*)
-  // * because renaissance core classes are shared across all benchmarks
-  val projectJarTasks = for {
-    p <- subProjects
-  } yield
-    Def.task {
-      val mainJar = (packageBin in (p, Compile)).value
-      val coreJar = (packageBin in (renaissanceCore, Runtime)).value
-      val depJars = (dependencyClasspath in (p, Compile)).value.map(_.data).filter(_.isFile)
-      val loadedJarFiles = mainJar +: depJars
+def projectJars =
+  Def.taskDyn {
+    val rootJarBase = (resourceManaged in Compile).value
+    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
+
+    // Each generated task returns tuple of
+    // (project name, project path, all JAR files, all JAR files without renaissance core JAR*)
+    // * because renaissance core classes are shared across all benchmarks
+    val projectJarTasks = for {
+      project <- subProjects
+    } yield Def.task {
+      val mainJar = (project / Compile / packageBin).value
+      val depJars = (project / Compile / dependencyClasspathAsJars).value.map(_.data)
+      val loadedJars = mainJar +: depJars
       val allJars = mainJar +: coreJar +: depJars
-      val project = p.asInstanceOf[RootProject].build.getPath
-      val jarFiles = for (jar <- allJars) yield {
-        val dest = (resourceManaged in Compile).value / project / jar.getName
-        dest.getParentFile.mkdirs()
+
+      val projectPath = project.asInstanceOf[RootProject].build.getPath
+      val jarBase = rootJarBase / projectPath
+      jarBase.mkdirs()
+
+      val allJarFiles = for (jar <- allJars) yield {
+        val dest = jarBase / jar.getName
         Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
         dest
       }
-      (project, jarFiles, loadedJarFiles)
+
+      val projectName = (name in project).value
+      (projectName, projectPath, allJarFiles, loadedJars)
     }
-  flattenTasks(projectJarTasks)
-}
+    flattenTasks(projectJarTasks)
+  }
 
-def jarsAndListGenerator = Def.taskDyn {
-  val nonGpl = nonGplOnly.value
-  val logger = streams.value.log
+def jarsAndListGenerator =
+  Def.taskDyn {
+    val nonGpl = nonGplOnly.value
+    val logger = streams.value.log
 
-  // Flatten list and create a groups-jars file and the benchmark-details file.
-  projectJars.map { groupJars =>
-    // Add the benchmarks from the different project groups.
-    val jarListContent = new StringBuilder
-    val benchDetails = new java.util.Properties
+    projectJars.map { groupJars =>
+      // Create the "modules.properties" file.
+      val modulesProps = new java.util.Properties
+      for ((projectName, projectPath, _, loadedJars) <- groupJars) {
+        val jarLine = loadedJars.map(jar => projectPath + "/" + jar.getName).mkString(",")
+        modulesProps.setProperty(projectName, jarLine)
+      }
 
-    for ((project, allJars, loadedJars) <- groupJars) {
-      val jarLine = loadedJars.map(jar => project + "/" + jar.getName).mkString(",")
-      val projectShort = project.stripPrefix("benchmarks/")
-      jarListContent.append(projectShort).append("=").append(jarLine).append("\n")
+      val modulesPropsFile = (resourceManaged in Compile).value / "modules.properties"
+      val modulesPropsStream = new java.io.FileOutputStream(modulesPropsFile)
+      modulesProps.store(modulesPropsStream, "Module jars")
 
+      // Create the "benchmark.properties" file.
       // Scan project jars for benchmarks and fill the property file.
-      for (benchInfo <- Benchmarks.listBenchmarks(allJars, Some(logger))) {
-        if (!nonGpl || benchInfo.distro() == License.MIT) {
-          for ((k, v) <- benchInfo.toMap()) {
-            benchDetails.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
+      // Use all project jars to ensure that the benchmark class be be loaded.
+      val benchmarksProps = new java.util.Properties
+      for ((projectName, _, allJars, _) <- groupJars) {
+        for (benchInfo <- Benchmarks.listBenchmarks(projectName, allJars, Some(logger))) {
+          if (!nonGpl || benchInfo.distro() == License.MIT) {
+            for ((k, v) <- benchInfo.toMap()) {
+              benchmarksProps.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
+            }
           }
         }
       }
-    }
 
-    val jarListFile = (resourceManaged in Compile).value / "groups-jars.txt"
-    IO.write(jarListFile, jarListContent.toString, StandardCharsets.UTF_8)
+      val benchmarksPropsFile = (resourceManaged in Compile).value / "benchmarks.properties"
+      val benchmarksPropsStream = new java.io.FileOutputStream(benchmarksPropsFile)
+      benchmarksProps.store(benchmarksPropsStream, "Benchmark details")
 
-    val benchDetailsFile = (resourceManaged in Compile).value / "benchmark-details.properties"
-    val benchDetailsStream = new java.io.FileOutputStream(benchDetailsFile)
-    benchDetails.store(benchDetailsStream, "Benchmark details")
-
-    benchDetailsFile +: jarListFile +: groupJars.flatMap {
-      case (_, jars, _) => jars
+      benchmarksPropsFile +: modulesPropsFile +: groupJars.flatMap {
+        case (_, _, jars, _) => jars
+      }
     }
   }
-}
 
 addCommandAlias("renaissanceFormat", ";scalafmt;scalafmtSbt")
 
@@ -179,7 +189,7 @@ lazy val renaissance: Project = {
       test in assembly := {},
       assemblyMergeStrategy in assembly := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
-        case _                                   => MergeStrategy.singleOrError
+        case _ => MergeStrategy.singleOrError
       },
       javaOptions in Compile ++= {
         if (remoteDebug.value) {
@@ -223,7 +233,6 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
     name := "renaissance-jmh",
     version := (version in renaissance).value,
     organization := (organization in renaissance).value,
-    scalafmtConfig := Some(file(".scalafmt.conf")),
     nonGplOnly := (nonGplOnly in renaissance).value,
     mainClass in assembly := Some("org.openjdk.jmh.Main"),
     sourceGenerators in Compile := Def.taskDyn {

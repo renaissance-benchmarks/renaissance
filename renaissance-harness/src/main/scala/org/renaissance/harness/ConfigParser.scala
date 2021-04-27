@@ -41,10 +41,9 @@ private final class ConfigParser(tags: Map[String, String]) {
         .text(
           "Use policy plugin to control repetition of measured operation execution."
         )
-        .validate(
-          v =>
-            if (v.count(_ == '!') == 1) success
-            else failure("expected <class-path>!<class-name> in external policy specification")
+        .validate(v =>
+          if (v.count(_ == '!') == 1) success
+          else failure("expected <class-path>!<class-name> in external policy specification")
         )
         .action((v, c) => c.withPolicy(v))
         .maxOccurs(1)
@@ -55,10 +54,9 @@ private final class ConfigParser(tags: Map[String, String]) {
           "Load external plugin. Can appear multiple times."
         )
         .action((v, c) => c.withPlugin(v))
-        .validate(
-          v =>
-            if (v.count(_ == '!') == 1) success
-            else failure("expected <class-path>!<class-name> in external plugin specification")
+        .validate(v =>
+          if (v.count(_ == '!') == 1) success
+          else failure("expected <class-path>!<class-name> in external plugin specification")
         )
         .unbounded()
 
@@ -70,41 +68,58 @@ private final class ConfigParser(tags: Map[String, String]) {
         .unbounded()
 
       opt[String]("csv")
-        .valueName("<file-path>")
-        .text("Output results to CSV file.")
+        .valueName("<csv-file>")
+        .text("Output results as CSV to <csv-file>.")
         .action((v, c) => c.withCsvOutput(v))
         .maxOccurs(1)
 
       opt[String]("json")
-        .valueName("<file-path>")
-        .text("Output results to JSON file.")
+        .valueName("<json-file>")
+        .text("Output results as JSON to <json-file>.")
         .action((v, c) => c.withJsonOutput(v))
         .maxOccurs(1)
 
       opt[String]('c', "configuration")
-        .valueName("<name>")
-        .text("Run benchmarks with given named configuration.")
+        .valueName("<conf-name>")
+        .text("Use benchmark parameters from configuration <conf-name>.")
         .action((v, c) => c.withConfiguration(v))
         .maxOccurs(1)
 
+      opt[String]("scratch-base")
+        .valueName("<dir>")
+        .text("Create scratch directories in <dir>. Defaults to current directory.")
+        .action((v, c) => c.withScratchBase(v))
+
+      opt[Unit]("keep-scratch")
+        .text(
+          "Keep the scratch directories after VM exit. Defaults to deleting scratch directories."
+        )
+        .action((_, c) => c.withKeepScratch())
+
       opt[Unit]("no-forced-gc")
-        .text("Do not force garbage collection before each measured operation.")
+        .text(
+          "Do not force garbage collection before each measured operation. Defaults to forced GC."
+        )
         .action((_, c) => c.withoutForcedGc())
 
+      opt[Unit]("no-jvm-check")
+        .text("Do not check benchmark JVM version requirements (for execution or raw-list).")
+        .action((_, c) => c.withoutJvmCheck())
+
       opt[Unit]("list")
-        .text("Print list of benchmarks with their description.")
+        .text("Print the names and descriptions of all benchmarks.")
         .action((_, c) => c.withList)
 
       opt[Unit]("raw-list")
-        .text("Print list of benchmarks (each benchmark name on separate line).")
+        .text("Print the names of benchmarks compatible with this JVM (one per line).")
         .action((_, c) => c.withRawList)
 
       opt[Unit]("group-list")
-        .text("Print list of benchmark groups (each group name on separate line).")
+        .text("Print the names of all benchmark groups (one per line).")
         .action((_, c) => c.withGroupList)
 
       arg[String]("benchmark-specification")
-        .text("Comma-separated list of benchmarks (or groups) that must be executed (or all).")
+        .text("List of benchmarks (or groups) to execute (or 'all').")
         .action((v, c) => c.withBenchmarkSpecification(v))
         .unbounded()
         .optional()
@@ -113,6 +128,6 @@ private final class ConfigParser(tags: Map[String, String]) {
 
   def parse(args: Array[String]): Option[Config] = parser.parse(args, new Config)
 
-  def usage(): String = parser.usage
+  def usage(): String = parser.usage + "\n"
 
 }

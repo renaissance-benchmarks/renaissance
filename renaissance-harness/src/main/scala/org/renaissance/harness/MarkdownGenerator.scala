@@ -16,7 +16,7 @@ import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
 import scopt.OptionParser
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
@@ -71,7 +71,7 @@ object MarkdownGenerator {
 
     parser.parse(args, new LocalConfig) match {
       case Some(config) => config
-      case None         => sys.exit(1)
+      case None => sys.exit(1)
     }
   }
 
@@ -161,7 +161,7 @@ object MarkdownGenerator {
 
       try {
         writer.write(value)
-        println(file + " updated.");
+        println(file + " updated.")
 
       } finally {
         writer.close()
@@ -190,10 +190,13 @@ object MarkdownGenerator {
 
   private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
     def formatRow(b: BenchmarkInfo) = {
-      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} |"
+      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} " +
+        s"| ${b.jvmVersionMin.map(_.toString).orElse("")} " +
+        s"| ${b.jvmVersionMax().map(_.toString).orElse("")} |"
     }
 
-    benchmarks.getAll.asScala.map(formatRow).mkString("\n")
+    // Don't list dummy benchmarks in the benchmark table to reduce clutter.
+    benchmarks.getMatching(!_.groups().contains("dummy")).asScala.map(formatRow).mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
@@ -402,10 +405,11 @@ while the MIT distribution includes only those benchmarks that themselves
 have less restrictive licenses.
 
 Depending on your needs, you can use either of the two distributions.
-The following table contains the licensing information of all the benchmarks:
+The following table contains the licensing information (and JVM version
+requirements) for all the benchmarks:
 
-| Benchmark     | Licenses      | Renaissance Distro |
-| ------------- | ------------- |:------------------:|
+| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
+| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
 ${tags("benchmarksTable")}
 
 

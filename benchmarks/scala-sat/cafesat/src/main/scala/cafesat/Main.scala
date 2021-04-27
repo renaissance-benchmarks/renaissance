@@ -130,7 +130,7 @@ object Main {
 
 
 
-  def main(arguments: Array[String]) {
+  def main(arguments: Array[String]): Unit = {
     try {
       val (options0, trueArgs) = arguments.partition(str => str.startsWith("--"))
       val options = options0.map(str => str.substring(2))
@@ -173,8 +173,6 @@ object Main {
         sys.exit(1)
     }
   }
-
-  private def splitList(lst: String) : Seq[String] = lst.split(':').map(_.trim).filter(!_.isEmpty)
 
   private def recursiveListFiles(f: File): Array[File] = {
     val these = f.listFiles

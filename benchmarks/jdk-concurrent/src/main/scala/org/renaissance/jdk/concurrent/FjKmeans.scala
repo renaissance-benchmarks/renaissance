@@ -38,15 +38,15 @@ final class FjKmeans extends Benchmark {
   private var data: java.util.List[Array[java.lang.Double]] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    vectorLengthParam = c.intParameter("vector_length")
+    threadCountParam = c.parameter("thread_count").toInteger
+    vectorLengthParam = c.parameter("vector_length").toInteger
 
     benchmark = new JavaKMeans(DIMENSION, threadCountParam)
     data = JavaKMeans.generateData(vectorLengthParam, DIMENSION, CLUSTER_COUNT)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val results = for (i <- 0 until LOOP_COUNT) yield {
+    val results = for (_ <- 0 until LOOP_COUNT) yield {
       benchmark.run(CLUSTER_COUNT, data, ITERATION_COUNT)
     }
 

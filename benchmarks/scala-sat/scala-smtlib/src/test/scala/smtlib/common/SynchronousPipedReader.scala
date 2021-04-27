@@ -22,13 +22,13 @@ class SynchronousPipedReader extends Reader {
   override def read(chars: Array[Char], off: Int, len: Int): Int = {
     var i = 0
     while(i < len) {
-      chars(i + off) = buffy.dequeue.toChar
+      chars(i + off) = buffy.dequeue().toChar
       i += 1
     }
     len
   }
 
-  override def ready(): Boolean = !buffy.isEmpty
+  override def ready(): Boolean = buffy.nonEmpty
 
   def write(i: Int): Unit = {
     buffy.enqueue(i)

@@ -1,5 +1,6 @@
 package org.renaissance.harness
 
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable
 
 private final class Config {
@@ -35,6 +36,27 @@ private final class Config {
    */
   var forceGc = true
 
+  /**
+   * Check the JVM specification version requirements in the benchmarks
+   * selected for execution. This is enabled by default to avoid running
+   * benchmarks on an incompatible/unsupported JVM. Can be disabled for
+   * testing purposes.
+   */
+  var checkJvm = true
+
+  /**
+   * The directory to use for scratch files. Uses current directory by default
+   * to avoid storing data to (potentially tmpfs-backed temporary directory),
+   * which could create artificial memory pressure.
+   */
+  var scratchBase: Path = Paths.get("")
+
+  /**
+   * Do not delete the contents of the scratch directory after the VM exits.
+   * This is useful for debugging and is disabled by default.
+   */
+  var keepScratch = false
+
   def withBenchmarkSpecification(v: String) = {
     benchmarkSpecifiers ++= v.split(",").map(_.trim)
     this
@@ -48,7 +70,7 @@ private final class Config {
 
   def withPolicy(specifier: String) = {
     policyType = PolicyType.EXTERNAL
-    policyPlugin = specifier;
+    policyPlugin = specifier
     withPlugin(specifier)
   }
 
@@ -109,6 +131,22 @@ private final class Config {
     forceGc = false
     this
   }
+
+  def withoutJvmCheck() = {
+    checkJvm = false
+    this
+  }
+
+  def withScratchBase(name: String) = {
+    scratchBase = Paths.get(name)
+    this
+  }
+
+  def withKeepScratch() = {
+    keepScratch = true
+    this
+  }
+
 }
 
 private object PolicyType extends Enumeration {

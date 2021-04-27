@@ -1,8 +1,10 @@
 package smtlib
 
-import parser.Commands.{Script, Command}
-import parser.CommandsResponses.CommandResponse
 import parser.Parser
+import trees.Commands.{Script, Command}
+import trees.CommandsResponses.CommandResponse
+import trees.Terms._
+import printer.Printer
 
 /*
  * An interpreter is a stateful object that can eval Commands and returns
@@ -18,13 +20,17 @@ import parser.Parser
  */
 trait Interpreter {
 
-  def eval(cmd: Command): CommandResponse
+  val printer: Printer
+  val parser: Parser
+
+  def eval(cmd: SExpr): SExpr
 
   //A free method is kind of justified by the need for the IO streams to be closed, and
   //there seems to be a decent case in general to have such a method for things like solvers
   //note that free can be used even if the solver is currently solving, and act as a sort of interrupt
   def free(): Unit
 
+  def interrupt(): Unit
 }
 
 object Interpreter {
@@ -41,7 +47,7 @@ object Interpreter {
 
   def execute(scriptReader: Reader)(implicit interpreter: Interpreter): Unit = {
     val parser = new Parser(new lexer.Lexer(scriptReader))
-    var cmd: Command = null
+    val cmd: Command = null
     do {
       val cmd = parser.parseCommand
       if(cmd != null)

@@ -12,29 +12,18 @@ import org.renaissance.License
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(80)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "input_path", defaultValue = "/shakespeare.txt"),
-    new Parameter(name = "expected_hash", defaultValue = "7527985ec20d9aab")
-  )
+@Parameter(name = "input_path", defaultValue = "/shakespeare.txt")
+@Parameter(name = "expected_hash", defaultValue = "7527985ec20d9aab")
+@Configuration(
+  name = "test",
+  settings =
+    Array("input_path = /shakespeare-truncated.txt", "expected_hash = a7b6836b27dbdf0f")
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings =
-        Array("input_path = /shakespeare-truncated.txt", "expected_hash = a7b6836b27dbdf0f")
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "jmh")
 final class RxScrabble extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
-  private var inputPathParam: String = _
 
   private var expectedHashParam: String = _
 
@@ -43,8 +32,8 @@ final class RxScrabble extends Benchmark {
   private var bench: RxScrabbleImplementation = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputPathParam = c.stringParameter("input_path")
-    expectedHashParam = c.stringParameter("expected_hash")
+    val inputPathParam = c.parameter("input_path").value
+    expectedHashParam = c.parameter("expected_hash").value
     bench = new RxScrabbleImplementation(scrabblePath, inputPathParam)
   }
 
@@ -52,7 +41,7 @@ final class RxScrabble extends Benchmark {
     val result = bench.runScrabble()
 
     new BenchmarkResult {
-      override def validate() = {
+      override def validate(): Unit = {
         val actualWords = RxScrabbleImplementation.prepareForValidation(result)
         Validators.hashing(expectedHashParam, actualWords).validate()
       }

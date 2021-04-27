@@ -13,19 +13,17 @@ import org.renaissance.License
 @Licenses(Array(License.BSD3, License.GPL2))
 @Repetitions(60)
 @Parameter(name = "thread_count", defaultValue = "$cpu.count")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(Array(new Configuration(name = "test"), new Configuration(name = "jmh")))
+@Configuration(name = "test")
+@Configuration(name = "jmh")
 final class ScalaStmBench7 extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var threadCountParam: String = _
-
   private var stmBenchArgs: Array[String] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.stringParameter("thread_count")
+    val threadCountParam = c.parameter("thread_count").toPositiveInteger
 
     // The following is the description of STMBench7's arguments.
     // -s -- the initializer class for the STM implementation
@@ -43,7 +41,7 @@ final class ScalaStmBench7 extends Benchmark {
       "-c",
       "20",
       "-t",
-      threadCountParam
+      threadCountParam.toString
     )
   }
 

@@ -23,35 +23,27 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.io.Source
+import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
 @Name("movie-lens")
 @Group("apache-spark")
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "input_file", defaultValue = "/ratings.csv"),
-    new Parameter(name = "als_ranks", defaultValue = "8, 12"),
-    new Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0"),
-    new Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Parameter(name = "input_file", defaultValue = "/ratings.csv")
+@Parameter(name = "als_ranks", defaultValue = "8, 12")
+@Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0")
+@Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Configuration(
+  name = "test",
+  settings = Array(
+    "input_file = /ratings-small.csv",
+    "als_ranks = 12",
+    "als_lambdas = 10.0",
+    "als_iterations = 10"
   )
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array(
-        "input_file = /ratings-small.csv",
-        "als_ranks = 12",
-        "als_lambdas = 10.0",
-        "als_iterations = 10"
-      )
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "jmh")
 final class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
@@ -279,10 +271,10 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputFileParam = c.stringParameter("input_file")
-    alsRanksParam = c.stringParameter("als_ranks").split(",").map(_.trim.toInt).toList
-    alsLambdasParam = c.stringParameter("als_lambdas").split(",").map(_.trim.toDouble).toList
-    alsIterationsParam = c.stringParameter("als_iterations").split(",").map(_.trim.toInt).toList
+    inputFileParam = c.parameter("input_file").value
+    alsRanksParam = c.parameter("als_ranks").toList(_.toInt).asScala.toList
+    alsLambdasParam = c.parameter("als_lambdas").toList(_.toDouble).asScala.toList
+    alsIterationsParam = c.parameter("als_iterations").toList(_.toInt).asScala.toList
 
     tempDirPath = c.generateTempDir("movie_lens")
     setUpLogger()

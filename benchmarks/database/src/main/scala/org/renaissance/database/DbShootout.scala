@@ -18,13 +18,8 @@ import org.renaissance.License
 @Licenses(Array(License.APACHE2))
 @Repetitions(16)
 @Parameter(name = "rw_entry_count", defaultValue = "500000")
-// Work around @Repeatable annotations not working in this Scala version.
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("rw_entry_count = 10000")),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "test", settings = Array("rw_entry_count = 10000"))
+@Configuration(name = "jmh")
 final class DbShootout extends Benchmark {
 
   /**
@@ -37,34 +32,32 @@ final class DbShootout extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var readWriteEntryCountParam: Int = _
-
   // TODO: Unify handling of scratch directories throughout the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
 
-  var tempDirPath: Path = null
+  var tempDirPath: Path = _
 
-  var mapDb: MapDb = null
+  var mapDb: MapDb = _
 
-  var mapDbReader: MapDb.Reader = null
+  var mapDbReader: MapDb.Reader = _
 
-  var mapDbWriter: MapDb.Writer = null
+  var mapDbWriter: MapDb.Writer = _
 
-  var chronicle: Chronicle = null
+  var chronicle: Chronicle = _
 
-  var chronicleReader: Chronicle.Reader = null
+  var chronicleReader: Chronicle.Reader = _
 
-  var chronicleWriter: Chronicle.Writer = null
+  var chronicleWriter: Chronicle.Writer = _
 
-  var mvStore: MvStore = null
+  var mvStore: MvStore = _
 
-  var mvStoreReader: MvStore.Reader = null
+  var mvStoreReader: MvStore.Reader = _
 
-  var mvStoreWriter: MvStore.Writer = null
+  var mvStoreWriter: MvStore.Writer = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     tempDirPath = c.generateTempDir("db_shootout")
-    readWriteEntryCountParam = c.intParameter("rw_entry_count")
+    val readWriteEntryCountParam = c.parameter("rw_entry_count").toPositiveInteger
 
     mapDb = new MapDb
     mapDbReader = new MapDb.Reader

@@ -20,28 +20,19 @@ import scala.collection.JavaConverters._
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
-    new Parameter(name = "input_line_count", defaultValue = "-1"),
-    new Parameter(name = "expected_rank_count", defaultValue = "598652"),
-    new Parameter(name = "expected_rank_hash", defaultValue = "9b39ddf5eaa8b3d2")
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "input_line_count", defaultValue = "-1")
+@Parameter(name = "expected_rank_count", defaultValue = "598652")
+@Parameter(name = "expected_rank_hash", defaultValue = "9b39ddf5eaa8b3d2")
+@Configuration(
+  name = "test",
+  settings = Array(
+    "input_line_count = 5000",
+    "expected_rank_count = 1664",
+    "expected_rank_hash = 797021674f62a217"
   )
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array(
-        "input_line_count = 5000",
-        "expected_rank_count = 1664",
-        "expected_rank_hash = 797021674f62a217"
-      )
-    ),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "jmh")
 final class PageRank extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
@@ -101,10 +92,10 @@ final class PageRank extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    inputLineCountParam = c.intParameter("input_line_count")
-    expectedRankCountParam = c.intParameter("expected_rank_count")
-    expectedRankHashParam = c.stringParameter("expected_rank_hash")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    inputLineCountParam = c.parameter("input_line_count").toInteger
+    expectedRankCountParam = c.parameter("expected_rank_count").toInteger
+    expectedRankHashParam = c.parameter("expected_rank_hash").value
 
     tempDirPath = c.generateTempDir("page_rank")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")

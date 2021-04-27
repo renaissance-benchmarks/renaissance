@@ -2,10 +2,11 @@ package cafesat
 package theories.adt
 
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.reflect.ClassTag
 
-class AdtSolverListsTests extends FlatSpec with BeforeAndAfter with AdtSolverSpecHelpers {
+class AdtSolverListsTests extends AnyFlatSpec with BeforeAndAfter with AdtSolverSpecHelpers {
 
   //TODO: could be useful to have that for debugging
   //private var _currentTestName: String = "<Unset>"
@@ -126,13 +127,13 @@ class AdtSolverListsTests extends FlatSpec with BeforeAndAfter with AdtSolverSpe
     val x = Variable(1)
     override val eqs = Seq( (Head(x), Fina) )
     override val ineqs = Seq( (Head(x), Fina) )
-    assertUnsatDueTo[InvalidEquality]
+    assertUnsatDueTo[InvalidEquality]()
   }
   it should "return unsat on simple selector inequality" in new FiniteAndListSig {
     val x = Variable(1)
     override val eqs = Seq( (x, Cons(Fina,Nil)) )
     override val ineqs = Seq( (Head(x), Fina) )
-    assertUnsatDueTo[InvalidEquality]
+    assertUnsatDueTo[InvalidEquality]()
   }
   it should "return sat on list equality with selectors" in new FiniteAndListSig {
     val x = Variable(1)

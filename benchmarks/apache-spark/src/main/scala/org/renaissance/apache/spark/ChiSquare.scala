@@ -25,19 +25,10 @@ import scala.util.Random
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
-    new Parameter(name = "number_count", defaultValue = "1500000")
-  )
-)
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("number_count = 10000")),
-    new Configuration(name = "jmh")
-  )
-)
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "number_count", defaultValue = "1500000")
+@Configuration(name = "test", settings = Array("number_count = 10000"))
+@Configuration(name = "jmh")
 final class ChiSquare extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
@@ -94,8 +85,8 @@ final class ChiSquare extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    numberCountParam = c.intParameter("number_count")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    numberCountParam = c.parameter("number_count").toPositiveInteger
 
     tempDirPath = c.generateTempDir("chi_square")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "chi-square")

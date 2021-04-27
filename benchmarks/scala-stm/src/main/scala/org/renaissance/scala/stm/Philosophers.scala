@@ -12,23 +12,14 @@ import org.renaissance.License
 @Summary("Solves a variant of the dining philosophers problem using ScalaSTM.")
 @Licenses(Array(License.BSD3))
 @Repetitions(30)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
-    new Parameter(
-      name = "meal_count",
-      defaultValue = "500000",
-      summary = "Number of meals consumed by each philosopher thread"
-    )
-  )
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(
+  name = "meal_count",
+  defaultValue = "500000",
+  summary = "Number of meals consumed by each philosopher thread"
 )
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("meal_count = 500")),
-    new Configuration(name = "jmh")
-  )
-)
+@Configuration(name = "test", settings = Array("meal_count = 500"))
+@Configuration(name = "jmh")
 final class Philosophers extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
@@ -42,8 +33,8 @@ final class Philosophers extends Benchmark {
   private var mealCountParam: Int = _
 
   override def setUpBeforeAll(c: BenchmarkContext) = {
-    threadCountParam = c.intParameter("thread_count")
-    mealCountParam = c.intParameter("meal_count")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    mealCountParam = c.parameter("meal_count").toPositiveInteger
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

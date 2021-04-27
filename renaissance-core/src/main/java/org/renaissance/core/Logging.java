@@ -1,36 +1,50 @@
 package org.renaissance.core;
 
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
 public final class Logging {
-  private static final Handler STDERR_HANDLER;
-  private static final Level LOG_LEVEL;
-  
-  static {
-    STDERR_HANDLER = new StreamHandler(System.err, new SimpleFormatter());
-    LOG_LEVEL = getLevel();
-    STDERR_HANDLER.setLevel(LOG_LEVEL);
+  private static final String FORMAT_PROPERTY = "java.util.logging.SimpleFormatter.format";
+  private static final String DEFAULT_FORMAT = "[%1$tFT%1$tT.%1$tL%1$tz] %3$s (%2$s)%n%4$s: %5$s%n%6$s";
+
+  // Keep a strong reference to the (configured) logger.
+  private static final Logger rootLogger = createRootLogger();
+
+  private static Logger createRootLogger() {
+    // Create a handler for all logging levels.
+    final StreamHandler handler = createHandler();
+    handler.setLevel(Level.ALL);
+
+    // Create root logger with the specified logging level.
+    final Logger result = Logger.getLogger("org.renaissance");
+    result.addHandler(handler);
+    result.setLevel(getLogLevel());
+    return result;
   }
-  
+
+  private static StreamHandler createHandler() {
+    // Set a property to configure the output of SimpleFormatter.
+    if (System.getProperty(FORMAT_PROPERTY) == null) {
+      System.setProperty(FORMAT_PROPERTY, DEFAULT_FORMAT);
+    }
+
+    // Create SimpleFormatter AFTER setting the system property.
+    return new StreamHandler(System.err, new SimpleFormatter());
+  }
+
   private Logging() {}
 
   public static Logger getLogger(String name) {
-    Logger logger = Logger.getLogger(name);
-    logger.setLevel(LOG_LEVEL);
-    logger.addHandler(STDERR_HANDLER);
-    
-    return logger;
+    return Logger.getLogger(name);
   }
 
-  public static Logger getMethodLogger(Class<?> klass, String methodName) {
-    return getLogger(String.format("%s.%s", klass.getName(), methodName));
+  public static Logger getPackageLogger(Class<?> klass) {
+    return Logger.getLogger(klass.getPackage().getName());
   }
 
-  private static Level getLevel() {
+  private static Level getLogLevel() {
     String level = System.getProperty("org.renaissance.logging", "INFO");
     try {
       return Level.parse(level);

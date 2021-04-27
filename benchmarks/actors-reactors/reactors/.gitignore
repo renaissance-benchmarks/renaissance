@@ -1,0 +1,17 @@
+.flooignore
+.floo
+tmp
+# deployed docs
+.tags_sorted_by_file
+# idea crap
+target
+*.dmp
+deploy
+apidocs/
+reactors-common/jvm/src/bench/scala/io/reactors/common/concurrent/cache-trie-remove-benches.scala
+.sublime-project
+# ctags stuff
+*.iml
+.idea/
+# misc
+.tags

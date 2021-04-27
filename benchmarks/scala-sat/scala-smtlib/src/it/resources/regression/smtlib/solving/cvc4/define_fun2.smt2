@@ -1,0 +1,8 @@
+(set-option :print-success true)
+(set-logic QF_UF)
+(declare-sort U 0)
+(declare-fun x0 () U)
+(declare-fun y0 () U)
+(define-fun-rec x1 ((z U)) U z)
+(define-fun-rec y1 ((z U)) U z)
+(exit)

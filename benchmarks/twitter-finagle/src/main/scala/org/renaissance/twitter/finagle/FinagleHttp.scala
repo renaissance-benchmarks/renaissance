@@ -30,30 +30,21 @@ import org.renaissance.License
 @Summary("Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(12)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(
-      name = "request_count",
-      defaultValue = "12000",
-      summary = "Number of requests sent during the execution of the benchmark"
-    ),
-    new Parameter(
-      name = "client_count",
-      defaultValue = "$cpu.count",
-      summary = "Number of clients that are simultaneously sending the requests"
-    )
-  )
+@Parameter(
+  name = "request_count",
+  defaultValue = "12000",
+  summary = "Number of requests sent during the execution of the benchmark"
 )
-@Configurations(
-  Array(
-    new Configuration(
-      name = "test",
-      settings = Array("request_count = 150", "client_count = 2")
-    ),
-    new Configuration(name = "jmh")
-  )
+@Parameter(
+  name = "client_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of clients that are simultaneously sending the requests"
 )
+@Configuration(
+  name = "test",
+  settings = Array("request_count = 150", "client_count = 2")
+)
+@Configuration(name = "jmh")
 final class FinagleHttp extends Benchmark {
 
   class WorkerThread(port: Int, barrier: CountDownLatch, requestCount: Int) extends Thread {
@@ -91,16 +82,13 @@ final class FinagleHttp extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  /** Number of requests sent during the execution of the benchmark.
-   */
+  /** Number of requests sent during the execution of the benchmark. */
   private var requestCountParam: Int = _
 
-  /** Number of clients that are simultaneously sending the requests.
-   */
+  /** Number of clients that are simultaneously sending the requests. */
   private var clientCountParam: Int = _
 
-  /** Manually computed length of one request (see /json handler).
-   */
+  /** Manually computed length of one request (see /json handler). */
   private val REQUEST_CONTENT_SIZE = 27
 
   private var server: ListeningServer = _
@@ -111,8 +99,8 @@ final class FinagleHttp extends Benchmark {
   var threadBarrier: CountDownLatch = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    requestCountParam = c.intParameter("request_count")
-    clientCountParam = c.intParameter("client_count")
+    requestCountParam = c.parameter("request_count").toPositiveInteger
+    clientCountParam = c.parameter("client_count").toPositiveInteger
 
     val mapper: ObjectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
     val helloWorld: Buf = Buf.Utf8("Hello, World!")
@@ -127,12 +115,15 @@ final class FinagleHttp extends Benchmark {
           Future.value(rep)
         }
       )
-      .withHandler("/plaintext", Service.mk { _: Request =>
-        val rep = Response()
-        rep.content = helloWorld
-        rep.contentType = "text/plain"
-        Future.value(rep)
-      })
+      .withHandler(
+        "/plaintext",
+        Service.mk { _: Request =>
+          val rep = Response()
+          rep.content = helloWorld
+          rep.contentType = "text/plain"
+          Future.value(rep)
+        }
+      )
 
     val serverAndDate: SimpleFilter[Request, Response] =
       new SimpleFilter[Request, Response] {

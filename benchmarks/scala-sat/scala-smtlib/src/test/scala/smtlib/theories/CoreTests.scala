@@ -1,11 +1,12 @@
 package smtlib
 package theories
 
+import trees.Terms._
 import Core._
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class CoreTests extends FunSuite {
+class CoreTests extends AnyFunSuite {
 
   override def suiteName = "Core Theory test suite"
 
@@ -88,6 +89,36 @@ class CoreTests extends FunSuite {
     }
 
   }
+
+  //test("And varargs constructor properly builds formulas") {
+  //  val f1 = QualifiedIdentifier(SimpleIdentifier(SSymbol("f1")))
+  //  val f2 = QualifiedIdentifier(SimpleIdentifier(SSymbol("f2")))
+  //  val f3 = QualifiedIdentifier(SimpleIdentifier(SSymbol("f3")))
+
+  //  val a0 = And()
+  //  assert(a0 === True())
+
+  //  val a1 = And(f1)
+  //  assert(a1 === f1)
+
+  //  val a2 = And(f1, f2, f3)
+  //  assert(a2 === And(f1, And(f2, f3)) || a2 === And(And(f1, f2), f3))
+  //}
+
+  //test("Or varargs constructor properly builds formulas") {
+  //  val f1 = QualifiedIdentifier(SimpleIdentifier(SSymbol("f1")))
+  //  val f2 = QualifiedIdentifier(SimpleIdentifier(SSymbol("f2")))
+  //  val f3 = QualifiedIdentifier(SimpleIdentifier(SSymbol("f3")))
+
+  //  val o0 = Or()
+  //  assert(o0 === False())
+
+  //  val o1 = Or(f1)
+  //  assert(o1 === f1)
+
+  //  val o2 = Or(f1, f2, f3)
+  //  assert(o2 === Or(f1, Or(f2, f3)) || o2 === Or(Or(f1, f2), f3))
+  //}
 
   test("smtlib format") {
     import parser.Parser

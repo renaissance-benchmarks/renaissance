@@ -1,49 +1,271 @@
 package org.renaissance.core;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
+
+import static java.util.Collections.emptyMap;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toMap;
 
 public final class ModuleLoader {
-  private static final URL[] URL_ARRAY_TYPE = new URL[0];
+  private static final String RESOURCE_PATH_SEPARATOR = "/";
 
-  private static final Map<String, String[]> GROUP_JAR_NAMES
-    = getGroupJarNames(ModuleLoader.class.getResourceAsStream("/groups-jars.txt"));
+  private static final Class<?> thisClass = ModuleLoader.class;
+  private static final Logger logger = Logging.getPackageLogger(thisClass);
 
-  static ClassLoader getForGroup(String groupName) throws ModuleLoadingException {
-    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupClassloader");
 
-    String[] jarNames = GROUP_JAR_NAMES.get(groupName);
-    if (jarNames == null) {
-      String message = String.format("Group %s not found", groupName);
-      throw new ModuleLoadingException(message);
-    }
+  /**
+   * The root of the scratch directory for this module loader.
+   */
+  private final Path scratchRootDir;
 
-    List<Pair<String, InputStream>> jarStreams = new ArrayList<>();
-    for (String path : jarNames) {
-      jarStreams.add(new Pair<>(path, Launcher.class.getResourceAsStream("/" + path)));
-    }
+  /**
+   * Map of module names to sets of JAR files representing the class path of
+   * each module. There may be multiple benchmark classes in one module, but
+   * each will be instantiated using a separate class loader.
+   */
+  private final Map<String, Set<String>> jarPathsByModule;
 
-    try {
-      ClassLoader parent = ModuleLoader.class.getClassLoader();
-      URL[] extractedUrls = extractAndGetUrls(jarStreams);
-      for (Pair<String, InputStream> stream: jarStreams) {
-        stream.second().close();
+
+  ModuleLoader(Path scratchRootDir, Map<String, Set<String>> jarPathsByModule) {
+    this.scratchRootDir = scratchRootDir;
+    this.jarPathsByModule = jarPathsByModule;
+  }
+
+
+  /**
+   * Creates a module loader with a given scratch root directory. The module
+   * loader loads a property file with a module description and allows loading
+   * modules using independent class loaders.
+   *
+   * @param scratchRootDir The root of the scratch directory where module
+   * module dependencies are extracted.
+   */
+  public static ModuleLoader create(Path scratchRootDir) {
+    logger.fine(() -> String.format(
+      "Creating module loader with scratch root '%s'", scratchRootDir
+    ));
+
+    String moduleProperties = resourceAbsolutePath("modules.properties");
+    final Map<String, Set<String>> moduleJarPaths = loadModuleJarPaths(moduleProperties);
+    return new ModuleLoader(scratchRootDir, moduleJarPaths);
+  }
+
+
+  /**
+   * Loads the set of JAR resource paths for all modules from a property file.
+   * This method should not throw any exception because it is used in a static
+   * class initializer.
+   *
+   * @param resourceName the name of the resource to load.
+   * @return A {@link Map} with the module name as the key and a {@link Set}
+   * of JAR file paths as the value.
+   */
+  private static Map<String, Set<String>> loadModuleJarPaths(String resourceName) {
+    logger.fine(() -> String.format (
+      "Loading module JAR sets from resource '%s'", resourceName
+    ));
+
+    try (
+      InputStream stream = ModuleLoader.class.getResourceAsStream(resourceName)
+    ) {
+      Map<String, Set<String>> result = loadModuleProperties(stream);
+
+      if (logger.isLoggable(Level.CONFIG)) {
+        logModuleJarPaths(result);
       }
 
-      return new URLClassLoader(extractedUrls, parent);
+      return result;
+
     } catch (IOException e) {
-      String message = String.format("Failed to load %s: %s", groupName, e.getMessage());
-      logger.severe(message);
-      throw new ModuleLoadingException(e, message);
+      // Fail gracefully with an empty collection.
+      logger.severe("Failed to load module JAR paths: "+ e.getMessage());
+      return emptyMap();
+    }
+  }
+
+
+  private static Map<String, Set<String>> loadModuleProperties(InputStream stream)
+  throws IOException {
+    Properties props = new Properties();
+    props.load(stream);
+
+    return props.stringPropertyNames().stream().collect(toMap(
+      identity(), name -> pathsToSet(props.getProperty(name))
+    ));
+  }
+
+
+  private static Set<String> pathsToSet(String paths) {
+    // Convert "path1/to/jar1,path2/to/jar2,..." into a set of paths.
+    return new LinkedHashSet<>(Arrays.asList(paths.split(",")));
+  }
+
+
+  private static <T extends Collection<?>> void logModuleJarPaths(Map<String, T> result) {
+    logger.config(String.format(
+      "Found %d modules: %s", result.size(), result.keySet()
+    ));
+
+    result.forEach((group, jars) -> {
+      logger.fine(String.format(
+        "Module '%s' refers to %d files", group, jars.size()
+      ));
+
+      logger.finer(String.format(
+        "JAR files for module '%s' => %s", group, jars
+      ));
+    });
+  }
+
+
+  ClassLoader createClassLoaderForModule(String name) throws ModuleLoadingException {
+    logger.fine(() -> String.format("Creating class loader for module '%s'", name));
+
+    //
+    // Look up the module name and create a directory for the module JAR files.
+    // Extract the JAR files and build an URL classloader for the module. Reuse
+    // the JAR files in the module directory (but create a new classloader) to
+    // avoid repeatedly extracting the JAR files for the same module.
+    //
+    try {
+      Set<String> jarPaths = jarPathsByModule.get(name);
+      if (jarPaths == null) {
+        throw new ModuleLoadingException("module not found");
+      }
+
+      Path moduleJarsDir = createModuleJarsDirectory(name);
+      List<Path> filePaths = extractResources(jarPaths, moduleJarsDir);
+      final URL[] urls = pathsToUrls(filePaths);
+
+      // Make sure that all paths were converted to URL.
+      if (urls.length != filePaths.size()) {
+        throw new ModuleLoadingException("malformed URL(s) in module JAR paths");
+      }
+
+      logger.fine(() -> String.format(
+        "Module '%s' class path (%d entries): %s",
+        name, filePaths.size(), makeClassPath(filePaths)
+      ));
+
+      return new URLClassLoader(urls, thisClass.getClassLoader());
+
+    } catch (IOException e) {
+      throw new ModuleLoadingException(
+        "error creating module jar directory: %s", e.getMessage()
+      );
+    }
+  }
+
+
+  private Path createModuleJarsDirectory(String name) throws IOException {
+    // Create '<module-name>/lib' directory in scratch root.
+    Path result = Files.createDirectories(
+      scratchRootDir.resolve(name).resolve("lib")
+    );
+
+    logger.config(String.format(
+      "Module '%s' library directory: '%s'", name, result
+    ));
+
+    return result;
+  }
+
+
+  private static String makeClassPath(Collection<Path> paths) {
+    return paths.stream().map(Path::toString).collect(joining(File.pathSeparator));
+  }
+
+
+  private static List<Path> extractResources(
+    Collection<String> resourcePaths, Path outputDirPath
+  ) throws ModuleLoadingException {
+    List<Path> result = new ArrayList<>();
+
+    for (String resourcePath : resourcePaths) {
+      Path outputFilePath = outputDirPath.resolve(resourceFileName(resourcePath));
+      logger.finer(() -> String.format(
+        "Resource '%s' expected at '%s'", resourcePath, outputFilePath
+      ));
+
+      if (!Files.exists(outputFilePath)) {
+        logger.finer(() -> String.format(
+          "File '%s' does not exist, extracting resource", outputFilePath
+        ));
+
+        try {
+          extractResource(resourcePath, outputFilePath);
+
+        } catch (IOException e) {
+          // Report the particular resource and target.
+          throw new ModuleLoadingException(
+            "could not extract resource '%s' into '%s': %s",
+            resourcePath, outputFilePath, e.getMessage()
+          );
+        }
+
+      } else {
+        logger.finer(() -> String.format(
+          "File '%s' already exists, skipping extraction", outputFilePath
+        ));
+      }
+
+      result.add(outputFilePath);
+    }
+
+    return result;
+  }
+
+
+  private static String resourceAbsolutePath(String resourcePath) {
+    return resourcePath.startsWith(RESOURCE_PATH_SEPARATOR)
+      ? resourcePath : RESOURCE_PATH_SEPARATOR + resourcePath;
+  }
+
+
+  private static String resourceFileName(String resourcePath) {
+    final int nameStart = resourcePath.lastIndexOf(RESOURCE_PATH_SEPARATOR);
+    return nameStart >= 0 ? resourcePath.substring(nameStart + 1) : resourcePath;
+  }
+
+
+  private static void extractResource(String resourcePath, Path outputFilePath)
+  throws IOException {
+    final String absResourcePath = resourceAbsolutePath(resourcePath);
+
+    try (
+      InputStream resourceStream = thisClass.getResourceAsStream(absResourcePath)
+    ) {
+      if (resourceStream == null) {
+        // This should only happen in case of build misconfiguration.
+        throw new IOException("resource not found");
+      }
+
+      // Copy the stream contents to the file (without overwriting).
+      long bytesWritten = Files.copy(resourceStream, outputFilePath);
+      logger.finer(() -> String.format(
+        "Wrote %d bytes to '%s'", bytesWritten, outputFilePath
+      ));
     }
   }
 
@@ -59,17 +281,10 @@ public final class ModuleLoader {
     Class<T> extClass, String[] args
   ) throws ModuleLoadingException {
     try {
-      try {
-        // Try the constructor with parameters first
-        Constructor<T> ctor = extClass.getDeclaredConstructor(String[].class);
-        return ctor.newInstance(new Object[] { args });
+      return newExtensionInstance(extClass, args);
 
-      } catch (NoSuchMethodException e) {
-        // Fall back to default constructor
-        return extClass.getDeclaredConstructor().newInstance();
-      }
     } catch (NoSuchMethodException e) {
-      // Every class should have a default constructor
+      // Every class should have a default constructor.
       throw new ModuleLoadingException(
         "cannot find default constructor in '%s'", extClass.getName()
       );
@@ -78,8 +293,21 @@ public final class ModuleLoader {
         "cannot instantiate '%s': %s", extClass.getName(), e.getMessage()
       );
     }
-
   }
+
+  private static <T> T newExtensionInstance(Class<T> extClass, String[] args)
+  throws ReflectiveOperationException {
+    try {
+      // Try the constructor with parameters first.
+      Constructor<T> ctor = extClass.getDeclaredConstructor(String[].class);
+      return ctor.newInstance(new Object[] { args });
+
+    } catch (NoSuchMethodException e) {
+      // Fall back to default constructor.
+      return extClass.getDeclaredConstructor().newInstance();
+    }
+  }
+
 
   /**
    * Loads an extension class and casts it to the desired base class.
@@ -114,112 +342,53 @@ public final class ModuleLoader {
   }
 
 
-  private static Map<String, String[]> getGroupJarNames(InputStream jarList) {
-    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "getGroupJarNames");
+  //
+  // Utility methods to convert things to an array of URLs.
+  //
+  // Because creating an URL instance can throw a (checked!) exception which
+  // Java streams are unable to handle, we suppress (but log) that exception
+  // and return null instead, which we filter out.
+  //
+  // We can check later whether the conversion was complete or not and take a
+  // summary action, knowing that individual conversion failures were logged.
+  //
 
-    if (jarList == null) {
-      logger.severe("JAR list stream is null.");
-      return new HashMap<>();
-    }
-
-    Scanner sc = new Scanner(jarList);
-    Map<String, String[]> result = new HashMap<>();
-    while (sc.hasNextLine()) {
-      String line = sc.nextLine();
-      String[] parts = line.split("=");
-      if (parts.length != 2) {
-        continue;
-      }
-      String group = parts[0];
-      String[] jars = parts[1].split(",");
-      result.put(group, jars);
-
-      logger.finest(String.format("Found group entry %s => %s (%d)", group, parts[1], jars.length));
-    }
-    sc.close();
-
-    return result;
+  private static URL[] pathsToUrls(Collection<Path> paths) {
+    //
+    // Because it is not possible to construct an URL from a relative file
+    // path (which would be probably the most common scenario), we convert
+    // the file path to an URI first and convert that to an URL.
+    //
+    return stringsToUrls(paths.stream().map(p -> p.toUri().toString()));
   }
 
-  private static URL[] extractAndGetUrls(List<Pair<String, InputStream>> streams) throws IOException {
-    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "extractAndGetUrls");
-
-    Path baseDir = Paths.get(".");
-    Path baseUnpackDir = Files.createTempDirectory(baseDir, "tmp-jars-");
-    baseUnpackDir.toFile().deleteOnExit();
-    List<URL> resultUrls = new ArrayList<>();
-
-    for (Pair<String, InputStream> stream : streams) {
-      String path = stream.first();
-      String name = new File(path).getName();
-      InputStream is = stream.second();
-      Path unpackedTargetPath = Files.createTempFile(baseUnpackDir, "cp-" + name, ".jar");
-      File unpackedTarget = unpackedTargetPath.toFile();
-      unpackedTarget.deleteOnExit();
-      OutputStream unpackedOutStream = new FileOutputStream(unpackedTarget);
-
-      logger.fine(String.format("Extracting %s into %s", is, unpackedTargetPath));
-
-      byte[] buffer = new byte[8 * 1024];
-      int bytesRead;
-      while ((bytesRead = is.read(buffer)) != -1) {
-        unpackedOutStream.write(buffer, 0, bytesRead);
-      }
-
-      unpackedOutStream.close();
-
-      resultUrls.add(unpackedTargetPath.toUri().toURL());
-    }
-
-    return resultUrls.toArray(URL_ARRAY_TYPE);
+  private static URL[] stringsToUrls(String[] strings) {
+    return stringsToUrls(Arrays.stream(strings));
   }
 
+  private static URL[] stringsToUrls(Stream<String> stringStream) {
+    return stringStream.map(ModuleLoader::makeUrl).filter(Objects::nonNull).toArray(URL[]::new);
+  }
 
-  private static URL[] stringsToUrls(String[] urls) {
-    Logger logger = Logging.getMethodLogger(ModuleLoader.class, "stringsToUrls");
-
-    //
-    // Convert an array of strings to an array of URLs.
-    // However, URL instantiation can throw (checked!) exception which Java
-    // streams are unable to handle. So we suppress that exception and return
-    // null instead, which we later filter out. This allows us to later check
-    // whether exception was thrown and artificially re-throw it.
-    //
-    // Next surprise is that it is not possible to construct an URL from a
-    // relative file path (which would be probably the most common scenario)
-    // so we first try a full-fledged URL and then a filepath URI.
-    //
-    Function<String, URL> makeUrl = path -> {
-      try {
-        return Paths.get(path).toUri().toURL();
-      } catch (MalformedURLException e) {
-        logger.severe(String.format("Ignoring malformed URL '%s'", path));
-        return null;
-      }
-    };
-
-    return Arrays.stream(urls)
-      .map(makeUrl)
-      .filter(Objects::nonNull)
-      .toArray(URL[]::new);
+  private static URL makeUrl(String spec) {
+    try {
+      return new URL(spec);
+    } catch (MalformedURLException e) {
+      logger.warning(String.format("Failed to convert '%s' to URL", spec));
+      return null;
+    }
   }
 
   //
 
   public static final class ModuleLoadingException extends Exception {
-
     ModuleLoadingException(String message) {
       super(message);
-    }
-
-    ModuleLoadingException(Throwable cause, String message) {
-      super(message, cause);
     }
 
     ModuleLoadingException(String format, Object... args) {
       super(String.format(format, args));
     }
-
   }
 
 }

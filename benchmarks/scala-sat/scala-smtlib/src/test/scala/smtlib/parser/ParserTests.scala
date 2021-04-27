@@ -3,33 +3,23 @@ package parser
 
 import lexer._
 import common._
-import Commands._
-import CommandsResponses._
-import Terms._
 import Parser._
+import trees.Tree
+import trees.Commands._
+import trees.Terms._
+import trees.TreesOps
 
 import java.io.StringReader
 
-import org.scalatest.FunSuite
-import org.scalatest.concurrent.Timeouts
+import org.scalatest.concurrent.TimeLimits
+import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.time.SpanSugar._
 
 import scala.language.implicitConversions
 
-class ParserTests extends FunSuite with Timeouts {
+class ParserTests extends AnyFunSuite with TimeLimits {
 
   override def suiteName = "SMT-LIB Parser suite"
-
-  //parse the string for a single command and asserts no more commands
-  private def parseUniqueCmd(str: String): Command = {
-    val reader = new StringReader(str)
-    val lexer = new Lexer(reader)
-    val parser = new Parser(lexer)
-    val cmd = parser.parseCommand
-    assert(lexer.nextToken == null)
-    cmd
-  }
-
 
   def parseUniqueTerm(str: String): Term = {
     val reader = new StringReader(str)
@@ -37,13 +27,25 @@ class ParserTests extends FunSuite with Timeouts {
     val parser = new Parser(lexer)
     val term = parser.parseTerm
     assert(lexer.nextToken == null)
+    assertEachNodeHasPos(term)
     term
+  }
+
+  def parseUniqueSExpr(str: String): SExpr = {
+    val reader = new StringReader(str)
+    val lexer = new Lexer(reader)
+    val parser = new Parser(lexer)
+    val sexpr = parser.parseSExpr
+    assert(lexer.nextToken == null)
+    sexpr
   }
 
   private implicit def strToSym(str: String): SSymbol = SSymbol(str)
   private implicit def strToId(str: String): Identifier = Identifier(SSymbol(str))
   private implicit def strToKeyword(str: String): SKeyword = SKeyword(str)
   private implicit def symToTerm(sym: SSymbol): QualifiedIdentifier = QualifiedIdentifier(sym.name)
+  private implicit def intToNum(n: Int): SNumeral = SNumeral(n)
+  private implicit def IntSeqToIndices(ns: Seq[Int]): Seq[Index] = ns.map(n => SNumeral(n))
 
 
   test("Parsing attributes") {
@@ -95,9 +97,6 @@ class ParserTests extends FunSuite with Timeouts {
     assert(parseSort("((_ FixedSizeList 4) Real)") === 
                      Sort(Identifier("FixedSizeList", Seq(4)), Seq(Sort("Real"))))
     assert(parseSort("(Set (_ Bitvec 3))") === Sort(Identifier("Set"), Seq(Sort(Identifier("Bitvec", Seq(3))))))
-
-
-
   }
 
   test("Parsing Identifiers") {
@@ -113,39 +112,149 @@ class ParserTests extends FunSuite with Timeouts {
     assert(parseId("test") === Identifier("test"))
     assert(parseId("(_ a 1)") === Identifier("a", Seq(1)))
     assert(parseId("(_ a 42 12)") === Identifier("a", Seq(42, 12)))
-
-    //non standard syntax used by Z3 for extensions
-    assert(parseId("(_ a sym)") === ExtendedIdentifier("a", SSymbol("sym")))
-    assert(parseId("(_ map f)") === ExtendedIdentifier("map", SSymbol("f")))
-
+    assert(parseId("(_ a sym)") === Identifier("a", Seq(SSymbol("sym"))))
+    assert(parseId("(_ map f)") === Identifier("map", Seq(SSymbol(("f")))))
   }
 
-  test("Parsing simple Terms") {
+  ignore("parsing magical lambda terms form CVC4") {
+    val t = parseUniqueTerm("(LAMBDA ((_ufmt_1 Int)) (ite (= _ufmt_1 2) 3 5))")
+    println(t)
+  }
 
+  test("comments are ignored after a term") {
+    assert(parseUniqueTerm("42 ;I'm a comment") === SNumeral(42))
+    assert(parseUniqueTerm("42;I'm another comment") === SNumeral(42))
+  }
+
+  test("Literal/constant terms are parsed correctly") {
     assert(parseUniqueTerm("42") === SNumeral(42))
     assert(parseUniqueTerm("42.12") === SDecimal(42.12))
     assert(parseUniqueTerm("#xF") === SHexadecimal(Hexadecimal.fromString("F").get))
     assert(parseUniqueTerm("#b1") === SBinary(List(true)))
+    assert(parseUniqueTerm(" \"Hey there\" ") === SString("Hey there"))
+  }
+
+  test("semicolon as part of string literal does not start a comment") {
+    assert(parseUniqueTerm(" \"Hey ;there\" ") === SString("Hey ;there"))
+  }
+
+  test("Correctly parsing identifier and qualfieid identifiers terms") {
     assert(parseUniqueTerm("abc") === QualifiedIdentifier("abc"))
-    assert(parseUniqueTerm("(as abc A)") === QualifiedIdentifier("abc", Some(Sort("A"))))
+    assert(parseUniqueTerm("eee") === QualifiedIdentifier("eee"))
+
     assert(parseUniqueTerm("(_ abc 42)") === QualifiedIdentifier(Identifier("abc", Seq(42))))
+    assert(parseUniqueTerm("(_ efg 12)") === QualifiedIdentifier(Identifier("efg", Seq(12))))
+  }
+
+  test("Correctly parsing as-identifier terms") {
+    assert(parseUniqueTerm("(as abc A)") === QualifiedIdentifier("abc", Some(Sort("A"))))
+    assert(parseUniqueTerm("(as aaaa AB)") === QualifiedIdentifier("aaaa", Some(Sort("AB"))))
+    assert(parseUniqueTerm("(as aaaa (A B C))") === QualifiedIdentifier("aaaa", Some(Sort("A", Seq(Sort("B"), Sort("C"))))))
+  }
+
+
+  test("Test weird syntax combination of as/_ for identifier") {
     assert(parseUniqueTerm("(as (_ abc 42) A)") === QualifiedIdentifier(Identifier("abc", Seq(42)), Some(Sort("A"))))
+  }
+
+  test("Parsing function applications") {
     assert(parseUniqueTerm("(f a b)") === 
            FunctionApplication(
             QualifiedIdentifier("f"), Seq(QualifiedIdentifier("a"), QualifiedIdentifier("b"))))
+
+    assert(parseUniqueTerm("(f (g a b) c)") === 
+           FunctionApplication(
+            QualifiedIdentifier("f"), Seq(
+              FunctionApplication(
+                QualifiedIdentifier("g"), 
+                Seq(QualifiedIdentifier("a"), QualifiedIdentifier("b"))
+              ),
+              QualifiedIdentifier("c"))))
+  }
+
+  test("Parsing Let bindings terms") {
+    assert(parseUniqueTerm("(let ((a x)) 42)") ===
+           Let(VarBinding("a", QualifiedIdentifier("x")), Seq(), SNumeral(42)))
+
     assert(parseUniqueTerm("(let ((a x)) a)") ===
            Let(VarBinding("a", QualifiedIdentifier("x")), Seq(), QualifiedIdentifier("a")))
 
+    assert(parseUniqueTerm("(let ((a x) (b y)) (f a b))") ===
+           Let(VarBinding("a", QualifiedIdentifier("x")), 
+               Seq(VarBinding("b", QualifiedIdentifier("y"))), 
+               FunctionApplication(QualifiedIdentifier("f"),
+                Seq(QualifiedIdentifier("a"), QualifiedIdentifier("b")))))
+  }
+
+  test("Let bindings with no binding throws unexpected token exception") {
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(let () 42)")
+    }
+  }
+
+  test("Let bindings with missing closing parenthesis in binding throws unexpected token exception") {
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(let ((a 2) a)")
+    }
+  }
+
+  test("Let with binding to complex term works as expected") {
+    assert(parseUniqueTerm("(let ((a (f x y))) 42)") ===
+           Let(
+            VarBinding("a", 
+              FunctionApplication(QualifiedIdentifier("f"),
+                                  Seq(QualifiedIdentifier("x"), 
+                                      QualifiedIdentifier("y")))),
+            Seq(),
+            SNumeral(42)))
+  }
+
+
+  test("Parsing quantified terms") {
     assert(parseUniqueTerm("(forall ((a A)) a)") ===
-           ForAll(SortedVar("a", Sort("A")), Seq(), QualifiedIdentifier("a"))
+           Forall(SortedVar("a", Sort("A")), Seq(), QualifiedIdentifier("a"))
           )
+    assert(parseUniqueTerm("(forall ((a A) (b B) (c C)) (f a c))") ===
+           Forall(SortedVar("a", Sort("A")), 
+                  Seq(SortedVar("b", Sort("B")), SortedVar("c", Sort("C"))),
+                  FunctionApplication(QualifiedIdentifier("f"),
+                    Seq(QualifiedIdentifier("a"), QualifiedIdentifier("c")))))
+
     assert(parseUniqueTerm("(exists ((a A)) a)") ===
            Exists(SortedVar("a", Sort("A")), Seq(), QualifiedIdentifier("a"))
           )
+    assert(parseUniqueTerm("(exists ((a A) (b B) (c C)) (f a c))") ===
+           Exists(SortedVar("a", Sort("A")), 
+                  Seq(SortedVar("b", Sort("B")), SortedVar("c", Sort("C"))),
+                  FunctionApplication(QualifiedIdentifier("f"),
+                    Seq(QualifiedIdentifier("a"), QualifiedIdentifier("c")))))
+  }
+
+  test("quantified terms with no binding throws unexpected token exception") {
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(forall () true)")
+    }
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(exists () true)")
+    }
+  }
+
+  test("Parsing annotated term") {
     assert(parseUniqueTerm("(! a :note abcd)") ===
            AnnotatedTerm(QualifiedIdentifier("a"), Attribute(SKeyword("note"), Some(SSymbol("abcd"))), Seq())
           )
+    assert(parseUniqueTerm("(! (f a) :note abcd)") ===
+           AnnotatedTerm(
+            FunctionApplication(QualifiedIdentifier("f"), Seq(QualifiedIdentifier("a"))), 
+            Attribute(SKeyword("note"), Some(SSymbol("abcd"))), Seq())
+          )
 
+  }
+
+  test("Annotated terms with zero annotation throws unexpected token exception") {
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(! a)")
+    }
   }
 
   test("Parsing complicated terms") {
@@ -174,129 +283,82 @@ class ParserTests extends FunSuite with Timeouts {
     )
   }
 
-  test("Parsing single commands") {
-
-    assert(parseUniqueCmd("(set-logic QF_UF)") === SetLogic(QF_UF))
-
-    assert(parseUniqueCmd("(declare-sort A 0)") === DeclareSort("A", 0))
-    assert(parseUniqueCmd("(define-sort A (B C) (Array B C))") ===
-                          DefineSort("A", Seq("B", "C"), 
-                                            Sort(Identifier("Array"), Seq(Sort("B"), Sort("C")))
-                                    ))
-    assert(parseUniqueCmd("(declare-fun xyz (A B) C)") ===
-           DeclareFun("xyz", Seq(Sort("A"), Sort("B")), Sort("C")))
-    assert(parseUniqueCmd("(define-fun f ((a A)) B a)") ===
-           DefineFun("f", Seq(SortedVar("a", Sort("A"))), Sort("B"), QualifiedIdentifier("a")))
-
-    assert(parseUniqueCmd("(push 1)") === Push(1))
-    assert(parseUniqueCmd("(push 4)") === Push(4))
-    assert(parseUniqueCmd("(pop 1)") === Pop(1))
-    assert(parseUniqueCmd("(pop 2)") === Pop(2))
-    assert(parseUniqueCmd("(assert true)") === Assert(QualifiedIdentifier("true")))
-    assert(parseUniqueCmd("(check-sat)") === CheckSat())
-
-    assert(parseUniqueCmd("(get-assertions)") === GetAssertions())
-    assert(parseUniqueCmd("(get-proof)") === GetProof())
-    assert(parseUniqueCmd("(get-unsat-core)") === GetUnsatCore())
-    assert(parseUniqueCmd("(get-value (x y z))") === GetValue(SSymbol("x"), Seq(SSymbol("y"), SSymbol("z"))))
-    assert(parseUniqueCmd("(get-assignment)") === GetAssignment())
-
-    assert(parseUniqueCmd("(get-option :keyword)") === GetOption("keyword"))
-    assert(parseUniqueCmd("(get-info :authors)") === GetInfo(AuthorsInfoFlag))
-
-    assert(parseUniqueCmd("(exit)") === Exit())
-
-    assert(parseUniqueCmd(
-      "(declare-datatypes () ( (A (A1 (a1 Int) (a2 A)) (A2)) ))") ===
-      DeclareDatatypes(Seq(
-        (SSymbol("A"), Seq(Constructor("A1", 
-                            Seq((SSymbol("a1"), Sort("Int")), (SSymbol("a2"), Sort("A")))),
-                           Constructor("A2", Seq())
-                          ))
-      ))
-    )
-                        
-
+  test("Parsing FunctionApplication without closing parentheses should throw UnexpectedEOFException") {
+    intercept[UnexpectedEOFException] {
+      parseUniqueTerm("(f a b")
+    }
+    intercept[UnexpectedEOFException] {
+      parseUniqueTerm("(f a (g b)") //more subtle
+    }
   }
 
-  test("Parsing set-option command") {
-    assert(parseUniqueCmd("(set-option :print-success true)") === SetOption(PrintSuccess(true)))
-    assert(parseUniqueCmd("(set-option :print-success false)") === SetOption(PrintSuccess(false)))
-    assert(parseUniqueCmd("(set-option :expand-definitions true)") === SetOption(ExpandDefinitions(true)))
-    assert(parseUniqueCmd("(set-option :expand-definitions false)") === SetOption(ExpandDefinitions(false)))
-    assert(parseUniqueCmd("(set-option :interactive-mode true)") === SetOption(InteractiveMode(true)))
-    assert(parseUniqueCmd("(set-option :interactive-mode false)") === SetOption(InteractiveMode(false)))
-    assert(parseUniqueCmd("""(set-option :regular-output-channel "test")""") === 
-                          SetOption(RegularOutputChannel("test")))
-    assert(parseUniqueCmd("""(set-option :diagnostic-output-channel "toto")""") === 
-                          SetOption(DiagnosticOutputChannel("toto")))
-    assert(parseUniqueCmd("(set-option :random-seed 42)") === SetOption(RandomSeed(42)))
-    assert(parseUniqueCmd("(set-option :verbosity 4)") === SetOption(Verbosity(4)))
-
+  test("Parsing FunctionApplication without argument should throw UnexpectedTokenException") {
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(f)")
+    }
+    intercept[UnexpectedTokenException] {
+      parseUniqueTerm("(abcd)")
+    }
   }
 
-  test("Parsing set-info command") {
-    assert(parseUniqueCmd("""(set-info :author "Reg")""") === SetInfo(Attribute(SKeyword("author"), Some(SString("Reg")))))
-    assert(parseUniqueCmd("""(set-info :number 42)""") === SetInfo(Attribute(SKeyword("number"), Some(SNumeral(42)))))
-    assert(parseUniqueCmd("""(set-info :test)""") === SetInfo(Attribute(SKeyword("test"), None)))
+  test("Parsing terms with eof in middle should throw UnexpectedEOFException") {
+    intercept[UnexpectedEOFException] {
+      parseUniqueTerm("")
+    }
+    intercept[UnexpectedEOFException] {
+      parseUniqueTerm("(")
+    }
+    intercept[UnexpectedEOFException] {
+      parseUniqueTerm("(let")
+    }
+    intercept[UnexpectedEOFException] {
+      parseUniqueTerm("(let ((x t))")
+    }
   }
 
-  test("basic responses") {
-    assert(Parser.fromString("success").parseGenResponse === Success)
-    assert(Parser.fromString("unsupported").parseGenResponse === Unsupported)
-    assert(Parser.fromString("(error \"this is an error\")").parseGenResponse === Error("this is an error"))
-
-    assert(Parser.fromString("sat").parseCheckSatResponse === CheckSatResponse(SatStatus))
-    assert(Parser.fromString("unsat").parseCheckSatResponse === CheckSatResponse(UnsatStatus))
-    assert(Parser.fromString("unknown").parseCheckSatResponse === CheckSatResponse(UnknownStatus))
-
-    assert(Parser.fromString("((a 1) (b 42))").parseGetValueResponse === GetValueResponse(Seq(
-      (QualifiedIdentifier(Identifier("a")), SNumeral(1)), 
-      (QualifiedIdentifier(Identifier("b")), SNumeral(42))
-    )))
-
-    assert(Parser.fromString("(model (define-fun z () Int 0))").parseGetModelResponse === 
-      GetModelResponse(List(
-        DefineFun("z", Seq(), Sort("Int"), SNumeral(0))))
-    )
-
-    assert(Parser.fromString(
-"""(model 
-  (define-fun z () Int 0)
-  (declare-fun a () A)
-  (forall ((x A)) x)
-)""").parseGetModelResponse === 
-      GetModelResponse(List(
-        DefineFun("z", Seq(), Sort("Int"), SNumeral(0)),
-        DeclareFun("a", Seq(), Sort("A")),
-        ForAll(SortedVar("x", Sort("A")), Seq(), QualifiedIdentifier("x"))
-      ))
-    )
+  test("Parsing s-expressions") {
+    assert(parseUniqueSExpr("42") === SNumeral(42))
+    assert(parseUniqueSExpr("12.38") === SDecimal(12.38))
+    assert(parseUniqueSExpr("#xa1f") === SHexadecimal(Hexadecimal.fromString("a1f").get))
+    assert(parseUniqueSExpr("#b1010") === SBinary(List(true, false, true, false)))
+    assert(parseUniqueSExpr(""" "hey there" """) === SString("hey there"))
+    assert(parseUniqueSExpr("abcd") === SSymbol("abcd"))
+    assert(parseUniqueSExpr(":abcd") === SKeyword("abcd"))
+    assert(parseUniqueSExpr("(abc def 42)") === 
+      SList(SSymbol("abc"), SSymbol("def"), SNumeral(42)))
   }
 
-  test("Unknown command") {
-    val reader1 = new StringReader("(alpha beta)")
-    val lexer1 = new Lexer(reader1)
-    val parser1 = new Parser(lexer1)
-    intercept[UnknownCommandException] {
-      parser1.parseCommand
+  test("s-expression list can be empty") {
+    assert(parseUniqueSExpr("()") === SList())
+  }
+
+  test("s-expression can parse reserved words as symbols") {
+    assert(parseUniqueSExpr("(set-logic QF_BV)") === SList(SSymbol("set-logic"), SSymbol("QF_BV")))
+    assert(parseUniqueSExpr("(declare-const)") === SList(SSymbol("declare-const")))
+    assert(parseUniqueSExpr("check-sat") === SSymbol("check-sat"))
+  }
+
+  test("eof in middle of s-list should throw UnexpectedEOFException") {
+    intercept[UnexpectedEOFException] {
+      parseUniqueSExpr("")
+    }
+    intercept[UnexpectedEOFException] {
+      parseUniqueSExpr("(a b")
     }
   }
 
   test("simple benchmark") {
-    val reader1 = new StringReader("""
+    val benchmark = """
       (set-logic QF_UF)
       (declare-fun f (Int) Int)
       (declare-fun a () Int)
       (assert (= (f a) a))
       (check-sat)
-    """)
-    val lexer1 = new Lexer(reader1)
-    val parser1 = new Parser(lexer1)
-    assert(parser1.parseCommand === SetLogic(QF_UF))
-    assert(parser1.parseCommand === DeclareFun("f", Seq(Sort("Int")), Sort("Int")))
-    assert(parser1.parseCommand === DeclareFun("a", Seq(), Sort("Int")))
-    assert(parser1.parseCommand === 
+    """
+    val cmd1 = SetLogic(QF_UF())
+    val cmd2 = DeclareFun("f", Seq(Sort("Int")), Sort("Int"))
+    val cmd3 = DeclareFun("a", Seq(), Sort("Int"))
+    val cmd4 =
            Assert(FunctionApplication(
                     QualifiedIdentifier("="),
                     Seq(
@@ -307,9 +369,21 @@ class ParserTests extends FunSuite with Timeouts {
                       QualifiedIdentifier("a")
                     )
                   ))
-           )
-    assert(parser1.parseCommand === CheckSat())
+    val cmd5 = CheckSat()
 
+    val reader1 = new StringReader(benchmark)
+    val lexer1 = new Lexer(reader1)
+    val parser1 = new Parser(lexer1)
+    assert(parser1.parseCommand === cmd1)
+    assert(parser1.parseCommand === cmd2)
+    assert(parser1.parseCommand === cmd3)
+    assert(parser1.parseCommand === cmd4)
+    assert(parser1.parseCommand === cmd5)
+
+    val reader2 = new StringReader(benchmark)
+    val lexer2 = new Lexer(reader2)
+    val parser2 = new Parser(lexer2)
+    assert(parser2.parseScript === Script(List(cmd1, cmd2, cmd3, cmd4, cmd5)))
   }
 
   test("interactive parser") {
@@ -318,7 +392,7 @@ class ParserTests extends FunSuite with Timeouts {
     val parser = failAfter(3 seconds) { new Parser(lexer) }
 
     pis.write("(set-logic QF_LRA)")
-    assert(parser.parseCommand === SetLogic(QF_LRA))
+    assert(parser.parseCommand === SetLogic(QF_LRA()))
 
     pis.write("(assert (< 1 3))")
     assert(parser.parseCommand === 
@@ -330,6 +404,44 @@ class ParserTests extends FunSuite with Timeouts {
              )
            )))
 
+  }
+
+  test("identifiers object helpers work") {
+    val abc = SSymbol("abc")
+    val ext = SSymbol("def")
+
+    val simpleId = SimpleIdentifier(abc)
+    assert(simpleId === Identifier(abc))
+    simpleId match {
+      case SimpleIdentifier(sym) => assert(sym === abc)
+      case _ => assert(false)
+    }
+    simpleId match {
+      case ExtendedIdentifier(sym, ext) => assert(false)
+      case SimpleIdentifier(sym) => assert(sym === abc)
+      case _ => assert(false)
+    }
+
+    val extId = ExtendedIdentifier(abc, ext)
+    assert(extId === Identifier(abc, Seq(ext)))
+    extId match {
+      case ExtendedIdentifier(a, b) => 
+        assert(a === abc)
+        assert(b === ext)
+      case _ => ???
+    }
+    extId match {
+      case SimpleIdentifier(sym) => assert(false)
+      case ExtendedIdentifier(a, b) => 
+        assert(a === abc)
+        assert(b === ext)
+      case _ => ???
+    }
+
+  }
+
+  private def assertEachNodeHasPos(t: Tree): Unit = {
+    TreesOps.foreach((t: Tree) => assert(t.hasPos, "node [" + t + "] does not have a position"))(t)
   }
 
 }

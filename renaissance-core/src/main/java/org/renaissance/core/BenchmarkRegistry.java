@@ -1,30 +1,41 @@
 package org.renaissance.core;
 
-import org.renaissance.Benchmark;
-
-import java.io.*;
-import java.lang.reflect.Constructor;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.stream.Collectors.*;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * A registry of benchmark metadata. By default, this registry is initialized
  * using a {@link Properties} file so that it does not need to have access to
- * benchmark classes. The benchmarks and groups are kept sorted by name, both
- * globally and within groups.
+ * benchmark classes. The benchmarks and primary groups are kept sorted.
  */
 public final class BenchmarkRegistry {
 
+  private static final String BENCHMARK_PROPERTIES = "benchmarks.properties";
+
   private final Map<String, BenchmarkInfo> benchmarksByName;
 
-  private final Map<String, List<BenchmarkInfo>> benchmarksByGroup;
-
-  private static final String BENCHMARK_PROPERTIES = "benchmark-details.properties";
+  private final Map<String, List<BenchmarkInfo>> benchmarksByPrimaryGroup;
 
 
   private BenchmarkRegistry(final Properties properties) {
@@ -38,10 +49,10 @@ public final class BenchmarkRegistry {
         TreeMap::new
       ));
 
-    // Keep groups ordered by name (order within groups implied).
-    this.benchmarksByGroup = benchmarksByName.values().stream()
+    // Keep primary groups ordered by name (order within groups implied).
+    this.benchmarksByPrimaryGroup = benchmarksByName.values().stream()
       .collect(groupingBy(
-        b -> b.group,
+        b -> b.groups()[0],
         TreeMap::new,
         toList()
       ));
@@ -79,7 +90,7 @@ public final class BenchmarkRegistry {
 
   private BenchmarkInfo createBenchmarkInfo(final Properties properties, String name) {
     BiFunction<String, String, String> getter = (key, defaultValue) ->
-      properties.getProperty("benchmark." + name + "." + key, defaultValue);
+      properties.getProperty("benchmark." + name + "." + key, defaultValue).trim();
 
     Function<String, String> mapper = value -> {
       if (value.startsWith("$")) {
@@ -95,15 +106,25 @@ public final class BenchmarkRegistry {
     };
 
     return new BenchmarkInfo(
+      getter.apply("module", ""),
       getter.apply("class", ""),
       getter.apply("name", ""),
-      getter.apply("group", ""),
+      getter.apply("groups", "").split(","),
       getter.apply("summary", ""),
       getter.apply("description", ""),
-      Integer.valueOf(getter.apply("repetitions", "20")),
+      Integer.parseInt(getter.apply("repetitions", "20")),
       getter.apply("licenses", "").split(","),
       getter.apply("distro", ""),
+      parseJvmVersion(getter.apply("jvm_version_min", "")),
+      parseJvmVersion(getter.apply("jvm_version_max", "")),
       getConfigurations(name, mapper, properties)
+    );
+  }
+
+
+  private Optional<Version> parseJvmVersion(String stringVersion) {
+    return Optional.ofNullable(
+      !stringVersion.isEmpty() ? Version.parse(stringVersion) : null
     );
   }
 
@@ -134,13 +155,19 @@ public final class BenchmarkRegistry {
     return benchmarksByName.get(name);
   }
 
+
   public List<BenchmarkInfo> getAll() {
     return new ArrayList<>(benchmarksByName.values());
   }
 
 
+  public List<BenchmarkInfo> getMatching(Predicate<BenchmarkInfo> matcher) {
+    return benchmarksByName.values().stream().filter(matcher).collect(toList());
+  }
+
+
   public List<BenchmarkInfo> getGroup(final String groupName) {
-    return Collections.unmodifiableList(benchmarksByGroup.get(groupName));
+    return unmodifiableList(benchmarksByPrimaryGroup.get(groupName));
   }
 
 
@@ -150,36 +177,18 @@ public final class BenchmarkRegistry {
 
 
   public boolean groupExists(final String groupName) {
-    return benchmarksByGroup.containsKey(groupName);
+    return benchmarksByPrimaryGroup.containsKey(groupName);
   }
 
 
   public Map<String, List<BenchmarkInfo>> byGroup() {
-    return Collections.unmodifiableMap(benchmarksByGroup);
+    return unmodifiableMap(benchmarksByPrimaryGroup);
   }
 
 
-  public static Benchmark loadBenchmark(BenchmarkInfo benchInfo) {
-    try {
-      final ClassLoader loader = ModuleLoader.getForGroup(benchInfo.group);
-      final Class<?> loadedClass = loader.loadClass(benchInfo.className);
-      final Class<? extends Benchmark> benchClass = loadedClass.asSubclass(Benchmark.class);
-      final Constructor<? extends Benchmark> benchCtor = benchClass.getDeclaredConstructor();
-
-      // Make the current thread as independent of the harness as possible.
-      Thread.currentThread().setContextClassLoader(loader);
-      return benchCtor.newInstance();
-
-    } catch (Exception e) {
-      throw new RuntimeException("failed to load benchmark " + benchInfo.name, e);
-    }
-  }
-
-
-  public static void main(String... args) {
-    String baseName = "benchmark-details.properties";
+  static void main(String... args) {
     File prefix = new File(new File("target"), "classes");
-    File detailsFile = new File(prefix, baseName);
+    File detailsFile = new File(prefix, BENCHMARK_PROPERTIES);
 
     try {
       System.out.println("loading benchmarks from "+ detailsFile);

@@ -16,10 +16,11 @@ import org.renaissance.Plugin.MeasurementResultListener
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 
-/** Provides common functionality for JSON and CSV result writers.
+/**
+ * Provides common functionality for JSON and CSV result writers.
  *
  * Registers a shutdown hook to avoid losing unsaved results in case
  * the JVM is forcefully terminated.
@@ -33,6 +34,7 @@ private abstract class ResultWriter
   with BenchmarkFailureListener {
 
   private final class FlushOnShutdownThread(val results: ResultWriter) extends Thread {
+
     override def run(): Unit = {
       results.storeResults(false)
     }
@@ -48,17 +50,18 @@ private abstract class ResultWriter
 
   private final val failedBenchmarkNames = mutable.Set[String]()
 
-  private final def storeResults(normalTermination: Boolean): Unit = this.synchronized {
-    // This method is synchronized to ensure we do not overwrite
-    // the results when user sends Ctrl-C when store() is already being
-    // called (i.e. shutdown hook is still registered but is *almost*
-    // no longer needed).
-    if (normalTermination) {
-      Runtime.getRuntime.removeShutdownHook(storeHook)
-    }
+  private final def storeResults(normalTermination: Boolean): Unit =
+    this.synchronized {
+      // This method is synchronized to ensure we do not overwrite
+      // the results when user sends Ctrl-C when store() is already being
+      // called (i.e. shutdown hook is still registered but is *almost*
+      // no longer needed).
+      if (normalTermination) {
+        Runtime.getRuntime.removeShutdownHook(storeHook)
+      }
 
-    store(normalTermination)
-  }
+      store(normalTermination)
+    }
 
   final override def beforeHarnessShutdown(): Unit = {
     storeResults(true)
@@ -167,7 +170,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
     os match {
       case unixOs: UnixOperatingSystemMXBean =>
-        result += (
+        result ++= Seq(
           "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
           "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
           "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,
@@ -284,19 +287,17 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
 
   private def getCompilationInfo = {
     // Compilation MX Bean is not available in interpreted mode.
-    Option(management.ManagementFactory.getCompilationMXBean).map(
-      info => {
-        val result = mutable.Buffer(
-          "name" -> info.getName.toJson
-        )
+    Option(management.ManagementFactory.getCompilationMXBean).map(info => {
+      val result = mutable.Buffer(
+        "name" -> info.getName.toJson
+      )
 
-        if (info.isCompilationTimeMonitoringSupported) {
-          result += ("compilation_time_ms" -> info.getTotalCompilationTime.toJson)
-        }
-
-        result.toMap
+      if (info.isCompilationTimeMonitoringSupported) {
+        result += ("compilation_time_ms" -> info.getTotalCompilationTime.toJson)
       }
-    )
+
+      result.toMap
+    })
   }
 
   private def getClassLoadingInfo = {
@@ -363,12 +364,11 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
     val dataTree = mutable.Map[String, JsValue]()
     for ((benchmark, benchFailed, metricsByName, repetitionCount) <- getBenchmarkResults) {
       // For each repetition, collect (name -> value) tuples for metrics into a map.
-      val repetitions = (0 until repetitionCount).map(
-        i =>
-          metricNames
-            .map(name => metricsByName.get(name).map(values => (name -> values(i).toJson)))
-            .flatten
-            .toMap
+      val repetitions = (0 until repetitionCount).map(i =>
+        metricNames
+          .map(name => metricsByName.get(name).map(values => (name -> values(i).toJson)))
+          .flatten
+          .toMap
       )
 
       val benchmarkTree = Map(

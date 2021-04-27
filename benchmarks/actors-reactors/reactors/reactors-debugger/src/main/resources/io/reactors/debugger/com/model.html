@@ -1,0 +1,309 @@
+@@library(io/reactors/debugger/lib/jquery/jquery-1.12.4.min.js)
+@@library(io/reactors/debugger/js/event-stream.js)
+@@component(io/reactors/debugger/com/config.html)
+
+
+<template id="x-model">
+  <div class="x-model-root">
+    <!-- model -->
+  </div>
+</template>
+
+
+<script>
+  "use strict";
+
+  class Events {
+    constructor() {
+      this.reactorStarted = new EventStream();
+      this.reactorSeen = new EventStream();
+      this.reactorDied = new EventStream();
+      this.reactorTerminated = new EventStream();
+      this.sends = new EventStream();
+      this.stateReset = new EventStream();
+      this.stateUpdateDone = new EventStream();
+    }
+  }
+
+  var Model = Vue.extend({
+    template: "#x-model",
+    props: ["ctx", "config", "api"],
+    data: function() {
+      return {
+        heartbeatRate: this.config.model.heartbeatRate,
+        running: true,
+        suid: "",
+        state: {
+          reactors: {},
+          channels: {},
+          shellPendingOutput: {},
+          sends: {}
+        },
+        events: new Events(),
+        history: [],
+        timestamp: 0
+      };
+    },
+    attached: function() {
+      var update = () => {
+        if (!this.running) return;
+
+        this.api.state(this.suid, this.timestamp, this.repluids()).done((data) => {
+          // Update session uid.
+          this.ensure(data.suid, "Session uid not found in state update.");
+          this.suid = data.suid;
+
+          // Update timestamp.
+          this.ensure(data.ts, "Timestamp not found in state update.");
+          this.timestamp = data.ts;
+
+          // Update model state.
+          if (data.state) {
+            this.events.stateReset.post();
+
+            // Update reactor list.
+            for (var uid in data.state.reactors) {
+              if (data.state.reactors.hasOwnProperty(uid)) {
+                var r = data.state.reactors[uid];
+                this.state.reactors[r.uid] = r;
+                this.events.reactorSeen.post(r);
+              }
+            }
+
+            // Update channel list.
+            for (var uid in data.state.channels) {
+              if (data.state.channels.hasOwnProperty(uid)) {
+                this.state.channels[uid] = data.state.channels[uid];
+              }
+            }
+
+            // Update send counts.
+            this.updateSends(data.state.sends);
+          } else {
+            this.ensure(data.deltas, "Neither state nor deltas found in state update.");
+            for (var i = 0; i < data.deltas.length; i++) {
+              var delta = data.deltas[i];
+              this.history.push(this.enrichDelta(delta));
+              this.apply(delta);
+            }
+            if (this.history.length > this.config.model.historySize) {
+              var len = this.history.length - this.config.model.historySize;
+              this.history.splice(0, len);
+            }
+          }
+
+          // Update pending output.
+          var pendingOutput = data["pending-output"];
+          if (pendingOutput) {
+            for (var ruid in pendingOutput) if (pendingOutput.hasOwnProperty(ruid)) {
+              var buffer = this.state.shellPendingOutput[ruid];
+              var output = pendingOutput[ruid];
+              if (buffer && output ) buffer.push(output);
+            }
+          }
+
+          this.events.stateUpdateDone.post();
+
+          // Reset heartbeat and repeat.
+          this.heartbeatRate = Math.max(
+            this.heartbeatRate / 6, this.config.model.heartbeatRate);
+          setTimeout(update, this.heartbeatRate * 1000);
+        }).fail((err) => {
+          // Slow down heartbeat and repeat.
+          this.heartbeatRate = Math.min(
+            this.heartbeatRate * 3 / 2, this.config.model.maxHeartbeatRate);
+          setTimeout(update, this.heartbeatRate * 1000);
+        });
+      };
+
+      update();
+    },
+    methods: {
+      stop: function() {
+        this.running = false;
+      },
+      ensure: function(cond, msg) {
+        if (typeof cond == "undefined") this.$dispatch("critical-error", msg);
+      },
+      apply: function(delta) {
+        switch (delta[0]) {
+          case "start":
+            var reactor = {
+              uid: delta[1],
+              name: delta[2]
+            };
+            this.state.reactors[delta[1]] = reactor
+            this.events.reactorStarted.post(reactor);
+            break;
+          case "die":
+            break;
+          case "term":
+            var reactor = this.state.reactors[delta[1]];
+            delete this.state.reactors[delta[1]];
+            this.events.reactorTerminated.post(reactor);
+            break;
+          case "open":
+            this.state.channels[delta[1]] = {
+              uid: delta[1],
+              name: delta[2],
+              reactor: delta[3]
+            };
+            break;
+          case "seal":
+            delete this.state.channels[delta[1]];
+            break;
+          case "sent":
+            var sends = delta[1];
+            this.updateSends(sends);
+            this.events.sends.post(sends);
+            break;
+        }
+      },
+      updateSends: function(sends) {
+        for (var i = 0; i < sends.length; i++) {
+          var send = sends[i];
+          var key = send[0] + "-" + send[1];
+          var currentCount = Dict.ensure(this.state.sends, key, 0);
+          this.state.sends[key] = currentCount + send[2];
+        }
+      },
+      enrichDelta: function(delta) {
+        var enriched = {
+          tpe: delta[0],
+          event: delta,
+          time: Date.now()
+        }
+        switch (delta[0]) {
+          case "start":
+            enriched.reactorId = delta[1];
+            enriched.reactorName = delta[2];
+            break;
+          case "die":
+            enriched.reactorId = delta[1];
+            enriched.reactorName = this.state.reactors[delta[1]].name;
+            break;
+          case "term":
+            enriched.reactorId = delta[1];
+            enriched.reactorName = this.state.reactors[delta[1]].name;
+            break;
+          case "open":
+            enriched.channelId = delta[1];
+            enriched.channelName = delta[2];
+            enriched.reactorId = delta[3];
+            enriched.reactorName = this.state.reactors[delta[3]].name;
+            break;
+          case "seal":
+            enriched.channelId = delta[1];
+            enriched.channelName = this.state.channels[delta[1]].name;
+            enriched.reactorId = this.state.channels[delta[1]].reactor;
+            enriched.reactorName = this.state.reactors[enriched.reactorId].name;
+            break;
+          case "sent":
+            enriched.sends = delta[1];
+            break;
+        }
+        var link = this.linkFor(enriched);
+        var time = this.timeFor(enriched);
+        var msg = this.messageFor(enriched);
+        enriched["Event"] = link
+        enriched["Time"] = time
+        enriched["Message"] = msg
+        return enriched;
+      },
+      timeFor: function(delta) {
+        var unixts = delta.time;
+        return new Date(unixts);
+      },
+      linkFor: function(delta) {
+        switch (delta.tpe) {
+          case "start":
+            var id = delta.reactorId;
+            return "<span class='x-model-event-created x-model-event' " +
+              "  onClick='eventBus.emit(\"moveToReactor\", " + id + ")'>" +
+              "<i class='icon ion-nuclear'></i> STARTED" +
+              "</span>";
+          case "term":
+            var id = delta.reactorId;
+            var c = this.ctx.getReactorCoordinates(id);
+            return "<span class='x-model-event-terminated x-model-event' " +
+              "  onClick='eventBus.emit(\"moveTo\", " + c.x + ", " + c.y + ")'>" +
+              "<i class='icon ion-nuclear'></i> TERMINATED" +
+              "</span>";
+          case "sent":
+            return "<span class='x-model-event-sent x-model-event'>" +
+              "<i class='icon ion-paper-airplane'></i> EVENTS SENT" +
+              "</span>"
+          default:
+            return "";
+        }
+      },
+      messageFor: function(delta) {
+        switch (delta.tpe) {
+          case "start":
+            return "Reactor '" + delta.reactorName +
+              "' (UID: " + delta.reactorId + ") created.";
+          case "die":
+            return "Reactor " + delta.reactorName +
+              "' (UID: " + delta.reactorId + ") died due to an error.";
+          case "term":
+            return "Reactor " + delta.reactorName +
+              "' (UID: " + delta.reactorId + ") terminated.";
+          case "open":
+            return "Channel '" + delta.channelName +
+              "' (UID: " + delta.channelId + ") opened.";
+          case "seal":
+            return "Channel '" + delta.channelName +
+              "' (UID: " + delta.channelId + ") sealed.";
+          case "sent":
+            var count = 0;
+            for (var i = 0; i < delta.sends.length; i++) {
+              var send = delta.sends[i];
+              count += send[2];
+            }
+            var extraInfo = "";
+            if (delta.sends.length == 1) {
+              var send = delta.sends[0];
+              var suid = send[0];
+              var tuid = send[1];
+              var sname = this.state.reactors[suid].name;
+              var tname = this.state.reactors[tuid].name;
+              extraInfo = " (from '" + sname + "' to '" + tname + "')";
+            } else {
+              extraInfo = " (from " + delta.sends.length + " different sources)";
+            }
+            return "Total of " + count + " event(s) sent" + extraInfo + ".";
+          default:
+            return "Unknown event " + delta.tpe + ".";
+        }
+      },
+      repluids: function() {
+        return Object.keys(this.state.shellPendingOutput);
+      }
+    }
+  });
+
+  Vue.component("x-model", Model);
+</script>
+
+
+<style type="text/css">
+  .x-model-event {
+    cursor: pointer;
+  }
+
+  .x-model-event:hover {
+    text-decoration: underline;
+  }
+
+  .x-model-event-created {
+    color: var(--log-event-created);
+  }
+
+  .x-model-event-terminated {
+    color: var(--log-event-terminated);
+  }
+
+  .x-model-event-sent {
+    color: var(--log-event-sent);
+  }
+</style>

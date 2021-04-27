@@ -73,15 +73,19 @@ Usage: renaissance [options] [benchmark-specification]
   --plugin <class-path>!<class-name>
                            Load external plugin. Can appear multiple times.
   --with-arg <value>       Adds an argument to the plugin or policy specified last. Can appear multiple times.
-  --csv <file-path>        Output results to CSV file.
-  --json <file-path>       Output results to JSON file.
-  -c, --configuration <name>
-                           Run benchmarks with given named configuration.
-  --no-forced-gc           Do not force garbage collection before each measured operation.
-  --list                   Print list of benchmarks with their description.
-  --raw-list               Print list of benchmarks (each benchmark name on separate line).
-  --group-list             Print list of benchmark groups (each group name on separate line).
-  benchmark-specification  Comma-separated list of benchmarks (or groups) that must be executed (or all).
+  --csv <csv-file>         Output results as CSV to <csv-file>.
+  --json <json-file>       Output results as JSON to <json-file>.
+  -c, --configuration <conf-name>
+                           Use benchmark parameters from configuration <conf-name>.
+  --scratch-base <dir>     Create scratch directories in <dir>. Defaults to current directory.
+  --keep-scratch           Keep the scratch directories after VM exit. Defaults to deleting scratch directories.
+  --no-forced-gc           Do not force garbage collection before each measured operation. Defaults to forced GC.
+  --no-jvm-check           Do not check benchmark JVM version requirements (for execution or raw-list).
+  --list                   Print the names and descriptions of all benchmarks.
+  --raw-list               Print the names of benchmarks compatible with this JVM (one per line).
+  --group-list             Print the names of all benchmark groups (one per line).
+  benchmark-specification  List of benchmarks (or groups) to execute (or 'all').
+
 ```
 
 
@@ -314,41 +318,36 @@ while the MIT distribution includes only those benchmarks that themselves
 have less restrictive licenses.
 
 Depending on your needs, you can use either of the two distributions.
-The following table contains the licensing information of all the benchmarks:
+The following table contains the licensing information (and JVM version
+requirements) for all the benchmarks:
 
-| Benchmark     | Licenses      | Renaissance Distro |
-| ------------- | ------------- |:------------------:|
-| akka-uct | MIT | MIT |
-| als | APACHE2 | MIT |
-| chi-square | APACHE2 | MIT |
-| db-shootout | APACHE2 | MIT |
-| dec-tree | APACHE2 | MIT |
-| dotty | BSD3 | MIT |
-| dummy-empty | MIT | MIT |
-| dummy-failing | MIT | MIT |
-| dummy-param | MIT | MIT |
-| dummy-setup-failing | MIT | MIT |
-| dummy-teardown-failing | MIT | MIT |
-| dummy-validation-failing | MIT | MIT |
-| finagle-chirper | APACHE2 | MIT |
-| finagle-http | APACHE2 | MIT |
-| fj-kmeans | APACHE2 | MIT |
-| future-genetic | APACHE2 | MIT |
-| gauss-mix | APACHE2 | MIT |
-| log-regression | APACHE2 | MIT |
-| mnemonics | MIT | MIT |
-| movie-lens | APACHE2 | MIT |
-| naive-bayes | APACHE2 | MIT |
-| neo4j-analytics | GPL3 | GPL3 |
-| page-rank | APACHE2 | MIT |
-| par-mnemonics | MIT | MIT |
-| philosophers | BSD3 | MIT |
-| reactors | MIT | MIT |
-| rx-scrabble | GPL2 | GPL3 |
-| scala-doku | MIT | MIT |
-| scala-kmeans | MIT | MIT |
-| scala-stm-bench7 | BSD3, GPL2 | GPL3 |
-| scrabble | GPL2 | GPL3 |
+| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
+| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
+| akka-uct | MIT | MIT | 1.8 |  |
+| als | APACHE2 | MIT | 1.8 |  |
+| chi-square | APACHE2 | MIT | 1.8 |  |
+| db-shootout | APACHE2 | MIT | 1.8 |  |
+| dec-tree | APACHE2 | MIT | 1.8 |  |
+| dotty | BSD3 | MIT | 1.8 |  |
+| finagle-chirper | APACHE2 | MIT | 1.8 |  |
+| finagle-http | APACHE2 | MIT | 1.8 |  |
+| fj-kmeans | APACHE2 | MIT | 1.8 |  |
+| future-genetic | APACHE2 | MIT | 1.8 |  |
+| gauss-mix | APACHE2 | MIT | 1.8 |  |
+| log-regression | APACHE2 | MIT | 1.8 |  |
+| mnemonics | MIT | MIT | 1.8 |  |
+| movie-lens | APACHE2 | MIT | 1.8 |  |
+| naive-bayes | APACHE2 | MIT | 1.8 |  |
+| neo4j-analytics | GPL3 | GPL3 | 11 | 15 |
+| page-rank | APACHE2 | MIT | 1.8 |  |
+| par-mnemonics | MIT | MIT | 1.8 |  |
+| philosophers | BSD3 | MIT | 1.8 |  |
+| reactors | MIT | MIT | 1.8 |  |
+| rx-scrabble | GPL2 | GPL3 | 1.8 |  |
+| scala-doku | MIT | MIT | 1.8 |  |
+| scala-kmeans | MIT | MIT | 1.8 |  |
+| scala-stm-bench7 | BSD3, GPL2 | GPL3 | 1.8 |  |
+| scrabble | GPL2 | GPL3 | 1.8 |  |
 
 
 ### Design overview

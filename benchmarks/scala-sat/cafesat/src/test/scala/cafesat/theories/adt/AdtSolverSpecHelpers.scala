@@ -2,11 +2,12 @@ package cafesat
 package theories.adt
 
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.reflect.ClassTag
 
 trait AdtSolverSpecHelpers {
-  this: FlatSpec =>
+  this: AnyFlatSpec =>
 
   import Types._
 

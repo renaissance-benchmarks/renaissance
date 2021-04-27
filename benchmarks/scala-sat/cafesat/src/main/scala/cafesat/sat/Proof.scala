@@ -35,7 +35,7 @@ class Proof(inputs: Set[Set[Literal]]) {
   //each inference is correct.
   //This code ensures that the inferences are already present in
   //the proof and make sure to reuse existing node as much as possible
-  def infer(left: Set[Literal], right: Set[Literal], concl: Set[Literal]) {
+  def infer(left: Set[Literal], right: Set[Literal], concl: Set[Literal]): Unit = {
     require(inferencesOpt == None)
     literalsToInferences.get(concl) match {
       case Some(_) =>
@@ -53,7 +53,7 @@ class Proof(inputs: Set[Set[Literal]]) {
    * This produces a compact array of ordored inferences, where
    * each premise of an inference is found earlier in the array.
    */
-  def linearize(conclusion: Set[Literal]) {
+  def linearize(conclusion: Set[Literal]): Unit = {
     require(inferencesOpt == None) 
     var buffer: ArrayBuffer[Inference] = new ArrayBuffer
     var inferencesAdded = new HashSet[Inference]
@@ -62,15 +62,15 @@ class Proof(inputs: Set[Set[Literal]]) {
     while(!stack.isEmpty) {
       val inf = stack.top
       if(inferencesAdded.contains(inf))
-        stack.pop
+        stack.pop()
       else inf match {
         case InputInference(_) =>
-          stack.pop
+          stack.pop()
           buffer.append(inf)
           inferencesAdded += inf
         case ResolutionInference(_, left, right) =>
           if(inferencesAdded.contains(left) && inferencesAdded.contains(right)) {
-            stack.pop
+            stack.pop()
             buffer.append(inf)
             inferencesAdded += inf
           } else {

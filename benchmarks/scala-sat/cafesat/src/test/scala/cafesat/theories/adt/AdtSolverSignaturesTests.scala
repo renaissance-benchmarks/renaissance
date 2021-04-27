@@ -1,11 +1,11 @@
 package cafesat
 package theories.adt
 
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.reflect.ClassTag
 
-class AdtSolverSignaturesTests extends FlatSpec {
+class AdtSolverSignaturesTests extends AnyFlatSpec {
 
 
   "Enum ADT" should "have a well-founded signature" in {

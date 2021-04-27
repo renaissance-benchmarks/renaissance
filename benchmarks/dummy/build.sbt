@@ -5,7 +5,8 @@ lazy val dummy = (project in file("."))
     name := "dummy",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalafmtConfig := Some(file(".scalafmt.conf"))
+    crossPaths := false,
+    autoScalaLibrary := false
   )
   .dependsOn(
     renaissanceCore

@@ -1,0 +1,31 @@
+
+@@style(io/reactors/debugger/css/vars.css)
+
+.terminal {
+  color: var(--terminal-font-color);
+}
+
+.cmd {
+  background-color: transparent;
+  color: var(--terminal-font-color);
+}
+
+.cmd .cursor.blink {
+  color: var(--terminal-cursor-color);
+}
+
+.cmd .cursor.blink {
+  animation: override-terminal-blink 1s infinite steps(1, start);
+  animation-timing-function: ease;
+}
+
+@keyframes override-terminal-blink {
+  0%, 100% {
+    background-color: var(--terminal-cursor-background-color);
+    color: var(--terminal-cursor-color);
+  }
+  50% {
+    background-color: var(--terminal-cursor-color);
+    color: var(--terminal-cursor-background-color);
+  }
+}

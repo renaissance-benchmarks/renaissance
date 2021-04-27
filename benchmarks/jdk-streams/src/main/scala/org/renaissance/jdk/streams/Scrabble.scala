@@ -7,7 +7,7 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.License
 
-import scala.collection.JavaConverters
+import scala.jdk.CollectionConverters._
 
 @Name("scrabble")
 @Group("jdk-streams")
@@ -41,8 +41,8 @@ final class Scrabble extends Benchmark {
   private var scrabble: JavaScrabble = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputPathParam = c.stringParameter("input_path")
-    expectedResultParam = c.stringParameter("expected_result").split(",").map(_.trim).toSeq
+    inputPathParam = c.parameter("input_path").value
+    expectedResultParam = c.parameter("expected_result").toList().asScala.toSeq
     scrabble = new JavaScrabble(inputPathParam, scrabblePath)
   }
 
@@ -57,9 +57,7 @@ final class Scrabble extends Benchmark {
         "best words count"
       )
 
-      for ((expected, actual) <- expectedResultParam zip JavaConverters.asScalaBuffer(
-             actualWords
-           )) {
+      for ((expected, actual) <- expectedResultParam zip actualWords.asScala) {
         Assert.assertEquals(expected, actual, "best words")
       }
     }

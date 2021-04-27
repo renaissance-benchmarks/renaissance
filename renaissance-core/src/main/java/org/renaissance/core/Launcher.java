@@ -4,62 +4,156 @@ import org.renaissance.Benchmark;
 import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 
-public class Launcher {
-  public static void main(String args[]) {
-    if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
-      final Package benchmarkPkg = Benchmark.class.getPackage();
-      final String[] customArgs = new String[] {
-        "--title", benchmarkPkg.getSpecificationTitle(),
-        "--version", benchmarkPkg.getImplementationVersion()
-      };
+public final class Launcher {
+  private static final Logger logger = Logging.getPackageLogger(Launcher.class);
 
-      // TODO Launch the generator from the build system
-      launchHarnessClass("org.renaissance.harness.MarkdownGenerator", customArgs);
-    } else {
+  private static final String MARKDOWN_GENERATOR = "org.renaissance.harness.MarkdownGenerator";
+  private static final String RENAISSANCE_SUITE = "org.renaissance.harness.RenaissanceSuite";
 
-      launchHarnessClass("org.renaissance.harness.RenaissanceSuite", args);
+
+  public static void main(String[] args) {
+    try {
+      if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
+        final Package benchmarkPkg = Benchmark.class.getPackage();
+        final String[] generatorArgs = new String[] {
+          "--title", benchmarkPkg.getSpecificationTitle(),
+          "--version", benchmarkPkg.getImplementationVersion()
+        };
+
+        // TODO Launch the generator from the build system.
+        launchHarnessClass(MARKDOWN_GENERATOR, generatorArgs);
+      } else {
+        launchHarnessClass(RENAISSANCE_SUITE, args);
+      }
+
+    } catch (LaunchException e) {
+      logger.severe(prefixStackTrace(
+        e.getMessage(), Optional.of(e.getCause())
+      ));
+
+      System.exit(1);
     }
   }
 
 
-  private static void launchHarnessClass(String className, String[] args) {
-    final Logger logger = Logging.getMethodLogger(Launcher.class, "main");
-
+  private static void launchHarnessClass(
+    String className, String[] args
+  ) throws LaunchException {
     try {
-      final ClassLoader loader = ModuleLoader.getForGroup("renaissance-harness");
-      final Class<?> suiteClass = loader.loadClass(className);
-      final Method suiteMain = suiteClass.getMethod("main", String[].class);
+      //
+      // Determine the launcher scratch base directory, in which to create the
+      // actual scratch directory. By default, we use the current directory as
+      // the scratch base, even though it may seem tempting to put it in the
+      // system temporary directory. However, temporary directory (on Linux) is
+      // often backed by "tmpfs" file system and storing data there may create
+      // artificial memory pressure, causing the system to swap other things
+      // out and impact the results.
+      //
+      Path scratchBaseDir = getScratchBase(args);
+
+      logger.config(() -> "Scratch base: "+ printable(scratchBaseDir));
+      Path scratchRootDir = DirUtils.createScratchDirectory(
+        scratchBaseDir, "launcher-", getKeepScratch(args)
+      );
+
+      // Create module loader with launcher-specific scratch root.
+      logger.config(() -> "Scratch root (launcher): " + printable(scratchRootDir));
+      ModuleLoader loader = ModuleLoader.create(scratchRootDir);
+      loadAndInvokeHarnessClass(loader, className, args);
+
+    } catch (IOException e) {
+      throw new LaunchException(e, "Failed to create scratch directory: ");
+    }
+  }
+
+  private static Path printable(Path path) {
+    return path.toAbsolutePath().normalize();
+  }
+
+  private static Path getScratchBase(String[] args) throws LaunchException {
+    // The '--scratch-base' option needs to be kept in sync with the harness.
+    final Optional<Integer> optIndex = arrayIndexOf(args, "--scratch-base"::equalsIgnoreCase);
+
+    if (optIndex.isPresent()) {
+      int valIndex = optIndex.get() + 1;
+      if (valIndex >= args.length) {
+        throw new LaunchException("Missing directory after --scratch-base option!");
+      }
+
+      return Paths.get(args[valIndex]);
+    } else {
+      return Paths.get("");
+    }
+  }
+
+
+  private static boolean getKeepScratch(String[] args) {
+    // The '--keep-scratch' option needs to be kept in sync with the harness.
+    return arrayIndexOf(args, "--keep-scratch"::equalsIgnoreCase).isPresent();
+  }
+
+
+  private static void loadAndInvokeHarnessClass(
+    ModuleLoader loader, String className, String[] args
+  ) throws LaunchException {
+    try {
+      ClassLoader classLoader = loader.createClassLoaderForModule("renaissance-harness");
+      Class<?> suiteClass = classLoader.loadClass(className);
+      Method suiteMain = suiteClass.getMethod("main", String[].class);
       suiteMain.invoke(null, new Object[] { args });
 
     } catch (ModuleLoadingException e) {
-      logger.severe(message("Failed to load harness: ", e));
-      System.exit(1);
-
+      throw new LaunchException(e, "Failed to load harness: ");
     } catch (InvocationTargetException e) {
-      logger.severe(message("Harness failed with exception: ", e.getCause()));
-      System.exit(1);
-
+      // Catch this before the more general ReflectiveOperationException.
+      throw new LaunchException(e.getCause(), "Harness failed with ");
     } catch (ReflectiveOperationException e) {
-      logger.severe(message("Failed to initialize harness: ", e));
-      System.exit(1);
+      throw new LaunchException(e, "Failed to initialize harness: ");
     }
   }
 
 
-  private static String message(final String prefix, Throwable cause) {
+  private static <T> Optional<Integer> arrayIndexOf(T[] array, Predicate<T> matcher) {
+    for (int index = 0; index < array.length; index++) {
+      if (matcher.test(array[index])) {
+        return Optional.of(index);
+      }
+    }
+
+    return Optional.empty();
+  }
+
+
+  private static String prefixStackTrace(final String prefix, Optional<Throwable> optionalCause) {
     final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     final PrintStream printer = new PrintStream(bytes);
 
     printer.append(prefix);
-    cause.printStackTrace(printer);
+    optionalCause.ifPresent(cause -> cause.printStackTrace(printer));
     printer.close();
 
-    return new String(bytes.toByteArray());
+    return bytes.toString();
+  }
+
+
+  private static final class LaunchException extends Exception {
+    LaunchException(String message) {
+      super(message);
+    }
+
+    LaunchException(Throwable cause, String message) {
+      super(message, cause);
+    }
   }
 
 }

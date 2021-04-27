@@ -28,19 +28,10 @@ import org.renaissance.License
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "thread_count", defaultValue = "$cpu.count"),
-    new Parameter(name = "copy_count", defaultValue = "100")
-  )
-)
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("copy_count = 5")),
-    new Configuration(name = "jmh")
-  )
-)
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "copy_count", defaultValue = "100")
+@Configuration(name = "test", settings = Array("copy_count = 5"))
+@Configuration(name = "jmh")
 final class DecTree extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
@@ -113,8 +104,8 @@ final class DecTree extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.intParameter("thread_count")
-    copyCountParam = c.intParameter("copy_count")
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    copyCountParam = c.parameter("copy_count").toPositiveInteger
 
     tempDirPath = c.generateTempDir("dec_tree")
     sc = setUpSparkContext(tempDirPath, threadCountParam, "dec-tree")
