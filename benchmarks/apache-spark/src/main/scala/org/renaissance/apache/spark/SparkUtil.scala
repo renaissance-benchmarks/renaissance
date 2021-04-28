@@ -1,11 +1,8 @@
 package org.renaissance.apache.spark
 
-import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 
-import org.apache.commons.io.IOUtils
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -16,13 +13,14 @@ trait SparkUtil {
 
   val portAllocationMaxRetries: Int = 16
 
-  val winUtils = "/winutils.exe"
 
   def setUpSparkContext(
     dirPath: Path,
     threadsPerExecutor: Int
   ): SparkContext = {
     val benchName = this.getClass.getDeclaredAnnotation(classOf[Name]).value
+  private val winutilsName = "winutils.exe"
+  private val winutilsSize = 109568
 
     setUpHadoop(dirPath)
 
@@ -65,15 +63,29 @@ trait SparkUtil {
    * When updating Spark in Renaissance, the file must be upgraded to the
    * corresponding Hadoop version from https://github.com/cdarlint/winutils
    */
-  def setUpHadoop(tempDirPath: Path): Any = {
+  private def setUpHadoop(hadoopHomeDir: Path): Unit = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
-      val winutilsPath = Paths.get(tempDirPath.toAbsolutePath + "/bin")
-      Files.createDirectories(winutilsPath)
-      IOUtils.copy(
-        this.getClass.getResourceAsStream(winUtils),
-        new FileOutputStream(winutilsPath.toString + winUtils)
-      )
-      System.setProperty("hadoop.home.dir", tempDirPath.toAbsolutePath.toString)
+      val hadoopHomeDirAbs = hadoopHomeDir.toAbsolutePath
+      val winutilsDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
+      val winutilsStream = getClass.getResourceAsStream("/" + winutilsName)
+
+      try {
+        val bytesWritten = Files.copy(
+          winutilsStream,
+          winutilsDir.resolve(winutilsName)
+        )
+
+        if (bytesWritten != winutilsSize) {
+          throw new Exception(
+            s"Wrong winutils.exe size: expected $winutilsSize, written $bytesWritten"
+          )
+        }
+      } finally {
+        // This may mask a try-block exception, but at least it will fail anyway.
+        winutilsStream.close()
+      }
+
+      System.setProperty("hadoop.home.dir", hadoopHomeDirAbs.toString)
     }
   }
 
