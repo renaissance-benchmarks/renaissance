@@ -72,7 +72,7 @@ final class Als extends Benchmark with SparkUtil {
     ratingCountParam = c.parameter("rating_count").toPositiveInteger
 
     val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     prepareInput()
     loadData()
     ensureCaching(ratings)

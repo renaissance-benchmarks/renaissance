@@ -92,7 +92,7 @@ final class PageRank extends Benchmark with SparkUtil {
     expectedRankHashParam = c.parameter("expected_rank_hash").value
 
     val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
+    sc = setUpSparkContext(tempDirPath, threadCountParam)
     links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
     ensureCaching(links)
   }

@@ -103,7 +103,7 @@ final class DecTree extends Benchmark with SparkUtil {
     copyCountParam = c.parameter("copy_count").toPositiveInteger
 
     val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam, "dec-tree")
+    sc = setUpSparkContext(tempDirPath, threadCountParam)
     training = prepareAndLoadInput(decisionTreePath, inputFile).cache()
     pipeline = constructPipeline()
   }

@@ -273,7 +273,7 @@ final class MovieLens extends Benchmark with SparkUtil {
 
     val tempDirPath = c.scratchDirectory()
     setUpLogger()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "movie-lens")
+    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
     sc.setCheckpointDir(checkpointPath.toString)
     loadData()
     // Split ratings into train (60%), validation (20%), and test (20%) based on the

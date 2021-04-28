@@ -90,7 +90,7 @@ final class LogRegression extends Benchmark with SparkUtil {
     copyCountParam = c.parameter("copy_count").toPositiveInteger
 
     val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam, "log-regression")
+    sc = setUpSparkContext(tempDirPath, threadCountParam)
     prepareInput()
     loadData()
     ensureCaching(rdd)

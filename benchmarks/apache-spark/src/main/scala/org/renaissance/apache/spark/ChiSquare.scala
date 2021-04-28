@@ -83,7 +83,7 @@ final class ChiSquare extends Benchmark with SparkUtil {
     numberCountParam = c.parameter("number_count").toPositiveInteger
 
     val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam, "chi-square")
+    sc = setUpSparkContext(tempDirPath, threadCountParam)
     prepareInput()
     loadData()
     ensureCaching(input)

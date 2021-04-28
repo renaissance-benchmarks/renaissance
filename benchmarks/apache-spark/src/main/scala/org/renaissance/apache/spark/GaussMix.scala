@@ -65,7 +65,7 @@ final class GaussMix extends Benchmark with SparkUtil {
     maxIterationsParam = c.parameter("max_iterations").toPositiveInteger
 
     val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam, "gauss-mix")
+    sc = setUpSparkContext(tempDirPath, threadCountParam)
     prepareInput()
     loadData()
     ensureCaching(input)

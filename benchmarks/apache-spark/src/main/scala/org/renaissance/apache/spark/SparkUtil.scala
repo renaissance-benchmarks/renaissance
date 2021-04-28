@@ -10,6 +10,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import org.renaissance.Benchmark.Name
+
 trait SparkUtil {
 
   val portAllocationMaxRetries: Int = 16
@@ -18,9 +20,10 @@ trait SparkUtil {
 
   def setUpSparkContext(
     dirPath: Path,
-    threadsPerExecutor: Int,
-    benchName: String
+    threadsPerExecutor: Int
   ): SparkContext = {
+    val benchName = this.getClass.getDeclaredAnnotation(classOf[Name]).value
+
     setUpHadoop(dirPath)
 
     //
