@@ -1,7 +1,6 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
 import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
@@ -48,9 +47,6 @@ final class GaussMix extends Benchmark with SparkUtil {
 
   private val COMPONENTS = 10
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   val gaussMixPath = Paths.get("target", "gauss-mix")
 
   val outputPath = gaussMixPath.resolve("output")
@@ -63,14 +59,12 @@ final class GaussMix extends Benchmark with SparkUtil {
 
   var input: RDD[org.apache.spark.mllib.linalg.Vector] = _
 
-  var tempDirPath: Path = _
-
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     threadCountParam = c.parameter("thread_count").toPositiveInteger
     numberCountParam = c.parameter("number_count").toPositiveInteger
     maxIterationsParam = c.parameter("max_iterations").toPositiveInteger
 
-    tempDirPath = c.generateTempDir("gauss_mix")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, threadCountParam, "gauss-mix")
     prepareInput()
     loadData()
@@ -105,7 +99,6 @@ final class GaussMix extends Benchmark with SparkUtil {
     val output = gmm.gaussians.mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

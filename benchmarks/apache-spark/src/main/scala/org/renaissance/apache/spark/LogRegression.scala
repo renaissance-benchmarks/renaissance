@@ -1,7 +1,6 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
 import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
@@ -45,9 +44,6 @@ final class LogRegression extends Benchmark with SparkUtil {
 
   private val CONVERGENCE_TOLERANCE = 0.0
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   val logisticRegressionPath = Paths.get("target", "logistic-regression");
 
   val outputPath = logisticRegressionPath.resolve("output")
@@ -61,8 +57,6 @@ final class LogRegression extends Benchmark with SparkUtil {
   var sc: SparkContext = _
 
   var rdd: RDD[(Double, org.apache.spark.ml.linalg.Vector)] = _
-
-  var tempDirPath: Path = _
 
   def prepareInput() = {
     FileUtils.deleteDirectory(logisticRegressionPath.toFile)
@@ -95,7 +89,7 @@ final class LogRegression extends Benchmark with SparkUtil {
     threadCountParam = c.parameter("thread_count").toPositiveInteger
     copyCountParam = c.parameter("copy_count").toPositiveInteger
 
-    tempDirPath = c.generateTempDir("log_regression")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, threadCountParam, "log-regression")
     prepareInput()
     loadData()
@@ -127,6 +121,5 @@ final class LogRegression extends Benchmark with SparkUtil {
     )
     FileUtils.write(outputPath.toFile, mlModel.intercept.toString, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 }

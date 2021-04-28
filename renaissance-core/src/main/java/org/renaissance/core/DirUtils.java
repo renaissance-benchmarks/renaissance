@@ -4,24 +4,13 @@ import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.logging.Logger;
-import java.io.IOException;
 
 public final class DirUtils {
 
   private static final Logger logger = Logging.getPackageLogger(DirUtils.class);
-
-  public static void deleteTempDir(Path dirPath) {
-    try {
-      deleteRecursively(dirPath);
-    } catch (Throwable t) {
-      System.err.println("Error removing temp directory! " + t.getMessage());
-    }
-  }
-
 
   public static void cleanRecursively(final Path rootDir) throws IOException {
     deleteRecursively(rootDir, false);
@@ -74,18 +63,6 @@ public final class DirUtils {
 
   private static Path printable(Path path) {
     return path.toAbsolutePath().normalize();
-  }
-
-
-  public static Path generateTempDir(String name) {
-    try {
-      return Files.createTempDirectory(Paths.get("."), name);
-
-    } catch (IOException e) {
-      System.err.println("Error creating temp directory! " + e.getMessage());
-    }
-
-    return null;
   }
 
 }

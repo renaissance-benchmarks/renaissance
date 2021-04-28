@@ -1,7 +1,5 @@
 package org.renaissance.database
 
-import java.nio.file.Path
-
 import org.lmdbjava.bench.Chronicle
 import org.lmdbjava.bench.MapDb
 import org.lmdbjava.bench.MvStore
@@ -32,11 +30,6 @@ final class DbShootout extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
-  var tempDirPath: Path = _
-
   var mapDb: MapDb = _
 
   var mapDbReader: MapDb.Reader = _
@@ -56,7 +49,7 @@ final class DbShootout extends Benchmark {
   var mvStoreWriter: MvStore.Writer = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    tempDirPath = c.generateTempDir("db_shootout")
+    val tempDirPath = c.scratchDirectory()
     val readWriteEntryCountParam = c.parameter("rw_entry_count").toPositiveInteger
 
     mapDb = new MapDb
@@ -82,8 +75,6 @@ final class DbShootout extends Benchmark {
     mapDbReader.teardown()
     chronicleReader.teardown()
     mvStoreReader.teardown()
-
-    c.deleteTempDir(tempDirPath)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

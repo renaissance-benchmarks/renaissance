@@ -41,9 +41,6 @@ final class DecTree extends Benchmark with SparkUtil {
 
   private var copyCountParam: Int = _
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   val decisionTreePath = Paths.get("target", "dec-tree")
 
   val outputPath = decisionTreePath.resolve("output")
@@ -51,8 +48,6 @@ final class DecTree extends Benchmark with SparkUtil {
   val inputFile = "/sample_libsvm_data.txt"
 
   val bigInputFile = decisionTreePath.resolve("bigfile.txt")
-
-  var tempDirPath: Path = null
 
   var sc: SparkContext = null
 
@@ -107,7 +102,7 @@ final class DecTree extends Benchmark with SparkUtil {
     threadCountParam = c.parameter("thread_count").toPositiveInteger
     copyCountParam = c.parameter("copy_count").toPositiveInteger
 
-    tempDirPath = c.generateTempDir("dec_tree")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, threadCountParam, "dec-tree")
     training = prepareAndLoadInput(decisionTreePath, inputFile).cache()
     pipeline = constructPipeline()
@@ -135,6 +130,5 @@ final class DecTree extends Benchmark with SparkUtil {
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 }

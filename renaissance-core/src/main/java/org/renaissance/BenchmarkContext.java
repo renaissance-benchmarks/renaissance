@@ -35,17 +35,4 @@ public interface BenchmarkContext {
    */
   Path scratchDirectory();
 
-  //
-  // File system operations
-  //
-  @Deprecated
-  default Path generateTempDir(String name) {
-    return DirUtils.generateTempDir(name);
-  }
-
-  @Deprecated
-  default void deleteTempDir(Path dir) {
-    DirUtils.deleteTempDir(dir);
-  }
-
 }

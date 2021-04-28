@@ -1,7 +1,6 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.Charset
-import java.nio.file.Path
 import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
@@ -35,9 +34,6 @@ final class Als extends Benchmark with SparkUtil {
 
   private val THREAD_COUNT = 4
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   val alsPath = Paths.get("target", "als")
 
   val outputPath = alsPath.resolve("output")
@@ -49,8 +45,6 @@ final class Als extends Benchmark with SparkUtil {
   var factModel: MatrixFactorizationModel = _
 
   var ratings: RDD[Rating] = _
-
-  var tempDirPath: Path = _
 
   def prepareInput() = {
     FileUtils.deleteDirectory(alsPath.toFile)
@@ -77,7 +71,7 @@ final class Als extends Benchmark with SparkUtil {
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     ratingCountParam = c.parameter("rating_count").toPositiveInteger
 
-    tempDirPath = c.generateTempDir("als")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
     prepareInput()
     loadData()
@@ -93,7 +87,6 @@ final class Als extends Benchmark with SparkUtil {
       .saveAsTextFile(outputPath.toString)
 
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
