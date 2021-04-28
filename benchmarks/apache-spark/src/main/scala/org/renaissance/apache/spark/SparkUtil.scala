@@ -1,14 +1,13 @@
 package org.renaissance.apache.spark
 
-import java.nio.file.Files
-import java.nio.file.Path
-
+import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-
 import org.renaissance.Benchmark.Name
 import org.renaissance.BenchmarkContext
+
+import java.nio.file.Files
+import java.nio.file.Path
 
 /**
  * A common trait for all Spark benchmarks. Provides shared Spark
@@ -24,6 +23,8 @@ trait SparkUtil {
 
   private val winutilsName = "winutils.exe"
   private val winutilsSize = 109568
+
+  protected var sparkContext: SparkContext = _
 
   def setUpSparkContext(bc: BenchmarkContext): SparkContext = {
     val scratchDir = bc.scratchDirectory()
@@ -53,15 +54,20 @@ trait SparkUtil {
       .set("spark.executor.instances", s"$executorCount")
       .set("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
 
-    val sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-    sc
+    sparkContext = new SparkContext(conf)
+    sparkContext.setLogLevel("ERROR")
+    sparkContext
   }
 
   def tearDownSparkContext(sc: SparkContext): Unit = {
     if (sc != null) {
       sc.stop()
     }
+  }
+
+  def tearDownSparkContext(): Unit = {
+    tearDownSparkContext(sparkContext)
+    sparkContext = null
   }
 
   /**
