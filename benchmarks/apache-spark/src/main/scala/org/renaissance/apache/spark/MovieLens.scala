@@ -260,11 +260,11 @@ final class MovieLens extends Benchmark with SparkUtil {
     }
 
     def verifyCaches() = {
-      ensureCaching(ratings)
-      ensureCaching(personalRatingsRDD)
-      ensureCaching(training)
-      ensureCaching(test)
-      ensureCaching(validation)
+      ensureCached(ratings)
+      ensureCached(personalRatingsRDD)
+      ensureCached(training)
+      ensureCached(test)
+      ensureCached(validation)
     }
   }
 

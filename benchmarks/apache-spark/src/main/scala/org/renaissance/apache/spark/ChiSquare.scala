@@ -91,7 +91,7 @@ final class ChiSquare extends Benchmark with SparkUtil {
     sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
-    ensureCaching(input)
+    ensureCached(input)
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {

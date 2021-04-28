@@ -99,7 +99,7 @@ final class PageRank extends Benchmark with SparkUtil {
 
     sc = setUpSparkContext(bc)
     links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
-    ensureCaching(links)
+    ensureCached(links)
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {

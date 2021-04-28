@@ -73,7 +73,7 @@ final class GaussMix extends Benchmark with SparkUtil {
     sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
-    ensureCaching(input)
+    ensureCached(input)
   }
 
   def prepareInput() = {

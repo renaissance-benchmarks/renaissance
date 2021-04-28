@@ -99,9 +99,11 @@ trait SparkUtil {
     }
   }
 
-  def ensureCaching[T](rdd: RDD[T]): Unit = {
+  def ensureCached[T](rdd: RDD[T]): RDD[T] = {
     if (!rdd.getStorageLevel.useMemory) {
-      throw new Exception("Spark RDD must be cached !")
+      throw new Exception("Spark RDD must be cached!")
     }
+
+    rdd
   }
 }

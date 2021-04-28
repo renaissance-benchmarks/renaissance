@@ -84,7 +84,7 @@ class NaiveBayes extends Benchmark with SparkUtil {
     sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
-    ensureCaching(data)
+    ensureCached(data)
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
