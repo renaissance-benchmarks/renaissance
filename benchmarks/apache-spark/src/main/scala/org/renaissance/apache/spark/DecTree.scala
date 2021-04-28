@@ -28,7 +28,16 @@ import org.renaissance.License
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of threads per executor."
+)
 @Parameter(name = "copy_count", defaultValue = "100")
 @Configuration(name = "test", settings = Array("copy_count = 5"))
 @Configuration(name = "jmh")
@@ -36,8 +45,6 @@ final class DecTree extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
-  private var threadCountParam: Int = _
 
   private var copyCountParam: Int = _
 
@@ -98,17 +105,15 @@ final class DecTree extends Benchmark with SparkUtil {
     )
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.parameter("thread_count").toPositiveInteger
-    copyCountParam = c.parameter("copy_count").toPositiveInteger
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    copyCountParam = bc.parameter("copy_count").toPositiveInteger
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam)
+    sc = setUpSparkContext(bc)
     training = prepareAndLoadInput(decisionTreePath, inputFile).cache()
     pipeline = constructPipeline()
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     pipelineModel = pipeline.fit(training)
     val treeModel =
       pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
@@ -128,7 +133,7 @@ final class DecTree extends Benchmark with SparkUtil {
     )
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
   }
 }

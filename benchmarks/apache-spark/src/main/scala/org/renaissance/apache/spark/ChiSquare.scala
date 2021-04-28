@@ -24,7 +24,16 @@ import scala.util.Random
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)
-@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of threads per executor."
+)
 @Parameter(name = "number_count", defaultValue = "1500000")
 @Configuration(name = "test", settings = Array("number_count = 10000"))
 @Configuration(name = "jmh")
@@ -34,8 +43,6 @@ final class ChiSquare extends Benchmark with SparkUtil {
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   private var numberCountParam: Int = _
-
-  private var threadCountParam: Int = _
 
   private val COMPONENTS = 5
 
@@ -78,25 +85,23 @@ final class ChiSquare extends Benchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.parameter("thread_count").toPositiveInteger
-    numberCountParam = c.parameter("number_count").toPositiveInteger
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    numberCountParam = bc.parameter("number_count").toPositiveInteger
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam)
+    sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
     ensureCaching(input)
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     results = Statistics.chiSqTest(input)
 
     // TODO: add more sophisticated validation
     Validators.simple("component count", COMPONENTS, results.size)
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     val output = results.map(_.statistic).mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)

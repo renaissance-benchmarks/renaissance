@@ -22,14 +22,22 @@ import org.renaissance.License
 @Summary("Runs the multinomial naive Bayes algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of threads per executor."
+)
 class NaiveBayes extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   val SMOOTHING = 1.0
-
-  val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
   val naiveBayesPath = Paths.get("target", "naive-bayes")
 
@@ -72,15 +80,14 @@ class NaiveBayes extends Benchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
     ensureCaching(data)
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     // Dump output.
     FileUtils.write(
       outputPath.toFile,
@@ -111,7 +118,7 @@ class NaiveBayes extends Benchmark with SparkUtil {
     tearDownSparkContext(sc)
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     // Using full package name to avoid conflicting with the renaissance benchmark class name.
     val bayes = new org.apache.spark.mllib.classification.NaiveBayes()
       .setLambda(SMOOTHING)

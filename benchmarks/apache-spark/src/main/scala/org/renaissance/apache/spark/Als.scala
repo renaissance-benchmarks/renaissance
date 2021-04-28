@@ -23,6 +23,16 @@ import scala.util.Random
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
 @Parameter(name = "rating_count", defaultValue = "20000")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "4",
+  summary = "Number of threads per executor."
+)
 @Configuration(name = "test", settings = Array("rating_count = 500"))
 @Configuration(name = "jmh")
 final class Als extends Benchmark with SparkUtil {
@@ -31,8 +41,6 @@ final class Als extends Benchmark with SparkUtil {
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   private var ratingCountParam: Int = _
-
-  private val THREAD_COUNT = 4
 
   val alsPath = Paths.get("target", "als")
 
@@ -68,17 +76,16 @@ final class Als extends Benchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    ratingCountParam = c.parameter("rating_count").toPositiveInteger
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    ratingCountParam = bc.parameter("rating_count").toPositiveInteger
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
     ensureCaching(ratings)
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     // Dump output.
     factModel.userFeatures
       .map {
@@ -89,7 +96,7 @@ final class Als extends Benchmark with SparkUtil {
     tearDownSparkContext(sc)
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     val als = new org.apache.spark.mllib.recommendation.ALS()
     factModel = als.run(ratings)
 

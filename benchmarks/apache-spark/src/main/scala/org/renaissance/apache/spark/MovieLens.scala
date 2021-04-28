@@ -30,6 +30,16 @@ import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "4",
+  summary = "Number of threads per executor."
+)
 @Parameter(name = "input_file", defaultValue = "/ratings.csv")
 @Parameter(name = "als_ranks", defaultValue = "8, 12")
 @Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0")
@@ -48,8 +58,6 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
-  private val THREAD_COUNT = 4
 
   private var inputFileParam: String = _
 
@@ -265,15 +273,14 @@ final class MovieLens extends Benchmark with SparkUtil {
     Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    inputFileParam = c.parameter("input_file").value
-    alsRanksParam = c.parameter("als_ranks").toList(_.toInt).asScala.toList
-    alsLambdasParam = c.parameter("als_lambdas").toList(_.toDouble).asScala.toList
-    alsIterationsParam = c.parameter("als_iterations").toList(_.toInt).asScala.toList
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    inputFileParam = bc.parameter("input_file").value
+    alsRanksParam = bc.parameter("als_ranks").toList(_.toInt).asScala.toList
+    alsLambdasParam = bc.parameter("als_lambdas").toList(_.toDouble).asScala.toList
+    alsIterationsParam = bc.parameter("als_iterations").toList(_.toInt).asScala.toList
 
-    val tempDirPath = c.scratchDirectory()
     setUpLogger()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT)
+    sc = setUpSparkContext(bc)
     sc.setCheckpointDir(checkpointPath.toString)
     loadData()
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
@@ -304,7 +311,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     )
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     helper.trainModels(alsRanksParam, alsLambdasParam, alsIterationsParam)
     val recommendations = helper.recommendMovies()
 
@@ -312,7 +319,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     Validators.dummy(recommendations)
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
   }
 

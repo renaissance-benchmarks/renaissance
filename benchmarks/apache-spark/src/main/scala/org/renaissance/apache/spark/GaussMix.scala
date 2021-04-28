@@ -23,7 +23,16 @@ import scala.util.Random
 @Summary("Computes a Gaussian mixture model using expectation-maximization.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of threads per executor."
+)
 @Parameter(name = "number_count", defaultValue = "15000")
 @Parameter(
   name = "max_iterations",
@@ -36,8 +45,6 @@ final class GaussMix extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
-  private var threadCountParam: Int = _
 
   private var numberCountParam: Int = _
 
@@ -59,13 +66,11 @@ final class GaussMix extends Benchmark with SparkUtil {
 
   var input: RDD[org.apache.spark.mllib.linalg.Vector] = _
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.parameter("thread_count").toPositiveInteger
-    numberCountParam = c.parameter("number_count").toPositiveInteger
-    maxIterationsParam = c.parameter("max_iterations").toPositiveInteger
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    numberCountParam = bc.parameter("number_count").toPositiveInteger
+    maxIterationsParam = bc.parameter("max_iterations").toPositiveInteger
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam)
+    sc = setUpSparkContext(bc)
     prepareInput()
     loadData()
     ensureCaching(input)
@@ -95,13 +100,7 @@ final class GaussMix extends Benchmark with SparkUtil {
       .cache()
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext) = {
-    val output = gmm.gaussians.mkString(", ")
-    FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-    tearDownSparkContext(sc)
-  }
-
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     gmm = new GaussianMixture()
       .setK(DISTRIBUTION_COUNT)
       .setMaxIterations(maxIterationsParam)
@@ -109,6 +108,12 @@ final class GaussMix extends Benchmark with SparkUtil {
 
     // TODO: add more in-depth validation
     Validators.simple("number of gaussians", 6, gmm.k)
+  }
+
+  override def tearDownAfterAll(bc: BenchmarkContext) = {
+    val output = gmm.gaussians.mkString(", ")
+    FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
+    tearDownSparkContext(sc)
   }
 
 }

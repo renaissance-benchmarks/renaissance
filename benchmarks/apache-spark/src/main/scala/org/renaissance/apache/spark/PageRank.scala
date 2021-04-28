@@ -19,7 +19,16 @@ import scala.collection.JavaConverters._
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of threads per executor."
+)
 @Parameter(name = "input_line_count", defaultValue = "-1")
 @Parameter(name = "expected_rank_count", defaultValue = "598652")
 @Parameter(name = "expected_rank_hash", defaultValue = "9b39ddf5eaa8b3d2")
@@ -36,8 +45,6 @@ final class PageRank extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
-  private var threadCountParam: Int = _
 
   private var inputLineCountParam: Int = _
 
@@ -85,19 +92,17 @@ final class PageRank extends Benchmark with SparkUtil {
     }
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.parameter("thread_count").toPositiveInteger
-    inputLineCountParam = c.parameter("input_line_count").toInteger
-    expectedRankCountParam = c.parameter("expected_rank_count").toInteger
-    expectedRankHashParam = c.parameter("expected_rank_hash").value
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    inputLineCountParam = bc.parameter("input_line_count").toInteger
+    expectedRankCountParam = bc.parameter("expected_rank_count").toInteger
+    expectedRankHashParam = bc.parameter("expected_rank_hash").value
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam)
+    sc = setUpSparkContext(bc)
     links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
     ensureCaching(links)
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
     var ranks = links.mapValues(_ => 1.0)
     for (_ <- 0 until PAGE_RANK_ITERATIONS) {
       val contributions = links.join(ranks).values.flatMap {
@@ -155,7 +160,7 @@ final class PageRank extends Benchmark with SparkUtil {
     }
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
   }
 }

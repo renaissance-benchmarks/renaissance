@@ -8,21 +8,26 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import org.renaissance.Benchmark.Name
+import org.renaissance.BenchmarkContext
 
+/**
+ * A common trait for all Spark benchmarks. Provides shared Spark
+ * setup code and other convenience methods.
+ *
+ * The common setup code requires that all Spark benchmarks define
+ * `spark_executor_count` and `spark_threads_per_executor`
+ * parameters, which determine the level of parallelism.
+ */
 trait SparkUtil {
 
-  val portAllocationMaxRetries: Int = 16
+  private val portAllocationMaxRetries: Int = 16
 
-
-  def setUpSparkContext(
-    dirPath: Path,
-    threadsPerExecutor: Int
-  ): SparkContext = {
-    val benchName = this.getClass.getDeclaredAnnotation(classOf[Name]).value
   private val winutilsName = "winutils.exe"
   private val winutilsSize = 109568
 
-    setUpHadoop(dirPath)
+  def setUpSparkContext(bc: BenchmarkContext): SparkContext = {
+    val scratchDir = bc.scratchDirectory()
+    setUpHadoop(scratchDir.resolve("hadoop"))
 
     //
     // We bind Spark explicitly to localhost to avoid all sorts of trouble:
@@ -33,15 +38,20 @@ trait SparkUtil {
     // "localhost" or "127.0.0.1" does, so does setting the SPARK_LOCAL_IP
     // environment variable (but we cannot do it from here).
     //
+
+    val benchmarkName = getClass.getDeclaredAnnotation(classOf[Name]).value
+    val executorCount = bc.parameter("spark_executor_count").toPositiveInteger
+    val threadCount = bc.parameter("spark_executor_thread_count").toPositiveInteger
+
     val conf = new SparkConf()
-      .setAppName(benchName)
-      .setMaster(s"local[$threadsPerExecutor]")
+      .setAppName(benchmarkName)
+      .setMaster(s"local[$threadCount]")
       .set("spark.driver.host", "localhost")
       .set("spark.driver.bindAddress", "127.0.0.1")
-      .set("spark.local.dir", dirPath.toString)
+      .set("spark.local.dir", scratchDir.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
-      .set("spark.executor.instances", "4")
-      .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
+      .set("spark.executor.instances", s"$executorCount")
+      .set("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
 
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
