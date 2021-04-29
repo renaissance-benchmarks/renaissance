@@ -158,6 +158,15 @@ def addLink(scriptFile: File, linkFile: File): Unit = {
 }
 
 lazy val renaissance: Project = {
+  // required for out of the box JDK16+ support of als, chi-square, gauss-mix, log-regression, naive-bayes, movie-lens
+  // https://github.com/renaissance-benchmarks/renaissance/issues/241
+  val addOpensPackages = List(
+    "java.base/java.lang",
+    "java.base/java.lang.invoke",
+    "java.base/java.util",
+    "java.base/java.nio",
+    "java.base/sun.nio.ch"
+  )
   val p = Project("renaissance", file("."))
     .settings(
       name := "renaissance",
@@ -177,7 +186,8 @@ lazy val renaissance: Project = {
           // Consider Specification-Version to mark sets of active benchmarks
           ("Git-Head-Commit", git.gitHeadCommit.value.getOrElse("unknown")),
           ("Git-Head-Commit-Date", git.gitHeadCommitDate.value.getOrElse("unknown")),
-          ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString)
+          ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString),
+          ("Add-Opens", addOpensPackages.mkString(" "))
         )
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
