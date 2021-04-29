@@ -1,10 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-
-import org.apache.commons.io.FileUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.stat.Statistics
@@ -17,6 +12,9 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
+import java.nio.file.Files
+import java.nio.file.Path
+import scala.jdk.CollectionConverters.asJavaCollectionConverter
 import scala.util.Random
 
 @Name("chi-square")
@@ -34,50 +32,54 @@ import scala.util.Random
   defaultValue = "$cpu.count",
   summary = "Number of threads per executor."
 )
-@Parameter(name = "number_count", defaultValue = "1500000")
-@Configuration(name = "test", settings = Array("number_count = 10000"))
+@Parameter(
+  name = "point_count",
+  defaultValue = "1500000",
+  summary = "Number of data points to generate."
+)
+@Parameter(
+  name = "component_count",
+  defaultValue = "5",
+  summary = "Number of components in each data point."
+)
+@Configuration(name = "test", settings = Array("point_count = 10000"))
 @Configuration(name = "jmh")
 final class ChiSquare extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var numberCountParam: Int = _
+  private var componentCountParam: Int = _
 
-  private val COMPONENTS = 5
+  private var inputPoints: RDD[LabeledPoint] = _
 
-  val chiSquarePath = Paths.get("target", "chi-square")
+  private var outputTestResults: Array[ChiSqTestResult] = _
 
-  val outputPath = chiSquarePath.resolve("output")
-
-  val measurementsFile = chiSquarePath.resolve("measurements.txt")
-
-  var sc: SparkContext = _
-
-  var input: RDD[LabeledPoint] = _
-
-  var results: Array[ChiSqTestResult] = _
-
-  def prepareInput() = {
-    FileUtils.deleteDirectory(chiSquarePath.toFile)
-
+  private def prepareInput(pointCount: Int, componentCount: Int, outputFile: Path): Path = {
+    // TODO: Use a Renaissance-provided random generator.
     val rand = new Random(0L)
-    val content = new StringBuilder
-    for (i <- 0 until numberCountParam) {
-      def randDouble(): Double = {
-        (rand.nextDouble() * 10).toInt / 10.0
-      }
-      content.append(rand.nextInt(2) + " ")
-      content.append((0 until COMPONENTS).map(_ => randDouble()).mkString(" "))
-      content.append("\n")
+
+    def randDouble(): Double = {
+      (rand.nextDouble() * 10).toInt / 10.0
     }
 
-    FileUtils.write(measurementsFile.toFile, content, StandardCharsets.UTF_8, true)
+    val line = new StringBuilder
+    val lines = (0 until pointCount).map { _ =>
+      line.clear()
+      line.append(rand.nextInt(2))
+      (0 until componentCount).map { _ =>
+        line.append(" ").append(randDouble())
+      }
+      line.toString()
+    }
+
+    // Write output using UTF-8 encoding.
+    Files.write(outputFile, lines.asJavaCollection)
   }
 
-  def loadData() = {
-    input = sc
-      .textFile(measurementsFile.toString)
+  private def loadData(inputFile: Path) = {
+    sparkContext
+      .textFile(inputFile.toString)
       .map { line =>
         val raw = line.split(" ").map(_.toDouble)
         new LabeledPoint(raw.head, Vectors.dense(raw.tail))
@@ -86,25 +88,36 @@ final class ChiSquare extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
-    numberCountParam = bc.parameter("number_count").toPositiveInteger
+    setUpSparkContext(bc)
 
-    sc = setUpSparkContext(bc)
-    prepareInput()
-    loadData()
-    ensureCached(input)
+    componentCountParam = bc.parameter("component_count").toPositiveInteger
+
+    val inputFile = prepareInput(
+      bc.parameter("point_count").toPositiveInteger,
+      componentCountParam,
+      bc.scratchDirectory().resolve("input.txt")
+    )
+
+    inputPoints = ensureCached(loadData(inputFile))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    results = Statistics.chiSqTest(input)
+    outputTestResults = Statistics.chiSqTest(inputPoints)
 
     // TODO: add more sophisticated validation
-    Validators.simple("component count", COMPONENTS, results.size)
+    Validators.simple("component count", componentCountParam, outputTestResults.size)
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val output = results.map(_.statistic).mkString(", ")
-    FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
-    tearDownSparkContext(sc)
+    val outputFile = bc.scratchDirectory().resolve("output.txt")
+    dumpResult(outputTestResults, outputFile)
+
+    tearDownSparkContext()
   }
 
+  private def dumpResult(testResults: Array[ChiSqTestResult], outputFile: Path) = {
+    val output = testResults.map(_.statistic).mkString(", ")
+    // Files.writeString() is only available from Java 11.
+    Files.write(outputFile, output.getBytes)
+  }
 }
