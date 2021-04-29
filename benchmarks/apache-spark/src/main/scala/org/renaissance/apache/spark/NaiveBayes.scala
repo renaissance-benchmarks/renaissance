@@ -1,11 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.classification.NaiveBayesModel
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -16,6 +10,13 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.stream.Collectors
 
 @Name("naive-bayes")
 @Group("apache-spark")
@@ -32,43 +33,49 @@ import org.renaissance.License
   defaultValue = "$cpu.count",
   summary = "Number of threads per executor."
 )
-class NaiveBayes extends Benchmark with SparkUtil {
+@Parameter(
+  name = "copy_count",
+  defaultValue = "8000",
+  summary = "Number of sample data copies to make in the input data."
+)
+@Configuration(name = "test", settings = Array("copy_count = 5"))
+@Configuration(name = "jmh")
+final class NaiveBayes extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  val SMOOTHING = 1.0
+  private val inputResource = "/sample_libsvm_data.txt"
 
-  val naiveBayesPath = Paths.get("target", "naive-bayes")
+  private val nbSmoothingParam = 1.0
 
-  val outputPath = naiveBayesPath.resolve("output")
+  private var inputLabeledPoints: RDD[LabeledPoint] = _
 
-  val inputFile = "/sample_libsvm_data.txt"
+  private var outputNaiveBayes: NaiveBayesModel = _
 
-  val bigInputFile = naiveBayesPath.resolve("bigfile.txt")
-
-  var sc: SparkContext = null
-
-  var data: RDD[LabeledPoint] = null
-
-  var bayesModel: NaiveBayesModel = null
-
-  def prepareInput() = {
-    FileUtils.deleteDirectory(naiveBayesPath.toFile)
-    val text =
-      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    for (i <- 0 until 8000) {
-      FileUtils.write(bigInputFile.toFile, text, true)
+  private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
+    def loadInputResource() = {
+      val resourceStream = getClass.getResourceAsStream(resourcePath)
+      val reader = new BufferedReader(new InputStreamReader(resourceStream))
+      reader.lines().collect(Collectors.toList())
     }
+
+    val lines = loadInputResource()
+    for (_ <- 0 until copyCount) {
+      Files.write(outputFile, lines, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+    }
+
+    outputFile
   }
 
-  def loadData() = {
-    val num_features = 692
-    data = sc
-      .textFile(bigInputFile.toString)
+  private def loadData(inputFile: Path) = {
+    val featureCount = 692
+
+    sparkContext
+      .textFile(inputFile.toString)
       .map { line =>
         val parts = line.split(" ")
-        val features = new Array[Double](num_features)
+        val features = new Array[Double](featureCount)
         parts.tail.foreach { part =>
           val dimval = part.split(":")
           val index = dimval(0).toInt - 1
@@ -81,53 +88,50 @@ class NaiveBayes extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
-    sc = setUpSparkContext(bc)
-    prepareInput()
-    loadData()
-    ensureCached(data)
-  }
+    setUpSparkContext(bc)
 
-  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    // Dump output.
-    FileUtils.write(
-      outputPath.toFile,
-      bayesModel.labels.mkString("labels: ", ", ", "\n"),
-      StandardCharsets.UTF_8,
-      true
+    val inputFile = prepareInput(
+      inputResource,
+      bc.parameter("copy_count").toPositiveInteger,
+      bc.scratchDirectory().resolve("input.txt")
     )
 
-    FileUtils.write(
-      outputPath.toFile,
-      bayesModel.pi.mkString("a priori: ", ", ", "\n"),
-      StandardCharsets.UTF_8,
-      true
-    )
-
-    FileUtils.write(
-      outputPath.toFile,
-      bayesModel.theta.zipWithIndex
-        .map {
-          case (cls, i) =>
-            cls.mkString(s"class $i: ", ", ", "")
-        }
-        .mkString("thetas:\n", "\n", ""),
-      StandardCharsets.UTF_8,
-      true
-    )
-
-    tearDownSparkContext(sc)
+    inputLabeledPoints = ensureCached(loadData(inputFile))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    // Using full package name to avoid conflicting with the renaissance benchmark class name.
+    // Avoid conflict with the Renaissance benchmark class name.
     val bayes = new org.apache.spark.mllib.classification.NaiveBayes()
-      .setLambda(SMOOTHING)
+      .setLambda(nbSmoothingParam)
       .setModelType("multinomial")
-    bayesModel = bayes.run(data)
+
+    outputNaiveBayes = bayes.run(inputLabeledPoints)
 
     Validators.compound(
-      Validators.simple("pi 0", -0.84397, bayesModel.pi(0), 0.001),
-      Validators.simple("pi 1", -0.56212, bayesModel.pi(1), 0.001)
+      Validators.simple("pi 0", -0.84397, outputNaiveBayes.pi(0), 0.001),
+      Validators.simple("pi 1", -0.56212, outputNaiveBayes.pi(1), 0.001)
     )
   }
+
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
+    val outputFile = bc.scratchDirectory().resolve("output.txt")
+    dumpResult(outputNaiveBayes, outputFile)
+
+    tearDownSparkContext()
+  }
+
+  private def dumpResult(nbm: NaiveBayesModel, outputFile: Path) = {
+    val output = new StringBuilder
+    output.append(nbm.labels.mkString("labels: ", ", ", "\n"))
+    output.append(nbm.pi.mkString("a priori: ", ", ", "\n"))
+    output.append(
+      nbm.theta.zipWithIndex
+        .map({ case (cls, i) => cls.mkString(s"class $i: ", ", ", "") })
+        .mkString("thetas:\n", "\n", "")
+    )
+
+    // Files.writeString() is only available from Java 11.
+    Files.write(outputFile, output.toString.getBytes)
+  }
+
 }
