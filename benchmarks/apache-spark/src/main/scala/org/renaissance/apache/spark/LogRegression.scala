@@ -1,11 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.classification.LogisticRegressionModel
 import org.apache.spark.ml.linalg.Vectors
@@ -17,6 +11,13 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.stream.Collectors
 
 @Name("log-regression")
 @Group("apache-spark")
@@ -33,7 +34,16 @@ import org.renaissance.License
   defaultValue = "$cpu.count",
   summary = "Number of threads per executor."
 )
-@Parameter(name = "copy_count", defaultValue = "400")
+@Parameter(
+  name = "copy_count",
+  defaultValue = "400",
+  summary = "Number of sample data copies to make in the input data."
+)
+@Parameter(
+  name = "max_iterations",
+  defaultValue = "20",
+  summary = "Maximum number of iterations of the logistic regression algorithm."
+)
 @Configuration(name = "test", settings = Array("copy_count = 5"))
 @Configuration(name = "jmh")
 final class LogRegression extends Benchmark with SparkUtil {
@@ -41,46 +51,43 @@ final class LogRegression extends Benchmark with SparkUtil {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var copyCountParam: Int = _
+  private val inputResource = "/sample_libsvm_data.txt"
 
-  private val REGULARIZATION_PARAM = 0.1
+  private var maxIterationsParam: Int = _
 
-  private val MAX_ITERATIONS = 20
+  private val lrRegularizationParam = 0.1
 
-  private val ELASTIC_NET_PARAM = 0.0
+  private val lrElasticNetMixingParam = 0.0
 
-  private val CONVERGENCE_TOLERANCE = 0.0
+  private val lrConvergenceToleranceParam = 0.0
 
-  val logisticRegressionPath = Paths.get("target", "logistic-regression");
+  private var inputTuples: RDD[(Double, org.apache.spark.ml.linalg.Vector)] = _
 
-  val outputPath = logisticRegressionPath.resolve("output")
+  private var outputLogisticRegression: LogisticRegressionModel = _
 
-  val inputFile = "/sample_libsvm_data.txt"
-
-  val bigInputFile = logisticRegressionPath.resolve("bigfile.txt")
-
-  var mlModel: LogisticRegressionModel = _
-
-  var sc: SparkContext = _
-
-  var rdd: RDD[(Double, org.apache.spark.ml.linalg.Vector)] = _
-
-  def prepareInput() = {
-    FileUtils.deleteDirectory(logisticRegressionPath.toFile)
-    val text =
-      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    for (i <- 0 until copyCountParam) {
-      FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
+  private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
+    def loadInputResource() = {
+      val resourceStream = getClass.getResourceAsStream(resourcePath)
+      val reader = new BufferedReader(new InputStreamReader(resourceStream))
+      reader.lines().collect(Collectors.toList())
     }
+
+    val lines = loadInputResource()
+    for (_ <- 0 until copyCount) {
+      Files.write(outputFile, lines, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+    }
+
+    outputFile
   }
 
-  def loadData() = {
-    val num_features = 692
-    rdd = sc
-      .textFile(bigInputFile.toString)
+  private def loadData(inputFile: Path) = {
+    val featureCount = 692
+
+    sparkContext
+      .textFile(inputFile.toString)
       .map { line =>
         val parts = line.split(" ")
-        val features = new Array[Double](num_features)
+        val features = new Array[Double](featureCount)
         parts.tail.foreach { part =>
           val dimval = part.split(":")
           val index = dimval(0).toInt - 1
@@ -93,38 +100,53 @@ final class LogRegression extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
-    copyCountParam = bc.parameter("copy_count").toPositiveInteger
+    setUpSparkContext(bc)
 
-    sc = setUpSparkContext(bc)
-    prepareInput()
-    loadData()
-    ensureCached(rdd)
+    maxIterationsParam = bc.parameter("max_iterations").toPositiveInteger
+
+    val inputFile = prepareInput(
+      inputResource,
+      bc.parameter("copy_count").toPositiveInteger,
+      bc.scratchDirectory().resolve("input.txt")
+    )
+
+    inputTuples = ensureCached(loadData(inputFile))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    // TODO: Create only once per benchmark?
     val lor = new LogisticRegression()
-      .setElasticNetParam(ELASTIC_NET_PARAM)
-      .setRegParam(REGULARIZATION_PARAM)
-      .setMaxIter(MAX_ITERATIONS)
-      .setTol(CONVERGENCE_TOLERANCE)
+      .setElasticNetParam(lrElasticNetMixingParam)
+      .setRegParam(lrRegularizationParam)
+      .setTol(lrConvergenceToleranceParam)
+      .setMaxIter(maxIterationsParam)
 
-    val sqlContext = new SQLContext(rdd.context)
+    val sqlContext = new SQLContext(inputTuples.context)
     import sqlContext.implicits._
-    mlModel = lor.fit(rdd.toDF("label", "features"))
+    outputLogisticRegression = lor.fit(inputTuples.toDF("label", "features"))
 
-    // TODO: add proper validation
-    Validators.dummy(mlModel)
+    // TODO: add more in-depth validation
+    Validators.compound(
+      Validators.simple("class count", 2, outputLogisticRegression.numClasses),
+      Validators.simple("feature count", 692, outputLogisticRegression.numFeatures)
+    )
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    FileUtils.write(
-      outputPath.toFile,
-      mlModel.coefficients.toString + "\n",
-      StandardCharsets.UTF_8,
-      true
-    )
-    FileUtils.write(outputPath.toFile, mlModel.intercept.toString, StandardCharsets.UTF_8, true)
-    tearDownSparkContext(sc)
+    val outputFile = bc.scratchDirectory().resolve("output.txt")
+    dumpResult(outputLogisticRegression, outputFile)
+
+    tearDownSparkContext()
   }
+
+  private def dumpResult(lrm: LogisticRegressionModel, outputFile: Path) = {
+    val output = new StringBuilder
+    output.append(s"num features: ${lrm.numFeatures}\n")
+    output.append(s"num classes: ${lrm.numClasses}\n")
+    output.append(s"intercepts: ${lrm.interceptVector.toString}\n")
+    output.append(s"coefficients: ${lrm.coefficients.toString}\n")
+
+    // Files.writeString() is only available from Java 11.
+    Files.write(outputFile, output.toString.getBytes)
+  }
+
 }
