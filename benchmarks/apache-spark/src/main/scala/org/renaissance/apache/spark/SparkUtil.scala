@@ -54,10 +54,10 @@ trait SparkUtil {
   }
 
   /**
-   * Spark version 2.4.7 uses Hadoop version 2.6.5. The dependencies
+   * Spark version 3.1.1 uses Hadoop version 3.2.0. The dependencies
    * do not include a binary zip for Hadoop on Windows. Instead,
    * Renaissance includes winutils.exe as a resource, downloaded from
-   * https://github.com/cdarlint/winutils/tree/master/hadoop-2.6.5/bin
+   * https://github.com/cdarlint/winutils/tree/master/hadoop-3.2.0/bin
    *
    * When updating Spark in Renaissance, the file must be upgraded to the
    * corresponding Hadoop version from https://github.com/cdarlint/winutils
