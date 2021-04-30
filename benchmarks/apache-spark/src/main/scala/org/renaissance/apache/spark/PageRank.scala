@@ -101,7 +101,7 @@ final class PageRank extends Benchmark with SparkUtil {
     expectedRankCountParam = bc.parameter("expected_rank_count").toInteger
     expectedRankHashParam = bc.parameter("expected_rank_hash").value
 
-    val inputSource = ZipResourceUtil.sourceFromZipResource(inputZipResource, inputZipEntry)
+    val inputSource = ResourceUtil.sourceFromZipResource(inputZipResource, inputZipEntry)
 
     inputLinks = ensureCached(loadData(inputSource, bc.parameter("input_line_count").toInteger))
   }

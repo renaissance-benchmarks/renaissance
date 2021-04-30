@@ -7,11 +7,11 @@ import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
 
-private object ZipResourceUtil {
+private object ResourceUtil {
 
   /**
    * Creates a {@link Source} from a file within a ZIP resource
-   * associated with the {@link ZipResourceUtil} class.
+   * associated with the {@link ResourceUtil} class.
    *
    * @param resourceName path to the ZIP resource
    * @param entryName name of the ZIP entry
