@@ -6,7 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
+
+import static java.nio.file.Files.createTempDirectory;
 
 public final class DirUtils {
 
@@ -43,7 +47,10 @@ public final class DirUtils {
 
 
   public static Path createScratchDirectory(Path base, String prefix, boolean keepOnExit) throws IOException {
-    Path scratchDir = Files.createTempDirectory(base, prefix).normalize();
+    String ts = DateTimeFormatter.ofPattern("HHmmss").format(LocalDateTime.now());
+    String tsPrefix = String.format("%s%s-", prefix, ts);
+
+    Path scratchDir = createTempDirectory(base, tsPrefix).normalize();
     if (!keepOnExit) {
       Runtime.getRuntime().addShutdownHook(new Thread (() -> {
         logger.fine(() -> "Deleting scratch directory: " + printable(scratchDir));

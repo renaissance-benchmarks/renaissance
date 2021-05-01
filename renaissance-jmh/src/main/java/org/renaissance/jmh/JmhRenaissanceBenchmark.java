@@ -157,7 +157,7 @@ public abstract class JmhRenaissanceBenchmark {
         if (scratchDir == null) {
           try {
             scratchDir = Files.createDirectories(
-              scratchRootDir.resolve(benchInfo.name()).resolve("scratch")
+              benchInfo.resolveScratchDir(scratchRootDir)
             ).normalize();
           } catch (IOException e) {
             // This is a problem, fail the benchmark.
