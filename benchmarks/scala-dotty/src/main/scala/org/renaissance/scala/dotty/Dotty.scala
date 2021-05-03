@@ -9,14 +9,15 @@ import org.renaissance.License
 
 import java.io._
 import java.net.URLClassLoader
-import java.nio.file.Files
+import java.nio.file.Files.copy
+import java.nio.file.Files.createDirectories
+import java.nio.file.Files.notExists
 import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.util.zip.ZipInputStream
 import scala.collection._
 
-// Keep for cross-compilation with Scala 2.11 and 2.12.
+// Keep to allow cross-compilation with Scala 2.11 and 2.12.
 import scala.collection.compat._
 
 @Name("dotty")
@@ -36,43 +37,37 @@ final class Dotty extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private val zipResourcePath = "/sources.zip"
-
-  private val dottyPath = Paths.get("target", "dotty")
-
-  private val sourceCodePath = dottyPath.resolve("src")
-
-  private val outputPath = dottyPath.resolve("output")
+  private val sourcesInputResource = "/sources.zip"
 
   private var dottyBaseArgs: Seq[String] = _
 
   private var dottyInvocations: Seq[Array[String]] = _
 
-  private def unzipSources() = {
-    val sources = mutable.Buffer[Path]()
+  private def unzipResource(resourceName: String, outputDir: Path) = {
+    val zis = new ZipInputStream(this.getClass.getResourceAsStream(resourceName))
 
-    val zis = new ZipInputStream(this.getClass.getResourceAsStream(zipResourcePath))
     try {
+      val sources = mutable.Buffer[Path]()
       LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { zipEntry =>
         if (!zipEntry.isDirectory) {
-          val target = sourceCodePath.resolve(zipEntry.getName)
+          val target = outputDir.resolve(zipEntry.getName)
           val parent = target.getParent
-          if (parent != null && Files.notExists(parent)) {
-            Files.createDirectories(parent)
+          if (parent != null && notExists(parent)) {
+            createDirectories(parent)
           }
 
-          Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING)
+          copy(zis, target, REPLACE_EXISTING)
           sources += target
         }
       }
+
+      sources.toSeq
     } finally {
       zis.close()
     }
-
-    sources.toSeq
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
     /*
      * Construct the classpath for the compiler. Unfortunately, Dotty is
      * unable to use the current classloader (either of this class or this
@@ -98,6 +93,9 @@ final class Dotty extends Benchmark {
       .map(url => new java.io.File(url.toURI).getPath)
       .mkString(File.pathSeparator)
 
+    val scratchDir = bc.scratchDirectory()
+    val outputDir = createDirectories(scratchDir.resolve("output"))
+
     dottyBaseArgs = Seq[String](
       "-classpath",
       classPath,
@@ -105,20 +103,20 @@ final class Dotty extends Benchmark {
       "-language:implicitConversions",
       // Output directory for compiled classes.
       "-d",
-      outputPath.toString
+      outputDir.toString
     )
 
-    Files.createDirectories(outputPath)
-    val sourcePaths = unzipSources()
+    val sourceDir = scratchDir.resolve("src")
+    val sourceFiles = unzipResource(sourcesInputResource, sourceDir)
 
-    val batchCompilation = c.parameter("batch_compilation").toBoolean
+    val batchCompilation = bc.parameter("batch_compilation").toBoolean
     if (batchCompilation) {
       // Compile all sources as a batch.
-      val dottyArgs = (dottyBaseArgs ++ sourcePaths.map(_.toString)).toArray
+      val dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
       dottyInvocations = Seq(dottyArgs)
     } else {
       // Compile sources one-by-one.
-      dottyInvocations = sourcePaths.map(p => (dottyBaseArgs :+ p.toString).toArray)
+      dottyInvocations = sourceFiles.map(p => (dottyBaseArgs :+ p.toString).toArray)
     }
   }
 
