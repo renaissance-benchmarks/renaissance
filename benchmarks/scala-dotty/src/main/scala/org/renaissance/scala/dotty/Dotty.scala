@@ -26,7 +26,7 @@ import scala.collection.compat._
 @Repetitions(50)
 @Parameter(
   name = "batch_compilation",
-  defaultValue = "true",
+  defaultValue = "false",
   summary = "Compiles all source files in batch mode instead of one by one."
 )
 @Configuration(name = "test")
