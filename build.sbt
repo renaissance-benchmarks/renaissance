@@ -7,6 +7,8 @@ import org.renaissance.core.Launcher
 
 import scala.collection._
 
+enablePlugins(GitBranchPrompt)
+
 lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
