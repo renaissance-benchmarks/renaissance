@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 
+import static java.nio.file.Files.createDirectories;
+
 /**
  * Benchmark execution driver. Captures the sequence of actions performed
  * during benchmark execution (i.e., calling the sequencing methods on a
@@ -162,8 +164,8 @@ final class ExecutionDriver implements BenchmarkContext {
   public Path scratchDirectory() {
     if (scratchDir == null) {
       try {
-        scratchDir = Files.createDirectories(
-          scratchRoot.resolve(benchInfo.name()).resolve("scratch")
+        scratchDir = createDirectories(
+          benchInfo.resolveScratchDir(scratchRoot)
         ).normalize();
       } catch (IOException e) {
         // This is a problem, fail the benchmark.
