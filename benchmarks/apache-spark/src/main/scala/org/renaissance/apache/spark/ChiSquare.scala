@@ -1,7 +1,6 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
 import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
@@ -40,16 +39,11 @@ final class ChiSquare extends Benchmark with SparkUtil {
 
   private val COMPONENTS = 5
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   val chiSquarePath = Paths.get("target", "chi-square")
 
   val outputPath = chiSquarePath.resolve("output")
 
   val measurementsFile = chiSquarePath.resolve("measurements.txt")
-
-  var tempDirPath: Path = _
 
   var sc: SparkContext = _
 
@@ -88,7 +82,7 @@ final class ChiSquare extends Benchmark with SparkUtil {
     threadCountParam = c.parameter("thread_count").toPositiveInteger
     numberCountParam = c.parameter("number_count").toPositiveInteger
 
-    tempDirPath = c.generateTempDir("chi_square")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, threadCountParam, "chi-square")
     prepareInput()
     loadData()
@@ -106,7 +100,6 @@ final class ChiSquare extends Benchmark with SparkUtil {
     val output = results.map(_.statistic).mkString(", ")
     FileUtils.write(outputPath.toFile, output, StandardCharsets.UTF_8, true)
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 
 }

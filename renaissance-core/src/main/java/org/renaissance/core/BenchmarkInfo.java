@@ -4,6 +4,7 @@ import org.renaissance.Benchmark;
 import org.renaissance.BenchmarkParameter;
 
 import java.lang.reflect.Constructor;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,15 @@ public final class BenchmarkInfo {
     }
   }
 
+  /**
+   * Resolves this benchmark's scratch directory against a given scratch
+   * root directory. The purpose of this method is to provide a common
+   * policy the placement of benchmark-specific scratch directories in the
+   * scratch root directory.
+   */
+  public Path resolveScratchDir(Path scratchRootDir) {
+    return scratchRootDir.resolve(module).resolve(name);
+  }
 
   public String module() { return module; }
 

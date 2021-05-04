@@ -1,7 +1,6 @@
 package org.renaissance.apache.spark
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Path
 import java.nio.file.Paths
 
 import org.apache.commons.io.FileUtils
@@ -32,9 +31,6 @@ class NaiveBayes extends Benchmark with SparkUtil {
 
   val THREAD_COUNT = Runtime.getRuntime.availableProcessors
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   val naiveBayesPath = Paths.get("target", "naive-bayes")
 
   val outputPath = naiveBayesPath.resolve("output")
@@ -48,8 +44,6 @@ class NaiveBayes extends Benchmark with SparkUtil {
   var data: RDD[LabeledPoint] = null
 
   var bayesModel: NaiveBayesModel = null
-
-  var tempDirPath: Path = null
 
   def prepareInput() = {
     FileUtils.deleteDirectory(naiveBayesPath.toFile)
@@ -79,7 +73,7 @@ class NaiveBayes extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    tempDirPath = c.generateTempDir("naive_bayes")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "naive-bayes")
     prepareInput()
     loadData()
@@ -115,7 +109,6 @@ class NaiveBayes extends Benchmark with SparkUtil {
     )
 
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {

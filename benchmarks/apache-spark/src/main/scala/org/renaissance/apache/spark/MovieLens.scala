@@ -59,9 +59,6 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   private var alsIterationsParam: List[Int] = _
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   var sc: SparkContext = _
 
   val helper = new MovieLensHelper
@@ -79,8 +76,6 @@ final class MovieLens extends Benchmark with SparkUtil {
   val moviesBigFile = bigFilesPath.resolve("movies.txt")
 
   val ratingsBigFile = bigFilesPath.resolve("ratings.txt")
-
-  var tempDirPath: Path = _
 
   class MovieLensHelper {
     var movies: Map[Int, String] = _
@@ -276,7 +271,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     alsLambdasParam = c.parameter("als_lambdas").toList(_.toDouble).asScala.toList
     alsIterationsParam = c.parameter("als_iterations").toList(_.toInt).asScala.toList
 
-    tempDirPath = c.generateTempDir("movie_lens")
+    val tempDirPath = c.scratchDirectory()
     setUpLogger()
     sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "movie-lens")
     sc.setCheckpointDir(checkpointPath.toString)
@@ -319,7 +314,6 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 
 }

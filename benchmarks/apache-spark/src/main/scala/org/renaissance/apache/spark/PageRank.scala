@@ -1,6 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.nio.file.Path
 import java.util.regex.Pattern
 
 import org.apache.spark.SparkContext
@@ -60,14 +59,9 @@ final class PageRank extends Benchmark with SparkUtil {
    */
   private val RANK_DIFFERENCE_LIMIT = 1e-6
 
-  // TODO: Unify handling of scratch directories throughout the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/13
-
   private var sc: SparkContext = _
 
   private var links: RDD[(Int, Iterable[Int])] = _
-
-  private var tempDirPath: Path = _
 
   private def loadData(zipName: String, entryName: String, lineCount: Int) = {
     val inputSource = ZipResourceUtil.sourceFromZipResource(entryName, zipName)
@@ -97,7 +91,7 @@ final class PageRank extends Benchmark with SparkUtil {
     expectedRankCountParam = c.parameter("expected_rank_count").toInteger
     expectedRankHashParam = c.parameter("expected_rank_hash").value
 
-    tempDirPath = c.generateTempDir("page_rank")
+    val tempDirPath = c.scratchDirectory()
     sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
     links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
     ensureCaching(links)
@@ -163,6 +157,5 @@ final class PageRank extends Benchmark with SparkUtil {
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
     tearDownSparkContext(sc)
-    c.deleteTempDir(tempDirPath)
   }
 }
