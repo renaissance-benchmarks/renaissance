@@ -25,9 +25,10 @@ public final class Launcher {
     try {
       if (args.length == 1 && "--readme".equalsIgnoreCase(args[0])) {
         final Package benchmarkPkg = Benchmark.class.getPackage();
+        final String fullVersion = benchmarkPkg.getImplementationVersion();
         final String[] generatorArgs = new String[] {
           "--title", benchmarkPkg.getSpecificationTitle(),
-          "--version", benchmarkPkg.getImplementationVersion()
+          "--version", fullVersion.split("-")[0]
         };
 
         // TODO Launch the generator from the build system.
