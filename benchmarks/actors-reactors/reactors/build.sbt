@@ -62,24 +62,6 @@ def jvmProjectSettings(suffix: String) =
   )
 
 
-def gitPropsContents(dir: File, baseDir: File): Seq[File] = {
-  def run(cmd: String*): String = scala.sys.process.Process(cmd, Some(baseDir)).!!
-  val branch = run("git", "rev-parse", "--abbrev-ref", "HEAD").trim
-  val commitTs = run("git", "--no-pager", "show", "-s", "--format=%ct", "HEAD")
-  val sha = run("git", "rev-parse", "HEAD").trim
-  val contents = s"""
-  {
-    "branch": "$branch",
-    "commit-timestamp": $commitTs,
-    "sha": "$sha"
-  }
-  """
-  val file = dir / "reactors-io" / ".gitprops"
-  IO.write(file, contents)
-  Seq(file)
-}
-
-
 // Produces reactorsCommonJVM
 
 lazy val reactorsCommon = crossProject(JVMPlatform)
@@ -114,9 +96,6 @@ lazy val reactorsCore = crossProject(JVMPlatform)
   .in(file("reactors-core"))
   .settings(
     projectSettings("-core") ++ Seq(
-      Compile / resourceGenerators += Def.task {
-        gitPropsContents((Compile / resourceManaged).value, baseDirectory.value)
-      },
       libraryDependencies ++= Seq(
         "org.scalatest" %%% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %%% "scalacheck" % scalaCheckVersion % "test"
