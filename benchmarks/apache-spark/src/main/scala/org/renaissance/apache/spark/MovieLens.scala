@@ -1,27 +1,21 @@
 package org.renaissance.apache.spark
 
-import java.io.InputStream
-import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.nio.file.Path
-import java.nio.file.Paths
-
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.apache.log4j.Level
-import org.apache.log4j.Logger
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.recommendation.ALS
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd._
+import org.apache.spark.storage.StorageLevel
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import org.renaissance.apache.spark.ResourceUtil.writeResourceToFile
 
+import java.net.URL
+import java.nio.file.Path
+import scala.collection.Map
 import scala.io.Source
 import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
@@ -59,6 +53,8 @@ final class MovieLens extends Benchmark with SparkUtil {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
+  private val randomSeed = 31
+
   private var inputFileParam: String = _
 
   private var alsRanksParam: List[Int] = _
@@ -67,23 +63,11 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   private var alsIterationsParam: List[Int] = _
 
-  var sc: SparkContext = _
+  private val personalRatingsInputFile = "/movie-lens-my-ratings.csv"
 
-  val helper = new MovieLensHelper
+  private val moviesInputFile = "/movies.csv"
 
-  val movieLensPath = Paths.get("target", "movie-lens")
-
-  val checkpointPath = movieLensPath.resolve("checkpoint")
-
-  val personalRatingsInputFile = "/movie-lens-my-ratings.csv"
-
-  val moviesInputFile = "/movies.csv"
-
-  val bigFilesPath = movieLensPath.resolve("bigfiles")
-
-  val moviesBigFile = bigFilesPath.resolve("movies.txt")
-
-  val ratingsBigFile = bigFilesPath.resolve("ratings.txt")
+  private val helper = new MovieLensHelper
 
   class MovieLensHelper {
     var movies: Map[Int, String] = _
@@ -122,66 +106,63 @@ final class MovieLens extends Benchmark with SparkUtil {
         personalRatings = personalRatingsIter.toSeq
       }
 
-      personalRatingsRDD = sc.parallelize(personalRatings, 1).cache()
+      personalRatingsRDD = ensureCached(sparkContext.parallelize(personalRatings, 1))
     }
 
-    def getFilteredRDDFromPath(inputPath: Path): RDD[String] = {
-      val rdd = sc.textFile(inputPath.toString)
-      val header = rdd.first
-      return rdd
-        .filter { line =>
-          line != header
-        }
-    }
-
-    def loadRatings(inputPath: Path) = {
-
-      ratings = getFilteredRDDFromPath(inputPath)
-        .map { line =>
-          val fields = line.split(",")
-          // Format: (timestamp % 10, Rating(userId, movieId, rating))
-          (fields(3).toLong % 10, Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble))
-        }
-        .cache()
+    def loadRatings(file: Path) = {
+      ratings = ensureCached(
+        createRddFromCsv(
+          file,
+          header = true,
+          delimiter = ",",
+          parts => {
+            val (user, movie, rating, timestamp) = (parts(0), parts(1), parts(2), parts(3))
+            val stratum = timestamp.toLong % 10
+            (stratum, Rating(user.toInt, movie.toInt, rating.toDouble))
+          }
+        )
+      )
 
       numRatings = ratings.count()
       numUsers = ratings.map(_._2.user).distinct().count()
       numMovies = ratings.map(_._2.product).distinct().count()
-
     }
 
-    def loadMovies(inputPath: Path) = {
-
-      movies = getFilteredRDDFromPath(inputPath)
-        .map { line =>
-          val fields = line.split(",")
-          // Format: (movieId, movieName)
-          (fields(0).toInt, fields(1))
+    def loadMovies(file: Path) = {
+      movies = createRddFromCsv(
+        file,
+        header = true,
+        delimiter = ",",
+        parts => {
+          val (movieId, movieName) = (parts(0), parts(1))
+          (movieId.toInt, movieName)
         }
-        .collect()
-        .toMap
+      ).collectAsMap()
     }
 
     def splitRatings(numPartitions: Int, trainingThreshold: Int, validationThreshold: Int) = {
-      training = ratings
-        .filter(x => x._1 < trainingThreshold)
-        .values
-        .union(personalRatingsRDD)
-        .repartition(numPartitions)
-        .cache()
+      training = ensureCached(
+        ratings
+          .filter(x => x._1 < trainingThreshold)
+          .values
+          .union(personalRatingsRDD)
+          .repartition(numPartitions)
+      )
       numTraining = training.count()
 
-      validation = ratings
-        .filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold)
-        .values
-        .repartition(numPartitions)
-        .cache()
+      validation = ensureCached(
+        ratings
+          .filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold)
+          .values
+          .repartition(numPartitions)
+      )
       numValidation = validation.count()
 
-      test = ratings
-        .filter(x => x._1 >= validationThreshold)
-        .values
-        .cache()
+      test = ensureCached(
+        ratings
+          .filter(x => x._1 >= validationThreshold)
+          .values
+      )
       numTest = test.count()
 
       println(
@@ -190,23 +171,34 @@ final class MovieLens extends Benchmark with SparkUtil {
       )
     }
 
-    def trainModels(ranks: List[Int], lambdas: List[Double], numIters: List[Int]) = {
+    def trainModels(ranks: List[Int], lambdas: List[Double], iterationCounts: List[Int]) = {
 
       // Train models and evaluate them on the validation set.
 
-      for (rank <- ranks; lambda <- lambdas; numIter <- numIters) {
-        val model = ALS.train(training, rank, numIter, lambda)
+      for (rank <- ranks; lambda <- lambdas; iterations <- iterationCounts) {
+        def trainModel(ratings: RDD[Rating]) = {
+          new ALS()
+            .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_ONLY)
+            .setFinalRDDStorageLevel(StorageLevel.MEMORY_ONLY)
+            .setIterations(iterations)
+            .setLambda(lambda)
+            .setRank(rank)
+            .setSeed(randomSeed)
+            .run(ratings)
+        }
+
+        val model = trainModel(training)
         val validationRmse = computeRmse(model, validation, numValidation)
         println(
           "RMSE (validation) = " + validationRmse + " for the model trained with rank = "
-            + rank + ", lambda = " + lambda + ", and numIter = " + numIter + "."
+            + rank + ", lambda = " + lambda + ", and numIter = " + iterations + "."
         )
         if (validationRmse < bestValidationRmse) {
           bestModel = Some(model)
           bestValidationRmse = validationRmse
           bestRank = rank
           bestLambda = lambda
-          bestNumIter = numIter
+          bestNumIter = iterations
         }
       }
     }
@@ -231,7 +223,8 @@ final class MovieLens extends Benchmark with SparkUtil {
       // Make personalized recommendations.
 
       val myRatedMovieIds = personalRatings.map(_.product).toSet
-      val candidates = sc.parallelize(movies.keys.filter(!myRatedMovieIds.contains(_)).toSeq)
+      val candidates =
+        sparkContext.parallelize(movies.keys.filter(!myRatedMovieIds.contains(_)).toSeq)
 
       val recommendations = bestModel.get
         .predict(candidates.map((0, _)))
@@ -258,52 +251,27 @@ final class MovieLens extends Benchmark with SparkUtil {
         .values
       math.sqrt(predictionsAndRatings.map(x => (x._1 - x._2) * (x._1 - x._2)).reduce(_ + _) / n)
     }
-
-    def verifyCaches() = {
-      ensureCached(ratings)
-      ensureCached(personalRatingsRDD)
-      ensureCached(training)
-      ensureCached(test)
-      ensureCached(validation)
-    }
-  }
-
-  def setUpLogger() = {
-    Logger.getLogger("org.apache.spark").setLevel(Level.ERROR)
-    Logger.getLogger("org.eclipse.jetty.server").setLevel(Level.OFF)
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    setUpSparkContext(bc)
+
     inputFileParam = bc.parameter("input_file").value
     alsRanksParam = bc.parameter("als_ranks").toList(_.toInt).asScala.toList
     alsLambdasParam = bc.parameter("als_lambdas").toList(_.toDouble).asScala.toList
     alsIterationsParam = bc.parameter("als_iterations").toList(_.toInt).asScala.toList
 
-    setUpLogger()
-    sc = setUpSparkContext(bc)
-    sc.setCheckpointDir(checkpointPath.toString)
-    loadData()
+    loadData(bc.scratchDirectory())
+
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
     // last digit of the timestamp, add myRatings to train, and cache them.
     helper.splitRatings(4, 6, 8)
-    helper.verifyCaches()
   }
 
-  def writeResourceToFile(resourceStream: InputStream, outputPath: Path) = {
-    val content = IOUtils.toString(resourceStream, StandardCharsets.UTF_8)
-    FileUtils.write(outputPath.toFile, content, StandardCharsets.UTF_8, true)
-  }
-
-  def loadData() = {
-    FileUtils.deleteDirectory(bigFilesPath.toFile)
-
-    helper.loadPersonalRatings(this.getClass.getResource(personalRatingsInputFile))
-
-    writeResourceToFile(this.getClass.getResourceAsStream(inputFileParam), ratingsBigFile)
-    helper.loadRatings(ratingsBigFile)
-
-    writeResourceToFile(this.getClass.getResourceAsStream(moviesInputFile), moviesBigFile)
-    helper.loadMovies(moviesBigFile)
+  def loadData(scratchDir: Path) = {
+    helper.loadPersonalRatings(getClass.getResource(personalRatingsInputFile))
+    helper.loadRatings(writeResourceToFile(inputFileParam, scratchDir.resolve("ratings.csv")))
+    helper.loadMovies(writeResourceToFile(moviesInputFile, scratchDir.resolve("movies.csv")))
 
     println(
       "Got " + helper.numRatings + " ratings from "
@@ -320,7 +288,7 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    tearDownSparkContext(sc)
+    tearDownSparkContext()
   }
 
 }
