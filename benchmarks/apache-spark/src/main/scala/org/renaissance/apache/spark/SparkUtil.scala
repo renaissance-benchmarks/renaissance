@@ -2,6 +2,8 @@ package org.renaissance.apache.spark
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkConf
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
 import org.renaissance.Benchmark.Name
 import org.renaissance.BenchmarkContext
@@ -25,8 +27,12 @@ trait SparkUtil {
   private val winutilsSize = 109568
 
   protected var sparkContext: SparkContext = _
+  private val sparkLogLevel = Level.WARN
+  private val jettyLogLevel = Level.WARN
 
   def setUpSparkContext(bc: BenchmarkContext): SparkContext = {
+    setUpLoggers(sparkLogLevel, jettyLogLevel)
+
     val scratchDir = bc.scratchDirectory()
     setUpHadoop(scratchDir.resolve("hadoop"))
 
@@ -57,6 +63,7 @@ trait SparkUtil {
     sparkContext = new SparkContext(conf)
     sparkContext.setLogLevel("ERROR")
     sparkContext
+    sparkContext.setLogLevel(sparkLogLevel.toString)
   }
 
   def tearDownSparkContext(sc: SparkContext): Unit = {
@@ -112,4 +119,10 @@ trait SparkUtil {
 
     rdd
   }
+
+  private def setUpLoggers(sparkLevel: Level, jettyLevel: Level) = {
+    Logger.getLogger("org.apache.spark").setLevel(sparkLevel)
+    Logger.getLogger("org.eclipse.jetty.server").setLevel(jettyLevel)
+  }
+
 }
