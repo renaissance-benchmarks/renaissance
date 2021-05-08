@@ -2,12 +2,29 @@ package org.renaissance.apache.spark
 
 import java.io.FileNotFoundException
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.zip.ZipInputStream
-
 import scala.io.BufferedSource
 import scala.io.Source
 
 private object ResourceUtil {
+
+  /**
+   * Writes a resource associated with the {@link ResourceUtil} class
+   * to a file, replacing an existing file.
+   *
+   * @param resourceName path to the ZIP resource
+   * @param file path the output file
+   * @return {@link Path} path to the output file
+   */
+  def writeResourceToFile(resourceName: String, file: Path) = {
+    val resourceStream = getClass.getResourceAsStream(resourceName)
+    Files.copy(resourceStream, file, StandardCopyOption.REPLACE_EXISTING)
+
+    file
+  }
 
   /**
    * Creates a {@link Source} from a file within a ZIP resource
