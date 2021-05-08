@@ -131,11 +131,11 @@ trait SparkUtil {
   }
 
   def ensureCached[T](rdd: RDD[T]): RDD[T] = {
-    if (!rdd.getStorageLevel.useMemory) {
-      throw new Exception("Spark RDD must be cached!")
-    }
+    rdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint()
+  }
 
-    rdd
+  def ensureCached[T](ds: Dataset[T]): Dataset[T] = {
+    ds.persist(StorageLevel.MEMORY_ONLY).localCheckpoint()
   }
 
   private def setUpLoggers(sparkLevel: Level, jettyLevel: Level) = {
