@@ -1,8 +1,10 @@
 package org.renaissance.apache.spark
 
+import org.apache.spark.mllib.recommendation.ALS
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd.RDD
+import org.apache.spark.storage.StorageLevel
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -40,6 +42,9 @@ import scala.util.Random
   defaultValue = "100",
   summary = "Number of products rated by each user."
 )
+@Parameter(name = "als_rank", defaultValue = "10")
+@Parameter(name = "als_lambda", defaultValue = "0.01")
+@Parameter(name = "als_iterations", defaultValue = "10")
 @Configuration(name = "test", settings = Array("user_count = 500"))
 @Configuration(name = "jmh")
 final class Als extends Benchmark with SparkUtil {
@@ -49,49 +54,79 @@ final class Als extends Benchmark with SparkUtil {
 
   private val randomSeed = 17
 
+  private var alsRankParam: Int = _
+
+  private var alsLambdaParam: Double = _
+
+  private var alsIterationsParam: Int = _
+
   private var inputRatings: RDD[Rating] = _
 
   private var outputMatrixFactorization: MatrixFactorizationModel = _
 
-  private def prepareInput(userCount: Int, productCount: Int, outputFile: Path): Path = {
+  private def generateRatings(userCount: Int, productCount: Int): Seq[Rating] = {
     // TODO: Use a Renaissance-provided random generator.
     val rand = new Random(randomSeed)
-    val lines = (0 until userCount).flatMap { user =>
-      (0 until productCount).map { product =>
-        val score = 1 + rand.nextInt(3) + rand.nextInt(3)
-        s"$user::$product::$score"
-      }
-    }
 
-    // Write output using UTF-8 encoding.
-    Files.write(outputFile, lines.asJavaCollection)
+    for (userId <- 0 until userCount; productId <- 0 until productCount) yield {
+      val rating = 1 + rand.nextInt(3) + rand.nextInt(3)
+      Rating(userId, productId, rating)
+    }
   }
 
-  private def loadData(inputFile: Path) = {
-    sparkContext
-      .textFile(inputFile.toString)
-      .map { line =>
-        val parts = line.split("::")
-        Rating(parts(0).toInt, parts(1).toInt, parts(2).toDouble)
+  private def storeRatings(ratings: Seq[Rating], file: Path): Path = {
+    val lines = ratings.map(r => Rating.unapply(r).get.productIterator.mkString(","))
+    Files.write(file, lines.asJavaCollection)
+  }
+
+  private def loadRatings(file: Path, partitionCount: Int) = {
+    createRddFromCsv(
+      file,
+      header = false,
+      delimiter = ",",
+      parts => {
+        val (user, product, rating) = (parts(0), parts(1), parts(2))
+        Rating(user.toInt, product.toInt, rating.toDouble)
       }
-      .cache()
+    ).repartition(partitionCount)
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
     setUpSparkContext(bc)
 
-    val inputFile = prepareInput(
-      bc.parameter("user_count").toPositiveInteger,
-      bc.parameter("product_count").toPositiveInteger,
-      bc.scratchDirectory().resolve("input.txt")
+    // ALS algorithm parameters.
+    alsRankParam = bc.parameter("als_rank").toPositiveInteger
+    alsLambdaParam = bc.parameter("als_lambda").toDouble
+    alsIterationsParam = bc.parameter("als_iterations").toPositiveInteger
+
+    // Store generated ratings as a single file.
+    val ratingsCsv = storeRatings(
+      generateRatings(
+        bc.parameter("user_count").toPositiveInteger,
+        bc.parameter("product_count").toPositiveInteger
+      ),
+      bc.scratchDirectory().resolve("ratings.csv")
     )
 
-    inputRatings = ensureCached(loadData(inputFile))
+    // Load, partition, and cache the ratings.
+    inputRatings = ensureCached(
+      loadRatings(ratingsCsv, bc.parameter("spark_executor_count").toPositiveInteger)
+    )
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    val als = new org.apache.spark.mllib.recommendation.ALS()
-    outputMatrixFactorization = als.run(inputRatings)
+    def trainModel(ratings: RDD[Rating]) = {
+      new ALS()
+        .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_ONLY)
+        .setFinalRDDStorageLevel(StorageLevel.MEMORY_ONLY)
+        .setIterations(alsIterationsParam)
+        .setLambda(alsLambdaParam)
+        .setRank(alsRankParam)
+        .setSeed(randomSeed)
+        .run(ratings)
+    }
+
+    outputMatrixFactorization = trainModel(inputRatings)
 
     // TODO: add proper validation of the generated model
     Validators.dummy(outputMatrixFactorization)
@@ -104,8 +139,9 @@ final class Als extends Benchmark with SparkUtil {
     tearDownSparkContext()
   }
 
-  private def dumpResult(mfm: MatrixFactorizationModel, outputPath: Path) = {
+  private def dumpResult(mfm: MatrixFactorizationModel, outputPath: Path): Unit = {
     mfm.userFeatures
+      .coalesce(1)
       .map {
         case (user, features) => s"$user: ${features.mkString(", ")}"
       }
