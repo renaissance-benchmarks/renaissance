@@ -35,16 +35,27 @@ import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
   summary = "Number of threads per executor."
 )
 @Parameter(name = "input_file", defaultValue = "/ratings.csv")
-@Parameter(name = "als_ranks", defaultValue = "8, 12")
-@Parameter(name = "als_lambdas", defaultValue = "0.1, 10.0")
-@Parameter(name = "als_iterations", defaultValue = "10, 20")
+@Parameter(
+  name = "als_configs",
+  defaultValue =
+    "rmse,rank,lambda,iterations;" +
+      "3.622, 8,5.00,20;" +
+      "2.134,10,2.00,20;" +
+      "1.311,12,1.00,20;" +
+      "0.992, 8,0.05,20;" +
+      "1.207,10,0.01,10;" +
+      "1.115, 8,0.02,10;" +
+      "0.923,12,0.10,10;" +
+      "0.898, 8,0.20,10",
+  summary = "A table of ALS configuration parameters and expected RMSE values."
+)
 @Configuration(
   name = "test",
   settings = Array(
     "input_file = /ratings-small.csv",
-    "als_ranks = 12",
-    "als_lambdas = 10.0",
-    "als_iterations = 10"
+    "als_configs = " +
+      "rmse,rank,lambda,iterations;" +
+      "1.086,8,0.20,10"
   )
 )
 @Configuration(name = "jmh")
@@ -57,17 +68,16 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   private var inputFileParam: String = _
 
-  private var alsRanksParam: List[Int] = _
-
-  private var alsLambdasParam: List[Double] = _
-
-  private var alsIterationsParam: List[Int] = _
+  private var alsConfigurations: Iterable[AlsConfig] = _
 
   private val personalRatingsInputFile = "/movie-lens-my-ratings.csv"
 
   private val moviesInputFile = "/movies.csv"
 
   private val helper = new MovieLensHelper
+
+  /** Holds ALS parameters and expected RMSE on validation data. */
+  case class AlsConfig(rank: Int, lambda: Double, iterations: Int, rmse: Double)
 
   class MovieLensHelper {
     var movies: Map[Int, String] = _
@@ -81,9 +91,7 @@ final class MovieLens extends Benchmark with SparkUtil {
     var numValidation: Long = 0
     var numTest: Long = 0
     var bestModel: Option[MatrixFactorizationModel] = _
-    var bestRank = 0
-    var bestLambda = -1.0
-    var bestNumIter = -1
+    var bestConfig: AlsConfig = _
     var bestValidationRmse = Double.MaxValue
     var numRatings: Long = 0
     var numUsers: Long = 0
@@ -95,8 +103,9 @@ final class MovieLens extends Benchmark with SparkUtil {
       val personalRatingsIter = source
         .getLines()
         .map { line =>
-          val fields = line.split(",")
-          Rating(fields(0).toInt, fields(1).toInt, fields(2).toDouble)
+          val parts = line.split(",")
+          val (user, movie, rating) = (parts(0), parts(1), parts(2))
+          Rating(user.toInt, movie.toInt, rating.toDouble)
         }
         .filter(_.rating > 0.0)
 
@@ -171,18 +180,18 @@ final class MovieLens extends Benchmark with SparkUtil {
       )
     }
 
-    def trainModels(ranks: List[Int], lambdas: List[Double], iterationCounts: List[Int]) = {
+    def trainModels(configs: Iterable[AlsConfig]) = {
 
       // Train models and evaluate them on the validation set.
 
-      for (rank <- ranks; lambda <- lambdas; iterations <- iterationCounts) {
+      for (config <- configs) {
         def trainModel(ratings: RDD[Rating]) = {
           new ALS()
             .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_ONLY)
             .setFinalRDDStorageLevel(StorageLevel.MEMORY_ONLY)
-            .setIterations(iterations)
-            .setLambda(lambda)
-            .setRank(rank)
+            .setIterations(config.iterations)
+            .setLambda(config.lambda)
+            .setRank(config.rank)
             .setSeed(randomSeed)
             .run(ratings)
         }
@@ -190,26 +199,23 @@ final class MovieLens extends Benchmark with SparkUtil {
         val model = trainModel(training)
         val validationRmse = computeRmse(model, validation, numValidation)
         println(
-          "RMSE (validation) = " + validationRmse + " for the model trained with rank = "
-            + rank + ", lambda = " + lambda + ", and numIter = " + iterations + "."
+          s"RMSE (validation) = $validationRmse for the model trained with rank = ${config.rank}, " +
+            s"lambda = ${config.lambda}, and numIter = ${config.iterations}."
         )
         if (validationRmse < bestValidationRmse) {
           bestModel = Some(model)
           bestValidationRmse = validationRmse
-          bestRank = rank
-          bestLambda = lambda
-          bestNumIter = iterations
+          bestConfig = config
         }
       }
     }
 
     def recommendMovies() = {
-
       val testRmse = computeRmse(bestModel.get, test, numTest)
 
       println(
-        "The best model was trained with rank = " + bestRank + " and lambda = " + bestLambda
-          + ", and numIter = " + bestNumIter + ", and its RMSE on the test set is " + testRmse + "."
+        s"The best model was trained with rank = ${bestConfig.rank} and lambda = ${bestConfig.lambda}, " +
+          s"and numIter = ${bestConfig.iterations}, and its RMSE on the test set is $testRmse."
       )
 
       // Create a naive baseline and compare it with the best model.
@@ -217,6 +223,7 @@ final class MovieLens extends Benchmark with SparkUtil {
       val meanRating = training.union(validation).map(_.rating).mean
       val baselineRmse =
         math.sqrt(test.map(x => (meanRating - x.rating) * (meanRating - x.rating)).mean)
+
       val improvement = (baselineRmse - testRmse) / baselineRmse * 100
       println("The best model improves the baseline by " + "%1.2f".format(improvement) + "%.")
 
@@ -257,9 +264,18 @@ final class MovieLens extends Benchmark with SparkUtil {
     setUpSparkContext(bc)
 
     inputFileParam = bc.parameter("input_file").value
-    alsRanksParam = bc.parameter("als_ranks").toList(_.toInt).asScala.toList
-    alsLambdasParam = bc.parameter("als_lambdas").toList(_.toDouble).asScala.toList
-    alsIterationsParam = bc.parameter("als_iterations").toList(_.toInt).asScala.toList
+
+    alsConfigurations = bc
+      .parameter("als_configs")
+      .toCsvRows(m =>
+        AlsConfig(
+          m.get("rank").toInt,
+          m.get("lambda").toDouble,
+          m.get("iterations").toInt,
+          m.get("rmse").toDouble
+        )
+      )
+      .asScala
 
     loadData(bc.scratchDirectory())
 
@@ -280,7 +296,7 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    helper.trainModels(alsRanksParam, alsLambdasParam, alsIterationsParam)
+    helper.trainModels(alsConfigurations)
     val recommendations = helper.recommendMovies()
 
     // TODO: add proper validation
