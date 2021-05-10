@@ -1,10 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.nio.charset.Charset
-import java.nio.file.Paths
-
-import org.apache.commons.io.FileUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
 import org.apache.spark.mllib.recommendation.Rating
 import org.apache.spark.rdd.RDD
@@ -15,6 +10,9 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
+import java.nio.file.Files
+import java.nio.file.Path
+import scala.jdk.CollectionConverters.asJavaCollectionConverter
 import scala.util.Random
 
 @Name("als")
@@ -22,45 +20,56 @@ import scala.util.Random
 @Summary("Runs the ALS algorithm from the Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
-@Parameter(name = "rating_count", defaultValue = "20000")
-@Configuration(name = "test", settings = Array("rating_count = 500"))
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "4",
+  summary = "Number of threads per executor."
+)
+@Parameter(
+  name = "user_count",
+  defaultValue = "20000",
+  summary = "Number of users giving ratings."
+)
+@Parameter(
+  name = "product_count",
+  defaultValue = "100",
+  summary = "Number of products rated by each user."
+)
+@Configuration(name = "test", settings = Array("user_count = 500"))
 @Configuration(name = "jmh")
 final class Als extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var ratingCountParam: Int = _
+  private val randomSeed = 17
 
-  private val THREAD_COUNT = 4
+  private var inputRatings: RDD[Rating] = _
 
-  val alsPath = Paths.get("target", "als")
+  private var outputMatrixFactorization: MatrixFactorizationModel = _
 
-  val outputPath = alsPath.resolve("output")
-
-  val bigInputFile = alsPath.resolve("bigfile.txt")
-
-  var sc: SparkContext = _
-
-  var factModel: MatrixFactorizationModel = _
-
-  var ratings: RDD[Rating] = _
-
-  def prepareInput() = {
-    FileUtils.deleteDirectory(alsPath.toFile)
-    val rand = new Random
-    val lines = (0 until ratingCountParam).flatMap { user =>
-      (0 until 100).map { product =>
+  private def prepareInput(userCount: Int, productCount: Int, outputFile: Path): Path = {
+    // TODO: Use a Renaissance-provided random generator.
+    val rand = new Random(randomSeed)
+    val lines = (0 until userCount).flatMap { user =>
+      (0 until productCount).map { product =>
         val score = 1 + rand.nextInt(3) + rand.nextInt(3)
         s"$user::$product::$score"
       }
     }
-    FileUtils.write(bigInputFile.toFile, lines.mkString("\n"), Charset.defaultCharset(), true)
+
+    // Write output using UTF-8 encoding.
+    Files.write(outputFile, lines.asJavaCollection)
   }
 
-  def loadData() = {
-    ratings = sc
-      .textFile(bigInputFile.toString)
+  private def loadData(inputFile: Path) = {
+    sparkContext
+      .textFile(inputFile.toString)
       .map { line =>
         val parts = line.split("::")
         Rating(parts(0).toInt, parts(1).toInt, parts(2).toDouble)
@@ -68,32 +77,38 @@ final class Als extends Benchmark with SparkUtil {
       .cache()
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    ratingCountParam = c.parameter("rating_count").toPositiveInteger
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    setUpSparkContext(bc)
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, THREAD_COUNT, "als")
-    prepareInput()
-    loadData()
-    ensureCaching(ratings)
+    val inputFile = prepareInput(
+      bc.parameter("user_count").toPositiveInteger,
+      bc.parameter("product_count").toPositiveInteger,
+      bc.scratchDirectory().resolve("input.txt")
+    )
+
+    inputRatings = ensureCached(loadData(inputFile))
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    // Dump output.
-    factModel.userFeatures
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
+    val als = new org.apache.spark.mllib.recommendation.ALS()
+    outputMatrixFactorization = als.run(inputRatings)
+
+    // TODO: add proper validation of the generated model
+    Validators.dummy(outputMatrixFactorization)
+  }
+
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
+    val outputPath = bc.scratchDirectory().resolve("output")
+    dumpResult(outputMatrixFactorization, outputPath)
+
+    tearDownSparkContext()
+  }
+
+  private def dumpResult(mfm: MatrixFactorizationModel, outputPath: Path) = {
+    mfm.userFeatures
       .map {
         case (user, features) => s"$user: ${features.mkString(", ")}"
       }
       .saveAsTextFile(outputPath.toString)
-
-    tearDownSparkContext(sc)
-  }
-
-  override def run(c: BenchmarkContext): BenchmarkResult = {
-    val als = new org.apache.spark.mllib.recommendation.ALS()
-    factModel = als.run(ratings)
-
-    // TODO: add proper validation of the generated model
-    Validators.dummy(factModel)
   }
 }

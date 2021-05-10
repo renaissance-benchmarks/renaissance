@@ -1,8 +1,5 @@
 package org.renaissance.apache.spark
 
-import java.util.regex.Pattern
-
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
@@ -12,15 +9,35 @@ import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
+import java.util.regex.Pattern
 import scala.collection.JavaConverters._
+import scala.io.BufferedSource
 
 @Name("page-rank")
 @Group("apache-spark")
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
-@Parameter(name = "thread_count", defaultValue = "$cpu.count")
-@Parameter(name = "input_line_count", defaultValue = "-1")
+@Parameter(
+  name = "spark_executor_count",
+  defaultValue = "4",
+  summary = "Number of executor instances."
+)
+@Parameter(
+  name = "spark_executor_thread_count",
+  defaultValue = "$cpu.count",
+  summary = "Number of threads per executor."
+)
+@Parameter(
+  name = "max_iterations",
+  defaultValue = "2",
+  summary = "Maximum number of iterations of the page rank algorithm."
+)
+@Parameter(
+  name = "input_line_count",
+  defaultValue = "-1",
+  summary = "Number of lines to take as input from the input dataset."
+)
 @Parameter(name = "expected_rank_count", defaultValue = "598652")
 @Parameter(name = "expected_rank_hash", defaultValue = "9b39ddf5eaa8b3d2")
 @Configuration(
@@ -37,35 +54,26 @@ final class PageRank extends Benchmark with SparkUtil {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var threadCountParam: Int = _
-
-  private var inputLineCountParam: Int = _
-
-  private var expectedRankCountParam: Int = _
-
-  private var expectedRankHashParam: String = _
-
-  /** Number of iterations of the page rank algorithm. */
-  private val PAGE_RANK_ITERATIONS = 2
-
-  private val INPUT_ZIP_RESOURCE = "/web-berkstan.txt.zip"
-
-  private val INPUT_ZIP_ENTRY = "web-BerkStan.txt"
-
   /**
    * Maximum difference in neighboring ranks for web sites in the same class.
    * The value is slightly lower but in the same order as 1/685230, which
    * corresponds to the number of web sites in the input data set
    */
-  private val RANK_DIFFERENCE_LIMIT = 1e-6
+  private val rankDifferenceLimit = 1e-6
 
-  private var sc: SparkContext = _
+  private val inputZipResource = "/web-berkstan.txt.zip"
 
-  private var links: RDD[(Int, Iterable[Int])] = _
+  private val inputZipEntry = "web-BerkStan.txt"
 
-  private def loadData(zipName: String, entryName: String, lineCount: Int) = {
-    val inputSource = ZipResourceUtil.sourceFromZipResource(entryName, zipName)
+  private var maxIterationsParam: Int = _
 
+  private var expectedRankCountParam: Int = _
+
+  private var expectedRankHashParam: String = _
+
+  private var inputLinks: RDD[(Int, Iterable[Int])] = _
+
+  private def loadData(inputSource: BufferedSource, lineCount: Int) = {
     try {
       var inputLines = inputSource.getLines().dropWhile(_.startsWith("#"))
       if (lineCount >= 0) {
@@ -73,7 +81,8 @@ final class PageRank extends Benchmark with SparkUtil {
       }
 
       val splitter = Pattern.compile("\\s+")
-      sc.parallelize(inputLines.toSeq)
+      sparkContext
+        .parallelize(inputLines.toSeq)
         .map { line =>
           val parts = splitter.split(line, 2)
           parts(0).toInt -> parts(1).toInt
@@ -85,22 +94,22 @@ final class PageRank extends Benchmark with SparkUtil {
     }
   }
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    threadCountParam = c.parameter("thread_count").toPositiveInteger
-    inputLineCountParam = c.parameter("input_line_count").toInteger
-    expectedRankCountParam = c.parameter("expected_rank_count").toInteger
-    expectedRankHashParam = c.parameter("expected_rank_hash").value
+  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    setUpSparkContext(bc)
 
-    val tempDirPath = c.scratchDirectory()
-    sc = setUpSparkContext(tempDirPath, threadCountParam, "page-rank")
-    links = loadData(INPUT_ZIP_RESOURCE, INPUT_ZIP_ENTRY, inputLineCountParam)
-    ensureCaching(links)
+    maxIterationsParam = bc.parameter("max_iterations").toPositiveInteger
+    expectedRankCountParam = bc.parameter("expected_rank_count").toInteger
+    expectedRankHashParam = bc.parameter("expected_rank_hash").value
+
+    val inputSource = ResourceUtil.sourceFromZipResource(inputZipResource, inputZipEntry)
+
+    inputLinks = ensureCached(loadData(inputSource, bc.parameter("input_line_count").toInteger))
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
-    var ranks = links.mapValues(_ => 1.0)
-    for (_ <- 0 until PAGE_RANK_ITERATIONS) {
-      val contributions = links.join(ranks).values.flatMap {
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
+    var ranks = inputLinks.mapValues(_ => 1.0)
+    for (_ <- 0 until maxIterationsParam) {
+      val contributions = inputLinks.join(ranks).values.flatMap {
         case (urls, rank) => urls.map(url => (url, rank / urls.size))
       }
       ranks = contributions.reduceByKey(_ + _).mapValues(0.15 + 0.85 * _)
@@ -127,7 +136,7 @@ final class PageRank extends Benchmark with SparkUtil {
         Assert.assertEquals(expectedRankCountParam, rankCount, "ranks count")
 
         val preSortedEntries = ranks.sortBy { case (_, rank) => rank }.collect
-        val sortedEntries = relaxedRanks(preSortedEntries, RANK_DIFFERENCE_LIMIT).sortBy {
+        val sortedEntries = relaxedRanks(preSortedEntries, rankDifferenceLimit).sortBy {
           case (url, rank) => (rank, url)
         }
 
@@ -155,7 +164,7 @@ final class PageRank extends Benchmark with SparkUtil {
     }
   }
 
-  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    tearDownSparkContext(sc)
+  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
+    tearDownSparkContext()
   }
 }
