@@ -84,7 +84,6 @@ final class ChiSquare extends Benchmark with SparkUtil {
         val raw = line.split(" ").map(_.toDouble)
         new LabeledPoint(raw.head, Vectors.dense(raw.tail))
       }
-      .cache()
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {

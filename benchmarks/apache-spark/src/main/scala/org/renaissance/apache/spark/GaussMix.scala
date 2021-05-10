@@ -89,7 +89,6 @@ final class GaussMix extends Benchmark with SparkUtil {
         val raw = line.split(" ").map(_.toDouble)
         Vectors.dense(raw)
       }
-      .cache()
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {

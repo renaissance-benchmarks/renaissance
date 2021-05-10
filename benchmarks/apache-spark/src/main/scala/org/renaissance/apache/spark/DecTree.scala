@@ -72,7 +72,7 @@ final class DecTree extends Benchmark with SparkUtil {
 
   private def loadData(inputFile: Path): DataFrame = {
     val sqlContext = new SQLContext(sparkContext)
-    sqlContext.read.format("libsvm").load(inputFile.toString).cache()
+    sqlContext.read.format("libsvm").load(inputFile.toString)
   }
 
   def constructPipeline(): Pipeline = {
@@ -114,7 +114,7 @@ final class DecTree extends Benchmark with SparkUtil {
       bc.scratchDirectory().resolve("input.txt")
     )
 
-    inputTrainingData = loadData(inputFile)
+    inputTrainingData = ensureCached(loadData(inputFile))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {

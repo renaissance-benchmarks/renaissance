@@ -88,7 +88,6 @@ final class PageRank extends Benchmark with SparkUtil {
           parts(0).toInt -> parts(1).toInt
         }
         .groupByKey()
-        .cache()
     } finally {
       inputSource.close()
     }

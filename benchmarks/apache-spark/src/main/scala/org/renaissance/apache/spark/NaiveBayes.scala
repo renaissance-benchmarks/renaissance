@@ -84,7 +84,6 @@ final class NaiveBayes extends Benchmark with SparkUtil {
         }
         new LabeledPoint(parts(0).toDouble, Vectors.dense(features))
       }
-      .cache()
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {

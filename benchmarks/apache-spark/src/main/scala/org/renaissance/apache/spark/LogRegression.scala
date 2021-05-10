@@ -96,7 +96,6 @@ final class LogRegression extends Benchmark with SparkUtil {
         }
         (parts(0).toDouble, Vectors.dense(features))
       }
-      .cache()
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
