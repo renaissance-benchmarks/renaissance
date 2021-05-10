@@ -51,6 +51,11 @@ public abstract class JmhRenaissanceBenchmark {
     System.getProperty("org.renaissance.jmh.keepScratch", "false")
   );
 
+  /** Determines the benchmark configuration to use. Defaults to 'jmh'. */
+  private static final String configuration = System.getProperty(
+    "org.renaissance.jmh.configuration", "jmh"
+  );
+
   private final Path scratchRootDir;
   private final org.renaissance.Benchmark benchmark;
   private final BenchmarkContext context;
@@ -74,7 +79,7 @@ public abstract class JmhRenaissanceBenchmark {
       }
 
       System.out.printf(
-        "\n!!!!! %s. Using '%s' instead to avoid failure. !!!!!\n",
+        "\n!!!!! %s Using '%s' to avoid failure. !!!!!\n",
         message, benchInfo.name()
       );
     }
@@ -106,7 +111,7 @@ public abstract class JmhRenaissanceBenchmark {
   }
 
   private static int compare(Version v1, Optional<Version> maybeV2) {
-    return maybeV2.map(v2 -> v1.compareTo(v2)).orElse(0);
+    return maybeV2.map(v1::compareTo).orElse(0);
   }
 
   //
@@ -149,7 +154,7 @@ public abstract class JmhRenaissanceBenchmark {
 
       @Override
       public BenchmarkParameter parameter(String name) {
-        return benchInfo.parameter("jmh", name);
+        return benchInfo.parameter(configuration, name);
       }
 
       @Override
