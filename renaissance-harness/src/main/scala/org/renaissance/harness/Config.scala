@@ -1,6 +1,7 @@
 package org.renaissance.harness
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 import scala.collection.mutable
 
 private final class Config {
@@ -20,8 +21,8 @@ private final class Config {
   // Switched when a --policy or --plugin option occurs on the command line.
   var extraArgs = mutable.ArrayBuffer[String]()
 
-  var csvOutput: Option[String] = Option.empty
-  var jsonOutput: Option[String] = Option.empty
+  var csvOutput: Option[Path] = None
+  var jsonOutput: Option[Path] = None
 
   var printList = false
   var printRawList = false
@@ -98,12 +99,12 @@ private final class Config {
   }
 
   def withCsvOutput(outputFile: String) = {
-    csvOutput = Option(outputFile)
+    csvOutput = Some(Paths.get(outputFile))
     this
   }
 
   def withJsonOutput(outputFile: String) = {
-    jsonOutput = Option(outputFile)
+    jsonOutput = Some(Paths.get(outputFile))
     this
   }
 

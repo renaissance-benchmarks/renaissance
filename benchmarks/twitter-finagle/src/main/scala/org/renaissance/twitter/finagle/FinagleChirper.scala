@@ -1,13 +1,5 @@
 package org.renaissance.twitter.finagle
 
-import java.net.InetSocketAddress
-import java.net.URLEncoder
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-import java.util.Comparator
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-
 import com.google.common.collect.ConcurrentHashMultiset
 import com.google.common.collect.Multiset.Entry
 import com.twitter.finagle.Http
@@ -22,7 +14,6 @@ import com.twitter.io.BufReader
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
-import org.apache.commons.io.IOUtils
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -30,7 +21,16 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
+import java.io.FileNotFoundException
+import java.io.InputStream
+import java.net.InetSocketAddress
+import java.net.URLEncoder
+import java.nio.ByteBuffer
+import java.util.Comparator
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import scala.collection._
+import scala.io.Source
 import scala.util.hashing.byteswap32
 
 @Name("finagle-chirper")
@@ -374,9 +374,7 @@ final class FinagleChirper extends Benchmark {
   // (here, "/" is platform independent according to the JavaDoc)
   val inputFile = "/new-years-resolution.csv"
 
-  lazy val messages = IOUtils
-    .toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
-    .split("\\n")
+  private var messages: IndexedSeq[String] = _
 
   val postPeriodicity: Int = 57
   val invalidationPeriodicity: Int = 256
@@ -392,7 +390,6 @@ final class FinagleChirper extends Benchmark {
   val startingFeedSize = 80
 
   private var requestCountParam: Int = _
-  private var userCountParam: Int = _
 
   val usernameBases = Seq(
     "johnny",
@@ -439,11 +436,13 @@ final class FinagleChirper extends Benchmark {
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     requestCountParam = c.parameter("request_count").toPositiveInteger
-    userCountParam = c.parameter("user_count").toPositiveInteger
+    val userCountParam = c.parameter("user_count").toPositiveInteger
 
     userNames =
       for (i <- 0 until userCountParam)
         yield usernameBases(i % usernameBases.length) + i
+
+    messages = resourceAsLines(inputFile)
 
     master = Http.serve(":0", new Master)
     /* TODO
@@ -483,5 +482,23 @@ final class FinagleChirper extends Benchmark {
 
     // TODO: add proper validation
     Validators.dummy()
+  }
+
+  private def resourceAsLines(resourceName: String) = {
+    val source = Source.fromInputStream(getResourceStream(resourceName))
+    try {
+      source.getLines().map { _.trim }.filterNot { _.isEmpty }.to[IndexedSeq]
+    } finally {
+      source.close()
+    }
+  }
+
+  private def getResourceStream(resourceName: String): InputStream = {
+    val is = getClass.getResourceAsStream(resourceName)
+    if (is != null) {
+      return is
+    }
+
+    throw new FileNotFoundException(s"resource '$resourceName' not found")
   }
 }

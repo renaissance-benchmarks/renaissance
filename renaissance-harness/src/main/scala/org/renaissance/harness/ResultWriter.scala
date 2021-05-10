@@ -1,14 +1,6 @@
 package org.renaissance.harness
 
-import java.io.File
-import java.lang.management.MemoryUsage
-import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.TimeZone
-
 import com.sun.management.UnixOperatingSystemMXBean
-import org.apache.commons.io.FileUtils
 import org.renaissance.Benchmark
 import org.renaissance.Plugin.BeforeHarnessShutdownListener
 import org.renaissance.Plugin.BenchmarkFailureListener
@@ -16,8 +8,16 @@ import org.renaissance.Plugin.MeasurementResultListener
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.jdk.CollectionConverters._
+import java.io.File
+import java.lang.management.MemoryUsage
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.TimeZone
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
 /**
  * Provides common functionality for JSON and CSV result writers.
@@ -99,8 +99,17 @@ private abstract class ResultWriter
       repetitionCount = metricsByName.values.map(_.size).max
     } yield (benchName, benchFailed, metricsByName, repetitionCount)
 
-  protected final def writeToFile(fileName: String, string: String): Unit = {
-    FileUtils.write(new File(fileName), string, StandardCharsets.UTF_8, false)
+  protected final def writeToFile(file: Path, string: String): Unit = {
+    val writer = Files.newBufferedWriter(
+      file,
+      StandardOpenOption.CREATE,
+      StandardOpenOption.TRUNCATE_EXISTING
+    )
+    try {
+      writer.append(string)
+    } finally {
+      writer.close()
+    }
   }
 
   //
@@ -108,24 +117,24 @@ private abstract class ResultWriter
   protected def store(normalTermination: Boolean): Unit
 }
 
-private final class CsvWriter(val filename: String) extends ResultWriter {
+private final class CsvWriter(val csvFile: Path) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
-    val csv = new StringBuffer
+    val csv = new StringBuilder
 
     val columns = getMetricNames
     formatHeader(columns, csv)
     formatResults(columns, csv)
 
-    writeToFile(filename, csv.toString)
+    writeToFile(csvFile, csv.toString)
   }
 
-  private def formatHeader(metricNames: Seq[String], csv: StringBuffer): Unit = {
+  private def formatHeader(metricNames: Seq[String], csv: StringBuilder): Unit = {
     // There will always be at least one column after "benchmark".
     csv.append("benchmark,").append(metricNames.mkString(",")).append(",vm_start_unix_ms\n")
   }
 
-  private def formatResults(metricNames: Seq[String], csv: StringBuffer): Unit = {
+  private def formatResults(metricNames: Seq[String], csv: StringBuilder): Unit = {
     val vmStartTime = management.ManagementFactory.getRuntimeMXBean.getStartTime
     for ((benchmark, _, metricsByName, repetitionCount) <- getBenchmarkResults) {
       for (i <- 0 until repetitionCount) {
@@ -144,7 +153,7 @@ private final class CsvWriter(val filename: String) extends ResultWriter {
 
 }
 
-private final class JsonWriter(val filename: String) extends ResultWriter {
+private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
   private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
@@ -355,7 +364,7 @@ private final class JsonWriter(val filename: String) extends ResultWriter {
       "data" -> getResultData.toJson
     )
 
-    writeToFile(filename, result.toJson.prettyPrint)
+    writeToFile(jsonFile, result.toJson.prettyPrint)
   }
 
   private def getResultData = {
