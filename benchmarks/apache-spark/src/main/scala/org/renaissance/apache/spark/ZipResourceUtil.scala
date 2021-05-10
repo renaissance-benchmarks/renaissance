@@ -7,17 +7,17 @@ import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
 
-private object ResourceUtil {
+private object ZipResourceUtil {
 
   /**
    * Creates a {@link Source} from a file within a ZIP resource
-   * associated with the {@link ResourceUtil} class.
+   * associated with the {@link ZipResourceUtil} class.
    *
-   * @param resourceName path to the ZIP resource
    * @param entryName name of the ZIP entry
+   * @param resourceName path to the ZIP resource
    * @return {@link Source} instance for the given file within a ZIP
    */
-  def sourceFromZipResource(resourceName: String, entryName: String): BufferedSource = {
+  def sourceFromZipResource(entryName: String, resourceName: String): BufferedSource = {
     val is = this.getClass.getResourceAsStream(resourceName)
     if (is == null) {
       throw new FileNotFoundException(

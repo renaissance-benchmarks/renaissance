@@ -1,6 +1,14 @@
 package org.renaissance.apache.spark
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Path
+import java.nio.file.Paths
+
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.IOUtils
+import org.apache.spark.SparkContext
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.PipelineModel
 import org.apache.spark.ml.PipelineStage
 import org.apache.spark.ml.classification.DecisionTreeClassificationModel
 import org.apache.spark.ml.classification.DecisionTreeClassifier
@@ -15,33 +23,13 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.util.stream.Collectors
-
 @Name("dec-tree")
 @Group("apache-spark")
 @Summary("Runs the Random Forest algorithm from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
-@Parameter(
-  name = "spark_executor_count",
-  defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
-  defaultValue = "$cpu.count",
-  summary = "Number of threads per executor."
-)
-@Parameter(
-  name = "copy_count",
-  defaultValue = "100",
-  summary = "Number of sample data copies to make in the input data."
-)
+@Parameter(name = "thread_count", defaultValue = "$cpu.count")
+@Parameter(name = "copy_count", defaultValue = "100")
 @Configuration(name = "test", settings = Array("copy_count = 5"))
 @Configuration(name = "jmh")
 final class DecTree extends Benchmark with SparkUtil {
@@ -49,42 +37,49 @@ final class DecTree extends Benchmark with SparkUtil {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private val inputResource = "/sample_libsvm_data.txt"
+  private var threadCountParam: Int = _
 
-  private var inputTrainingData: DataFrame = _
+  private var copyCountParam: Int = _
 
-  private var outputClassificationModel: DecisionTreeClassificationModel = _
+  val decisionTreePath = Paths.get("target", "dec-tree")
 
-  private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
-    def loadInputResource() = {
-      val resourceStream = getClass.getResourceAsStream(resourcePath)
-      val reader = new BufferedReader(new InputStreamReader(resourceStream))
-      reader.lines().collect(Collectors.toList())
+  val outputPath = decisionTreePath.resolve("output")
+
+  val inputFile = "/sample_libsvm_data.txt"
+
+  val bigInputFile = decisionTreePath.resolve("bigfile.txt")
+
+  var sc: SparkContext = null
+
+  var training: DataFrame = null
+
+  var pipeline: Pipeline = null
+
+  var pipelineModel: PipelineModel = null
+
+  var iteration: Int = 0
+
+  def prepareAndLoadInput(decisionTreePath: Path, inputFile: String): DataFrame = {
+    FileUtils.deleteDirectory(decisionTreePath.toFile)
+
+    val text =
+      IOUtils.toString(this.getClass.getResourceAsStream(inputFile), StandardCharsets.UTF_8)
+    for (i <- 0 until copyCountParam) {
+      FileUtils.write(bigInputFile.toFile, text, StandardCharsets.UTF_8, true)
     }
 
-    val lines = loadInputResource()
-    for (_ <- 0 until copyCount) {
-      Files.write(outputFile, lines, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-    }
-
-    outputFile
-  }
-
-  private def loadData(inputFile: Path): DataFrame = {
-    val sqlContext = new SQLContext(sparkContext)
-    sqlContext.read.format("libsvm").load(inputFile.toString).cache()
+    val sqlContext = new SQLContext(sc)
+    return sqlContext.read.format("libsvm").load(bigInputFile.toString)
   }
 
   def constructPipeline(): Pipeline = {
     val labelIndexer = new StringIndexer()
       .setInputCol("label")
       .setOutputCol("indexedLabel")
-
     val featureIndexer = new VectorIndexer()
       .setInputCol("features")
       .setOutputCol("indexedFeatures")
       .setMaxCategories(10)
-
     val dtc = new DecisionTreeClassifier()
       .setFeaturesCol("indexedFeatures")
       .setLabelCol("indexedLabel")
@@ -94,9 +89,7 @@ final class DecTree extends Benchmark with SparkUtil {
       .setMinInfoGain(0.0)
       .setCacheNodeIds(false)
       .setCheckpointInterval(10)
-      .setSeed(159147643)
-
-    new Pipeline().setStages(
+    return new Pipeline().setStages(
       Array[PipelineStage](
         labelIndexer,
         featureIndexer,
@@ -105,52 +98,37 @@ final class DecTree extends Benchmark with SparkUtil {
     )
   }
 
-  override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
-    setUpSparkContext(bc)
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    threadCountParam = c.parameter("thread_count").toPositiveInteger
+    copyCountParam = c.parameter("copy_count").toPositiveInteger
 
-    val inputFile = prepareInput(
-      inputResource,
-      bc.parameter("copy_count").toPositiveInteger,
-      bc.scratchDirectory().resolve("input.txt")
-    )
-
-    inputTrainingData = loadData(inputFile)
+    val tempDirPath = c.scratchDirectory()
+    sc = setUpSparkContext(tempDirPath, threadCountParam, "dec-tree")
+    training = prepareAndLoadInput(decisionTreePath, inputFile).cache()
+    pipeline = constructPipeline()
   }
 
-  override def run(bc: BenchmarkContext): BenchmarkResult = {
-    // Always create a new pipeline to avoid (potential) caching.
-    val outputPipelineModel = constructPipeline().fit(inputTrainingData)
-    val lastStage = outputPipelineModel.stages.last
-    outputClassificationModel = lastStage.asInstanceOf[DecisionTreeClassificationModel]
+  override def run(c: BenchmarkContext): BenchmarkResult = {
+    pipelineModel = pipeline.fit(training)
+    val treeModel =
+      pipelineModel.stages.last.asInstanceOf[DecisionTreeClassificationModel]
+    val thisIterOutputPath = outputPath.resolve(iteration.toString)
+    FileUtils.write(
+      thisIterOutputPath.toFile,
+      treeModel.toDebugString,
+      StandardCharsets.UTF_8,
+      true
+    )
+    iteration += 1
 
     // TODO: add more in-depth validation
     Validators.compound(
-      Validators.simple("tree depth", 2, outputClassificationModel.depth),
-      Validators.simple("node count", 5, outputClassificationModel.numNodes),
-      Validators.simple("class count", 2, outputClassificationModel.numClasses),
-      Validators.simple("feature count", 692, outputClassificationModel.numFeatures)
+      Validators.simple("tree depth", 2, treeModel.depth),
+      Validators.simple("node count", 5, treeModel.numNodes)
     )
   }
 
-  override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputFile = bc.scratchDirectory().resolve("output.txt")
-    dumpResult(outputClassificationModel, outputFile)
-
-    tearDownSparkContext()
+  override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+    tearDownSparkContext(sc)
   }
-
-  private def dumpResult(dtcm: DecisionTreeClassificationModel, outputFile: Path) = {
-    // Create a header with information about model properties and attach to
-    // it a debug dump of the underlying tree (without the first line containing UID).
-    val header = Seq(
-      s"depth=${dtcm.depth}, numNodes=${dtcm.numNodes}, " +
-        s"numClasses=${dtcm.numClasses}, numFeatures=${dtcm.numFeatures}"
-    )
-    val body = dtcm.toDebugString.linesIterator.toSeq.tail
-    val dtcmDump = (header ++ body).mkString("\n")
-
-    // Files.writeString() is only available from Java 11.
-    Files.write(outputFile, dtcmDump.getBytes)
-  }
-
 }
