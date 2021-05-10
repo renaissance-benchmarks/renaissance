@@ -1,34 +1,27 @@
 package org.renaissance.apache.spark
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
-import org.renaissance.Benchmark.Name
-import org.renaissance.BenchmarkContext
-
+import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 
-/**
- * A common trait for all Spark benchmarks. Provides shared Spark
- * setup code and other convenience methods.
- *
- * The common setup code requires that all Spark benchmarks define
- * `spark_executor_count` and `spark_threads_per_executor`
- * parameters, which determine the level of parallelism.
- */
+import org.apache.commons.io.IOUtils
+import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+
 trait SparkUtil {
 
-  private val portAllocationMaxRetries: Int = 16
+  val portAllocationMaxRetries: Int = 16
 
-  private val winutilsName = "winutils.exe"
-  private val winutilsSize = 109568
+  val winUtils = "/winutils.exe"
 
-  protected var sparkContext: SparkContext = _
-
-  def setUpSparkContext(bc: BenchmarkContext): SparkContext = {
-    val scratchDir = bc.scratchDirectory()
-    setUpHadoop(scratchDir.resolve("hadoop"))
+  def setUpSparkContext(
+    dirPath: Path,
+    threadsPerExecutor: Int,
+    benchName: String
+  ): SparkContext = {
+    setUpHadoop(dirPath)
 
     //
     // We bind Spark explicitly to localhost to avoid all sorts of trouble:
@@ -39,35 +32,25 @@ trait SparkUtil {
     // "localhost" or "127.0.0.1" does, so does setting the SPARK_LOCAL_IP
     // environment variable (but we cannot do it from here).
     //
-
-    val benchmarkName = getClass.getDeclaredAnnotation(classOf[Name]).value
-    val executorCount = bc.parameter("spark_executor_count").toPositiveInteger
-    val threadCount = bc.parameter("spark_executor_thread_count").toPositiveInteger
-
     val conf = new SparkConf()
-      .setAppName(benchmarkName)
-      .setMaster(s"local[$threadCount]")
+      .setAppName(benchName)
+      .setMaster(s"local[$threadsPerExecutor]")
       .set("spark.driver.host", "localhost")
       .set("spark.driver.bindAddress", "127.0.0.1")
-      .set("spark.local.dir", scratchDir.toString)
+      .set("spark.local.dir", dirPath.toString)
       .set("spark.port.maxRetries", portAllocationMaxRetries.toString)
-      .set("spark.executor.instances", s"$executorCount")
-      .set("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
+      .set("spark.executor.instances", "4")
+      .set("spark.sql.warehouse.dir", dirPath.resolve("warehouse").toString)
 
-    sparkContext = new SparkContext(conf)
-    sparkContext.setLogLevel("ERROR")
-    sparkContext
+    val sc = new SparkContext(conf)
+    sc.setLogLevel("ERROR")
+    sc
   }
 
   def tearDownSparkContext(sc: SparkContext): Unit = {
     if (sc != null) {
       sc.stop()
     }
-  }
-
-  def tearDownSparkContext(): Unit = {
-    tearDownSparkContext(sparkContext)
-    sparkContext = null
   }
 
   /**
@@ -79,37 +62,21 @@ trait SparkUtil {
    * When updating Spark in Renaissance, the file must be upgraded to the
    * corresponding Hadoop version from https://github.com/cdarlint/winutils
    */
-  private def setUpHadoop(hadoopHomeDir: Path): Unit = {
+  def setUpHadoop(tempDirPath: Path): Any = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
-      val hadoopHomeDirAbs = hadoopHomeDir.toAbsolutePath
-      val winutilsDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
-      val winutilsStream = getClass.getResourceAsStream("/" + winutilsName)
-
-      try {
-        val bytesWritten = Files.copy(
-          winutilsStream,
-          winutilsDir.resolve(winutilsName)
-        )
-
-        if (bytesWritten != winutilsSize) {
-          throw new Exception(
-            s"Wrong winutils.exe size: expected $winutilsSize, written $bytesWritten"
-          )
-        }
-      } finally {
-        // This may mask a try-block exception, but at least it will fail anyway.
-        winutilsStream.close()
-      }
-
-      System.setProperty("hadoop.home.dir", hadoopHomeDirAbs.toString)
+      val winutilsPath = Paths.get(tempDirPath.toAbsolutePath + "/bin")
+      Files.createDirectories(winutilsPath)
+      IOUtils.copy(
+        this.getClass.getResourceAsStream(winUtils),
+        new FileOutputStream(winutilsPath.toString + winUtils)
+      )
+      System.setProperty("hadoop.home.dir", tempDirPath.toAbsolutePath.toString)
     }
   }
 
-  def ensureCached[T](rdd: RDD[T]): RDD[T] = {
+  def ensureCaching[T](rdd: RDD[T]): Unit = {
     if (!rdd.getStorageLevel.useMemory) {
-      throw new Exception("Spark RDD must be cached!")
+      throw new Exception("Spark RDD must be cached !")
     }
-
-    rdd
   }
 }
