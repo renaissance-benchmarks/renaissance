@@ -181,33 +181,33 @@ final class MovieLens extends Benchmark with SparkUtil {
     }
 
     def trainModels(configs: Iterable[AlsConfig]) = {
-
       // Train models and evaluate them on the validation set.
-
       for (config <- configs) {
-        def trainModel(ratings: RDD[Rating]) = {
-          new ALS()
-            .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_ONLY)
-            .setFinalRDDStorageLevel(StorageLevel.MEMORY_ONLY)
-            .setIterations(config.iterations)
-            .setLambda(config.lambda)
-            .setRank(config.rank)
-            .setSeed(randomSeed)
-            .run(ratings)
-        }
+        val model = trainModel(training, config)
 
-        val model = trainModel(training)
         val validationRmse = computeRmse(model, validation, numValidation)
         println(
           s"RMSE (validation) = $validationRmse for the model trained with rank = ${config.rank}, " +
             s"lambda = ${config.lambda}, and numIter = ${config.iterations}."
         )
+
         if (validationRmse < bestValidationRmse) {
           bestModel = Some(model)
           bestValidationRmse = validationRmse
           bestConfig = config
         }
       }
+    }
+
+    private def trainModel(ratings: RDD[Rating], config: AlsConfig) = {
+      new ALS()
+        .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_ONLY)
+        .setFinalRDDStorageLevel(StorageLevel.MEMORY_ONLY)
+        .setIterations(config.iterations)
+        .setLambda(config.lambda)
+        .setRank(config.rank)
+        .setSeed(randomSeed)
+        .run(ratings)
     }
 
     def recommendMovies() = {
