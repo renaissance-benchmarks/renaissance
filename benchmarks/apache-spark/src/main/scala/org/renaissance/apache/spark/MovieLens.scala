@@ -261,7 +261,13 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
-    setUpSparkContext(bc)
+    //
+    // Without a checkpoint directory set, JMH runs of this
+    // benchmark in Travis CI tend to crash with stack overflow.
+    //
+    // TODO Only use checkpoint directory in test runs.
+    //
+    setUpSparkContext(bc, useCheckpointDir = true)
 
     inputFileParam = bc.parameter("input_file").value
 
