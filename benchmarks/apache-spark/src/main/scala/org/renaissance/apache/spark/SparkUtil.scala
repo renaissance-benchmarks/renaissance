@@ -35,7 +35,7 @@ trait SparkUtil {
   protected var sparkSession: SparkSession = _
   protected def sparkContext: SparkContext = sparkSession.sparkContext
 
-  def setUpSparkContext(bc: BenchmarkContext): Unit = {
+  def setUpSparkContext(bc: BenchmarkContext, useCheckpointDir: Boolean = false): Unit = {
     setUpLoggers(sparkLogLevel, jettyLogLevel)
 
     val scratchDir = bc.scratchDirectory()
@@ -66,6 +66,10 @@ trait SparkUtil {
       .config("spark.executor.instances", s"$executorCount")
       .config("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
       .getOrCreate()
+
+    if (useCheckpointDir) {
+      sparkContext.setCheckpointDir(scratchDir.resolve("checkpoints").toString)
+    }
 
     sparkContext.setLogLevel(sparkLogLevel.toString)
   }
@@ -130,11 +134,19 @@ trait SparkUtil {
   }
 
   def ensureCached[T](rdd: RDD[T]): RDD[T] = {
-    rdd.persist(StorageLevel.MEMORY_ONLY).localCheckpoint()
+    assume(
+      rdd.getStorageLevel == StorageLevel.NONE,
+      "Storage level should be NONE before calling ensureCached()"
+    )
+    rdd.persist(StorageLevel.MEMORY_ONLY)
   }
 
   def ensureCached[T](ds: Dataset[T]): Dataset[T] = {
-    ds.persist(StorageLevel.MEMORY_ONLY).localCheckpoint()
+    assume(
+      ds.storageLevel == StorageLevel.NONE,
+      "Storage level should be NONE before calling ensureCached()"
+    )
+    ds.persist(StorageLevel.MEMORY_ONLY)
   }
 
   private def setUpLoggers(sparkLevel: Level, jettyLevel: Level) = {
