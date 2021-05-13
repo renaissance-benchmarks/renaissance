@@ -2,8 +2,14 @@ package org.renaissance.rx;
 
 
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Set;
 
+import static java.util.Arrays.stream;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 
 public class Scrabble {
@@ -80,8 +86,29 @@ public class Scrabble {
   public Set<String> shakespeareWords;
 
   public Scrabble(String scrabblePath, String shakespearePath) {
-    scrabbleWords = Util.readScrabbleWords(scrabblePath);
-    shakespeareWords = Util.readShakespeareWords(shakespearePath);
+    scrabbleWords = resourceAsLowerCaseWords(scrabblePath);
+    shakespeareWords = resourceAsLowerCaseWords(shakespearePath);
+  }
+
+  public Set<String> resourceAsLowerCaseWords(String resourceName) {
+    try (
+      BufferedReader reader = getResourceReader(resourceName)
+    ) {
+      return reader.lines()
+        .flatMap(s -> stream(s.split("\\s+")))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .map(String::toLowerCase)
+        .collect(toSet());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private BufferedReader getResourceReader(String resourceName) {
+    return new BufferedReader(new InputStreamReader(
+      requireNonNull(getClass().getResourceAsStream(resourceName)))
+    );
   }
 
 }

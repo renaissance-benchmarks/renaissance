@@ -17,17 +17,30 @@
  */
 package org.renaissance.jdk.streams;
 
-import org.apache.commons.io.IOUtils;
-
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.*;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.function.IntUnaryOperator;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static java.util.Arrays.stream;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
 
 public class JavaScrabble {
@@ -48,23 +61,30 @@ public class JavaScrabble {
   ) throws RuntimeException {
     try {
       allWords = resourceAsWords(shakespearePath);
-      scrabbleWords = new HashSet<>(Arrays.asList(
-        resourceAsWords(scrabblePath)
-      ));
-
+      scrabbleWords = stream(resourceAsWords(scrabblePath)).collect(toSet());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
 
-  private String[] resourceAsWords(String resource) throws IOException {
-    return IOUtils.toString(
-      JavaScrabble.class.getResourceAsStream(resource),
-      StandardCharsets.UTF_8
-    ).split("\\s+");
+  private String[] resourceAsWords(String resourceName) throws IOException {
+    try (
+      BufferedReader reader = getResourceReader(resourceName)
+    ) {
+      return reader.lines()
+        .flatMap(s -> stream(s.split("\\s+")))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .toArray(String[]::new);
+    }
   }
 
+  private BufferedReader getResourceReader(String resourceName) {
+    return new BufferedReader(new InputStreamReader(
+      requireNonNull(getClass().getResourceAsStream(resourceName)))
+    );
+  }
 
   public List<Entry<Integer, List<String>>> run() {
     // Function to compute the score of a given word
@@ -159,7 +179,7 @@ public class JavaScrabble {
   }
 
   private static Stream<String> shakespeareWordStream() {
-    return Arrays.stream(allWords)
+    return stream(allWords)
       .parallel()
       .map(String::toUpperCase)
       .filter(JavaScrabble::isAlphabetical);

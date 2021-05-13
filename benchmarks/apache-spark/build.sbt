@@ -12,7 +12,8 @@ lazy val apacheSpark = (project in file("."))
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
       "org.apache.spark" %% "spark-mllib" % sparkVersion,
-      "commons-io" % "commons-io" % "2.6"
+      // Not directly required, forces the use of newer version
+      "commons-io" % "commons-io" % "2.7"
     )
   )
   .dependsOn(
