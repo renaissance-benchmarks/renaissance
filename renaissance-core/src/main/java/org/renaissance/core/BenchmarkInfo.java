@@ -6,6 +6,8 @@ import org.renaissance.BenchmarkParameter;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -14,6 +16,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.stream;
+import static java.util.function.Function.identity;
+import static java.util.stream.IntStream.range;
 
 /**
  * Stores metadata associated with a particular benchmark.
@@ -183,12 +187,31 @@ public final class BenchmarkInfo {
       }
 
       public List<String> toList() {
-        return toList(Function.identity());
+        return toList(identity());
       }
 
       public <T> List<T> toList(Function<String, T> parser) {
-        String[] parts = value.split(",");
-        return stream(parts).map(s -> parser.apply(s.trim())).collect(Collectors.toList());
+        String[] parts = trim(value.split(","));
+        return stream(parts).map(parser::apply).collect(Collectors.toList());
+      }
+
+      public List<Map<String, String>> toCsvRows() {
+        return toCsvRows(identity());
+      }
+
+      public <R> List<R> toCsvRows(Function<Map<String, String>, R> parser) {
+        String[] rows = trim(value.split(";"));
+        String[] names = trim(rows[0].split(","));
+        return stream(rows, 1, rows.length).map(row -> {
+          // Convert each row to a map of values.
+          String[] cols = trim(row.split(","));
+          Map<String, String> rowMap = range(0, names.length).collect(
+            LinkedHashMap::new, (m, i) -> m.put(names[i], cols[i]), Map::putAll
+          );
+
+          // Convert to desired row type.
+          return parser.apply(rowMap);
+        }).collect(Collectors.toList());
       }
 
       private <T> T value(Function<String, T> parser) {
@@ -197,6 +220,10 @@ public final class BenchmarkInfo {
 
       public String value() {
         return value;
+      }
+
+      private String[] trim(String[] parts) {
+        return stream(parts).map(String::trim).toArray(String[]::new);
       }
     };
   }

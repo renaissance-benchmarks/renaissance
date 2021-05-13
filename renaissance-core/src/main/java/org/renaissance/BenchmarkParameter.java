@@ -1,6 +1,7 @@
 package org.renaissance;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -71,5 +72,28 @@ public interface BenchmarkParameter {
    * @return Parameter value as {@code double}.
    */
   <T> List<T> toList(Function<String, T> parser);
+
+  /**
+   * Interprets the value as a CSV-like table with rows separated by
+   * semicolons, columns separated by commas, and a header row with
+   * column names.
+   *
+   * @return A {@link List} of rows represented by a {@link Map} of column
+   * names to string values, with rows and columns preserving iteration order.
+   */
+  List<Map<String, String>> toCsvRows();
+
+  /**
+   * Interprets the value as a CSV-like table with rows separated by
+   * semicolons, columns separated by commas, and a header row with
+   * column names.
+   *
+   * @param parser Function to parse a row from a {@link Map} containing
+   * column values keyed by column names.
+   *
+   * @return A {@link List} of rows represented by a {@link Map} of column
+   * names to string values, with rows and columns preserving iteration order.
+   */
+  <R> List<R> toCsvRows(Function<Map<String, String>, R> parser);
 
 }
