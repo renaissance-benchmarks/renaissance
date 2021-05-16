@@ -6,7 +6,6 @@ import org.renaissance.BenchmarkParameter;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,11 @@ public final class BenchmarkInfo {
   /** Maximum JVM version supported. Can be unspecified. */
   final Optional<Version> jvmVersionMax;
 
+  /** Configuration-specific parameter values. */
   final Map<String, Map<String, String>> configurations;
+
+  /** Configuration-agnostic parameter value overrides. */
+  final Map<String, String> parameterOverrides;
 
 
   BenchmarkInfo(
@@ -61,7 +64,8 @@ public final class BenchmarkInfo {
     String summary, String description,
     int repetitions, String[] licenses, String distro,
     Optional<Version> jvmVersionMin, Optional<Version> jvmVersionMax,
-    Map<String, Map<String, String>> configurations
+    Map<String, Map<String, String>> configurations,
+    Map<String, String> parameterOverrides
   ) {
     this.module = module;
     this.className = className;
@@ -75,6 +79,7 @@ public final class BenchmarkInfo {
     this.jvmVersionMin = jvmVersionMin;
     this.jvmVersionMax = jvmVersionMax;
     this.configurations = configurations;
+    this.parameterOverrides = parameterOverrides;
   }
 
   /**
@@ -145,12 +150,34 @@ public final class BenchmarkInfo {
 
   public BenchmarkParameter parameter(String confName, String paramName) {
     final Map<String, String> conf = getConfiguration(confName);
-    if (conf.containsKey(paramName)) {
-      return asBenchmarkParameter(conf.get(paramName));
-    } else {
+
+    // A configuration must contain the given parameter.
+    if (!conf.containsKey(paramName)) {
       throw new NoSuchElementException(String.format(
         "configuration '%s' has no such parameter: %s", confName, paramName
       ));
+    }
+
+    // Get parameter value, possibly overridden from command line.
+    return asBenchmarkParameter(
+      getParameterValue(conf, paramName)
+    );
+  }
+
+  private String getParameterValue(Map<String, String> conf, String paramName) {
+    final String baseValue = conf.get(paramName);
+    if (parameterOverrides.containsKey(paramName)) {
+      final String override = parameterOverrides.get(paramName);
+      final String message = String.format(
+        "Overriding the value of parameter '%s' in benchmark '%s': %s -> %s",
+        paramName, name, baseValue, override
+      );
+
+      System.out.println(message);
+      return override;
+
+    } else {
+      return baseValue;
     }
   }
 

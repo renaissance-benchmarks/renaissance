@@ -18,6 +18,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.stream.Collectors.groupingBy;
@@ -38,13 +39,17 @@ public final class BenchmarkRegistry {
   private final Map<String, List<BenchmarkInfo>> benchmarksByPrimaryGroup;
 
 
-  private BenchmarkRegistry(final Properties properties) {
+  private BenchmarkRegistry(
+    final Properties properties, Map<String, String> parameterOverrides
+  ) {
     // Keep benchmarks ordered by name.
     this.benchmarksByName = properties.stringPropertyNames().stream()
-      .filter(p -> p.endsWith(".name"))
+      .filter(name -> name.endsWith(".name"))
       .collect(toMap(
         properties::getProperty,
-        p -> createBenchmarkInfo(properties, properties.getProperty(p)),
+        p -> createBenchmarkInfo(
+          properties.getProperty(p), properties, parameterOverrides
+        ),
         (x, y) -> y,
         TreeMap::new
       ));
@@ -60,27 +65,36 @@ public final class BenchmarkRegistry {
 
 
   public static BenchmarkRegistry createDefault() {
+    return createDefault(emptyMap());
+  }
+
+
+  public static BenchmarkRegistry createDefault(
+    Map<String, String> parameterOverrides
+  ) {
     final String name = "/" + BENCHMARK_PROPERTIES;
     final InputStream properties = BenchmarkRegistry.class.getResourceAsStream(name);
     if (properties == null) {
       throw new RuntimeException("could not find resource " + name);
     }
 
-    return createFromProperties(properties);
+    return createFromProperties(properties, parameterOverrides);
   }
 
 
   public static BenchmarkRegistry createFromProperties(File file) throws FileNotFoundException {
     final InputStream stream = new FileInputStream(file);
-    return createFromProperties(stream);
+    return createFromProperties(stream, emptyMap());
   }
 
 
-  private static BenchmarkRegistry createFromProperties(InputStream stream) {
+  private static BenchmarkRegistry createFromProperties(
+    InputStream stream, Map<String, String> parameterOverrides
+  ) {
     try {
       final Properties properties = new Properties();
       properties.load(stream);
-      return new BenchmarkRegistry(properties);
+      return new BenchmarkRegistry(properties, parameterOverrides);
 
     } catch (IOException e) {
       throw new RuntimeException("failed to create benchmark registry", e);
@@ -88,9 +102,12 @@ public final class BenchmarkRegistry {
   }
 
 
-  private BenchmarkInfo createBenchmarkInfo(final Properties properties, String name) {
+  private BenchmarkInfo createBenchmarkInfo(
+    String benchName, final Properties properties,
+    Map<String, String> parameterOverrides
+  ) {
     BiFunction<String, String, String> getter = (key, defaultValue) ->
-      properties.getProperty("benchmark." + name + "." + key, defaultValue).trim();
+      properties.getProperty("benchmark." + benchName + "." + key, defaultValue).trim();
 
     Function<String, String> mapper = value -> {
       if (value.startsWith("$")) {
@@ -117,7 +134,8 @@ public final class BenchmarkRegistry {
       getter.apply("distro", ""),
       parseJvmVersion(getter.apply("jvm_version_min", "")),
       parseJvmVersion(getter.apply("jvm_version_max", "")),
-      getConfigurations(name, mapper, properties)
+      getConfigurations(benchName, mapper, properties),
+      parameterOverrides
     );
   }
 
