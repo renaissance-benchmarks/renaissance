@@ -122,22 +122,15 @@ public final class BenchmarkInfo {
 
   public Optional<Version> jvmVersionMax() { return jvmVersionMax; }
 
-  public boolean isConfigurable() { return !configurations.isEmpty(); }
 
-  public boolean hasConfiguration(String name) {
-    return configurations.containsKey(name);
-  }
-
-
-  public String[] configurationNames() {
+  String[] configurationNames() {
     return configurations.keySet().toArray(new String[0]);
   }
 
 
-  public String[] parameterNames(String confName) {
+  String[] parameterNames(String confName) {
     return getConfiguration(confName).keySet().toArray(new String[0]);
   }
-
 
   private Map<String, String> getConfiguration(String confName) {
     if (configurations.containsKey(confName)) {
