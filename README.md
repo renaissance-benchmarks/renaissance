@@ -77,6 +77,8 @@ Usage: renaissance [options] [benchmark-specification]
   --json <json-file>       Output results as JSON to <json-file>.
   -c, --configuration <conf-name>
                            Use benchmark parameters from configuration <conf-name>.
+  -o, --override <name>=<value>
+                           Override the value of a configuration parameter <name> to <value>.
   --scratch-base <dir>     Create scratch directories in <dir>. Defaults to current directory.
   --keep-scratch           Keep the scratch directories after VM exit. Defaults to deleting scratch directories.
   --no-forced-gc           Do not force garbage collection before each measured operation. Defaults to forced GC.
