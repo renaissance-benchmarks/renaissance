@@ -1,5 +1,7 @@
 package org.renaissance.core;
 
+import java.lang.management.ManagementFactory;
+
 import static java.lang.Integer.compare;
 import static java.lang.Math.min;
 import static java.util.Arrays.stream;
@@ -25,7 +27,7 @@ public final class Version implements Comparable<Version> {
     this.components = components;
   }
 
-
+  /** Creates a {@link Version} from a version string. */
   public static Version parse(String version) {
     final String[] parts = version.split("[.]");
     try {
@@ -43,6 +45,10 @@ public final class Version implements Comparable<Version> {
     }
   }
 
+  /** Returns the specification version of this JVM. */
+  public static Version thisJvmSpecVersion() {
+    return Version.parse(ManagementFactory.getRuntimeMXBean().getSpecVersion());
+  }
 
   @Override
   public String toString() {

@@ -7,7 +7,6 @@ import org.renaissance.core.{BenchmarkInfo, BenchmarkRegistry, DirUtils, ModuleL
 import org.renaissance.harness.ExecutionPolicies.{FixedOpCount, FixedOpTime, FixedTime}
 import org.renaissance.{Benchmark, Plugin}
 
-import java.lang.management.ManagementFactory
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
 import java.util.function.ToIntFunction
@@ -48,7 +47,7 @@ object RenaissanceSuite {
     if (config.printList) {
       print(formatBenchmarkList(realBenchmarks))
     } else if (config.printRawList) {
-      val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
+      val jvmVersion = Version.thisJvmSpecVersion()
       val listedBenchmarks =
         if (config.checkJvm) realBenchmarks.filter(benchmarkIsCompatible(_, jvmVersion))
         else realBenchmarks
@@ -260,7 +259,7 @@ object RenaissanceSuite {
       result
     }
 
-    val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
+    val jvmVersion = Version.thisJvmSpecVersion()
 
     // Exclude incompatible benchmarks with a warning.
     benchmarks
@@ -368,7 +367,7 @@ object RenaissanceSuite {
 
   private def formatBenchmarkList(benchmarks: Seq[BenchmarkInfo]) = {
     val indent = "    "
-    val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
+    val jvmVersion = Version.thisJvmSpecVersion()
 
     val result = new StringBuilder
     for (bench <- benchmarks) {
