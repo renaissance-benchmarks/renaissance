@@ -41,7 +41,7 @@ object RenaissanceSuite {
     )
 
     // Load information about available benchmarks.
-    val benchmarkRegistry = BenchmarkRegistry.createDefault()
+    val benchmarkRegistry = BenchmarkRegistry.createDefault(config.parameterOverrides.asJava)
     val realBenchmarks = benchmarkRegistry.getMatching(benchmarkIsReal).asScala
 
     if (config.printList) {
