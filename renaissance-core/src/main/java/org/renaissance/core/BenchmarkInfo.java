@@ -137,7 +137,7 @@ public final class BenchmarkInfo {
       return configurations.get(confName);
     } else {
       throw new NoSuchElementException(String.format(
-        "no such configuration in benchmark '%s': %s", name, confName
+        "benchmark '%s' has no such configuration: %s", name, confName
       ));
     }
   }
@@ -149,7 +149,7 @@ public final class BenchmarkInfo {
       return asBenchmarkParameter(conf.get(paramName));
     } else {
       throw new NoSuchElementException(String.format(
-        "no such parameter in configuration '%s': %s", confName, paramName
+        "configuration '%s' has no such parameter: %s", confName, paramName
       ));
     }
   }
@@ -166,9 +166,9 @@ public final class BenchmarkInfo {
 
       public int toPositiveInteger() {
         return value(s -> {
-          int value = Integer.parseUnsignedInt(s);
-          if (value > 0) {
-            return value;
+          int intValue = Integer.parseUnsignedInt(s);
+          if (intValue > 0) {
+            return intValue;
           } else {
             throw new NumberFormatException("the value must be positive");
           }
