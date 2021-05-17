@@ -5,7 +5,7 @@ lazy val scalaStdlib = (project in file("."))
     name := "scala-stdlib",
     version := (version in renaissanceCore).value,
     organization := (organization in renaissanceCore).value,
-    scalaVersion := "2.13.5"
+    scalaVersion := "2.13.6"
   )
   .dependsOn(
     renaissanceCore
