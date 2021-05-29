@@ -3,8 +3,8 @@ lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 lazy val database = (project in file("."))
   .settings(
     name := "database",
-    version := (version in renaissanceCore).value,
-    organization := (organization in renaissanceCore).value,
+    version := (renaissanceCore / version).value,
+    organization := (renaissanceCore / organization).value,
     scalaVersion := "2.13.6",
     libraryDependencies ++= Seq(
       "com.github.jnr" % "jnr-posix" % "3.0.29",

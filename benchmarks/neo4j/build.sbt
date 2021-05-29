@@ -3,8 +3,8 @@ lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 lazy val neo4j = (project in file("."))
   .settings(
     name := "neo4j",
-    version := (version in renaissanceCore).value,
-    organization := (organization in renaissanceCore).value,
+    version := (renaissanceCore / version).value,
+    organization := (renaissanceCore / organization).value,
     scalaVersion := "2.12.13",
     scalacOptions += "-target:jvm-1.8",
     libraryDependencies ++= Seq(
