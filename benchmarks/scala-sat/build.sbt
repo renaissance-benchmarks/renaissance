@@ -7,8 +7,8 @@ lazy val scalaCafeSAT = RootProject(uri("cafesat"))
 lazy val scalaSAT = (project in file("."))
   .settings(
     name := "scala-sat",
-    version := (version in renaissanceCore).value,
-    organization := (organization in renaissanceCore).value,
+    version := (renaissanceCore / version).value,
+    organization := (renaissanceCore / organization).value,
     scalaVersion := "2.13.6"
   )
   .dependsOn(

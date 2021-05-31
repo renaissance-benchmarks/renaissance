@@ -3,8 +3,8 @@ lazy val renaissanceCore = RootProject(uri("../renaissance-core"))
 lazy val renaissanceHarness = (project in file("."))
   .settings(
     name := "renaissance-harness",
-    version := (version in renaissanceCore).value,
-    organization := (organization in renaissanceCore).value,
+    version := (renaissanceCore / version).value,
+    organization := (renaissanceCore / organization).value,
     scalaVersion := "2.13.6",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     libraryDependencies ++= Seq(

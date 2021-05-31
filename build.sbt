@@ -29,7 +29,7 @@ val subProjects = benchmarkProjects :+ renaissanceHarness
 val allProjects = subProjects :+ renaissanceCore
 
 // Do not assemble fat JARs in subprojects
-aggregate in assembly := false
+assembly / aggregate := false
 
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
   tasks.toList match {
@@ -42,8 +42,8 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
 
 def projectJars =
   Def.taskDyn {
-    val rootJarBase = (resourceManaged in Compile).value
-    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
+    val rootJarBase = (Compile / resourceManaged).value
+    val coreJar = (renaissanceCore / Runtime / packageBin).value
 
     // Each generated task returns tuple of
     // (project name, project path, all JAR files, all JAR files without renaissance core JAR*)
@@ -66,7 +66,7 @@ def projectJars =
         dest
       }
 
-      val projectName = (name in project).value
+      val projectName = (project / name).value
       (projectName, projectPath, allJarFiles, loadedJars)
     }
     flattenTasks(projectJarTasks)
@@ -85,7 +85,7 @@ def jarsAndListGenerator =
         modulesProps.setProperty(projectName, jarLine)
       }
 
-      val modulesPropsFile = (resourceManaged in Compile).value / "modules.properties"
+      val modulesPropsFile = (Compile / resourceManaged).value / "modules.properties"
       val modulesPropsStream = new java.io.FileOutputStream(modulesPropsFile)
       modulesProps.store(modulesPropsStream, "Module jars")
 
@@ -103,7 +103,7 @@ def jarsAndListGenerator =
         }
       }
 
-      val benchmarksPropsFile = (resourceManaged in Compile).value / "benchmarks.properties"
+      val benchmarksPropsFile = (Compile / resourceManaged).value / "benchmarks.properties"
       val benchmarksPropsStream = new java.io.FileOutputStream(benchmarksPropsFile)
       benchmarksProps.store(benchmarksPropsStream, "Benchmark details")
 
@@ -172,13 +172,13 @@ lazy val renaissance: Project = {
   val p = Project("renaissance", file("."))
     .settings(
       name := "renaissance",
-      version := (version in renaissanceCore).value,
-      organization := (organization in renaissanceCore).value,
+      version := (renaissanceCore / version).value,
+      organization := (renaissanceCore / organization).value,
       crossPaths := false,
       autoScalaLibrary := false,
-      resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      fork in run := true,
-      cancelable in Global := true,
+      Compile / resourceGenerators += jarsAndListGenerator.taskValue,
+      run / fork := true,
+      Global / cancelable := true,
       remoteDebug := false,
       nonGplOnly := false,
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
@@ -194,24 +194,24 @@ lazy val renaissance: Project = {
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
-      assemblyJarName in assembly :=
+      assembly / assemblyJarName :=
         "renaissance-" + (if (nonGplOnly.value) "mit" else "gpl") +
-          "-" + (version in renaissanceCore).value + ".jar",
-      mainClass in assembly := Some(classOf[Launcher].getName),
-      test in assembly := {},
-      assemblyMergeStrategy in assembly := {
+          "-" + (renaissanceCore / version).value + ".jar",
+      assembly / mainClass := Some(classOf[Launcher].getName),
+      assembly / test := {},
+      assembly / assemblyMergeStrategy := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
         case _ => MergeStrategy.singleOrError
       },
-      javaOptions in Compile ++= {
+      Compile / javaOptions ++= {
         if (remoteDebug.value) {
           Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
         } else {
           Seq()
         }
       },
-      onLoad in Global := {
-        val old = (onLoad in Global).value
+      Global / onLoad := {
+        val old = (Global / onLoad).value
         old.andThen(startupTransition)
       }
     )
@@ -243,13 +243,13 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
   .enablePlugins(JmhPlugin)
   .settings(
     name := "renaissance-jmh",
-    version := (version in renaissance).value,
-    organization := (organization in renaissance).value,
-    nonGplOnly := (nonGplOnly in renaissance).value,
-    mainClass in assembly := Some("org.openjdk.jmh.Main"),
-    sourceGenerators in Compile := Def.taskDyn {
+    version := (renaissance / version).value,
+    organization := (renaissance / organization).value,
+    nonGplOnly := (renaissance / nonGplOnly).value,
+    assembly / mainClass := Some("org.openjdk.jmh.Main"),
+    Compile / sourceGenerators := Def.taskDyn {
       val log = streams.value.log
-      val outputDir = sourceManaged.in(Compile).value
+      val outputDir = (Compile / sourceManaged).value
       val nonGpl = nonGplOnly.value
       projectJars.map { groupJars =>
         RenaissanceJmh.generateJmhWrapperBenchmarkClasses(
@@ -259,13 +259,13 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
           groupJars
         )
       }
-    }.taskValue +: (sourceGenerators in Compile).value,
-    assembly in Jmh := ((assembly in Jmh) dependsOn (compile in Jmh)).value,
-    assemblyMergeStrategy in assembly := {
+    }.taskValue +: (Compile / sourceGenerators).value,
+    Jmh / assembly := ((Jmh / assembly) dependsOn (Jmh / compile)).value,
+    assembly / assemblyMergeStrategy := {
       case PathList("scala", _*) =>
         MergeStrategy.discard
       case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
     }
   )
