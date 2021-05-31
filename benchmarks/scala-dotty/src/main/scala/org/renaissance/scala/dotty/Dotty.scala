@@ -1,11 +1,19 @@
 package org.renaissance.scala.dotty
 
+import dotty.tools.dotc.interfaces.AbstractFile
+import dotty.tools.dotc.interfaces.CompilerCallback
+import dotty.tools.dotc.interfaces.Diagnostic
+import dotty.tools.dotc.interfaces.SimpleReporter
+import dotty.tools.dotc.interfaces.SourceFile
+import dotty.tools.dotc.{Main => DottyMain}
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.BenchmarkResult.Assert
+import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
+import org.renaissance.core.DirUtils
 
 import java.io._
 import java.net.URLClassLoader
@@ -13,12 +21,13 @@ import java.nio.file.Files.copy
 import java.nio.file.Files.createDirectories
 import java.nio.file.Files.notExists
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import scala.collection._
-
-// Keep to allow cross-compilation with Scala 2.11 and 2.12.
-import scala.collection.compat._
+import scala.io.Source
 
 @Name("dotty")
 @Group("scala-dotty")
@@ -26,9 +35,8 @@ import scala.collection.compat._
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
 @Parameter(
-  name = "batch_compilation",
-  defaultValue = "false",
-  summary = "Compiles all source files in batch mode instead of one by one."
+  name = "expected_classes_hash",
+  defaultValue = "81e2306d4b9ea9f3fbc8a8851be84e57"
 )
 @Configuration(name = "test")
 @Configuration(name = "jmh")
@@ -37,11 +45,13 @@ final class Dotty extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
+  private var expectedClassesHash: String = _
+
   private val sourcesInputResource = "/sources.zip"
 
-  private var dottyBaseArgs: Seq[String] = _
+  private val dependenciesInputResource = "/extdeps.zip"
 
-  private var dottyInvocations: Seq[Array[String]] = _
+  private var dottyArgs: Array[String] = _
 
   private def unzipResource(resourceName: String, outputDir: Path) = {
     val zis = new ZipInputStream(this.getClass.getResourceAsStream(resourceName))
@@ -87,45 +97,116 @@ final class Dotty extends Benchmark {
      * but that seems to be impossible with current API (see discussion
      * at https://github.com/renaissance-benchmarks/renaissance/issues/176).
      */
-    val classPath = Thread.currentThread.getContextClassLoader
+    val classPathJars = Thread.currentThread.getContextClassLoader
       .asInstanceOf[URLClassLoader]
       .getURLs
       .map(url => new java.io.File(url.toURI).getPath)
-      .mkString(File.pathSeparator)
+      .toBuffer
 
     val scratchDir = bc.scratchDirectory()
-    val outputDir = createDirectories(scratchDir.resolve("output"))
+    val outputDir = createDirectories(scratchDir.resolve("out"))
 
-    dottyBaseArgs = Seq[String](
-      "-classpath",
-      classPath,
-      // Allow the compiler to automatically perform implicit type conversions.
-      "-language:implicitConversions",
-      // Output directory for compiled classes.
-      "-d",
-      outputDir.toString
-    )
+    // Add extra dependencies if necessary.
+    if (!dependenciesInputResource.isEmpty) {
+      val libDir = scratchDir.resolve("lib")
+      val externalJars = unzipResource(dependenciesInputResource, libDir)
+      classPathJars ++= externalJars.map(_.toString)
+    }
 
     val sourceDir = scratchDir.resolve("src")
     val sourceFiles = unzipResource(sourcesInputResource, sourceDir)
 
-    val batchCompilation = bc.parameter("batch_compilation").toBoolean
-    if (batchCompilation) {
-      // Compile all sources as a batch.
-      val dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
-      dottyInvocations = Seq(dottyArgs)
-    } else {
-      // Compile sources one-by-one.
-      dottyInvocations = sourceFiles.map(p => (dottyBaseArgs :+ p.toString).toArray)
+    val dottyBaseArgs = Seq[String](
+      // Mark the sources as transitional.
+      "-source",
+      "3.0-migration",
+      // Class path with dependency jars.
+      "-classpath",
+      classPathJars.mkString(File.pathSeparator),
+      // Output directory for compiled classes.
+      "-d",
+      outputDir.toString,
+      // Set the root of the sources directory. Makes .class files stable.
+      "-sourceroot",
+      sourceDir.toString
+    )
+
+    // Compile all sources as a batch.
+    dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
+
+    expectedClassesHash = bc.parameter("expected_classes_hash").value()
+  }
+
+  override def run(bc: BenchmarkContext): BenchmarkResult = {
+    val result = new CompilationResult
+    DottyMain.process(dottyArgs, result, result)
+
+    //
+    // TODO: Check if Dotty can be convinced to generate identical .class files
+    //
+    // Currently, using the -sourceroot option helps stability between runs, but
+    // there are slight changes in some of the class files between Renaissance
+    // builds, which breaks hash-based validation.
+    //
+    () => {
+      result.errors.foreach(d => {
+        val pos = d.position().map(p => s"${p.source()}:${p.line()}: ").orElse("")
+        println(s"dotty-error: ${pos}${d.message()}")
+      })
+
+      Assert.assertEquals(0, result.errors.length, "compilation errors")
+      println(s"digest of generated classes: ${result.digest()}")
+      // Assert.assertEquals(expectedClassesHash, result.digest(), "digest of generated classes")
     }
   }
 
-  override def run(c: BenchmarkContext): BenchmarkResult = {
-    dottyInvocations.foreach { dottyArgs =>
-      dotty.tools.dotc.Main.process(dottyArgs)
+  private class CompilationResult extends SimpleReporter with CompilerCallback {
+    val errors = mutable.Buffer[Diagnostic]()
+    val warnings = mutable.Buffer[Diagnostic]()
+
+    override def report(diag: Diagnostic): Unit = {
+      diag.level() match {
+        case Diagnostic.ERROR => errors += diag
+        case Diagnostic.WARNING => warnings += diag
+        case other => /* ignore */
+      }
     }
 
-    // TODO: add proper validation
-    Validators.dummy()
+    val compiledSources = mutable.Buffer[SourceFile]()
+    val generatedClasses = mutable.Buffer[AbstractFile]()
+
+    override def onClassGenerated(
+      source: SourceFile,
+      generatedClass: AbstractFile,
+      className: String
+    ): Unit = {
+      generatedClasses += generatedClass
+    }
+
+    override def onSourceCompiled(source: SourceFile): Unit = {
+      compiledSources += source
+    }
+
+    def digest(): String = {
+      // Sort the files to get a stable hash.
+      val sortedFiles = generatedClasses.map(_.jfile).filter(_.isPresent).map(_.get).sorted
+
+      // Collect hash for all files and return it as a string.
+      val md = MessageDigest.getInstance("MD5")
+      sortedFiles.foreach(jf => digestClassFile(jf, md))
+      md.digest().map(b => String.format("%02x", b)).mkString
+    }
+
+    private def digestClassFile(jf: File, outputHash: MessageDigest): Unit = {
+      val dis = new DigestInputStream(new FileInputStream(jf), outputHash)
+
+      try {
+        while (dis.available > 0) {
+          dis.read()
+        }
+      } finally {
+        dis.close()
+      }
+    }
   }
 }
