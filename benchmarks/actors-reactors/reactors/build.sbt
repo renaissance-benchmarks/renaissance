@@ -73,9 +73,9 @@ lazy val reactorsCommon = crossProject(JVMPlatform)
         "org.scalatest" %%% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %%% "scalacheck" % scalaCheckVersion % "test"
       ),
-      unmanagedSourceDirectories in Compile +=
+      Compile / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "main" / "scala",
-      unmanagedSourceDirectories in Test +=
+      Test / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "test" / "scala"
     ): _*
   )
@@ -129,9 +129,9 @@ lazy val reactorsContainer = crossProject(JVMPlatform)
         "org.scalatest" %%% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %%% "scalacheck" % scalaCheckVersion % "test"
       ),
-      unmanagedSourceDirectories in Compile +=
+      Compile / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "main" / "scala",
-      unmanagedSourceDirectories in Test +=
+      Test / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "test" / "scala"
     ): _*
   )
@@ -158,9 +158,9 @@ lazy val reactorsProtocol = crossProject(JVMPlatform)
         "org.scalatest" %%% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %%% "scalacheck" % scalaCheckVersion % "test"
       ),
-      unmanagedSourceDirectories in Compile +=
+      Compile / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "main" / "scala",
-      unmanagedSourceDirectories in Test +=
+      Test / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "test" / "scala"
     ): _*
   )
@@ -188,9 +188,9 @@ lazy val reactorsRemote = crossProject(JVMPlatform)
           "org.scala-lang" % "scala-reflect" % scalaVersion.value
         )
       },
-      unmanagedSourceDirectories in Compile +=
+      Compile / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "main" / "scala",
-      unmanagedSourceDirectories in Test +=
+      Test / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "test" / "scala"
     ): _*
   )
@@ -313,9 +313,9 @@ lazy val reactors = crossProject(JVMPlatform)
         "org.scalatest" %%% "scalatest" % scalaTestVersion % "test",
         "org.scalacheck" %%% "scalacheck" % scalaCheckVersion % "test"
       ),
-      unmanagedSourceDirectories in Compile +=
+      Compile / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "main" / "scala",
-      unmanagedSourceDirectories in Test +=
+      Compile / unmanagedSourceDirectories +=
         baseDirectory.value.getParentFile / "shared" / "src" / "test" / "scala",
     ): _*
   )
