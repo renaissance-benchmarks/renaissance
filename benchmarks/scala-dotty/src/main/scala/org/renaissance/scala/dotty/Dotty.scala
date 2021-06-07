@@ -35,8 +35,10 @@ import scala.io.Source
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
 @Parameter(
-  name = "expected_classes_hash",
-  defaultValue = "81e2306d4b9ea9f3fbc8a8851be84e57"
+  name = "expected_tasty_hash",
+  // find . -type f -name '*.tasty'|LC_ALL=C sort|xargs cat|md5sum"
+  defaultValue = "0cc9c04f580b3ad28123101c89a83c48",
+  summary = "MD5 digest of all generated .tasty files"
 )
 @Configuration(name = "test")
 @Configuration(name = "jmh")
@@ -45,12 +47,16 @@ final class Dotty extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var expectedClassesHash: String = _
+  private var expectedTastyHash: String = _
 
   private val sourcesInputResource = "/sources.zip"
 
+  private var dottyOutputDir: Path = _
 
   private var dottyArgs: Array[String] = _
+
+  /** Show Dotty compilation warnings during validation. For debugging only. */
+  private val showDottyWarnings = false
 
   private def unzipResource(resourceName: String, outputDir: Path) = {
     val zis = new ZipInputStream(this.getClass.getResourceAsStream(resourceName))
@@ -99,12 +105,11 @@ final class Dotty extends Benchmark {
     val classPathJars = Thread.currentThread.getContextClassLoader
       .asInstanceOf[URLClassLoader]
       .getURLs
-      .map(url => new java.io.File(url.toURI).getPath)
+      .map(url => new File(url.toURI).getPath)
       .toBuffer
 
     val scratchDir = bc.scratchDirectory()
-    val outputDir = createDirectories(scratchDir.resolve("out"))
-
+    dottyOutputDir = createDirectories(scratchDir.resolve("out"))
 
     val sourceDir = scratchDir.resolve("src")
     val sourceFiles = unzipResource(sourcesInputResource, sourceDir)
@@ -118,38 +123,62 @@ final class Dotty extends Benchmark {
       classPathJars.mkString(File.pathSeparator),
       // Output directory for compiled classes.
       "-d",
-      outputDir.toString,
-      // Set the root of the sources directory. Makes .class files stable.
+      dottyOutputDir.toString,
+      // Setting the root of the sources directory stabilizes the contents of .tasty files.
       "-sourceroot",
       sourceDir.toString
     )
 
-    // Compile all sources as a batch.
+    // Compile all sources as a single batch.
     dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
 
-    expectedClassesHash = bc.parameter("expected_classes_hash").value()
+    expectedTastyHash = bc.parameter("expected_tasty_hash").value()
+  }
+
+  override def setUpBeforeEach(bc: BenchmarkContext): Unit = {
+    //
+    // Clean the Dotty output directory to make sure that it
+    // always produces all the files. Alternatively, we could
+    // create a new output directory for each repetition.
+    //
+    DirUtils.cleanRecursively(dottyOutputDir)
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
     val result = new CompilationResult
     DottyMain.process(dottyArgs, result, result)
 
-    //
-    // TODO: Check if Dotty can be convinced to generate identical .class files
-    //
-    // Currently, using the -sourceroot option helps stability between runs, but
-    // there are slight changes in some of the class files between Renaissance
-    // builds, which breaks hash-based validation.
-    //
     () => {
-      result.errors.foreach(d => {
-        val pos = d.position().map(p => s"${p.source()}:${p.line()}: ").orElse("")
-        println(s"dotty-error: ${pos}${d.message()}")
-      })
+      def printDiagnostics(diags: mutable.Buffer[Diagnostic], prefix: String) = {
+        diags.foreach(d => {
+          val pos = d.position().map(p => s"${p.source()}:${p.line()}: ").orElse("")
+          println(s"${prefix}: ${pos}${d.message()}")
+        })
+      }
 
+      //
+      // There may be warnings due to the transitional nature of the compiled
+      // sources, but they do not render the benchmark result invalid. There
+      // is no need to display them unless enabled for debugging.
+      //
+      if (showDottyWarnings) {
+        printDiagnostics(result.warnings, "dotty-warning")
+      }
+
+      //
+      // There must be no errors for the result to be considered valid.
+      // We do show the errors before failing.
+      //
+      printDiagnostics(result.errors, "dotty-error")
       Assert.assertEquals(0, result.errors.length, "compilation errors")
-      println(s"digest of generated classes: ${result.digest()}")
-      // Assert.assertEquals(expectedClassesHash, result.digest(), "digest of generated classes")
+
+      //
+      // We checksum the generated .tasty files, because the .class files are
+      // not byte-exact between Renaissance builds. Even for the .tasty files,
+      // we need to pass the '-sourceroot' option to the compiler so that it
+      // avoids storing some sort of source-path hash into the output.
+      //
+      Assert.assertEquals(expectedTastyHash, result.digest(), "digest of generated tasty files")
     }
   }
 
@@ -161,11 +190,10 @@ final class Dotty extends Benchmark {
       diag.level() match {
         case Diagnostic.ERROR => errors += diag
         case Diagnostic.WARNING => warnings += diag
-        case other => /* ignore */
+        case _ => /* ignore */
       }
     }
 
-    val compiledSources = mutable.Buffer[SourceFile]()
     val generatedClasses = mutable.Buffer[AbstractFile]()
 
     override def onClassGenerated(
@@ -176,21 +204,35 @@ final class Dotty extends Benchmark {
       generatedClasses += generatedClass
     }
 
-    override def onSourceCompiled(source: SourceFile): Unit = {
-      compiledSources += source
-    }
-
     def digest(): String = {
-      // Sort the files to get a stable hash.
-      val sortedFiles = generatedClasses.map(_.jfile).filter(_.isPresent).map(_.get).sorted
+      //
+      // Create a sorted list of .tasty files corresponding to .class files.
+      // The filtering based on the presence of the '$' character is a bit ad-hoc,
+      // because (unfortunately) some tasty files can contain the '$' character.
+      // Right now we assume that they can only start with '$', just like the
+      // '$tilde.tasty' file. The goal is to get a list of files that should
+      // exist, not to filter files that do not exist.
+      //
+      val tastyFiles = generatedClasses
+        .filter(_.jfile().isPresent)
+        .map(_.jfile().get())
+        .filter(_.getName.lastIndexOf('$') < 1)
+        .map(file => {
+          val fileName = file.getName
+          val dotIndex = fileName.lastIndexOf('.')
+          val baseName = if (dotIndex > 0) fileName.substring(0, dotIndex) else fileName
+          val tastyName = s"${baseName}.tasty"
+          new File(file.getParentFile(), tastyName)
+        })
+        .sorted
 
-      // Collect hash for all files and return it as a string.
+      // Compute hash for all .tasty files and return it as a string.
       val md = MessageDigest.getInstance("MD5")
-      sortedFiles.foreach(jf => digestClassFile(jf, md))
+      tastyFiles.foreach(jf => digestFile(jf, md))
       md.digest().map(b => String.format("%02x", b)).mkString
     }
 
-    private def digestClassFile(jf: File, outputHash: MessageDigest): Unit = {
+    private def digestFile(jf: File, outputHash: MessageDigest): Unit = {
       val dis = new DigestInputStream(new FileInputStream(jf), outputHash)
 
       try {
