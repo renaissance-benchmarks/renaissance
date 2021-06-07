@@ -49,7 +49,6 @@ final class Dotty extends Benchmark {
 
   private val sourcesInputResource = "/sources.zip"
 
-  private val dependenciesInputResource = "/extdeps.zip"
 
   private var dottyArgs: Array[String] = _
 
@@ -106,12 +105,6 @@ final class Dotty extends Benchmark {
     val scratchDir = bc.scratchDirectory()
     val outputDir = createDirectories(scratchDir.resolve("out"))
 
-    // Add extra dependencies if necessary.
-    if (!dependenciesInputResource.isEmpty) {
-      val libDir = scratchDir.resolve("lib")
-      val externalJars = unzipResource(dependenciesInputResource, libDir)
-      classPathJars ++= externalJars.map(_.toString)
-    }
 
     val sourceDir = scratchDir.resolve("src")
     val sourceFiles = unzipResource(sourcesInputResource, sourceDir)
