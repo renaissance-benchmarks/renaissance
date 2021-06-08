@@ -34,12 +34,6 @@ import scala.io.Source
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
-@Parameter(
-  name = "expected_tasty_hash",
-  // find . -type f -name '*.tasty'|LC_ALL=C sort|xargs cat|md5sum"
-  defaultValue = "0cc9c04f580b3ad28123101c89a83c48",
-  summary = "MD5 digest of all generated .tasty files"
-)
 @Configuration(name = "test")
 @Configuration(name = "jmh")
 final class Dotty extends Benchmark {
@@ -47,7 +41,13 @@ final class Dotty extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var expectedTastyHash: String = _
+  /**
+   * MD5 digest of all generated .tasty files (except a few) which embed
+   * the current working directory path into the .tasty file.
+   *
+   * find . -type f -name '*.tasty'|egrep -v '(Classfile|ByteCode)\.tasty' | LC_ALL=C sort|xargs cat|md5sum
+   */
+  private val expectedTastyHash: String = "7376f5f353dea8da455afb6abfee237e"
 
   private val sourcesInputResource = "/scalap.zip"
 
@@ -131,8 +131,6 @@ final class Dotty extends Benchmark {
 
     // Compile all sources as a single batch.
     dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
-
-    expectedTastyHash = bc.parameter("expected_tasty_hash").value()
   }
 
   override def setUpBeforeEach(bc: BenchmarkContext): Unit = {
