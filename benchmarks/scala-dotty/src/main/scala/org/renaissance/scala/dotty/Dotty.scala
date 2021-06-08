@@ -229,6 +229,7 @@ final class Dotty extends Benchmark {
           val tastyName = s"${baseName}.tasty"
           new File(file.getParentFile(), tastyName)
         })
+        .filterNot(f => Seq("Classfile.tasty", "ByteCode.tasty").contains(f.getName))
         .sorted
     }
 
