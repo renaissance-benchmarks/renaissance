@@ -49,7 +49,7 @@ final class Dotty extends Benchmark {
 
   private var expectedTastyHash: String = _
 
-  private val sourcesInputResource = "/sources.zip"
+  private val sourcesInputResource = "/scalap.zip"
 
   private var dottyOutputDir: Path = _
 
