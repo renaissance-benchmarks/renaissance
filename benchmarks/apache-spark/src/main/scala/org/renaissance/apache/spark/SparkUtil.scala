@@ -27,7 +27,7 @@ trait SparkUtil {
   private val portAllocationMaxRetries: Int = 16
 
   private val winutilsName = "winutils.exe"
-  private val winutilsSize = 109568
+  private val winutilsSize = 112640
 
   private val sparkLogLevel = Level.WARN
   private val jettyLogLevel = Level.WARN
@@ -99,13 +99,15 @@ trait SparkUtil {
   }
 
   /**
-   * Spark version 3.1.1 uses Hadoop version 3.2.0. The dependencies
+   * Spark version 3.1.2 uses Hadoop version 3.2.0. The dependencies
    * do not include a binary zip for Hadoop on Windows. Instead,
    * Renaissance includes winutils.exe as a resource, downloaded from
    * https://github.com/cdarlint/winutils/tree/master/hadoop-3.2.0/bin
    *
-   * When updating Spark in Renaissance, the file must be upgraded to the
+   * When updating Spark in Renaissance, the file must be updated to the
    * corresponding Hadoop version from https://github.com/cdarlint/winutils
+   *
+   * Also don't forget to update [[winutilsSize]] to match the binary.
    */
   private def setUpHadoop(hadoopHomeDir: Path): Unit = {
     if (sys.props.get("os.name").toString.contains("Windows")) {

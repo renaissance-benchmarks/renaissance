@@ -1,6 +1,6 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-val sparkVersion = "3.1.1"
+val sparkVersion = "3.1.2"
 
 lazy val apacheSpark = (project in file("."))
   .settings(
