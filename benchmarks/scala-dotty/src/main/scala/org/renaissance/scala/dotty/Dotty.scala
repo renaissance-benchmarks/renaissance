@@ -15,7 +15,8 @@ import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
 import org.renaissance.core.DirUtils
 
-import java.io._
+import java.io.File
+import java.io.FileInputStream
 import java.net.URLClassLoader
 import java.nio.file.Files.copy
 import java.nio.file.Files.createDirectories
@@ -109,10 +110,10 @@ final class Dotty extends Benchmark {
       .toBuffer
 
     val scratchDir = bc.scratchDirectory()
-    dottyOutputDir = createDirectories(scratchDir.resolve("out"))
-
     val sourceDir = scratchDir.resolve("src")
     val sourceFiles = unzipResource(sourcesInputResource, sourceDir)
+
+    dottyOutputDir = createDirectories(scratchDir.resolve("out"))
 
     val dottyBaseArgs = Seq[String](
       // Mark the sources as transitional.
@@ -121,10 +122,10 @@ final class Dotty extends Benchmark {
       // Class path with dependency jars.
       "-classpath",
       classPathJars.mkString(File.pathSeparator),
-      // Output directory for compiled classes.
+      // Output directory for compiled baseFiles.
       "-d",
       dottyOutputDir.toString,
-      // Setting the root of the sources directory stabilizes the contents of .tasty files.
+      // Setting source root makes the .tasty files idempotent between repetitions.
       "-sourceroot",
       sourceDir.toString
     )
@@ -203,17 +204,23 @@ final class Dotty extends Benchmark {
     }
 
     def digest(): String = {
+      // Compute hash for selected files and return it as a string.
+      val md = MessageDigest.getInstance("MD5")
+      tastyFilesFor(generatedClasses).foreach(digestFile(_, md))
+      md.digest().map(String.format("%02x", _)).mkString
+    }
+
+    private def tastyFilesFor(classFiles: mutable.Seq[AbstractFile]) = {
       //
       // Create a sorted list of .tasty files corresponding to .class files.
       // The filtering based on the presence of the '$' character is a bit ad-hoc,
-      // because (unfortunately) some tasty files can contain the '$' character.
-      // Right now we assume that they can only start with '$', just like the
-      // '$tilde.tasty' file. The goal is to get a list of files that should
-      // exist, not to filter files that do not exist.
+      // because (unfortunately) some .tasty file names contain the '$' character.
+      // Right now we assume that '$' can only appear as first letter, just like
+      // in the '$tilde.tasty' file. The goal is to get a list of files that should
+      // exist, not to filter out files that do not exist.
       //
-      val tastyFiles = generatedClasses
-        .filter(_.jfile().isPresent)
-        .map(_.jfile().get())
+      classFiles
+        .flatMap(_.jfile().map[Option[File]](f => Some(f)).orElse(None))
         .filter(_.getName.lastIndexOf('$') < 1)
         .map(file => {
           val fileName = file.getName
@@ -223,15 +230,10 @@ final class Dotty extends Benchmark {
           new File(file.getParentFile(), tastyName)
         })
         .sorted
-
-      // Compute hash for all .tasty files and return it as a string.
-      val md = MessageDigest.getInstance("MD5")
-      tastyFiles.foreach(jf => digestFile(jf, md))
-      md.digest().map(b => String.format("%02x", b)).mkString
     }
 
-    private def digestFile(jf: File, outputHash: MessageDigest): Unit = {
-      val dis = new DigestInputStream(new FileInputStream(jf), outputHash)
+    private def digestFile(file: File, outputHash: MessageDigest): Unit = {
+      val dis = new DigestInputStream(new FileInputStream(file), outputHash)
 
       try {
         while (dis.available > 0) {
