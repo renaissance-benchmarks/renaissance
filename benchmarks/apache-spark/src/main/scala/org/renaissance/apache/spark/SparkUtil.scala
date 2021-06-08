@@ -152,6 +152,7 @@ trait SparkUtil {
         hadoopdllStream.close()
       }
 
+      System.load(hadoopBinDir.resolve(hadoopdllName).toString)
       System.setProperty("hadoop.home.dir", hadoopHomeDirAbs.toString)
     }
   }
