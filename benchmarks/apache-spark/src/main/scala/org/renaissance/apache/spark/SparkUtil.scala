@@ -29,6 +29,10 @@ trait SparkUtil {
   private val winutilsName = "winutils.exe"
   private val winutilsSize = 112640
 
+  // Copied from https://github.com/cdarlint/winutils
+  private val hadoopdllName = "hadoop.dll"
+  private val hadoopdllSize = 85504
+
   private val sparkLogLevel = Level.WARN
   private val jettyLogLevel = Level.WARN
 
@@ -112,13 +116,14 @@ trait SparkUtil {
   private def setUpHadoop(hadoopHomeDir: Path): Unit = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
       val hadoopHomeDirAbs = hadoopHomeDir.toAbsolutePath
-      val winutilsDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
+      val hadoopBinDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
       val winutilsStream = getClass.getResourceAsStream("/" + winutilsName)
+      val hadoopdllStream = getClass.getResourceAsStream("/" + hadoopdllName)
 
       try {
         val bytesWritten = Files.copy(
           winutilsStream,
-          winutilsDir.resolve(winutilsName)
+          hadoopBinDir.resolve(winutilsName)
         )
 
         if (bytesWritten != winutilsSize) {
@@ -129,6 +134,22 @@ trait SparkUtil {
       } finally {
         // This may mask a try-block exception, but at least it will fail anyway.
         winutilsStream.close()
+      }
+
+      try {
+        val bytesWritten = Files.copy(
+          hadoopdllStream,
+          hadoopBinDir.resolve(hadoopdllName)
+        )
+
+        if (bytesWritten != hadoopdllSize) {
+          throw new Exception(
+            s"Wrong hadoop.dll size: expected $hadoopdllSize, written $bytesWritten"
+          )
+        }
+      } finally {
+        // This may mask a try-block exception, but at least it will fail anyway.
+        hadoopdllStream.close()
       }
 
       System.setProperty("hadoop.home.dir", hadoopHomeDirAbs.toString)
