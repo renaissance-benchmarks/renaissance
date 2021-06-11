@@ -11,5 +11,5 @@ lazy val rx = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

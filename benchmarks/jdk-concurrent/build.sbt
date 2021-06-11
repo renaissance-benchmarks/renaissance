@@ -11,5 +11,5 @@ lazy val jdkConcurrent = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

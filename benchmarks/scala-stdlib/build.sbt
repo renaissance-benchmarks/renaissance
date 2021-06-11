@@ -8,5 +8,5 @@ lazy val scalaStdlib = (project in file("."))
     scalaVersion := "2.13.6"
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

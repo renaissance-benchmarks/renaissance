@@ -11,7 +11,7 @@ lazy val actorsReactors = (project in file("."))
     scalaVersion := "2.12.13"
   )
   .dependsOn(
-    renaissanceCore,
+    renaissanceCore % "provided",
     reactorsCommon,
     reactorsCore
   )

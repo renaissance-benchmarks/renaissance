@@ -15,5 +15,5 @@ lazy val twitterFinagle = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

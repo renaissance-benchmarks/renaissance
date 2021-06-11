@@ -17,5 +17,5 @@ lazy val apacheSpark = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )
