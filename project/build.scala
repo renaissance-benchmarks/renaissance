@@ -1,14 +1,13 @@
-import java.io.File
-import java.lang.annotation.Annotation
-import java.net.URLClassLoader
-import java.util.jar.JarFile
-import java.util.regex.Pattern
-
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.License
 import sbt.util.Logger
 
+import java.io.File
+import java.lang.annotation.Annotation
+import java.net.URLClassLoader
+import java.util.jar.JarFile
+import java.util.regex.Pattern
 import scala.collection._
 
 class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
@@ -37,16 +36,16 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
 
   def className: String = benchClass.getName
 
-  def name(): String = {
+  def name: String = {
     getAnnotation(classOf[Name]).map(_.value()).getOrElse(kebabCase(benchClass.getSimpleName))
   }
 
-  def groups(): Seq[String] = {
+  def groups: Seq[String] = {
     val gs = getAnnotations(classOf[Group])
-    if (gs.isEmpty) Seq(getDefaultGroup()) else gs.map(_.value)
+    if (gs.isEmpty) Seq(defaultGroup) else gs.map(_.value)
   }
 
-  private def getDefaultGroup(): String = {
+  private def defaultGroup: String = {
     val groupPkg = getPackageRelativeTo(benchClass, classOf[Benchmark])
     groupPkg.replaceAll("[.]", "-")
   }
@@ -61,11 +60,11 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
     }
   }
 
-  def printableGroups(): String = {
-    groups().mkString(",")
+  def printableGroups: String = {
+    groups.mkString(",")
   }
 
-  def summary(): String = {
+  def summary: String = {
     getAnnotation(classOf[Summary]).map(_.value()).getOrElse("")
   }
 
@@ -90,7 +89,7 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
 
   private def parameterDefaults(confName: String) = {
     getAnnotations(classOf[Parameter])
-      .map(p => s"configuration.${confName}.${p.name}" -> p.defaultValue())
+      .map(p => s"configuration.$confName.${p.name}" -> p.defaultValue())
       .toMap
   }
 
@@ -110,15 +109,15 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
         val elements = setting.split("=").map(x => x.trim)
         if (elements.length != 2) {
           throw new IllegalArgumentException(
-            s"malformed setting in configuration '${conf.name}': ${setting}"
+            s"malformed setting in configuration '${conf.name}': $setting"
           )
         }
 
         val (name, value) = (elements(0), elements(1))
-        val paramKey = s"configuration.${conf.name}.${name}"
+        val paramKey = s"configuration.${conf.name}.$name"
         if (!result.contains(paramKey)) {
           throw new NoSuchElementException(
-            s"unknown parameter in configuration '${conf.name}': ${name}"
+            s"unknown parameter in configuration '${conf.name}': $name"
           )
         }
 
@@ -129,20 +128,20 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
     result.toMap
   }
 
-  def jvmVersionMin(): String = {
+  def jvmVersionMin: String = {
     // Require at least JVM 1.8 where unspecified.
     getAnnotation(classOf[RequiresJvm]).map(_.value()).getOrElse("1.8")
   }
 
-  def jvmVersionMax(): String = {
+  def jvmVersionMax: String = {
     getAnnotation(classOf[SupportsJvm]).map(_.value()).getOrElse("")
   }
 
-  def licenses(): Array[License] = {
+  def licenses: Array[License] = {
     getAnnotation(classOf[Licenses]).map(_.value()).getOrElse(Array())
   }
 
-  def printableLicenses(): String = {
+  def printableLicenses: String = {
     licenses.map(_.toString).mkString(",")
   }
 
@@ -160,9 +159,9 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
     License.MIT
   }
 
-  def distro(): License = distroFromLicenses(licenses())
+  def distro: License = distroFromLicenses(licenses)
 
-  def toMap(): Map[String, String] = {
+  def toMap: Map[String, String] = {
     Map(
       "module" -> module,
       "class" -> className,
@@ -172,9 +171,9 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
       "description" -> description,
       "licenses" -> printableLicenses,
       "repetitions" -> repetitions.toString,
-      "distro" -> distro().toString,
-      "jvm_version_min" -> jvmVersionMin(),
-      "jvm_version_max" -> jvmVersionMax()
+      "distro" -> distro.toString,
+      "jvm_version_min" -> jvmVersionMin,
+      "jvm_version_max" -> jvmVersionMax
     ) ++ parameters ++ configurations()
   }
 
@@ -189,8 +188,8 @@ object Benchmarks {
     logger: Option[Logger]
   ): Seq[BenchmarkInfo] = {
     //
-    // Load the benchmark base class and create a class loader for the project
-    // with the class loader of the base class as its parent. This will allow
+    // Load the Benchmark base class and create a class loader for the project
+    // with the class loader of the Benchmark class as its parent. This will allow
     // us to use core classes here.
     //
     val benchBase = classOf[Benchmark]
@@ -202,7 +201,7 @@ object Benchmarks {
     // Scan all JAR files for classes in the org.renaissance package implementing
     // the benchmark interface and collect metadata from class annotations.
     //
-    val result = new mutable.ArrayBuffer[BenchmarkInfo]
+    val result = mutable.Buffer[BenchmarkInfo]()
     for (jarFile <- classPath.map(jar => new JarFile(jar))) {
       for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
         if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
@@ -228,7 +227,7 @@ object Benchmarks {
     result
   }
 
-  def logBenchmark(b: BenchmarkInfo, logger: Logger) = {
+  def logBenchmark(b: BenchmarkInfo, logger: Logger): Unit = {
     logger.info(s"class: ${b.className}")
     logger.info(s"\tbenchmark: ${b.name} (${b.printableGroups})")
     logger.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
