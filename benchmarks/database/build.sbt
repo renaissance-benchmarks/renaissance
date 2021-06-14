@@ -25,5 +25,5 @@ lazy val database = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

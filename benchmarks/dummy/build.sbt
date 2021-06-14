@@ -9,5 +9,5 @@ lazy val dummy = (project in file("."))
     autoScalaLibrary := false
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

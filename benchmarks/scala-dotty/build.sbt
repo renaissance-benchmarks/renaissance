@@ -14,5 +14,5 @@ lazy val scalaDotty = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

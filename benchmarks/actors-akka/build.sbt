@@ -12,5 +12,5 @@ lazy val actorsAkka = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )

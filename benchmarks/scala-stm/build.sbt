@@ -10,7 +10,7 @@ lazy val scalaStm = (project in file("."))
     scalaVersion := "2.12.13"
   )
   .dependsOn(
-    renaissanceCore,
+    renaissanceCore % "provided",
     scalaStmLibrary % "compile->compile;compile->test"
   )
   .aggregate(

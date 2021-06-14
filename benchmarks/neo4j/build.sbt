@@ -14,5 +14,5 @@ lazy val neo4j = (project in file("."))
     )
   )
   .dependsOn(
-    renaissanceCore
+    renaissanceCore % "provided"
   )
