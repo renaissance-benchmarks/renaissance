@@ -1,23 +1,22 @@
 package org.renaissance.harness
 
-import java.io.File
-import java.io.IOException
-import java.io.PrintWriter
-import java.nio.charset.StandardCharsets
-
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.Plugin
 import org.renaissance.Plugin._
-import org.renaissance.core.BenchmarkInfo
+import org.renaissance.core.BenchmarkDescriptor
 import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
 import scopt.OptionParser
 
-import scala.jdk.CollectionConverters._
+import java.io.File
+import java.io.IOException
+import java.io.PrintWriter
+import java.nio.charset.StandardCharsets
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -78,7 +77,7 @@ object MarkdownGenerator {
   private def createRegistry(metadata: File) = {
     var provider = Try(BenchmarkRegistry.createFromProperties(metadata))
     if (metadata == null) {
-      provider = Try(BenchmarkRegistry.createDefault())
+      provider = Try(BenchmarkRegistry.create())
     }
 
     provider match {
@@ -174,29 +173,33 @@ object MarkdownGenerator {
     }
   }
 
-  private def formatBenchmarkListMarkdown(benchmarks: BenchmarkRegistry) = {
-    def formatItem(b: BenchmarkInfo) = {
+  private def formatBenchmarkListMarkdown(registry: BenchmarkRegistry) = {
+    def formatItem(b: BenchmarkDescriptor) = {
       s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
     }
 
     val result = new StringBuffer
-    for ((group, benches) <- benchmarks.byGroup().asScala) {
+    registry.forEachPrimaryGroup((group, benches) => {
       result.append(s"#### $group").append("\n\n")
       result.append(benches.asScala.map(formatItem).mkString("\n\n")).append("\n\n")
-    }
+    })
 
     result.toString
   }
 
   private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
-    def formatRow(b: BenchmarkInfo) = {
-      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} " +
-        s"| ${b.jvmVersionMin.map(_.toString).orElse("")} " +
-        s"| ${b.jvmVersionMax().map(_.toString).orElse("")} |"
+    def formatRow(b: BenchmarkDescriptor) = {
+      s"| ${b.name} | ${b.licenses.asScala.mkString(", ")} | ${b.distro} " +
+        s"| ${b.jvmVersionMin.map[String](_.toString).orElse("")} " +
+        s"| ${b.jvmVersionMax.map[String](_.toString).orElse("")} |"
     }
 
     // Don't list dummy benchmarks in the benchmark table to reduce clutter.
-    benchmarks.getMatching(!_.groups().contains("dummy")).asScala.map(formatRow).mkString("\n")
+    benchmarks
+      .getMatchingBenchmarks(!_.groups().contains("dummy"))
+      .asScala
+      .map(formatRow)
+      .mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
