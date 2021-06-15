@@ -26,6 +26,7 @@ import java.io.InputStream
 import java.net.InetSocketAddress
 import java.net.URLEncoder
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import java.util.Comparator
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -485,7 +486,8 @@ final class FinagleChirper extends Benchmark {
   }
 
   private def resourceAsLines(resourceName: String) = {
-    val source = Source.fromInputStream(getResourceStream(resourceName))
+    val source =
+      Source.fromInputStream(getResourceStream(resourceName), StandardCharsets.UTF_8.name)
     try {
       source.getLines().map { _.trim }.filterNot { _.isEmpty }.to[IndexedSeq]
     } finally {

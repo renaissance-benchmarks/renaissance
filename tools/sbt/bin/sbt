@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set +e
+declare builtin_sbt_version="1.5.2"
 declare -a residual_args
 declare -a java_args
 declare -a scalac_args
@@ -12,7 +13,7 @@ declare -a print_sbt_script_version
 declare -a original_args
 declare java_cmd=java
 declare java_version
-declare init_sbt_version=1.4.9
+declare init_sbt_version=1.5.2
 declare sbt_default_mem=1024
 declare -r default_sbt_opts=""
 declare -r default_java_opts="-Dfile.encoding=UTF-8"
@@ -96,17 +97,61 @@ jar_file () {
   echo "$(cygwinpath "${sbt_home}/bin/sbt-launch.jar")"
 }
 
-acquire_sbt_jar () {
-  sbt_jar="$(jar_file)"
-
-  if [[ ! -f "$sbt_jar" ]]; then
-    echoerr "Could not find launcher jar: $sbt_jar"
-    exit 2
+jar_url () {
+  local repo_base="$SBT_LAUNCH_REPO"
+  if [[ $repo_base == "" ]]; then
+    repo_base="https://repo1.maven.org/maven2"
   fi
+  echo "$repo_base/org/scala-sbt/sbt-launch/$1/sbt-launch-$1.jar"
 }
 
-rt_export_file () {
-  echo "$(cygwinpath "${sbt_bin_dir}/java9-rt-export.jar")"
+download_url () {
+  local url="$1"
+  local jar="$2"
+  mkdir -p $(dirname "$jar") && {
+    if command -v curl > /dev/null; then
+      curl --silent -L "$url" --output "$jar"
+    elif command -v wget > /dev/null; then
+      wget --quiet -O "$jar" "$url"
+    fi
+  } && [[ -f "$jar" ]]
+}
+
+acquire_sbt_jar () {
+  local launcher_sv="$1"
+  if [[ "$launcher_sv" == "" ]]; then
+    if [[ "$init_sbt_version" != "_to_be_replaced" ]]; then
+      launcher_sv="$init_sbt_version"
+    else
+      launcher_sv="$builtin_sbt_version"
+    fi
+  fi
+  local user_home && user_home=$(findProperty user.home)
+  download_jar="${user_home:-$HOME}/.cache/sbt/boot/sbt-launch/$launcher_sv/sbt-launch-$launcher_sv.jar"
+  if [[ -f "$download_jar" ]]; then
+    sbt_jar="$download_jar"
+  else
+    sbt_url=$(jar_url "$launcher_sv")
+    echoerr "downloading sbt launcher $launcher_sv"
+    download_url "$sbt_url" "${download_jar}.temp"
+    download_url "${sbt_url}.sha1" "${download_jar}.sha1"
+    if command -v shasum > /dev/null; then
+      if echo "$(cat "${download_jar}.sha1")  ${download_jar}.temp" | shasum -c - > /dev/null; then
+        mv "${download_jar}.temp" "${download_jar}"
+      else
+        echoerr "failed to download launcher jar: $sbt_url (shasum mismatch)"
+        exit 2
+      fi
+    else
+      mv "${download_jar}.temp" "${download_jar}"
+    fi
+    if [[ -f "$download_jar" ]]; then
+      sbt_jar="$download_jar"
+    else
+      echoerr "failed to download launcher jar: $sbt_url"
+      exit 2
+    fi
+  fi
 }
 
 # execRunner should be called only once to give up control to java
@@ -257,39 +302,49 @@ jdk_version() {
   echo "$result"
 }
 
-# Extracts the preloaded directory from either -Dsbt.preloaded or -Dsbt.global.base
-# properties by looking at:
-#   - _JAVA_OPTIONS environment variable,
+# Find the first occurrence of the given property name and returns its value by looking at:
+#   - properties set by command-line options,
+#   - JAVA_OPTS environment variable,
 #   - SBT_OPTS environment variable,
-#   - JAVA_OPTS environment variable and
-#   - properties set by command-line options
-# in that order. The last one will be chosen such that `sbt.preloaded` is
-# always preferred over `sbt.global.base`.
-getPreloaded() {
-  local -a _java_options_array
-  local -a sbt_opts_array
+#   - _JAVA_OPTIONS environment variable and
+#   - JAVA_TOOL_OPTIONS environment variable
+# in that order.
+findProperty() {
   local -a java_opts_array
-  read -a _java_options_array <<< "$_JAVA_OPTIONS"
-  read -a sbt_opts_array <<< "$SBT_OPTS"
+  local -a sbt_opts_array
+  local -a _java_options_array
+  local -a java_tool_options_array
   read -a java_opts_array <<< "$JAVA_OPTS"
+  read -a sbt_opts_array <<< "$SBT_OPTS"
+  read -a _java_options_array <<< "$_JAVA_OPTIONS"
+  read -a java_tool_options_array <<< "$JAVA_TOOL_OPTIONS"
 
   local args_to_check=(
-    "${_java_options_array[@]}"
-    "${sbt_opts_array[@]}"
+    "${java_args[@]}"
     "${java_opts_array[@]}"
-    "${java_args[@]}")
-  local via_global_base="$HOME/.sbt/preloaded"
-  local via_explicit=""
+    "${sbt_opts_array[@]}"
+    "${_java_options_array[@]}"
+    "${java_tool_options_array[@]}")
 
   for opt in "${args_to_check[@]}"; do
-    if [[ "$opt" == -Dsbt.preloaded=* ]]; then
-      via_explicit="${opt#-Dsbt.preloaded=}"
-    elif [[ "$opt" == -Dsbt.global.base=* ]]; then
-      via_global_base="${opt#-Dsbt.global.base=}/preloaded"
+    if [[ "$opt" == -D$1=* ]]; then
+      echo "${opt#-D$1=}"
+      return
     fi
   done
+}
 
-  echo "${via_explicit:-${via_global_base}}"
+# Extracts the preloaded directory from either -Dsbt.preloaded, -Dsbt.global.base or -Duser.home
+# in that order.
+getPreloaded() {
+  local preloaded && preloaded=$(findProperty sbt.preloaded)
+  [ "$preloaded" ] && echo "$preloaded" && return
+
+  local global_base && global_base=$(findProperty sbt.global.base)
+  [ "$global_base" ] && echo "$global_base/preloaded" && return
+
+  local user_home && user_home=$(findProperty user.home)
+  echo "${user_home:-$HOME}/.sbt/preloaded"
 }
 
 syncPreloaded() {
@@ -337,10 +392,9 @@ checkJava() {
 copyRt() {
   local at_least_9="$(expr $java_version ">=" 9)"
   if [[ "$at_least_9" == "1" ]]; then
-    rtexport=$(rt_export_file)
     # The grep for java9-rt-ext- matches the filename prefix printed in Export.java
     java9_ext=$("$java_cmd" "${sbt_options[@]}" "${java_args[@]}" \
-      -jar "$rtexport" --rt-ext-dir | grep java9-rt-ext- | tr -d '\r')
+      -jar "$sbt_jar" --rt-ext-dir | grep java9-rt-ext- | tr -d '\r')
     java9_rt=$(echo "$java9_ext/rt.jar")
     vlog "[copyRt] java9_rt = '$java9_rt'"
     if [[ ! -f "$java9_rt" ]]; then
@@ -349,7 +403,8 @@ copyRt() {
       "$java_cmd" \
         "${sbt_options[@]}" \
         "${java_args[@]}" \
-        -jar "$rtexport" \
+        -jar "$sbt_jar" \
+        --export-rt \
         "${java9_rt}"
     fi
     addJava "-Dscala.ext.dirs=${java9_ext}"
@@ -362,8 +417,6 @@ run() {
 
   # no jar? download it.
   [[ -f "$sbt_jar" ]] || acquire_sbt_jar "$sbt_version" || {
-    # still no jar? uh-oh.
-    echo "Download failed. Obtain the sbt-launch.jar manually and place it at $sbt_jar"
     exit 1
   }
 
@@ -414,6 +467,7 @@ declare -r etc_sbt_opts_file="/etc/sbt/sbtopts"
 declare -r etc_file="${SBT_ETC_FILE:-$etc_sbt_opts_file}"
 declare -r dist_sbt_opts_file="${sbt_home}/conf/sbtopts"
 declare -r win_sbt_opts_file="${sbt_home}/conf/sbtconfig.txt"
+declare sbt_jar="$(jar_file)"
 
 usage() {
  cat <<EOM
@@ -539,7 +593,7 @@ process_args () {
           --numeric-version) print_sbt_version=1 && shift ;;
            --script-version) print_sbt_script_version=1 && shift ;;
           -d|-debug|--debug) sbt_debug=1 && addSbt "-debug" && shift ;;
-                   --client) use_sbtn=1 && shift ;;
+           -client|--client) use_sbtn=1 && shift ;;
                    --server) use_sbtn=0 && shift ;;
 
                  -mem|--mem) require_arg integer "$1" "$2" && addMemory "$2" && shift 2 ;;

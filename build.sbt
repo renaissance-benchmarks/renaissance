@@ -1,10 +1,13 @@
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
-
+import RenaissanceJmh.generateJmhWrapperBenchmarkClass
 import org.renaissance.License
 import org.renaissance.core.Launcher
+import sbt.Def
 
+import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.util.Properties
 import scala.collection._
 
 enablePlugins(GitBranchPrompt)
@@ -13,23 +16,23 @@ lazy val renaissanceCore = RootProject(uri("renaissance-core"))
 
 lazy val renaissanceHarness = RootProject(uri("renaissance-harness"))
 
-val benchmarkProjects = for {
+val renaissanceBenchmarks = for {
   // Hint: add .filter(Seq("group1", "group2").contains(_)) to compile
   // selected benchmark groups only (this can significantly speed-up
   // compilation/assembly when debugging the harness).
-  dir <- file("benchmarks")
-    .list()
-  if dir != null && file("benchmarks/" + dir + "/build.sbt").exists()
+  dir <- file("benchmarks").list()
+  benchDir = file("benchmarks") / dir
+  if dir != null && (benchDir / "build.sbt").exists()
 } yield {
-  RootProject(uri("benchmarks/" + dir))
+  RootProject(benchDir)
 }
 
-val subProjects = benchmarkProjects :+ renaissanceHarness
+val renaissanceModules = renaissanceBenchmarks :+ renaissanceHarness
 
-val allProjects = subProjects :+ renaissanceCore
+val renaissanceProjects = renaissanceModules :+ renaissanceCore
 
 // Do not assemble fat JARs in subprojects
-aggregate in assembly := false
+assembly / aggregate := false
 
 def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Seq[A]]] =
   tasks.toList match {
@@ -40,77 +43,113 @@ def flattenTasks[A](tasks: Seq[Def.Initialize[Task[A]]]): Def.Initialize[Task[Se
       }
   }
 
-def projectJars =
-  Def.taskDyn {
-    val rootJarBase = (resourceManaged in Compile).value
-    val coreJar = (packageBin in (renaissanceCore, Runtime)).value
+def savePropertiesAsResource(props: Properties, file: File, comments: String): File = {
+  file.getParentFile.mkdirs()
 
-    // Each generated task returns tuple of
-    // (project name, project path, all JAR files, all JAR files without renaissance core JAR*)
-    // * because renaissance core classes are shared across all benchmarks
-    val projectJarTasks = for {
-      project <- subProjects
-    } yield Def.task {
-      val mainJar = (project / Compile / packageBin).value
-      val depJars = (project / Compile / dependencyClasspathAsJars).value.map(_.data)
-      val loadedJars = mainJar +: depJars
-      val allJars = mainJar +: coreJar +: depJars
+  val fos = new FileOutputStream(file)
+  try {
+    props.store(fos, comments)
+    file
+  } finally {
+    fos.close()
+  }
+}
 
-      val projectPath = project.asInstanceOf[RootProject].build.getPath
-      val jarBase = rootJarBase / projectPath
-      jarBase.mkdirs()
-
-      val allJarFiles = for (jar <- allJars) yield {
-        val dest = jarBase / jar.getName
-        Files.copy(jar.toPath, dest.toPath, StandardCopyOption.REPLACE_EXISTING)
-        dest
-      }
-
-      val projectName = (name in project).value
-      (projectName, projectPath, allJarFiles, loadedJars)
-    }
-    flattenTasks(projectJarTasks)
+//
+// Creates a task that collects the runtime dependency jars for
+// the given project and returns a tuple as follows:
+// (project name, relative path, runtime jars)
+//
+def defineProjectJarsCollectorTask(
+  project: RootProject
+): Def.Initialize[Task[(String, Path, Seq[File])]] =
+  Def.task {
+    val rootBase = baseDirectory.value.toPath
+    val projectName = (project / name).value
+    val projectBase = (project / baseDirectory).value.toPath
+    val projectPath = rootBase.relativize(projectBase)
+    val projectJars = (project / Runtime / dependencyClasspathAsJars).value.map(_.data)
+    (projectName, projectPath, projectJars)
   }
 
-def jarsAndListGenerator =
-  Def.taskDyn {
-    val nonGpl = nonGplOnly.value
+//
+// Creates a compound task that collects the runtime dependency jars
+// for all given projects. This needs to be performed by aggregating
+// results from per-project tasks.
+//
+def defineCompoundProjectJarsCollectorTask(projects: Array[RootProject]) =
+  flattenTasks(projects.map { defineProjectJarsCollectorTask })
+
+//
+// Creates a task that generates the contents of the "modules.properties" file.
+//
+def defineModulesPropertiesGeneratorTask =
+  Def.task {
     val logger = streams.value.log
 
-    projectJars.map { groupJars =>
-      // Create the "modules.properties" file.
-      val modulesProps = new java.util.Properties
-      for ((projectName, projectPath, _, loadedJars) <- groupJars) {
-        val jarLine = loadedJars.map(jar => projectPath + "/" + jar.getName).mkString(",")
-        modulesProps.setProperty(projectName, jarLine)
-      }
+    val modulesProps = new Properties
+    defineCompoundProjectJarsCollectorTask(renaissanceModules).value.foreach { module =>
+      val (moduleName, modulePath, moduleJars) = module
+      val jarLine = moduleJars.map(jar => modulePath.resolve(jar.getName)).mkString(",")
+      modulesProps.setProperty(moduleName, jarLine)
+    }
 
-      val modulesPropsFile = (resourceManaged in Compile).value / "modules.properties"
-      val modulesPropsStream = new java.io.FileOutputStream(modulesPropsFile)
-      modulesProps.store(modulesPropsStream, "Module jars")
+    val modulesPropsFile = (Compile / resourceManaged).value / "modules.properties"
 
-      // Create the "benchmark.properties" file.
-      // Scan project jars for benchmarks and fill the property file.
-      // Use all project jars to ensure that the benchmark class be be loaded.
-      val benchmarksProps = new java.util.Properties
-      for ((projectName, _, allJars, _) <- groupJars) {
-        for (benchInfo <- Benchmarks.listBenchmarks(projectName, allJars, Some(logger))) {
-          if (!nonGpl || benchInfo.distro() == License.MIT) {
-            for ((k, v) <- benchInfo.toMap()) {
-              benchmarksProps.setProperty(s"benchmark.${benchInfo.name()}.$k", v)
-            }
+    logger.info(s"Writing $modulesPropsFile ...")
+    Seq(savePropertiesAsResource(modulesProps, modulesPropsFile, "Module jars"))
+  }
+
+//
+// Creates a task that generates the contents of the "benchmarks.properties" file.
+//
+def defineBenchmarksPropertiesGeneratorTask =
+  Def.task {
+    val logger = streams.value.log
+
+    val benchmarksProps = new Properties
+    defineCompoundProjectJarsCollectorTask(renaissanceBenchmarks).value.foreach { module =>
+      val (moduleName, _, moduleJars) = module
+      for (bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, Some(logger))) {
+        if (!nonGplOnly.value || bench.distro == License.MIT) {
+          for ((k, v) <- bench.toMap) {
+            benchmarksProps.setProperty(s"benchmark.${bench.name}.$k", v)
           }
         }
       }
+    }
 
-      val benchmarksPropsFile = (resourceManaged in Compile).value / "benchmarks.properties"
-      val benchmarksPropsStream = new java.io.FileOutputStream(benchmarksPropsFile)
-      benchmarksProps.store(benchmarksPropsStream, "Benchmark details")
+    val benchmarksPropsFile = (Compile / resourceManaged).value / "benchmarks.properties"
 
-      benchmarksPropsFile +: modulesPropsFile +: groupJars.flatMap {
-        case (_, _, jars, _) => jars
+    logger.info(s"Writing $benchmarksPropsFile ...")
+    Seq(savePropertiesAsResource(benchmarksProps, benchmarksPropsFile, "Benchmark details"))
+  }
+
+//
+// Creates a task that copies the runtime jars of all benchmarks into
+// resource output directory of the root project.
+//
+def defineCollectRuntimeJarsTask =
+  Def.task {
+    val logger = streams.value.log
+
+    val outputDir = (Compile / resourceManaged).value.toPath
+    defineCompoundProjectJarsCollectorTask(renaissanceModules).value.flatMap { module =>
+      val (_, modulePath, moduleJars) = module
+
+      logger.info(s"Collecting runtime dependencies for $modulePath ...")
+      val moduleJarBase = Files.createDirectories(outputDir.resolve(modulePath))
+      for (srcJar <- moduleJars) yield {
+        val dstJar = moduleJarBase / srcJar.getName
+        Files.copy(srcJar.toPath, dstJar, StandardCopyOption.REPLACE_EXISTING).toFile
       }
     }
+  }
+
+def defineRenaissanceAssemblyNameTask =
+  Def.task {
+    val bundle = if (nonGplOnly.value) "mit" else "gpl"
+    "renaissance-" + bundle + "-" + (renaissanceCore / version).value + ".jar"
   }
 
 addCommandAlias("renaissanceFormat", ";scalafmt;scalafmtSbt")
@@ -160,7 +199,8 @@ def addLink(scriptFile: File, linkFile: File): Unit = {
 }
 
 lazy val renaissance: Project = {
-  // required for out of the box JDK16+ support of als, chi-square, gauss-mix, log-regression, naive-bayes, movie-lens
+  // Required for out of-the-box JDK16+ support in:
+  // als, chi-square, gauss-mix, log-regression, naive-bayes, movie-lens
   // https://github.com/renaissance-benchmarks/renaissance/issues/241
   val addOpensPackages = List(
     "java.base/java.lang",
@@ -169,18 +209,28 @@ lazy val renaissance: Project = {
     "java.base/java.nio",
     "java.base/sun.nio.ch"
   )
+
   val p = Project("renaissance", file("."))
     .settings(
       name := "renaissance",
-      version := (version in renaissanceCore).value,
-      organization := (organization in renaissanceCore).value,
+      version := (renaissanceCore / version).value,
+      organization := (renaissanceCore / organization).value,
       crossPaths := false,
       autoScalaLibrary := false,
-      resourceGenerators in Compile += jarsAndListGenerator.taskValue,
-      fork in run := true,
-      cancelable in Global := true,
       remoteDebug := false,
       nonGplOnly := false,
+      Compile / javaOptions ++= {
+        if (remoteDebug.value) {
+          Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
+        } else {
+          Seq()
+        }
+      },
+      Compile / resourceGenerators ++= Seq(
+        defineModulesPropertiesGeneratorTask.taskValue,
+        defineBenchmarksPropertiesGeneratorTask.taskValue,
+        defineCollectRuntimeJarsTask.taskValue
+      ),
       setupPrePush := addLink(file("tools") / "pre-push", file(".git") / "hooks" / "pre-push"),
       packageOptions := Seq(
         sbt.Package.ManifestAttributes(
@@ -194,33 +244,28 @@ lazy val renaissance: Project = {
       ),
       // Configure fat JAR: specify its name, main(), do not run tests when
       // building it and raise error on file conflicts.
-      assemblyJarName in assembly :=
-        "renaissance-" + (if (nonGplOnly.value) "mit" else "gpl") +
-          "-" + (version in renaissanceCore).value + ".jar",
-      mainClass in assembly := Some(classOf[Launcher].getName),
-      test in assembly := {},
-      assemblyMergeStrategy in assembly := {
+      assembly / assemblyJarName := defineRenaissanceAssemblyNameTask.value,
+      assembly / mainClass := Some(classOf[Launcher].getName),
+      assembly / test := {},
+      assembly / assemblyMergeStrategy := {
         case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
         case _ => MergeStrategy.singleOrError
       },
-      javaOptions in Compile ++= {
-        if (remoteDebug.value) {
-          Seq("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=8000")
-        } else {
-          Seq()
-        }
-      },
-      onLoad in Global := {
-        val old = (onLoad in Global).value
+      Global / cancelable := true,
+      Global / onLoad := {
+        val old = (Global / onLoad).value
         old.andThen(startupTransition)
-      }
+      },
+      run / fork := true
     )
     .dependsOn(
       renaissanceCore
     )
-  allProjects.foldLeft(p)(_ aggregate _)
+
+  renaissanceProjects.foldLeft(p)(_ aggregate _)
 }
 
+//
 // This project generates a custom JMH wrapper for each Renaissance benchmark.
 // Then, the project inserts JMH-specific functionality into the final JAR,
 // which can then be run in a JMH-compliant way.
@@ -239,38 +284,43 @@ lazy val renaissance: Project = {
 // with a custom merge strategy -- this is fine, because the Scala library is only needed
 // by the extra functionality that the sbt-jmh inserts into the artifact, and we don't
 // need that anyway.
+
+def defineJmhSourcesGeneratorTask =
+  Def.task {
+    val logger = streams.value.log
+
+    val outputDir = (Compile / sourceManaged).value.toPath
+    defineCompoundProjectJarsCollectorTask(renaissanceBenchmarks).value.flatMap { module =>
+      val (moduleName, modulePath, moduleJars) = module
+      for {
+        bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, Some(logger))
+        if (!nonGplOnly.value || bench.distro == License.MIT) &&
+          (!bench.groups.contains("dummy") || bench.name == "dummy-empty")
+      } yield {
+        logger.info(s"Generating JMH wrappers for $modulePath")
+        generateJmhWrapperBenchmarkClass(bench, outputDir)
+      }
+    }
+  }
+
 lazy val renaissanceJmh = (project in file("renaissance-jmh"))
   .enablePlugins(JmhPlugin)
   .settings(
     name := "renaissance-jmh",
-    version := (version in renaissance).value,
-    organization := (organization in renaissance).value,
-    nonGplOnly := (nonGplOnly in renaissance).value,
-    mainClass in assembly := Some("org.openjdk.jmh.Main"),
-    sourceGenerators in Compile := Def.taskDyn {
-      val log = streams.value.log
-      val outputDir = sourceManaged.in(Compile).value
-      val nonGpl = nonGplOnly.value
-      projectJars.map { groupJars =>
-        RenaissanceJmh.generateJmhWrapperBenchmarkClasses(
-          outputDir,
-          log,
-          nonGpl,
-          groupJars
-        )
-      }
-    }.taskValue +: (sourceGenerators in Compile).value,
-    assembly in Jmh := ((assembly in Jmh) dependsOn (compile in Jmh)).value,
-    assemblyMergeStrategy in assembly := {
+    version := (renaissance / version).value,
+    organization := (renaissance / organization).value,
+    nonGplOnly := (renaissance / nonGplOnly).value,
+    assembly / mainClass := Some("org.openjdk.jmh.Main"),
+    Compile / sourceGenerators += defineJmhSourcesGeneratorTask.taskValue,
+    Jmh / assembly := ((Jmh / assembly) dependsOn (Jmh / compile)).value,
+    assembly / assemblyMergeStrategy := {
       case PathList("scala", _*) =>
         MergeStrategy.discard
       case x =>
-        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
         oldStrategy(x)
     }
   )
   .dependsOn(
     renaissance
   )
-
-Project.inConfig(Jmh)(baseAssemblySettings)

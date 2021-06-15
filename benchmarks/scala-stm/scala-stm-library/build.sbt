@@ -9,7 +9,7 @@ scalaVersion := "2.12.13"
 
 crossScalaVersions := Seq("2.11.11", "2.12.3", "2.13.0-M2")
 
-javacOptions in (Compile, compile) ++= {
+Compile / compile / javacOptions ++= {
   val javaVersion = if (scalaVersion.value.startsWith("2.11")) "1.6" else "1.8"
   Seq("-source", javaVersion, "-target", javaVersion)
 }
@@ -22,7 +22,7 @@ libraryDependencies += ("junit" % "junit" % "4.12" % "test")
 testOptions += Tests.Argument("-l", "slow")
 
 // test of TxnExecutor.transformDefault must be run by itself
-parallelExecution in Test := false
+Test / parallelExecution := false
 
 exportJars := true
 
