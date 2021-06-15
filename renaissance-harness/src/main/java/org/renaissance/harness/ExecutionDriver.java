@@ -1,19 +1,14 @@
 package org.renaissance.harness;
 
 import org.renaissance.Benchmark;
-import org.renaissance.BenchmarkContext;
-import org.renaissance.BenchmarkParameter;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.Plugin.ExecutionPolicy;
-import org.renaissance.core.BenchmarkInfo;
+import org.renaissance.core.BenchmarkDescriptor;
+import org.renaissance.core.BenchmarkSuite;
+import org.renaissance.core.BenchmarkSuite.SuiteBenchmarkContext;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Locale;
-
-import static java.nio.file.Files.createDirectories;
 
 /**
  * Benchmark execution driver. Captures the sequence of actions performed
@@ -21,83 +16,97 @@ import static java.nio.file.Files.createDirectories;
  * benchmark and issuing notifications to event listeners) and maintains
  * execution context.
  */
-final class ExecutionDriver implements BenchmarkContext {
+final class ExecutionDriver {
 
-  /** Information about the benchmark to execute. */
-  private final BenchmarkInfo benchInfo;
+  /** Context for the executed benchmark. */
+  private final SuiteBenchmarkContext benchmarkContext;
 
-  /** Name of the benchmark configuration to use. */
-  private final String configName;
+  /** Name of the benchmark. */
+  private final String benchmarkName;
 
-  /** Harness scratch root directory. */
-  private final Path scratchRoot;
+  /** The benchmark to execute. */
+  private final Benchmark benchmark;
+
+  /** The dispatcher for execution-related events. */
+  private final EventDispatcher eventDispatcher;
+
+  /** The policy to control operation execution. */
+  private final ExecutionPolicy executionPolicy;
+
+  /** Preformatted message to print before executing the benchmark. */
+  private final String beforeEachMessageFormat;
+
+  /** Preformatted message to print after executing the benchmark. */
+  private final String afterEachMessageFormat;
 
   /** The value of {@link System#nanoTime()} at VM start. */
   private final long vmStartNanos;
 
-  /** Benchmark scratch directory. */
-  private Path scratchDir;
 
-  public ExecutionDriver(
-    final BenchmarkInfo benchInfo, final String configName,
-    final Path scratchRoot, final long vmStartNanos
+  private ExecutionDriver(
+    final SuiteBenchmarkContext context,
+    final Benchmark benchmark,
+    final EventDispatcher dispatcher,
+    final ExecutionPolicy policy,
+    final long vmStartNanos
   ) {
-    this.benchInfo = benchInfo;
-    this.configName = configName;
-    this.scratchRoot = scratchRoot;
+    this.benchmarkContext = context;
+    this.benchmark = benchmark;
+    this.eventDispatcher = dispatcher;
+    this.executionPolicy = policy;
     this.vmStartNanos = vmStartNanos;
+
+    this.benchmarkName = context.benchmarkName();
+    this.beforeEachMessageFormat = String.format(
+      "====== %s (%s) [%s], iteration %%d started ======\n",
+      context.benchmarkName(), context.benchmarkModule(), context.configurationName()
+    );
+
+    this.afterEachMessageFormat = String.format(
+      "====== %s (%s) [%s], iteration %%d completed (%%.3f ms) ======\n",
+      context.benchmarkName(), context.benchmarkModule(), context.configurationName()
+    );
   }
 
 
-  public final void executeBenchmark(
-    Benchmark benchmark, EventDispatcher dispatcher, ExecutionPolicy policy
-  ) throws ValidationException {
-    final String benchName = benchInfo.name();
-    dispatcher.notifyBeforeBenchmarkSetUp(benchName);
+  public final void executeBenchmark() throws ValidationException {
+    eventDispatcher.notifyBeforeBenchmarkSetUp(benchmarkName);
 
     try {
-      benchmark.setUpBeforeAll(this);
+      benchmark.setUpBeforeAll(benchmarkContext);
 
       try {
-        dispatcher.notifyAfterBenchmarkSetUp(benchName);
+        eventDispatcher.notifyAfterBenchmarkSetUp(benchmarkName);
 
         try {
-          int opIndex = 0;
+          int operationIndex = 0;
+          while (executionPolicy.canExecute(benchmarkName, operationIndex)) {
+            printBeforeEachMessage(operationIndex);
 
-          while (policy.canExecute(benchName, opIndex)) {
-            printStartInfo(opIndex, benchInfo, configName);
+            final long durationNanos = executeOperation(operationIndex);
 
-            final long durationNanos = executeOperation(
-              opIndex, benchName, benchmark, dispatcher,
-              policy.isLast(benchName, opIndex)
-            );
-
-            printEndInfo(opIndex, benchInfo, configName, durationNanos);
-
-            opIndex++;
+            printAfterEachMessage(operationIndex, durationNanos);
+            operationIndex++;
           }
 
         } finally {
           // Complement the notifyAfterBenchmarkSetUp() events.
-          dispatcher.notifyBeforeBenchmarkTearDown(benchName);
+          eventDispatcher.notifyBeforeBenchmarkTearDown(benchmarkName);
         }
 
       } finally {
         // Complement the setUpBeforeAll() benchmark invocation.
-        benchmark.tearDownAfterAll(this);
+        benchmark.tearDownAfterAll(benchmarkContext);
       }
 
     } finally {
       // Complement the notifyBeforeBenchmarkSetUp() events.
-      dispatcher.notifyAfterBenchmarkTearDown(benchName);
+      eventDispatcher.notifyAfterBenchmarkTearDown(benchmarkName);
     }
   }
 
 
-  private long executeOperation(
-    final int opIndex, final String benchName, final Benchmark bench,
-    final EventDispatcher dispatcher, final boolean isLast
-  ) throws ValidationException {
+  private long executeOperation(final int index) throws ValidationException {
     //
     // Call the benchmark and notify listeners before the measured operation.
     // Nothing should go between the measured operation call and the timing
@@ -107,73 +116,52 @@ final class ExecutionDriver implements BenchmarkContext {
     // and return the duration of the measured operation, otherwise an
     // exception is thrown and the method terminates prematurely.
     //
-    bench.setUpBeforeEach(this);
-    dispatcher.notifyAfterOperationSetUp(benchName, opIndex, isLast);
+    benchmark.setUpBeforeEach(benchmarkContext);
+    eventDispatcher.notifyAfterOperationSetUp(
+      benchmarkName, index, executionPolicy.isLast(benchmarkName, index)
+    );
 
     final long startNanos = System.nanoTime();
-    final BenchmarkResult result = bench.run(this);
+    final BenchmarkResult result = benchmark.run(benchmarkContext);
     final long durationNanos = System.nanoTime() - startNanos;
 
-    dispatcher.notifyBeforeOperationTearDown(benchName, opIndex, durationNanos);
-    bench.tearDownAfterEach(this);
+    eventDispatcher.notifyBeforeOperationTearDown(benchmarkName, index, durationNanos);
+    benchmark.tearDownAfterEach(benchmarkContext);
 
     result.validate();
 
     final long uptimeNanos = startNanos - vmStartNanos;
-    dispatcher.notifyOnMeasurementResult(benchName, "uptime_ns", uptimeNanos);
-    dispatcher.notifyOnMeasurementResult(benchName, "duration_ns", durationNanos);
+    eventDispatcher.notifyOnMeasurementResult(benchmarkName, "uptime_ns", uptimeNanos);
+    eventDispatcher.notifyOnMeasurementResult(benchmarkName, "duration_ns", durationNanos);
 
-    dispatcher.notifyOnMeasurementResultsRequested(
-      benchName, opIndex, dispatcher::notifyOnMeasurementResult
+    eventDispatcher.notifyOnMeasurementResultsRequested(
+      benchmarkName, index, eventDispatcher::notifyOnMeasurementResult
     );
 
     return durationNanos;
   }
 
 
-  private void printStartInfo(int index, BenchmarkInfo benchInfo, String confName) {
-    System.out.printf(
-      "====== %s (%s) [%s], iteration %d started ======\n",
-      benchInfo.name(), benchInfo.module(), confName ,index
-    );
+  private void printBeforeEachMessage(int index) {
+    System.out.printf(beforeEachMessageFormat, index);
   }
 
 
-  private void printEndInfo(
-    int index, BenchmarkInfo benchInfo, String confName, long durationNanos
+  private void printAfterEachMessage(int index, long nanos) {
+    final double millis = nanos / 1e6;
+
+    // Use root locale to avoid locale-specific float formatting.
+    System.out.printf(Locale.ROOT, afterEachMessageFormat, index, millis);
+  }
+
+
+  public static ExecutionDriver create (
+    BenchmarkSuite suite, BenchmarkDescriptor descriptor,
+    EventDispatcher dispatcher, ExecutionPolicy policy, long vmStartNanos
   ) {
-    final double durationMillis = durationNanos / 1e6;
-
-    // Use explicit (null) locale to avoid locale-specific float formatting
-    System.out.printf(
-      (Locale) null,
-      "====== %s (%s) [%s], iteration %d completed (%.3f ms) ======\n",
-      benchInfo.name(), benchInfo.module(), confName, index, durationMillis
-    );
-  }
-
-  // BenchmarkContext methods
-
-  @Override
-  public BenchmarkParameter parameter(String name) {
-    return benchInfo.parameter(configName, name);
-  }
-
-
-  @Override
-  public Path scratchDirectory() {
-    if (scratchDir == null) {
-      try {
-        scratchDir = createDirectories(
-          benchInfo.resolveScratchDir(scratchRoot)
-        ).normalize();
-      } catch (IOException e) {
-        // This is a problem, fail the benchmark.
-        throw new RuntimeException("failed to create benchmark scratch directory", e);
-      }
-    }
-
-    return scratchDir;
+    SuiteBenchmarkContext context = suite.createBenchmarkContext(descriptor);
+    Benchmark benchmark = suite.createBenchmark(descriptor);
+    return new ExecutionDriver(context, benchmark, dispatcher, policy, vmStartNanos);
   }
 
 }
