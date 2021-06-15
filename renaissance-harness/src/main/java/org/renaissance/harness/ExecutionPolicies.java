@@ -2,7 +2,9 @@ package org.renaissance.harness;
 
 import java.util.function.ToIntFunction;
 
-import static org.renaissance.Plugin.*;
+import static org.renaissance.Plugin.AfterBenchmarkSetUpListener;
+import static org.renaissance.Plugin.BeforeOperationTearDownListener;
+import static org.renaissance.Plugin.ExecutionPolicy;
 
 /**
  * A collection of (simple) execution policies.
@@ -33,12 +35,12 @@ final class ExecutionPolicies {
     }
 
     @Override
-    public boolean canExecute(String benchName, int opIndex) {
+    public boolean canExecute(String benchmark, int opIndex) {
       return opIndex < countLimit;
     }
 
     @Override
-    public boolean isLast(String benchName, int opIndex) {
+    public boolean isLast(String benchmark, int opIndex) {
       return opIndex + 1 == countLimit;
     }
   }
@@ -77,12 +79,12 @@ final class ExecutionPolicies {
     }
 
     @Override
-    public boolean canExecute(String benchName, int opIndex) {
+    public boolean canExecute(String benchmark, int opIndex) {
       return elapsedCount <= 1;
     }
 
     @Override
-    public boolean isLast(String benchName, int opIndex) {
+    public boolean isLast(String benchmark, int opIndex) {
       return elapsedCount == 1;
     }
   }
@@ -120,12 +122,12 @@ final class ExecutionPolicies {
     }
 
     @Override
-    public boolean canExecute(String benchName, int opIndex) {
+    public boolean canExecute(String benchmark, int opIndex) {
       return elapsedCount <= 1;
     }
 
     @Override
-    public boolean isLast(String benchName, int opIndex) {
+    public boolean isLast(String benchmark, int opIndex) {
       return elapsedCount == 1;
     }
   }
