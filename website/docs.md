@@ -59,7 +59,7 @@ The contribution guide contains detailed information about this process.
 <script>
 loadRemoteContent(
   "contribution-holder",
-  "https://api.github.com/repos/{{ site.githubOrg }}/{{ site.githubRepo }}/contents/CONTRIBUTION.md",
+  "https://api.github.com/repos/{{ site.githubOrg }}/{{ site.githubRepo }}/contents/CONTRIBUTING.md",
   "{{ page.logoname }}",
   "markdown"
 )
@@ -67,7 +67,7 @@ loadRemoteContent(
 
 The source file that explains the contribution process for the Renaissance suite can be found
 [here](
-https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}/blob/master/CONTRIBUTION.md
+https://github.com/{{ site.githubOrg }}/{{ site.githubRepo }}/blob/master/CONTRIBUTING.md
 ).
 
 

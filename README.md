@@ -123,20 +123,6 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
 
-#### dummy
-
-- `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
-
-- `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
-
-- `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters). (default repetitions: 20)
-
-- `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
-
-- `dummy-teardown-failing` - A dummy benchmark for testing the harness (fails during teardown). (default repetitions: 20)
-
-- `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation). (default repetitions: 20)
-
 #### jdk-concurrent
 
 - `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
@@ -183,6 +169,24 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response. (default repetitions: 12)
 
+
+
+The suite also contains a group of benchmarks intended solely for testing
+purposes:
+
+#### dummy
+
+- `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
+
+- `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
+
+- `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters). (default repetitions: 20)
+
+- `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
+
+- `dummy-teardown-failing` - A dummy benchmark for testing the harness (fails during teardown). (default repetitions: 20)
+
+- `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation). (default repetitions: 20)
 
 
 
@@ -308,7 +312,7 @@ $ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.11.0.j
 
 ### Contributing
 
-Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
+Please see the [contribution guide](CONTRIBUTING.md) for a description of the contribution process.
 
 
 ### Licensing

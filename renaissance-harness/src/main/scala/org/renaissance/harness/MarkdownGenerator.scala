@@ -24,7 +24,7 @@ import scala.util.Success
 import scala.util.Try
 
 /**
- * Generates README.md and CONTRIBUTION.md files for the suite.
+ * Generates README.md and CONTRIBUTING.md files for the suite.
  * This is currently part of the harness because is relies on
  * Scala string interpolation and collects information from
  * several (harness-internal) places.
@@ -53,7 +53,7 @@ object MarkdownGenerator {
     val tags = initTagValues(benchmarks, config.tags)
 
     writeFile(() => formatReadme(tags), "README.md")
-    writeFile(() => formatContribution(tags), "CONTRIBUTION.md")
+    writeFile(() => formatContribution(tags), "CONTRIBUTING.md")
   }
 
   private def parseArgs(args: Array[String]) = {
@@ -416,7 +416,7 @@ $$ java -jar '${tags("jmhTargetPath")}/${tags("jmhJarPrefix")}-${tags("renaissan
 
 ### Contributing
 
-Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
+Please see the [contribution guide](CONTRIBUTING.md) for a description of the contribution process.
 
 
 ### Licensing
@@ -576,8 +576,9 @@ Another one can directly update the source files to match the desired format:
 $$ tools/sbt/bin/sbt renaissanceFormat
 ```
 
-Moreover, the contents of the README and CONTRIBUTION files are automatically generated from the codebase.
-Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
+Moreover, the contents of the `README.md` and `CONTRIBUTING.md` files are automatically generated
+from the codebase. Updating those files can be done with the `--readme` command-line flag.
+Using sbt, one would do:
 ```
 $$ tools/sbt/bin/sbt runMain ${tags("launcherClassFull")} --readme
 ```
