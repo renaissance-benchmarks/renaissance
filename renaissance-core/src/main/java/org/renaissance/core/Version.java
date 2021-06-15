@@ -1,6 +1,6 @@
 package org.renaissance.core;
 
-import java.lang.management.ManagementFactory;
+import java.util.Optional;
 
 import static java.lang.Integer.compare;
 import static java.lang.Math.min;
@@ -45,10 +45,6 @@ public final class Version implements Comparable<Version> {
     }
   }
 
-  /** Returns the specification version of this JVM. */
-  public static Version thisJvmSpecVersion() {
-    return Version.parse(ManagementFactory.getRuntimeMXBean().getSpecVersion());
-  }
 
   @Override
   public String toString() {
@@ -76,6 +72,9 @@ public final class Version implements Comparable<Version> {
     return compare(thisComponentCount, thatComponentCount);
   }
 
+  public int compareTo(Optional<Version> maybeThat) {
+    return maybeThat.map(this::compareTo).orElse(0);
+  }
 
   static void main(String[] args) {
     // TODO Convert to a proper test.
