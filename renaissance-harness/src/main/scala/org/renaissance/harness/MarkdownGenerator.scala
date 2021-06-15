@@ -15,6 +15,8 @@ import java.io.File
 import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
+import java.util.function.Predicate
+import scala.collection.SortedMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
@@ -100,8 +102,19 @@ object MarkdownGenerator {
     tags("jmhTargetPath") = "renaissance-jmh/target/scala-2.12"
     tags("jmhJarPrefix") = "renaissance-jmh-assembly"
 
-    tags("benchmarksList") = formatBenchmarkListMarkdown(benchmarks)
-    tags("benchmarksTable") = formatBenchmarkTableMarkdown(benchmarks)
+    def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]) = {
+      benchmarks.getMatchingBenchmarks(filter).asScala.toSeq
+    }
+
+    // Don't list dummy benchmarks in the benchmark table to reduce clutter.
+    val realBenchmarks = selectBenchmarks(!_.groups().contains("dummy"))
+    tags("benchmarksList") = formatBenchmarkListMarkdown(realBenchmarks)
+    tags("benchmarksTable") = formatBenchmarkTableMarkdown(realBenchmarks)
+
+    // List dummy benchmarks separately.
+    val dummyBenchmarks = selectBenchmarks(_.groups().contains("dummy"))
+    tags("dummyBenchmarksList") = formatBenchmarkListMarkdown(dummyBenchmarks)
+
     tags("benchmarkClass") = classOf[Benchmark].getSimpleName
     tags("benchmarkResultClass") = classOf[BenchmarkResult].getSimpleName
 
@@ -173,21 +186,25 @@ object MarkdownGenerator {
     }
   }
 
-  private def formatBenchmarkListMarkdown(registry: BenchmarkRegistry) = {
+  private def formatBenchmarkListMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
     def formatItem(b: BenchmarkDescriptor) = {
       s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
     }
 
     val result = new StringBuffer
-    registry.forEachPrimaryGroup((group, benches) => {
-      result.append(s"#### $group").append("\n\n")
-      result.append(benches.asScala.map(formatItem).mkString("\n\n")).append("\n\n")
-    })
+    SortedMap.from(benchmarks.sortBy(_.name()).groupBy(_.primaryGroup()).toSeq).foreach {
+      entry =>
+        {
+          val (group, benches) = entry
+          result.append(s"#### $group").append("\n\n")
+          result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
+        }
+    }
 
     result.toString
   }
 
-  private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
+  private def formatBenchmarkTableMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
     def formatRow(b: BenchmarkDescriptor) = {
       s"| ${b.name} | ${b.licenses.asScala.mkString(", ")} | ${b.distro} " +
         s"| ${b.jvmVersionMin.map[String](_.toString).orElse("")} " +
@@ -196,8 +213,7 @@ object MarkdownGenerator {
 
     // Don't list dummy benchmarks in the benchmark table to reduce clutter.
     benchmarks
-      .getMatchingBenchmarks(!_.groups().contains("dummy"))
-      .asScala
+      .sortBy(_.name())
       .map(formatRow)
       .mkString("\n")
   }
@@ -273,6 +289,10 @@ The following is the complete list of benchmarks, separated into groups.
 
 ${tags("benchmarksList")}
 
+The suite also contains a group of benchmarks intended solely for testing
+purposes:
+
+${tags("dummyBenchmarksList")}
 
 ### <a name="plugins">Using plugins to customize the harness</a>
 

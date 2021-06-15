@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -14,14 +13,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -84,20 +80,6 @@ public final class BenchmarkRegistry {
     return benchmarks.values().stream()
       .filter(matching)
       .collect(toList());
-  }
-
-  public void forEachPrimaryGroup(BiConsumer<String, List<BenchmarkDescriptor>> consume) {
-    benchmarksByPrimaryGroup().forEach(consume);
-  }
-
-  private Map<String, List<BenchmarkDescriptor>> benchmarksByPrimaryGroup() {
-    return benchmarks.entrySet().stream()
-      .sorted(Map.Entry.comparingByKey())
-      .sorted(Comparator.comparing(e -> e.getValue().primaryGroup()))
-      .collect(groupingBy(
-        e -> e.getValue().primaryGroup(),
-        mapping(Map.Entry::getValue, toList())
-      ));
   }
 
   // Instance creation
