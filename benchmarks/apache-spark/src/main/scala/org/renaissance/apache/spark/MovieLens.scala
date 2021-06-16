@@ -25,14 +25,9 @@ import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
 @Parameter(
-  name = "spark_executor_count",
+  name = "spark_thread_count",
   defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
-  defaultValue = "4",
-  summary = "Number of threads per executor."
+  summary = "Number of threads for the Spark local executor."
 )
 @Parameter(name = "input_file", defaultValue = "/ratings.csv")
 @Parameter(

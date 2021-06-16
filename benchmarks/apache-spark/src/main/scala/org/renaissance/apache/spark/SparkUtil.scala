@@ -52,8 +52,7 @@ trait SparkUtil {
     //
 
     val benchmarkName = getClass.getDeclaredAnnotation(classOf[Name]).value
-    val executorCount = bc.parameter("spark_executor_count").toPositiveInteger
-    val threadCount = bc.parameter("spark_executor_thread_count").toPositiveInteger
+    val threadCount = bc.parameter("spark_thread_count").toPositiveInteger
 
     sparkSession = SparkSession
       .builder()
@@ -63,7 +62,6 @@ trait SparkUtil {
       .config("spark.driver.bindAddress", "127.0.0.1")
       .config("spark.local.dir", scratchDir.toString)
       .config("spark.port.maxRetries", portAllocationMaxRetries.toString)
-      .config("spark.executor.instances", s"$executorCount")
       .config("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
       .getOrCreate()
 

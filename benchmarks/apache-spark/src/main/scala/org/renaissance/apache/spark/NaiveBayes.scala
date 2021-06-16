@@ -24,14 +24,9 @@ import java.util.stream.Collectors
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
 @Parameter(
-  name = "spark_executor_count",
-  defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
+  name = "spark_thread_count",
   defaultValue = "$cpu.count",
-  summary = "Number of threads per executor."
+  summary = "Number of threads for the Spark local executor."
 )
 @Parameter(
   name = "copy_count",
