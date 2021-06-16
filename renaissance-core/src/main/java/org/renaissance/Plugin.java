@@ -191,12 +191,12 @@ public interface Plugin {
      * operation index is only intended as an indicator and will be incremented
      * by one on subsequent calls.
      *
-     * @param benchName Name of the benchmark.
-     * @param opIndex   Index of the measured operation execution.
-     * @return {@code true} if the harness can execute the measured operation, {@code false}
-     * otherwise.
+     * @param benchmark Name of the benchmark.
+     * @param opIndex Index of the measured operation execution.
+     * @return {@code true} if the harness can execute the measured operation,
+     * {@code false} otherwise.
      */
-    boolean canExecute(final String benchName, final int opIndex);
+    boolean canExecute(String benchmark, int opIndex);
 
     /**
      * Determines if the benchmark operation to be executed is the last one.
@@ -204,12 +204,12 @@ public interface Plugin {
      * benchmark execution. If the policy implementation does not know, it
      * should return {@code false}.
      *
-     * @param benchName Name of the benchmark.
-     * @param opIndex   Index of the measured operation execution.
+     * @param benchmark Name of the benchmark.
+     * @param opIndex Index of the measured operation execution.
      * @return {@code true} if the operation is known to be the last,
      * {@code false} otherwise.
      */
-    boolean isLast(final String benchName, final int opIndex);
+    boolean isLast(String benchmark, int opIndex);
   }
 
 }

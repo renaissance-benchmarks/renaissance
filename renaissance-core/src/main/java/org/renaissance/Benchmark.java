@@ -1,7 +1,5 @@
 package org.renaissance;
 
-import org.renaissance.core.Version;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -14,15 +12,15 @@ import java.lang.annotation.Target;
  * implemented by each benchmark and serves as a name space for benchmark
  * meta-data annotations.
  * <p>
- * Each benchmark must provide at least the {@link #run(BenchmarkContext) run} method,
- * which implements the measured part of the workload represented by the benchmark.
- * Other methods are optional and should be used to ensure that the measured operation
- * only contains relevant computation and that the benchmark does not leak resources.
+ * Each benchmark must provide at least the {@link #run(BenchmarkContext) run}
+ * method, which implements the measured part of the workload represented by
+ * the benchmark. Other methods are optional and should be used to ensure that
+ * the measured operation only contains relevant computation and that the
+ * benchmark does not leak resources.
  * <p>
- * All {@link Benchmark} methods receive an instance of {@link BenchmarkContext}
- * as an argument, which allows them to query values of configurable parameters,
- * retrieve distribution JAR resources, or ask for harness-managed temporary
- * directories.
+ * All {@link Benchmark} methods receive a {@link BenchmarkContext} instance
+ * as an argument, which allows them to query configurable parameters and ask
+ * for benchmark-specific scratch directory.
  */
 public interface Benchmark {
 

@@ -1,29 +1,30 @@
 package org.renaissance.harness
 
-import java.io.File
-import java.io.IOException
-import java.io.PrintWriter
-import java.nio.charset.StandardCharsets
-
 import org.renaissance.Benchmark
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.Plugin
 import org.renaissance.Plugin._
-import org.renaissance.core.BenchmarkInfo
+import org.renaissance.core.BenchmarkDescriptor
 import org.renaissance.core.BenchmarkRegistry
 import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
 import scopt.OptionParser
 
-import scala.jdk.CollectionConverters._
+import java.io.File
+import java.io.IOException
+import java.io.PrintWriter
+import java.nio.charset.StandardCharsets
+import java.util.function.Predicate
+import scala.collection.SortedMap
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
 /**
- * Generates README.md and CONTRIBUTION.md files for the suite.
+ * Generates README.md and CONTRIBUTING.md files for the suite.
  * This is currently part of the harness because is relies on
  * Scala string interpolation and collects information from
  * several (harness-internal) places.
@@ -52,7 +53,7 @@ object MarkdownGenerator {
     val tags = initTagValues(benchmarks, config.tags)
 
     writeFile(() => formatReadme(tags), "README.md")
-    writeFile(() => formatContribution(tags), "CONTRIBUTION.md")
+    writeFile(() => formatContribution(tags), "CONTRIBUTING.md")
   }
 
   private def parseArgs(args: Array[String]) = {
@@ -78,7 +79,7 @@ object MarkdownGenerator {
   private def createRegistry(metadata: File) = {
     var provider = Try(BenchmarkRegistry.createFromProperties(metadata))
     if (metadata == null) {
-      provider = Try(BenchmarkRegistry.createDefault())
+      provider = Try(BenchmarkRegistry.create())
     }
 
     provider match {
@@ -101,8 +102,19 @@ object MarkdownGenerator {
     tags("jmhTargetPath") = "renaissance-jmh/target/scala-2.12"
     tags("jmhJarPrefix") = "renaissance-jmh-assembly"
 
-    tags("benchmarksList") = formatBenchmarkListMarkdown(benchmarks)
-    tags("benchmarksTable") = formatBenchmarkTableMarkdown(benchmarks)
+    def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]) = {
+      benchmarks.getMatchingBenchmarks(filter).asScala.toSeq
+    }
+
+    // Don't list dummy benchmarks in the benchmark table to reduce clutter.
+    val realBenchmarks = selectBenchmarks(!_.groups().contains("dummy"))
+    tags("benchmarksList") = formatBenchmarkListMarkdown(realBenchmarks)
+    tags("benchmarksTable") = formatBenchmarkTableMarkdown(realBenchmarks)
+
+    // List dummy benchmarks separately.
+    val dummyBenchmarks = selectBenchmarks(_.groups().contains("dummy"))
+    tags("dummyBenchmarksList") = formatBenchmarkListMarkdown(dummyBenchmarks)
+
     tags("benchmarkClass") = classOf[Benchmark].getSimpleName
     tags("benchmarkResultClass") = classOf[BenchmarkResult].getSimpleName
 
@@ -174,29 +186,36 @@ object MarkdownGenerator {
     }
   }
 
-  private def formatBenchmarkListMarkdown(benchmarks: BenchmarkRegistry) = {
-    def formatItem(b: BenchmarkInfo) = {
+  private def formatBenchmarkListMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
+    def formatItem(b: BenchmarkDescriptor) = {
       s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
     }
 
     val result = new StringBuffer
-    for ((group, benches) <- benchmarks.byGroup().asScala) {
-      result.append(s"#### $group").append("\n\n")
-      result.append(benches.asScala.map(formatItem).mkString("\n\n")).append("\n\n")
+    SortedMap.from(benchmarks.sortBy(_.name()).groupBy(_.primaryGroup()).toSeq).foreach {
+      entry =>
+        {
+          val (group, benches) = entry
+          result.append(s"#### $group").append("\n\n")
+          result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
+        }
     }
 
     result.toString
   }
 
-  private def formatBenchmarkTableMarkdown(benchmarks: BenchmarkRegistry) = {
-    def formatRow(b: BenchmarkInfo) = {
-      s"| ${b.name} | ${b.licenses().mkString(", ")} | ${b.distro} " +
-        s"| ${b.jvmVersionMin.map(_.toString).orElse("")} " +
-        s"| ${b.jvmVersionMax().map(_.toString).orElse("")} |"
+  private def formatBenchmarkTableMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
+    def formatRow(b: BenchmarkDescriptor) = {
+      s"| ${b.name} | ${b.licenses.asScala.mkString(", ")} | ${b.distro} " +
+        s"| ${b.jvmVersionMin.map[String](_.toString).orElse("")} " +
+        s"| ${b.jvmVersionMax.map[String](_.toString).orElse("")} |"
     }
 
     // Don't list dummy benchmarks in the benchmark table to reduce clutter.
-    benchmarks.getMatching(!_.groups().contains("dummy")).asScala.map(formatRow).mkString("\n")
+    benchmarks
+      .sortBy(_.name())
+      .map(formatRow)
+      .mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
@@ -270,6 +289,10 @@ The following is the complete list of benchmarks, separated into groups.
 
 ${tags("benchmarksList")}
 
+The suite also contains a group of benchmarks intended solely for testing
+purposes:
+
+${tags("dummyBenchmarksList")}
 
 ### <a name="plugins">Using plugins to customize the harness</a>
 
@@ -393,7 +416,7 @@ $$ java -jar '${tags("jmhTargetPath")}/${tags("jmhJarPrefix")}-${tags("renaissan
 
 ### Contributing
 
-Please see the [CONTRIBUTION](CONTRIBUTION.md) page for a description of the contributing process.
+Please see the [contribution guide](CONTRIBUTING.md) for a description of the contribution process.
 
 
 ### Licensing
@@ -553,8 +576,9 @@ Another one can directly update the source files to match the desired format:
 $$ tools/sbt/bin/sbt renaissanceFormat
 ```
 
-Moreover, the contents of the README and CONTRIBUTION files are automatically generated from the codebase.
-Updating those files can be done with the `--readme` command-line flag. Using sbt, one would do:
+Moreover, the contents of the `README.md` and `CONTRIBUTING.md` files are automatically generated
+from the codebase. Updating those files can be done with the `--readme` command-line flag.
+Using sbt, one would do:
 ```
 $$ tools/sbt/bin/sbt runMain ${tags("launcherClassFull")} --readme
 ```

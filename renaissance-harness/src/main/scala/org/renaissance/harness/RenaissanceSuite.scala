@@ -1,17 +1,22 @@
 package org.renaissance.harness
 
+import org.renaissance.Benchmark
 import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.Plugin
 import org.renaissance.Plugin.ExecutionPolicy
+import org.renaissance.core.BenchmarkDescriptor
+import org.renaissance.core.BenchmarkSuite
+import org.renaissance.core.BenchmarkSuite.jvmSpecVersion
+import org.renaissance.core.DirUtils
 import org.renaissance.core.ModuleLoader.ModuleLoadingException
-import org.renaissance.core.{BenchmarkInfo, BenchmarkRegistry, DirUtils, ModuleLoader, Version}
-import org.renaissance.harness.ExecutionPolicies.{FixedOpCount, FixedOpTime, FixedTime}
-import org.renaissance.{Benchmark, Plugin}
+import org.renaissance.harness.ExecutionPolicies.FixedOpCount
+import org.renaissance.harness.ExecutionPolicies.FixedOpTime
+import org.renaissance.harness.ExecutionPolicies.FixedTime
 
-import java.lang.management.ManagementFactory
-import java.nio.file.Path
-import java.util.concurrent.TimeUnit.{MILLISECONDS, SECONDS}
+import java.util.Locale
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
-import java.util.{Locale, Optional}
 import scala.collection._
 import scala.jdk.CollectionConverters._
 
@@ -41,16 +46,21 @@ object RenaissanceSuite {
       config.keepScratch
     )
 
+    // Setup suite core services.
+    val suite = BenchmarkSuite.create(
+      scratchRoot,
+      config.configuration,
+      config.parameterOverrides.asJava
+    )
+
     // Load information about available benchmarks.
-    val benchmarkRegistry = BenchmarkRegistry.createDefault()
-    val realBenchmarks = benchmarkRegistry.getMatching(benchmarkIsReal).asScala
+    val realBenchmarks = suite.getMatchingBenchmarks(benchmarkIsReal).asScala
 
     if (config.printList) {
-      print(formatBenchmarkList(realBenchmarks))
+      print(formatBenchmarkList(suite, realBenchmarks))
     } else if (config.printRawList) {
-      val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
       val listedBenchmarks =
-        if (config.checkJvm) realBenchmarks.filter(benchmarkIsCompatible(_, jvmVersion))
+        if (config.checkJvm) realBenchmarks.filter(suite.isBenchmarkCompatible)
         else realBenchmarks
       print(formatRawBenchmarkList(listedBenchmarks))
     } else if (config.printGroupList) {
@@ -59,14 +69,14 @@ object RenaissanceSuite {
       print(parser.usage())
     } else {
       // Collect specified benchmarks compatible with the JVM.
-      var benchmarks = selectBenchmarks(benchmarkRegistry, config.benchmarkSpecifiers)
+      var benchmarks = selectBenchmarks(suite, config.benchmarkSpecifiers)
       if (config.checkJvm) {
-        benchmarks = excludeIncompatible(benchmarks)
+        benchmarks = excludeIncompatible(suite, benchmarks)
       }
 
       // Load all plugins in given order (including external policy).
       val externalPlugins = for ((specifier, args) <- config.pluginsWithArgs) yield {
-        specifier -> createExtension(specifier, args)
+        specifier -> createPlugin(suite, specifier, args)
       }
 
       //
@@ -101,22 +111,18 @@ object RenaissanceSuite {
       val dispatcher = createEventDispatcher(plugins, writers)
 
       // Note: no access to Config beyond this point.
-      runBenchmarks(benchmarks, config.configuration, scratchRoot, policy, dispatcher)
+      runBenchmarks(suite, benchmarks, policy, dispatcher)
     }
   }
 
   private def runBenchmarks(
-    benchmarks: Seq[BenchmarkInfo],
-    configurationName: String,
-    scratchRoot: Path,
+    suite: BenchmarkSuite,
+    benchmarks: Seq[BenchmarkDescriptor],
     policy: ExecutionPolicy,
     dispatcher: EventDispatcher
   ): Unit = {
-    // Initialize harness module loader.
-    val moduleLoader = ModuleLoader.create(scratchRoot)
-
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
-    val failedBenchmarks = new mutable.ArrayBuffer[BenchmarkInfo](benchmarks.length)
+    val failedBenchmarks = mutable.Buffer[BenchmarkDescriptor]()
 
     val vmStartNanos = getVmStartNanos
 
@@ -124,28 +130,26 @@ object RenaissanceSuite {
     dispatcher.notifyAfterHarnessInit()
 
     try {
-      for (benchInfo <- benchmarks) {
-        val benchmark = benchInfo.loadBenchmarkModule(moduleLoader)
-        val driver =
-          new ExecutionDriver(benchInfo, configurationName, scratchRoot, vmStartNanos)
+      for (descriptor <- benchmarks) {
+        val driver = ExecutionDriver.create(suite, descriptor, dispatcher, policy, vmStartNanos)
 
         try {
-          driver.executeBenchmark(benchmark, dispatcher, policy)
+          driver.executeBenchmark()
 
         } catch {
           case t: Throwable =>
             // Notify observers that a benchmark failed.
-            dispatcher.notifyOnBenchmarkFailure(benchInfo.name)
-            failedBenchmarks += benchInfo
+            dispatcher.notifyOnBenchmarkFailure(descriptor.name)
+            failedBenchmarks += descriptor
 
             t match {
               case _: ValidationException =>
                 Console.err.println(
-                  s"Benchmark '${benchInfo.name()}' failed result validation:\n${t.getMessage}"
+                  s"Benchmark '${descriptor.name()}' failed result validation:\n${t.getMessage}"
                 )
 
               case _ =>
-                Console.err.println(s"Benchmark '${benchInfo.name()}' failed with exception:")
+                Console.err.println(s"Benchmark '${descriptor.name()}' failed with exception:")
                 t.printStackTrace(Console.err)
             }
         }
@@ -219,20 +223,20 @@ object RenaissanceSuite {
   }
 
   private def selectBenchmarks(
-    benchmarks: BenchmarkRegistry,
+    suite: BenchmarkSuite,
     specifiers: Seq[String]
-  ): Seq[BenchmarkInfo] = {
-    val result = new mutable.LinkedHashSet[BenchmarkInfo]
+  ): Seq[BenchmarkDescriptor] = {
+    val result = new mutable.LinkedHashSet[BenchmarkDescriptor]
     for (specifier <- specifiers) {
-      if (benchmarks.exists(specifier)) {
-        // Add an individual benchmark
-        result += benchmarks.get(specifier)
-      } else if (benchmarks.groupExists(specifier)) {
-        // Add benchmarks for a given group
-        result ++= benchmarks.getGroup(specifier).asScala
+      if (suite.hasBenchmark(specifier)) {
+        // Add an individual benchmark.
+        result += suite.getBenchmark(specifier)
+      } else if (suite.hasGroup(specifier)) {
+        // Add benchmarks from the given group.
+        result ++= suite.getGroupBenchmarks(specifier).asScala
       } else if (specifier == "all") {
-        // Add all benchmarks except the dummy ones
-        result ++= benchmarks.getMatching(benchmarkIsReal).asScala
+        // Add all benchmarks except the dummy ones.
+        result ++= suite.getMatchingBenchmarks(benchmarkIsReal).asScala
       } else {
         Console.err.println(s"Benchmark (or group) '$specifier' does not exist.")
         sys.exit(1)
@@ -242,8 +246,11 @@ object RenaissanceSuite {
     result.toSeq
   }
 
-  private def excludeIncompatible(benchmarks: Seq[BenchmarkInfo]): Seq[BenchmarkInfo] = {
-    def versionRange(b: BenchmarkInfo) = {
+  private def excludeIncompatible(
+    suite: BenchmarkSuite,
+    benchmarks: Seq[BenchmarkDescriptor]
+  ): Seq[BenchmarkDescriptor] = {
+    def versionRange(b: BenchmarkDescriptor) = {
       val result = new StringBuilder
 
       b.jvmVersionMin().ifPresent(v => result.append(s">=$v"))
@@ -260,15 +267,13 @@ object RenaissanceSuite {
       result
     }
 
-    val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
-
     // Exclude incompatible benchmarks with a warning.
     benchmarks
       .filter(b => {
-        val isCompatible = benchmarkIsCompatible(b, jvmVersion)
+        val isCompatible = suite.isBenchmarkCompatible(b)
         if (!isCompatible) {
           Console.err.println(
-            s"Benchmark '${b.name()}' excluded: requires JVM version ${versionRange(b)} (found $jvmVersion)."
+            s"Benchmark '${b.name()}' excluded: requires JVM version ${versionRange(b)} (found ${jvmSpecVersion()})."
           )
         }
 
@@ -289,15 +294,15 @@ object RenaissanceSuite {
     builder.build()
   }
 
-  private def createExtension[T](
+  private def createPlugin[T](
+    suite: BenchmarkSuite,
     specifier: String,
     args: mutable.Seq[String]
   ) = {
     try {
       val specifierParts = specifier.trim.split("!", 2)
       val (classPath, className) = (specifierParts(0), specifierParts(1))
-      val extClass = ModuleLoader.loadExtension(classPath, className, classOf[Plugin])
-      ModuleLoader.createExtension(extClass, args.toArray[String])
+      suite.createExtension(classPath, className, classOf[Plugin], args.toArray[String])
     } catch {
       case e: ModuleLoadingException =>
         Console.err.println(s"Error: failed to load plugin '$specifier': ${e.getMessage}")
@@ -307,7 +312,7 @@ object RenaissanceSuite {
 
   private def getPolicy(
     config: Config,
-    benchmarks: Seq[BenchmarkInfo],
+    benchmarks: Seq[BenchmarkDescriptor],
     plugins: Map[String, Plugin]
   ): ExecutionPolicy = {
     config.policyType match {
@@ -345,7 +350,7 @@ object RenaissanceSuite {
   def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
     var column = 0
     val line = new StringBuffer
-    val result = new mutable.ArrayBuffer[String]
+    val result = mutable.Buffer[String]()
     for (word <- words) {
       if ((column + word.length + 1 >= width) && (column > 0)) {
         result += line.toString
@@ -363,17 +368,19 @@ object RenaissanceSuite {
     result += line.toString
   }
 
-  private def formatRawBenchmarkList(benchmarks: Seq[BenchmarkInfo]) =
+  private def formatRawBenchmarkList(benchmarks: Seq[BenchmarkDescriptor]) =
     benchmarks.map(_.name() + "\n").mkString
 
-  private def formatBenchmarkList(benchmarks: Seq[BenchmarkInfo]) = {
+  private def formatBenchmarkList(
+    suite: BenchmarkSuite,
+    benchmarks: Seq[BenchmarkDescriptor]
+  ) = {
     val indent = "    "
-    val jvmVersion = Version.parse(ManagementFactory.getRuntimeMXBean.getSpecVersion)
 
     val result = new StringBuilder
     for (bench <- benchmarks) {
       result.append(bench.name)
-      if (!benchmarkIsCompatible(bench, jvmVersion)) {
+      if (!suite.isBenchmarkCompatible(bench)) {
         result.append(s" (not compatible with this JVM)")
       }
       result.append("\n")
@@ -385,8 +392,8 @@ object RenaissanceSuite {
         .jvmVersionMin()
         .ifPresent(v => {
           result.append(s"${indent}Minimum JVM version required: $v")
-          if (jvmVersion.compareTo(v) < 0) {
-            result.append(s" (found $jvmVersion)");
+          if (jvmSpecVersion().compareTo(v) < 0) {
+            result.append(s" (found ${jvmSpecVersion()})");
           }
           result.append("\n")
         })
@@ -395,8 +402,8 @@ object RenaissanceSuite {
         .jvmVersionMax()
         .ifPresent(v => {
           result.append(s"${indent}Maximum JVM version supported: $v")
-          if (jvmVersion.compareTo(v) > 0) {
-            result.append(s" (found $jvmVersion)");
+          if (jvmSpecVersion().compareTo(v) > 0) {
+            result.append(s" (found ${jvmSpecVersion()})");
           }
           result.append("\n")
         })
@@ -408,20 +415,11 @@ object RenaissanceSuite {
     result.toString
   }
 
-  private def formatGroupList(benchmarks: Seq[BenchmarkInfo]) =
-    benchmarks.flatMap(_.groups()).distinct.sorted.map(_ + "\n").mkString
+  private def formatGroupList(benchmarks: Seq[BenchmarkDescriptor]) =
+    benchmarks.flatMap(_.groups().asScala).distinct.sorted.map(_ + "\n").mkString
 
-  private def benchmarkIsReal(b: BenchmarkInfo) = {
-    !b.groups().contains("dummy")
-  }
-
-  private def benchmarkIsCompatible(b: BenchmarkInfo, jvmVersion: Version) = {
-    def compare(v1: Version, maybeV2: Optional[Version]) =
-      maybeV2.map((v2: Version) => v1.compareTo(v2)).orElse(0)
-
-    val minSatisfied = compare(jvmVersion, b.jvmVersionMin) >= 0
-    val maxSatisfied = compare(jvmVersion, b.jvmVersionMax) <= 0
-    minSatisfied && maxSatisfied
+  private def benchmarkIsReal(benchmark: BenchmarkDescriptor) = {
+    !benchmark.groups().contains("dummy")
   }
 
 }

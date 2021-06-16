@@ -29,6 +29,7 @@ private final class Config {
   var printGroupList = false
 
   var configuration = "default"
+  val parameterOverrides = mutable.Map[String, String]()
 
   /**
    * Force garbage collection before executing the measured operation. This is
@@ -125,6 +126,12 @@ private final class Config {
 
   def withConfiguration(name: String) = {
     configuration = name
+    this
+  }
+
+  def withParameterOverride(specifier: String) = {
+    val parts = specifier.split("=", 2).map(_.trim)
+    parameterOverrides += (parts(0) -> parts(1))
     this
   }
 

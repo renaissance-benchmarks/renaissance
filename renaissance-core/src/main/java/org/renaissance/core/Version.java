@@ -1,5 +1,7 @@
 package org.renaissance.core;
 
+import java.util.Optional;
+
 import static java.lang.Integer.compare;
 import static java.lang.Math.min;
 import static java.util.Arrays.stream;
@@ -25,7 +27,7 @@ public final class Version implements Comparable<Version> {
     this.components = components;
   }
 
-
+  /** Creates a {@link Version} from a version string. */
   public static Version parse(String version) {
     final String[] parts = version.split("[.]");
     try {
@@ -70,6 +72,9 @@ public final class Version implements Comparable<Version> {
     return compare(thisComponentCount, thatComponentCount);
   }
 
+  public int compareTo(Optional<Version> maybeThat) {
+    return maybeThat.map(this::compareTo).orElse(0);
+  }
 
   static void main(String[] args) {
     // TODO Convert to a proper test.

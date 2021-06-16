@@ -9,22 +9,15 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 import org.renaissance.BenchmarkContext;
-import org.renaissance.BenchmarkParameter;
 import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
-import org.renaissance.core.BenchmarkInfo;
-import org.renaissance.core.BenchmarkRegistry;
+import org.renaissance.core.BenchmarkDescriptor;
+import org.renaissance.core.BenchmarkSuite;
 import org.renaissance.core.DirUtils;
-import org.renaissance.core.ModuleLoader;
-import org.renaissance.core.Version;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -56,62 +49,50 @@ public abstract class JmhRenaissanceBenchmark {
     "org.renaissance.jmh.configuration", "jmh"
   );
 
-  private final Path scratchRootDir;
   private final org.renaissance.Benchmark benchmark;
   private final BenchmarkContext context;
 
   private BenchmarkResult result;
-  private Path scratchDir;
 
   protected JmhRenaissanceBenchmark(final String name) {
+    // Create scratch root so that we can initialize the suite.
+    final Path scratchRootDir = createScratchRoot();
+
     // Get benchmark information and fake the run if necessary.
-    final BenchmarkRegistry benchmarks = BenchmarkRegistry.createDefault();
-    BenchmarkInfo benchInfo = benchmarks.get(name);
-    if (!benchmarkIsCompatible(benchInfo)) {
+    final BenchmarkSuite suite = BenchmarkSuite.create(scratchRootDir, configuration);
+
+    BenchmarkDescriptor bd = suite.getBenchmark(name);
+    if (!suite.isBenchmarkCompatible(bd)) {
       String message = String.format(
-        "Benchmark '%s' is not compatible with this JVM version!", benchInfo.name()
+        "Benchmark '%s' is not compatible with this JVM version!", bd.name()
       );
 
       if (!fakeIncompatibleBenchmarks) {
         throw new RuntimeException(message);
       } else {
-        benchInfo = benchmarks.get("dummy-empty");
+        bd = suite.getBenchmark("dummy-empty");
       }
 
       System.out.printf(
         "\n!!!!! %s Using '%s' to avoid failure. !!!!!\n",
-        message, benchInfo.name()
+        message, bd.name()
       );
     }
 
-    // Create scratch root so that we can initialize module loader.
+    // Load the benchmark.
+    benchmark = suite.createBenchmark(bd);
+    context = suite.createBenchmarkContext(bd);
+  }
+
+  private Path createScratchRoot() {
     try {
-      scratchRootDir = DirUtils.createScratchDirectory(
+      return DirUtils.createScratchDirectory(
         Paths.get(scratchBaseDir), "jmh-", keepScratch
       );
 
     } catch (IOException e) {
       throw new RuntimeException("failed to create scratch root", e);
     }
-
-    // Load the benchmark.
-    final ModuleLoader moduleLoader = ModuleLoader.create(scratchRootDir);
-    benchmark = benchInfo.loadBenchmarkModule(moduleLoader);
-    context = createBenchmarkContext(benchInfo);
-  }
-
-  private static boolean benchmarkIsCompatible(BenchmarkInfo b) {
-    RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-    Version jvmVersion = Version.parse(runtimeMXBean.getSpecVersion());
-
-    boolean minSatisfied = compare(jvmVersion, b.jvmVersionMin()) >= 0;
-    boolean maxSatisfied = compare(jvmVersion, b.jvmVersionMax()) <= 0;
-
-    return minSatisfied && maxSatisfied;
-  }
-
-  private static int compare(Version v1, Optional<Version> maybeV2) {
-    return maybeV2.map(v1::compareTo).orElse(0);
   }
 
   //
@@ -145,34 +126,6 @@ public abstract class JmhRenaissanceBenchmark {
   @TearDown(Level.Trial)
   public final void defaultTearBenchmark() {
     benchmark.tearDownAfterAll(context);
-  }
-
-  //
-
-  private BenchmarkContext createBenchmarkContext(BenchmarkInfo benchInfo) {
-    return new BenchmarkContext() {
-
-      @Override
-      public BenchmarkParameter parameter(String name) {
-        return benchInfo.parameter(configuration, name);
-      }
-
-      @Override
-      public Path scratchDirectory() {
-        if (scratchDir == null) {
-          try {
-            scratchDir = Files.createDirectories(
-              benchInfo.resolveScratchDir(scratchRootDir)
-            ).normalize();
-          } catch (IOException e) {
-            // This is a problem, fail the benchmark.
-            throw new RuntimeException("failed to create benchmark scratch directory", e);
-          }
-        }
-
-        return scratchDir;
-      }
-    };
   }
 
 }

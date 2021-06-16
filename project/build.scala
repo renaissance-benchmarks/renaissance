@@ -90,7 +90,7 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
   private def parameterDefaults(confName: String) = {
     getAnnotations(classOf[Parameter])
       .map(p => s"configuration.$confName.${p.name}" -> p.defaultValue())
-      .toMap
+      .toMap + (s"configuration.$confName._present" -> "true")
   }
 
   def configurations(): Map[String, String] = {

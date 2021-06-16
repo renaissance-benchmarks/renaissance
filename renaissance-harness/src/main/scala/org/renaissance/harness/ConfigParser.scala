@@ -85,6 +85,16 @@ private final class ConfigParser(tags: Map[String, String]) {
         .action((v, c) => c.withConfiguration(v))
         .maxOccurs(1)
 
+      opt[String]('o', "override")
+        .valueName("<name>=<value>")
+        .text("Override the value of a configuration parameter <name> to <value>.")
+        .validate(v =>
+          if (v.indexOf('=') > 0) success
+          else failure("expected <name>=<value> in benchmark parameter override")
+        )
+        .action((v, c) => c.withParameterOverride(v))
+        .unbounded()
+
       opt[String]("scratch-base")
         .valueName("<dir>")
         .text("Create scratch directories in <dir>. Defaults to current directory.")

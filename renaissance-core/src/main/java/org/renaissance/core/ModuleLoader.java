@@ -28,6 +28,8 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
 public final class ModuleLoader {
+  private static final String MODULES_PROPERTIES = "/modules.properties";
+
   private static final String RESOURCE_PATH_SEPARATOR = "/";
 
   private static final Class<?> thisClass = ModuleLoader.class;
@@ -61,13 +63,12 @@ public final class ModuleLoader {
    * @param scratchRootDir The root of the scratch directory where module
    * module dependencies are extracted.
    */
-  public static ModuleLoader create(Path scratchRootDir) {
+  static ModuleLoader create(Path scratchRootDir) {
     logger.fine(() -> String.format(
       "Creating module loader with scratch root '%s'", scratchRootDir
     ));
 
-    String moduleProperties = resourceAbsolutePath("modules.properties");
-    final Map<String, Set<String>> moduleJarPaths = loadModuleJarPaths(moduleProperties);
+    final Map<String, Set<String>> moduleJarPaths = loadModuleJarPaths(MODULES_PROPERTIES);
     return new ModuleLoader(scratchRootDir, moduleJarPaths);
   }
 
@@ -198,7 +199,7 @@ public final class ModuleLoader {
 
 
   private static List<Path> extractResources(
-    Collection<String> resourcePaths, Path outputDirPath
+    Iterable<String> resourcePaths, Path outputDirPath
   ) throws ModuleLoadingException {
     List<Path> result = new ArrayList<>();
 
@@ -277,7 +278,7 @@ public final class ModuleLoader {
    * such a constructor cannot be found, it falls back to using the default
    * constructor.
    */
-  public static <T> T createExtension(
+  static <T> T createExtension(
     Class<T> extClass, String[] args
   ) throws ModuleLoadingException {
     try {
@@ -313,7 +314,7 @@ public final class ModuleLoader {
    * Loads an extension class and casts it to the desired base class.
    * The class is searched for in the given class path.
    */
-  public static <T> Class<? extends T> loadExtension(
+  static <T> Class<? extends T> loadExtension(
     String classPath, String className, Class<T> baseClass
   ) throws ModuleLoadingException {
     String[] pathElements = classPath.split(File.pathSeparator);
