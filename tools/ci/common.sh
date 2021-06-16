@@ -10,13 +10,13 @@ set -o errexit
 # set -o xtrace
 
 # Project root directory
-ROOT_DIR="$(git rev-parse --show-toplevel)"
+ROOT_DIR="$(git rev-parse --show-toplevel || realpath "$( dirname "$0" )/../../" )"
 
 # Cache directory for files we explicitly produce
 CACHE_DIR="$HOME/.prebuilt"
 
 # Raw version as produced by git
-RENAISSANCE_GIT_VERSION=$(git describe --dirty=-SNAPSHOT)
+RENAISSANCE_GIT_VERSION=$(git describe --tags --always --dirty=-SNAPSHOT || echo "ci-SNAPSHOT" )
 
 # Strip leading 'v' from the git-produced version
 RENAISSANCE_VERSION=${RENAISSANCE_GIT_VERSION#v}
