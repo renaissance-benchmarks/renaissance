@@ -40,8 +40,10 @@ public interface BenchmarkResult {
       return () -> {
         Arrays.fill(objects, null);
 
-        System.err.println("WARNING: This benchmark provides no result that can be validated.");
-        System.err.println("         There is no way to check that no silent failure occurred.");
+        System.err.print(
+          "WARNING: This benchmark provides no result that can be validated.\n"+
+          "There is no way to check that no silent failure occurred.\n"
+        );
       };
     }
 
