@@ -12,6 +12,7 @@ import static org.renaissance.Benchmark.*;
 @Group("dummy")
 @Summary("A dummy benchmark which only serves to test the harness.")
 @Licenses(License.MIT)
+@Configuration(name = "test")
 public final class DummyEmpty implements Benchmark {
   @Override
   public BenchmarkResult run(BenchmarkContext c) {
