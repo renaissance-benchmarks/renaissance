@@ -95,12 +95,6 @@ Usage: renaissance [options] [benchmark-specification]
 
 The following is the complete list of benchmarks, separated into groups.
 
-#### actors
-
-- `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
-
-- `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO. (default repetitions: 10)
-
 #### apache-spark
 
 - `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 30)
@@ -119,51 +113,45 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
+#### concurrency
+
+- `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
+
+- `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
+
+- `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO. (default repetitions: 10)
+
 #### database
 
 - `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
 
-#### jdk-concurrent
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
 
-- `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
+#### functional
 
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
-
-#### jdk-streams
 
 - `mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
 
 - `par-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
 
-- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
-
-#### neo4j
-
-- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
-
-#### rx
-
 - `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
 
-#### scala-dotty
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+
+#### scala
 
 - `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
 
-#### scala-sat
+- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
 
 - `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 20)
 
-#### scala-stdlib
-
 - `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
-
-#### scala-stm
-
-- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
 
 - `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM. (default repetitions: 60)
 
-#### twitter-finagle
+#### web
 
 - `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 90)
 
