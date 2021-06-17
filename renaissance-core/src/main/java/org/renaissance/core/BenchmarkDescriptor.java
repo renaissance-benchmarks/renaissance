@@ -173,8 +173,8 @@ public final class BenchmarkDescriptor {
       return BenchmarkDescriptor.this.name();
     }
 
-    String benchmarkModule() {
-      return BenchmarkDescriptor.this.module();
+    String benchmarkPrimaryGroup() {
+      return BenchmarkDescriptor.this.primaryGroup();
     }
 
     private String visibleName(String name) {
