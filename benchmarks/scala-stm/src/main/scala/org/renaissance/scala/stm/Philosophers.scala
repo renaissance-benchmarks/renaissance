@@ -8,6 +8,7 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("philosophers")
+@Group("scala")
 @Group("scala-stm")
 @Summary("Solves a variant of the dining philosophers problem using ScalaSTM.")
 @Licenses(Array(License.BSD3))

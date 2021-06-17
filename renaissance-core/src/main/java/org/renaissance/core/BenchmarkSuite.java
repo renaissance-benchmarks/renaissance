@@ -167,8 +167,8 @@ public final class BenchmarkSuite {
       return configuration.benchmarkName();
     }
 
-    public String benchmarkModule() {
-      return configuration.benchmarkModule();
+    public String benchmarkPrimaryGroup() {
+      return configuration.benchmarkPrimaryGroup();
     }
 
     /**

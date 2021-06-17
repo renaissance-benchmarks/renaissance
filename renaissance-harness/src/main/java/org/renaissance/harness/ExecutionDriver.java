@@ -57,14 +57,20 @@ final class ExecutionDriver {
     this.vmStartNanos = vmStartNanos;
 
     this.benchmarkName = context.benchmarkName();
+
+    // Pre-format the before/after messages (escaping the format specifier
+    // for the operation index which keeps changing) so that we don't have
+    // to query the static information over and over.
     this.beforeEachMessageFormat = String.format(
       "====== %s (%s) [%s], iteration %%d started ======\n",
-      context.benchmarkName(), context.benchmarkModule(), context.configurationName()
+      context.benchmarkName(), context.benchmarkPrimaryGroup(),
+      context.configurationName()
     );
 
     this.afterEachMessageFormat = String.format(
       "====== %s (%s) [%s], iteration %%d completed (%%.3f ms) ======\n",
-      context.benchmarkName(), context.benchmarkModule(), context.configurationName()
+      context.benchmarkName(), context.benchmarkPrimaryGroup(),
+      context.configurationName()
     );
   }
 
