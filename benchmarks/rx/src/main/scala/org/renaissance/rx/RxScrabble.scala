@@ -8,6 +8,7 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("rx-scrabble")
+@Group("functional")
 @Group("rx")
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))

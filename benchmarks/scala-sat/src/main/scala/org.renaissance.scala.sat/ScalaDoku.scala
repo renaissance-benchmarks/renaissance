@@ -92,6 +92,7 @@ object Solver {
 }
 
 @Name("scala-doku")
+@Group("scala")
 @Group("scala-sat")
 @Summary("Solves Sudoku Puzzles using Scala collections.")
 @Licenses(Array(License.MIT))

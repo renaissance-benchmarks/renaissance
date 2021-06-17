@@ -35,6 +35,7 @@ import scala.io.Source
 import scala.util.hashing.byteswap32
 
 @Name("finagle-chirper")
+@Group("web")
 @Group("twitter-finagle")
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))

@@ -31,6 +31,7 @@ import scala.collection._
 import scala.io.Source
 
 @Name("dotty")
+@Group("scala")
 @Group("scala-dotty")
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))

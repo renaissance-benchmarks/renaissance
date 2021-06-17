@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.io.{Codec, Source}
 
 @Name("neo4j-analytics")
+@Group("database")
 @Group("neo4j")
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
