@@ -144,28 +144,22 @@ final class MovieLens extends Benchmark with SparkUtil {
       ).collectAsMap()
     }
 
-    def splitRatings(numPartitions: Int, trainingThreshold: Int, validationThreshold: Int) = {
+    def splitRatings(trainingThreshold: Int, validationThreshold: Int) = {
       training = ensureCached(
         ratings
           .filter(x => x._1 < trainingThreshold)
           .values
           .union(personalRatingsRDD)
-          .repartition(numPartitions)
       )
       numTraining = training.count()
 
       validation = ensureCached(
-        ratings
-          .filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold)
-          .values
-          .repartition(numPartitions)
+        ratings.filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold).values
       )
       numValidation = validation.count()
 
       test = ensureCached(
-        ratings
-          .filter(x => x._1 >= validationThreshold)
-          .values
+        ratings.filter(x => x._1 >= validationThreshold).values
       )
       numTest = test.count()
 
@@ -282,7 +276,7 @@ final class MovieLens extends Benchmark with SparkUtil {
 
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
     // last digit of the timestamp, add myRatings to train, and cache them.
-    helper.splitRatings(4, 6, 8)
+    helper.splitRatings(6, 8)
   }
 
   def loadData(scratchDir: Path) = {

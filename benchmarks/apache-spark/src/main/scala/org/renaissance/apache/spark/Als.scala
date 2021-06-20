@@ -74,7 +74,7 @@ final class Als extends Benchmark with SparkUtil {
     Files.write(file, lines.asJavaCollection)
   }
 
-  private def loadRatings(file: Path, partitionCount: Int) = {
+  private def loadRatings(file: Path) = {
     createRddFromCsv(
       file,
       header = false,
@@ -83,7 +83,7 @@ final class Als extends Benchmark with SparkUtil {
         val (user, product, rating) = (parts(0), parts(1), parts(2))
         Rating(user.toInt, product.toInt, rating.toDouble)
       }
-    ).repartition(partitionCount)
+    )
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
@@ -104,9 +104,7 @@ final class Als extends Benchmark with SparkUtil {
     )
 
     // Load, partition, and cache the ratings.
-    inputRatings = ensureCached(
-      loadRatings(ratingsCsv, bc.parameter("spark_executor_count").toPositiveInteger)
-    )
+    inputRatings = ensureCached(loadRatings(ratingsCsv))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
