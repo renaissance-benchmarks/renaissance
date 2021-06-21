@@ -107,29 +107,6 @@ trait SparkUtil {
     sparkSession.close()
   }
 
-  private def copyResourceToDir(
-    filename: String,
-    expectedSizeBytes: Int,
-    destDir: Path
-  ): Unit = {
-    val stream = getClass.getResourceAsStream("/" + filename)
-    try {
-      val bytesWritten = Files.copy(
-        stream,
-        destDir.resolve(filename)
-      )
-
-      if (bytesWritten != expectedSizeBytes) {
-        throw new Exception(
-          s"Wrong $filename size: expected $expectedSizeBytes, written $bytesWritten bytes."
-        )
-      }
-    } finally {
-      // This may mask a try-block exception, but at least it will fail anyway.
-      stream.close()
-    }
-  }
-
   /**
    * Spark version 3.1.2 uses Hadoop version 3.2.0. The dependencies
    * do not include a binary zip for Hadoop on Windows. Instead,
@@ -147,7 +124,11 @@ trait SparkUtil {
       val hadoopBinDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
 
       for ((filename, expectedSizeBytes) <- hadoopExtrasForWindows) {
-        copyResourceToDir(filename, expectedSizeBytes, hadoopBinDir)
+        ResourceUtil.writeResourceToFileCheckSize(
+          "/" + filename,
+          hadoopBinDir.resolve(filename),
+          expectedSizeBytes
+        )
       }
 
       for (filename <- hadoopPreloadedLibsForWindows) {
