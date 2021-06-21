@@ -116,8 +116,8 @@ final class MovieLens extends Benchmark with SparkUtil {
     def loadRatings(file: Path) = {
       ratings = ensureCached(
         createRddFromCsv(
-          file,
-          header = true,
+          sparkContext.textFile(file.toString),
+          hasHeader = true,
           delimiter = ",",
           parts => {
             val (user, movie, rating, timestamp) = (parts(0), parts(1), parts(2), parts(3))
@@ -134,8 +134,8 @@ final class MovieLens extends Benchmark with SparkUtil {
 
     def loadMovies(file: Path) = {
       movies = createRddFromCsv(
-        file,
-        header = true,
+        sparkContext.textFile(file.toString),
+        hasHeader = true,
         delimiter = ",",
         parts => {
           val (movieId, movieName) = (parts(0), parts(1))

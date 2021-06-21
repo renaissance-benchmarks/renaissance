@@ -73,18 +73,13 @@ trait SparkUtil {
   }
 
   def createRddFromCsv[T: ClassTag](
-    file: Path,
-    header: Boolean,
+    lines: RDD[String],
+    hasHeader: Boolean,
     delimiter: String,
     mapper: Array[String] => T
   ) = {
-    val lines = textFileAsRdd(file)
-    val linesWithoutHeader = if (header) dropFirstLine(lines) else lines
-    linesWithoutHeader.map(_.split(delimiter)).map[T](mapper).filter(_ != null)
-  }
-
-  private def textFileAsRdd(file: Path): RDD[String] = {
-    sparkContext.textFile(file.toString)
+    val linesWithoutHeader = if (hasHeader) dropFirstLine(lines) else lines
+    linesWithoutHeader.map(_.split(delimiter)).map(mapper).filter(_ != null)
   }
 
   private def dropFirstLine(lines: RDD[String]): RDD[String] = {

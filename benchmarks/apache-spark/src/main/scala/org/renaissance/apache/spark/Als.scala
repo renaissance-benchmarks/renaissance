@@ -76,8 +76,8 @@ final class Als extends Benchmark with SparkUtil {
 
   private def loadRatings(file: Path) = {
     createRddFromCsv(
-      file,
-      header = false,
+      sparkContext.textFile(file.toString),
+      hasHeader = false,
       delimiter = ",",
       parts => {
         val (user, product, rating) = (parts(0), parts(1), parts(2))
