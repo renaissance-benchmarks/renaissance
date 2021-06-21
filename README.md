@@ -105,7 +105,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization. (default repetitions: 40)
 
-- `log-regression` - Runs the logistic regression workload from the Spark MLlib. (default repetitions: 20)
+- `log-regression` - Runs the Logistic Regression algorithm from the Spark ML library. (default repetitions: 20)
 
 - `movie-lens` - Recommends movies using the ALS algorithm. (default repetitions: 20)
 
