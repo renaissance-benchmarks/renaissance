@@ -90,7 +90,9 @@ def defineModulesPropertiesGeneratorTask =
     val modulesProps = new Properties
     defineCompoundProjectJarsCollectorTask(renaissanceModules).value.foreach { module =>
       val (moduleName, modulePath, moduleJars) = module
-      val jarLine = moduleJars.map(jar => modulePath.resolve(jar.getName)).mkString(",")
+      val jarLine = moduleJars
+        .map(jar => modulePath.resolve(jar.getName).toString().replace("\\", "/"))
+        .mkString(",")
       modulesProps.setProperty(moduleName, jarLine)
     }
 
