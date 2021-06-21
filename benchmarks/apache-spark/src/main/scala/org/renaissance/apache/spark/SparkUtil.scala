@@ -26,12 +26,17 @@ trait SparkUtil {
 
   private val portAllocationMaxRetries: Int = 16
 
-  private val winutilsName = "winutils.exe"
-  private val winutilsSize = 112640
-
   // Copied from https://github.com/cdarlint/winutils
-  private val hadoopdllName = "hadoop.dll"
-  private val hadoopdllSize = 85504
+  // The mapping is filename to its size (for a basic sanity checking)
+  private val hadoopExtrasForWindows = Map(
+    "winutils.exe" -> 112640,
+    "hadoop.dll" -> 85504
+  )
+
+  // Windows libraries that should be System.load()-ed
+  private val hadoopPreloadedLibsForWindows = Seq(
+    "hadoop.dll"
+  )
 
   private val sparkLogLevel = Level.WARN
   private val jettyLogLevel = Level.WARN
@@ -102,6 +107,29 @@ trait SparkUtil {
     sparkSession.close()
   }
 
+  private def copyResourceToDir(
+    filename: String,
+    expectedSizeBytes: Int,
+    destDir: Path
+  ): Unit = {
+    val stream = getClass.getResourceAsStream("/" + filename)
+    try {
+      val bytesWritten = Files.copy(
+        stream,
+        destDir.resolve(filename)
+      )
+
+      if (bytesWritten != expectedSizeBytes) {
+        throw new Exception(
+          s"Wrong $filename size: expected $expectedSizeBytes, written $bytesWritten bytes."
+        )
+      }
+    } finally {
+      // This may mask a try-block exception, but at least it will fail anyway.
+      stream.close()
+    }
+  }
+
   /**
    * Spark version 3.1.2 uses Hadoop version 3.2.0. The dependencies
    * do not include a binary zip for Hadoop on Windows. Instead,
@@ -117,42 +145,14 @@ trait SparkUtil {
     if (sys.props.get("os.name").toString.contains("Windows")) {
       val hadoopHomeDirAbs = hadoopHomeDir.toAbsolutePath
       val hadoopBinDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
-      val winutilsStream = getClass.getResourceAsStream("/" + winutilsName)
-      val hadoopdllStream = getClass.getResourceAsStream("/" + hadoopdllName)
 
-      try {
-        val bytesWritten = Files.copy(
-          winutilsStream,
-          hadoopBinDir.resolve(winutilsName)
-        )
-
-        if (bytesWritten != winutilsSize) {
-          throw new Exception(
-            s"Wrong winutils.exe size: expected $winutilsSize, written $bytesWritten"
-          )
-        }
-      } finally {
-        // This may mask a try-block exception, but at least it will fail anyway.
-        winutilsStream.close()
+      for ((filename, expectedSizeBytes) <- hadoopExtrasForWindows) {
+        copyResourceToDir(filename, expectedSizeBytes, hadoopBinDir)
       }
 
-      try {
-        val bytesWritten = Files.copy(
-          hadoopdllStream,
-          hadoopBinDir.resolve(hadoopdllName)
-        )
-
-        if (bytesWritten != hadoopdllSize) {
-          throw new Exception(
-            s"Wrong hadoop.dll size: expected $hadoopdllSize, written $bytesWritten"
-          )
-        }
-      } finally {
-        // This may mask a try-block exception, but at least it will fail anyway.
-        hadoopdllStream.close()
+      for (filename <- hadoopPreloadedLibsForWindows) {
+        System.load(hadoopBinDir.resolve(filename).toString)
       }
-
-      System.load(hadoopBinDir.resolve(hadoopdllName).toString)
       System.setProperty("hadoop.home.dir", hadoopHomeDirAbs.toString)
     }
   }
