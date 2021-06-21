@@ -45,13 +45,15 @@ public final class ModuleLoader {
    * Map of module names to sets of JAR files representing the class path of
    * each module. There may be multiple benchmark classes in one module, but
    * each will be instantiated using a separate class loader.
+   *
+   * The resource paths use a Unix-style component separator.
    */
-  private final Map<String, Set<String>> jarPathsByModule;
+  private final Map<String, Set<String>> jarResourcePathsByModule;
 
 
   ModuleLoader(Path scratchRootDir, Map<String, Set<String>> jarPathsByModule) {
     this.scratchRootDir = scratchRootDir;
-    this.jarPathsByModule = jarPathsByModule;
+    this.jarResourcePathsByModule = jarPathsByModule;
   }
 
 
@@ -150,13 +152,13 @@ public final class ModuleLoader {
     // avoid repeatedly extracting the JAR files for the same module.
     //
     try {
-      Set<String> jarPaths = jarPathsByModule.get(name);
-      if (jarPaths == null) {
+      Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
+      if (jarResourcePaths == null) {
         throw new ModuleLoadingException("module not found");
       }
 
       Path moduleJarsDir = createModuleJarsDirectory(name);
-      List<Path> filePaths = extractResources(jarPaths, moduleJarsDir);
+      List<Path> filePaths = extractResources(jarResourcePaths, moduleJarsDir);
       final URL[] urls = pathsToUrls(filePaths);
 
       // Make sure that all paths were converted to URL.
@@ -244,6 +246,7 @@ public final class ModuleLoader {
   }
 
 
+  /** Returns the last component of a resource path (base name). */
   private static String resourceFileName(String resourcePath) {
     final int nameStart = resourcePath.lastIndexOf(RESOURCE_PATH_SEPARATOR);
     return nameStart >= 0 ? resourcePath.substring(nameStart + 1) : resourcePath;
