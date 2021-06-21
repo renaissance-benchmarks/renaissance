@@ -23,7 +23,7 @@ import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 @Name("dec-tree")
 @Group("apache-spark")
-@Summary("Runs the Random Forest algorithm from Spark MLlib.")
+@Summary("Runs the Random Forest algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
 @Parameter(

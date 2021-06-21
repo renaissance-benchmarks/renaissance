@@ -101,7 +101,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
-- `dec-tree` - Runs the Random Forest algorithm from Spark MLlib. (default repetitions: 40)
+- `dec-tree` - Runs the Random Forest algorithm from the Spark ML library. (default repetitions: 40)
 
 - `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization. (default repetitions: 40)
 
