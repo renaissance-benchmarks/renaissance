@@ -65,7 +65,7 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   private var alsConfigurations: Iterable[AlsConfig] = _
 
-  private val personalRatingsInputFile = "/movie-lens-my-ratings.csv"
+  private val personalRatingsInputFile = "/ratings-personal.csv"
 
   private val moviesInputFile = "/movies.csv"
 
