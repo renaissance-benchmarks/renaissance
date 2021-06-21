@@ -9,13 +9,10 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
-import org.renaissance.apache.spark.ResourceUtil.linesFromUrl
+import org.renaissance.apache.spark.ResourceUtil.duplicateLinesFromUrl
 
-import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.{StandardOpenOption => OpenOption}
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 @Name("log-regression")
 @Group("apache-spark")
@@ -60,16 +57,6 @@ final class LogRegression extends Benchmark with SparkUtil {
 
   private var outputLogisticRegression: LogisticRegressionModel = _
 
-  private def prepareInput(url: URL, copyCount: Int, outputFile: Path): Path = {
-    val lines = linesFromUrl(url).asJavaCollection
-
-    for (_ <- 0 until copyCount) {
-      Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
-    }
-
-    outputFile
-  }
-
   private def loadData(inputFile: Path, featureCount: Int) = {
     sparkSession.read
       .format("libsvm")
@@ -82,7 +69,7 @@ final class LogRegression extends Benchmark with SparkUtil {
 
     maxIterationsParam = bc.parameter("max_iterations").toPositiveInteger
 
-    val inputFile = prepareInput(
+    val inputFile = duplicateLinesFromUrl(
       getClass.getResource(inputResource),
       bc.parameter("copy_count").toPositiveInteger,
       bc.scratchDirectory().resolve("input.txt")
@@ -103,7 +90,11 @@ final class LogRegression extends Benchmark with SparkUtil {
     // TODO: add more in-depth validation
     Validators.compound(
       Validators.simple("class count", 2, outputLogisticRegression.numClasses),
-      Validators.simple("feature count", inputFeatureCount, outputLogisticRegression.numFeatures)
+      Validators.simple(
+        "feature count",
+        inputFeatureCount,
+        outputLogisticRegression.numFeatures
+      )
     )
   }
 

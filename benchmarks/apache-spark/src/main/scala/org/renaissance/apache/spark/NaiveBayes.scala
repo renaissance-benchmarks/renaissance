@@ -8,13 +8,10 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
-import org.renaissance.apache.spark.ResourceUtil.linesFromUrl
+import org.renaissance.apache.spark.ResourceUtil.duplicateLinesFromUrl
 
-import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.{StandardOpenOption => OpenOption}
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 @Name("naive-bayes")
 @Group("apache-spark")
@@ -48,16 +45,6 @@ final class NaiveBayes extends Benchmark with SparkUtil {
 
   private var outputNaiveBayes: NaiveBayesModel = _
 
-  private def prepareInput(url: URL, copyCount: Int, outputFile: Path): Path = {
-    val lines = linesFromUrl(url).asJavaCollection
-
-    for (_ <- 0 until copyCount) {
-      Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
-    }
-
-    outputFile
-  }
-
   private def loadData(inputFile: Path, featureCount: Int) = {
     sparkSession.read
       .format("libsvm")
@@ -68,7 +55,7 @@ final class NaiveBayes extends Benchmark with SparkUtil {
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
     setUpSparkContext(bc)
 
-    val inputFile = prepareInput(
+    val inputFile = duplicateLinesFromUrl(
       getClass.getResource(inputResource),
       bc.parameter("copy_count").toPositiveInteger,
       bc.scratchDirectory().resolve("input.txt")
