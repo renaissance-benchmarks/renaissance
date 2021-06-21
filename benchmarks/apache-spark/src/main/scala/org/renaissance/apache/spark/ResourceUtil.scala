@@ -2,6 +2,7 @@ package org.renaissance.apache.spark
 
 import java.io.FileNotFoundException
 import java.io.InputStream
+import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -28,13 +29,13 @@ private object ResourceUtil {
   }
 
   /**
-   * Turns a resource into a sequence of lines.
+   * Loads a file from the given [[url]] as a sequence of lines.
    *
-   * @param resourceName path to the resource
+   * @param url input file [[URL]]
    * @return a sequence of lines
    */
-  def resourceAsLines(resourceName: String) = {
-    val source = Source.fromInputStream(getResourceStream(resourceName))
+  def linesFromUrl(url: URL): Seq[String] = {
+    val source = Source.fromURL(url)
     try {
       source.getLines().to[Seq]
     } finally {

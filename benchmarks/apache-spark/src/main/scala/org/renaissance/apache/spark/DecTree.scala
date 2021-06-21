@@ -13,11 +13,12 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
-import org.renaissance.apache.spark.ResourceUtil.resourceAsLines
+import org.renaissance.apache.spark.ResourceUtil.linesFromUrl
 
+import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
+import java.nio.file.{StandardOpenOption => OpenOption}
 import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 @Name("dec-tree")
@@ -50,16 +51,11 @@ final class DecTree extends Benchmark with SparkUtil {
 
   private var outputClassificationModel: DecisionTreeClassificationModel = _
 
-  private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
-    val lines = resourceAsLines(resourcePath)
+  private def prepareInput(url: URL, copyCount: Int, outputFile: Path): Path = {
+    val lines = linesFromUrl(url).asJavaCollection
 
     for (_ <- 0 until copyCount) {
-      Files.write(
-        outputFile,
-        lines.asJavaCollection,
-        StandardOpenOption.CREATE,
-        StandardOpenOption.APPEND
-      )
+      Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
     }
 
     outputFile
@@ -106,7 +102,7 @@ final class DecTree extends Benchmark with SparkUtil {
     setUpSparkContext(bc)
 
     val inputFile = prepareInput(
-      inputResource,
+      getClass.getResource(inputResource),
       bc.parameter("copy_count").toPositiveInteger,
       bc.scratchDirectory().resolve("input.txt")
     )
