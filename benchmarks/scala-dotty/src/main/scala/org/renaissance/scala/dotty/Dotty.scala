@@ -11,7 +11,6 @@ import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Assert
-import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
 import org.renaissance.core.DirUtils
 
@@ -22,13 +21,11 @@ import java.nio.file.Files.copy
 import java.nio.file.Files.createDirectories
 import java.nio.file.Files.notExists
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import scala.collection._
-import scala.io.Source
 
 @Name("dotty")
 @Group("scala")
@@ -44,12 +41,14 @@ final class Dotty extends Benchmark {
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
   /**
-   * MD5 digest of all generated .tasty files (except a few) which embed
-   * the current working directory path into the .tasty file.
+   * MD5 digest of all generated .tasty files (except a few which embed
+   * the current working directory path into the .tasty file).
    *
    * find . -type f -name '*.tasty'|egrep -v '(Classfile|ByteCode)\.tasty' | LC_ALL=C sort|xargs cat|md5sum
    */
   private val expectedTastyHash: String = "7376f5f353dea8da455afb6abfee237e"
+
+  private val excludedTastyFiles = Seq("Classfile.tasty", "ByteCode.tasty")
 
   private val sourcesInputResource = "/scalap.zip"
 
@@ -151,7 +150,7 @@ final class Dotty extends Benchmark {
     () => {
       def printDiagnostics(diags: mutable.Buffer[Diagnostic], prefix: String) = {
         diags.foreach(d => {
-          val pos = d.position().map(p => s"${p.source()}:${p.line()}: ").orElse("")
+          val pos = d.position().map[String](p => s"${p.source()}:${p.line()}: ").orElse("")
           println(s"${prefix}: ${pos}${d.message()}")
         })
       }
@@ -180,6 +179,13 @@ final class Dotty extends Benchmark {
       //
       Assert.assertEquals(expectedTastyHash, result.digest(), "digest of generated tasty files")
     }
+  }
+
+  // Enforce lexicographic ordering (LC_ALL=C style) on file names. Even though
+  // File instances are (lexicographically) Comparable, they use a file-system
+  // specific ordering which may ignore character case (e.g., on Windows).
+  object AsciiFileOrdering extends Ordering[File] {
+    def compare(a: File, b: File): Int = a.toString.compareTo(b.toString)
   }
 
   private class CompilationResult extends SimpleReporter with CompilerCallback {
@@ -219,6 +225,8 @@ final class Dotty extends Benchmark {
       // Right now we assume that '$' can only appear as first letter, just like
       // in the '$tilde.tasty' file. The goal is to get a list of files that should
       // exist, not to filter out files that do not exist.
+      // Note that we need to sort them in platform-independent way
+      // (i.e., in the "C" locale).
       //
       classFiles
         .flatMap(_.jfile().map[Option[File]](f => Some(f)).orElse(None))
@@ -230,8 +238,8 @@ final class Dotty extends Benchmark {
           val tastyName = s"${baseName}.tasty"
           new File(file.getParentFile(), tastyName)
         })
-        .filterNot(f => Seq("Classfile.tasty", "ByteCode.tasty").contains(f.getName))
-        .sorted
+        .filterNot(f => excludedTastyFiles.contains(f.getName))
+        .sorted(AsciiFileOrdering)
     }
 
     private def digestFile(file: File, outputHash: MessageDigest): Unit = {
