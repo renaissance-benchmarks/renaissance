@@ -182,6 +182,14 @@ final class Dotty extends Benchmark {
     }
   }
 
+  // LC_ALL=C style sorting of filenames
+  object AsciiFileOrdering extends Ordering[File] {
+
+    def compare(a: File, b: File): Int = {
+      a.toString.compareTo(b.toString)
+    }
+  }
+
   private class CompilationResult extends SimpleReporter with CompilerCallback {
     val errors = mutable.Buffer[Diagnostic]()
     val warnings = mutable.Buffer[Diagnostic]()
@@ -219,6 +227,8 @@ final class Dotty extends Benchmark {
       // Right now we assume that '$' can only appear as first letter, just like
       // in the '$tilde.tasty' file. The goal is to get a list of files that should
       // exist, not to filter out files that do not exist.
+      // Note that we need to sort them in platform-independent way
+      // (i.e., in the "C" locale).
       //
       classFiles
         .flatMap(_.jfile().map[Option[File]](f => Some(f)).orElse(None))
@@ -231,7 +241,7 @@ final class Dotty extends Benchmark {
           new File(file.getParentFile(), tastyName)
         })
         .filterNot(f => Seq("Classfile.tasty", "ByteCode.tasty").contains(f.getName))
-        .sorted
+        .sorted(AsciiFileOrdering)
     }
 
     private def digestFile(file: File, outputHash: MessageDigest): Unit = {
