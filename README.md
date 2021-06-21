@@ -109,7 +109,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `movie-lens` - Recommends movies using the ALS algorithm. (default repetitions: 20)
 
-- `naive-bayes` - Runs the multinomial naive Bayes algorithm from the Spark MLlib. (default repetitions: 30)
+- `naive-bayes` - Runs the multinomial Naive Bayes algorithm from the Spark ML library. (default repetitions: 30)
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
 
