@@ -181,12 +181,11 @@ final class Dotty extends Benchmark {
     }
   }
 
-  // LC_ALL=C style sorting of filenames
+  // Enforce lexicographic ordering (LC_ALL=C style) on file names. Even though
+  // File instances are (lexicographically) Comparable, they use a file-system
+  // specific ordering which may ignore character case (e.g., on Windows).
   object AsciiFileOrdering extends Ordering[File] {
-
-    def compare(a: File, b: File): Int = {
-      a.toString.compareTo(b.toString)
-    }
+    def compare(a: File, b: File): Int = a.toString.compareTo(b.toString)
   }
 
   private class CompilationResult extends SimpleReporter with CompilerCallback {
