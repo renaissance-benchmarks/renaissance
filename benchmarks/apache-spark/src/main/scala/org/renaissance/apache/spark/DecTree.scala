@@ -7,7 +7,6 @@ import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SQLContext
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -45,6 +44,8 @@ final class DecTree extends Benchmark with SparkUtil {
 
   private val inputResource = "/sample_libsvm_data.txt"
 
+  private val inputFeatureCount = 692
+
   private var inputTrainingData: DataFrame = _
 
   private var outputClassificationModel: DecisionTreeClassificationModel = _
@@ -64,9 +65,11 @@ final class DecTree extends Benchmark with SparkUtil {
     outputFile
   }
 
-  private def loadData(inputFile: Path): DataFrame = {
-    val sqlContext = new SQLContext(sparkContext)
-    sqlContext.read.format("libsvm").load(inputFile.toString)
+  private def loadData(inputFile: Path, featureCount: Int): DataFrame = {
+    sparkSession.read
+      .format("libsvm")
+      .option("numFeatures", featureCount)
+      .load(inputFile.toString)
   }
 
   def constructPipeline(): Pipeline = {
@@ -108,7 +111,7 @@ final class DecTree extends Benchmark with SparkUtil {
       bc.scratchDirectory().resolve("input.txt")
     )
 
-    inputTrainingData = ensureCached(loadData(inputFile))
+    inputTrainingData = ensureCached(loadData(inputFile, inputFeatureCount))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
