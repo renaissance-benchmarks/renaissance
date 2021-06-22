@@ -20,7 +20,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
 import static java.util.function.Function.identity;
@@ -318,11 +318,17 @@ public final class ModuleLoader {
    * The class is searched for in the given class path.
    */
   static <T> Class<? extends T> loadExtension(
-    String classPath, String className, Class<T> baseClass
+    Collection<Path> classPath, String className, Class<T> baseClass
   ) throws ModuleLoadingException {
-    String[] pathElements = classPath.split(File.pathSeparator);
-    URL[] classPathUrls = stringsToUrls(pathElements);
-    if (classPathUrls.length != pathElements.length) {
+    URL[] classPathUrls = pathsToUrls(classPath);
+    if (logger.isLoggable(Level.CONFIG)) {
+      logger.config(String.format(
+        "Class path for %s: %s", className,
+        Arrays.stream(classPathUrls).map(Object::toString).collect(joining(","))
+      ));
+    }
+
+    if (classPathUrls.length != classPath.size()) {
       throw new ModuleLoadingException("malformed URL(s) in classpath specification");
     }
 
@@ -363,15 +369,11 @@ public final class ModuleLoader {
     // path (which would be probably the most common scenario), we convert
     // the file path to an URI first and convert that to an URL.
     //
-    return stringsToUrls(paths.stream().map(p -> p.toUri().toString()));
-  }
-
-  private static URL[] stringsToUrls(String[] strings) {
-    return stringsToUrls(Arrays.stream(strings));
-  }
-
-  private static URL[] stringsToUrls(Stream<String> stringStream) {
-    return stringStream.map(ModuleLoader::makeUrl).filter(Objects::nonNull).toArray(URL[]::new);
+    return paths.stream()
+      .map(p -> p.toUri().toString())
+      .map(ModuleLoader::makeUrl)
+      .filter(Objects::nonNull)
+      .toArray(URL[]::new);
   }
 
   private static URL makeUrl(String spec) {
