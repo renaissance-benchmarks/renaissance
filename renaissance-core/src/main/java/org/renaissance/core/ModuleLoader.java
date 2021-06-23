@@ -20,7 +20,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
 import static java.util.function.Function.identity;
@@ -45,13 +45,15 @@ public final class ModuleLoader {
    * Map of module names to sets of JAR files representing the class path of
    * each module. There may be multiple benchmark classes in one module, but
    * each will be instantiated using a separate class loader.
+   *
+   * The resource paths use a Unix-style component separator.
    */
-  private final Map<String, Set<String>> jarPathsByModule;
+  private final Map<String, Set<String>> jarResourcePathsByModule;
 
 
   ModuleLoader(Path scratchRootDir, Map<String, Set<String>> jarPathsByModule) {
     this.scratchRootDir = scratchRootDir;
-    this.jarPathsByModule = jarPathsByModule;
+    this.jarResourcePathsByModule = jarPathsByModule;
   }
 
 
@@ -150,13 +152,13 @@ public final class ModuleLoader {
     // avoid repeatedly extracting the JAR files for the same module.
     //
     try {
-      Set<String> jarPaths = jarPathsByModule.get(name);
-      if (jarPaths == null) {
+      Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
+      if (jarResourcePaths == null) {
         throw new ModuleLoadingException("module not found");
       }
 
       Path moduleJarsDir = createModuleJarsDirectory(name);
-      List<Path> filePaths = extractResources(jarPaths, moduleJarsDir);
+      List<Path> filePaths = extractResources(jarResourcePaths, moduleJarsDir);
       final URL[] urls = pathsToUrls(filePaths);
 
       // Make sure that all paths were converted to URL.
@@ -244,6 +246,7 @@ public final class ModuleLoader {
   }
 
 
+  /** Returns the last component of a resource path (base name). */
   private static String resourceFileName(String resourcePath) {
     final int nameStart = resourcePath.lastIndexOf(RESOURCE_PATH_SEPARATOR);
     return nameStart >= 0 ? resourcePath.substring(nameStart + 1) : resourcePath;
@@ -315,11 +318,17 @@ public final class ModuleLoader {
    * The class is searched for in the given class path.
    */
   static <T> Class<? extends T> loadExtension(
-    String classPath, String className, Class<T> baseClass
+    Collection<Path> classPath, String className, Class<T> baseClass
   ) throws ModuleLoadingException {
-    String[] pathElements = classPath.split(File.pathSeparator);
-    URL[] classPathUrls = stringsToUrls(pathElements);
-    if (classPathUrls.length != pathElements.length) {
+    URL[] classPathUrls = pathsToUrls(classPath);
+    if (logger.isLoggable(Level.CONFIG)) {
+      logger.config(String.format(
+        "Class path for %s: %s", className,
+        Arrays.stream(classPathUrls).map(Object::toString).collect(joining(","))
+      ));
+    }
+
+    if (classPathUrls.length != classPath.size()) {
       throw new ModuleLoadingException("malformed URL(s) in classpath specification");
     }
 
@@ -360,15 +369,11 @@ public final class ModuleLoader {
     // path (which would be probably the most common scenario), we convert
     // the file path to an URI first and convert that to an URL.
     //
-    return stringsToUrls(paths.stream().map(p -> p.toUri().toString()));
-  }
-
-  private static URL[] stringsToUrls(String[] strings) {
-    return stringsToUrls(Arrays.stream(strings));
-  }
-
-  private static URL[] stringsToUrls(Stream<String> stringStream) {
-    return stringStream.map(ModuleLoader::makeUrl).filter(Objects::nonNull).toArray(URL[]::new);
+    return paths.stream()
+      .map(p -> p.toUri().toString())
+      .map(ModuleLoader::makeUrl)
+      .filter(Objects::nonNull)
+      .toArray(URL[]::new);
   }
 
   private static URL makeUrl(String spec) {

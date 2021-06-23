@@ -195,7 +195,7 @@ public final class BenchmarkSuite {
 
   /** Loads and instantiates an extension class with given arguments. */
   public <T> T createExtension(
-    String classPath, String className, Class<T> baseClass, String[] args
+    List<Path> classPath, String className, Class<T> baseClass, String[] args
   ) throws ModuleLoadingException {
     final Class<? extends T> extClass = ModuleLoader.loadExtension(
       classPath, className, baseClass

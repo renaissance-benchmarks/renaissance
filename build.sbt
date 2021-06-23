@@ -9,6 +9,7 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.Properties
 import scala.collection._
+import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
 enablePlugins(GitBranchPrompt)
 
@@ -90,7 +91,12 @@ def defineModulesPropertiesGeneratorTask =
     val modulesProps = new Properties
     defineCompoundProjectJarsCollectorTask(renaissanceModules).value.foreach { module =>
       val (moduleName, modulePath, moduleJars) = module
-      val jarLine = moduleJars.map(jar => modulePath.resolve(jar.getName)).mkString(",")
+      val jarLine = moduleJars
+        .map {
+          // The path to a module JAR needs to use Unix-like paths (even on Windows).
+          jar => modulePath.resolve(jar.getName).iterator().asScala.mkString("/")
+        }
+        .mkString(",")
       modulesProps.setProperty(moduleName, jarLine)
     }
 

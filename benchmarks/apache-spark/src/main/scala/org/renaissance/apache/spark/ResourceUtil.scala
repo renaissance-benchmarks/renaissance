@@ -25,7 +25,40 @@ private object ResourceUtil {
    */
   def writeResourceToFile(resourceName: String, file: Path) = {
     val resourceStream = getResourceStream(resourceName)
-    Files.copy(resourceStream, file, CopyOption.REPLACE_EXISTING)
+    try {
+      Files.copy(resourceStream, file, CopyOption.REPLACE_EXISTING)
+    } finally {
+      // This may mask a try-block exception, but at least it will fail anyway.
+      resourceStream.close()
+    }
+
+    file
+  }
+
+  /**
+   * Writes the resource associated with the [[ResourceUtil]] class
+   * to a file, replacing an existing file.
+   * Checks that the file size is the same as expected.
+   *
+   * @param resourceName path to the resource
+   * @param file path the output file
+   * @param expectedSizeBytes Expected file size in bytes
+   * @return [[Path]] to the output file
+   */
+  def writeResourceToFileCheckSize(resourceName: String, file: Path, expectedSizeBytes: Int) = {
+    val stream = getClass.getResourceAsStream(resourceName)
+    try {
+      val bytesWritten = Files.copy(stream, file)
+
+      if (bytesWritten != expectedSizeBytes) {
+        throw new Exception(
+          s"Wrong $file size: expected $expectedSizeBytes, written $bytesWritten bytes."
+        )
+      }
+    } finally {
+      // This may mask a try-block exception, but at least it will fail anyway.
+      stream.close()
+    }
 
     file
   }

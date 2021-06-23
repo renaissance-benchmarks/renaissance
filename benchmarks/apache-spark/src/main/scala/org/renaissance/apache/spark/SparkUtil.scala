@@ -26,8 +26,17 @@ trait SparkUtil {
 
   private val portAllocationMaxRetries: Int = 16
 
-  private val winutilsName = "winutils.exe"
-  private val winutilsSize = 112640
+  // Copied from https://github.com/cdarlint/winutils
+  // The mapping is filename to its size (for a basic sanity checking)
+  private val hadoopExtrasForWindows = Map(
+    "winutils.exe" -> 112640,
+    "hadoop.dll" -> 85504
+  )
+
+  // Windows libraries that should be System.load()-ed
+  private val hadoopPreloadedLibsForWindows = Seq(
+    "hadoop.dll"
+  )
 
   private val sparkLogLevel = Level.WARN
   private val jettyLogLevel = Level.WARN
@@ -105,25 +114,19 @@ trait SparkUtil {
   private def setUpHadoop(hadoopHomeDir: Path): Unit = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
       val hadoopHomeDirAbs = hadoopHomeDir.toAbsolutePath
-      val winutilsDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
-      val winutilsStream = getClass.getResourceAsStream("/" + winutilsName)
+      val hadoopBinDir = Files.createDirectories(hadoopHomeDirAbs.resolve("bin"))
 
-      try {
-        val bytesWritten = Files.copy(
-          winutilsStream,
-          winutilsDir.resolve(winutilsName)
+      for ((filename, expectedSizeBytes) <- hadoopExtrasForWindows) {
+        ResourceUtil.writeResourceToFileCheckSize(
+          "/" + filename,
+          hadoopBinDir.resolve(filename),
+          expectedSizeBytes
         )
-
-        if (bytesWritten != winutilsSize) {
-          throw new Exception(
-            s"Wrong winutils.exe size: expected $winutilsSize, written $bytesWritten"
-          )
-        }
-      } finally {
-        // This may mask a try-block exception, but at least it will fail anyway.
-        winutilsStream.close()
       }
 
+      for (filename <- hadoopPreloadedLibsForWindows) {
+        System.load(hadoopBinDir.resolve(filename).toString)
+      }
       System.setProperty("hadoop.home.dir", hadoopHomeDirAbs.toString)
     }
   }
