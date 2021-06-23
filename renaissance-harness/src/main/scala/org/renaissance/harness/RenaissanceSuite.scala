@@ -13,6 +13,9 @@ import org.renaissance.harness.ExecutionPolicies.FixedOpCount
 import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
 
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.Locale
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
@@ -299,14 +302,29 @@ object RenaissanceSuite {
     specifier: String,
     args: mutable.Seq[String]
   ) = {
+    def exitWithError(message: String) = {
+      Console.err.println(s"Error: failed to load plugin '$specifier': $message")
+      sys.exit(1)
+    }
+
+    // Only take the last '!' as a class name separator.
+    val splitIndex = specifier.lastIndexOf("!")
+
+    val className = specifier.substring(splitIndex + 1)
+    if (className.isEmpty) {
+      exitWithError("class name is missing")
+    }
+
+    val classPathString = specifier.substring(0, splitIndex)
+    val classPath = classPathString.split(File.pathSeparator).map(Paths.get(_)).toList
+    classPath.filterNot(Files.isReadable).foreach { path =>
+      exitWithError(s"'$path' does not exist or is not readable")
+    }
+
     try {
-      val specifierParts = specifier.trim.split("!", 2)
-      val (classPath, className) = (specifierParts(0), specifierParts(1))
-      suite.createExtension(classPath, className, classOf[Plugin], args.toArray[String])
+      suite.createExtension(classPath.asJava, className, classOf[Plugin], args.toArray[String])
     } catch {
-      case e: ModuleLoadingException =>
-        Console.err.println(s"Error: failed to load plugin '$specifier': ${e.getMessage}")
-        sys.exit(1)
+      case e: ModuleLoadingException => exitWithError(e.getMessage)
     }
   }
 
@@ -393,7 +411,7 @@ object RenaissanceSuite {
         .ifPresent(v => {
           result.append(s"${indent}Minimum JVM version required: $v")
           if (jvmSpecVersion().compareTo(v) < 0) {
-            result.append(s" (found ${jvmSpecVersion()})");
+            result.append(s" (found ${jvmSpecVersion()})")
           }
           result.append("\n")
         })
@@ -403,7 +421,7 @@ object RenaissanceSuite {
         .ifPresent(v => {
           result.append(s"${indent}Maximum JVM version supported: $v")
           if (jvmSpecVersion().compareTo(v) > 0) {
-            result.append(s" (found ${jvmSpecVersion()})");
+            result.append(s" (found ${jvmSpecVersion()})")
           }
           result.append("\n")
         })
