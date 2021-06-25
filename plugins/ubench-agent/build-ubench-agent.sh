@@ -12,7 +12,11 @@ UBENCH_AGENT_TARBALL_URL="https://github.com/D-iii-S/java-ubench-agent/archive/$
 UBENCH_AGENT_DIR="java-ubench-agent-$UBENCH_AGENT_COMMIT"
 
 msg "Fetching sources..."
-wget --continue -O "$UBENCH_AGENT_TARBALL" "$UBENCH_AGENT_TARBALL_URL"
+if wget --version >/dev/null 2>&1; then
+    wget --continue -O "$UBENCH_AGENT_TARBALL" "$UBENCH_AGENT_TARBALL_URL"
+else
+    curl --continue-at - --location -o "$UBENCH_AGENT_TARBALL" "$UBENCH_AGENT_TARBALL_URL"
+fi
 if ! [ -d "$UBENCH_AGENT_DIR" ]; then
     msg "Unpacking the tarball..."
     tar xzf "$UBENCH_AGENT_TARBALL"
