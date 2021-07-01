@@ -8,7 +8,10 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import org.renaissance.apache.spark.ResourceUtil.sourceFromZipResource
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.regex.Pattern
 import scala.collection.JavaConverters._
 import scala.io.BufferedSource
@@ -52,7 +55,7 @@ final class PageRank extends Benchmark with SparkUtil {
   /**
    * Maximum difference in neighboring ranks for web sites in the same class.
    * The value is slightly lower but in the same order as 1/685230, which
-   * corresponds to the number of web sites in the input data set
+   * corresponds to the number of web sites in the input data set.
    */
   private val rankDifferenceLimit = 1e-6
 
@@ -68,24 +71,33 @@ final class PageRank extends Benchmark with SparkUtil {
 
   private var inputLinks: RDD[(Int, Iterable[Int])] = _
 
-  private def loadData(inputSource: BufferedSource, lineCount: Int) = {
+  private def copyLinesToFile(
+    source: BufferedSource,
+    lineCount: Int,
+    outputFile: Path
+  ): Path = {
     try {
-      var inputLines = inputSource.getLines().dropWhile(_.startsWith("#"))
+      var lines = source.getLines().dropWhile(_.startsWith("#"))
       if (lineCount >= 0) {
-        inputLines = inputLines.take(lineCount)
+        lines = lines.take(lineCount)
       }
 
-      val splitter = Pattern.compile("\\s+")
-      sparkContext
-        .parallelize(inputLines.toSeq)
-        .map { line =>
-          val parts = splitter.split(line, 2)
-          parts(0).toInt -> parts(1).toInt
-        }
-        .groupByKey()
+      // Write output using UTF-8 encoding.
+      Files.write(outputFile, lines.toSeq.asJavaCollection)
     } finally {
-      inputSource.close()
+      source.close()
     }
+  }
+
+  private def loadData(inputFile: Path) = {
+    val splitter = Pattern.compile("\\s+")
+    sparkContext
+      .textFile(inputFile.toString)
+      .map { line =>
+        val parts = splitter.split(line, 2)
+        parts(0).toInt -> parts(1).toInt
+      }
+      .groupByKey()
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
@@ -95,9 +107,13 @@ final class PageRank extends Benchmark with SparkUtil {
     expectedRankCountParam = bc.parameter("expected_rank_count").toInteger
     expectedRankHashParam = bc.parameter("expected_rank_hash").value
 
-    val inputSource = ResourceUtil.sourceFromZipResource(inputZipResource, inputZipEntry)
+    val inputFile = copyLinesToFile(
+      sourceFromZipResource(inputZipResource, inputZipEntry),
+      bc.parameter("input_line_count").toInteger,
+      bc.scratchDirectory().resolve("websites.txt")
+    )
 
-    inputLinks = ensureCached(loadData(inputSource, bc.parameter("input_line_count").toInteger))
+    inputLinks = ensureCached(loadData(inputFile))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
@@ -139,7 +155,7 @@ final class PageRank extends Benchmark with SparkUtil {
       }
 
       private def relaxedRanks(entries: Seq[(Int, Double)], diffLimit: Double) = {
-        var prevRank = entries(0)._2
+        var prevRank = entries.head._2
         var groupRank = prevRank
 
         entries
