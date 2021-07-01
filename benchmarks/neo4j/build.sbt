@@ -5,7 +5,7 @@ lazy val neo4j = (project in file("."))
     name := "neo4j",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.12.13",
+    scalaVersion := "2.12.14",
     scalacOptions += "-target:jvm-1.8",
     libraryDependencies ++= Seq(
       // neo4j 4.2 does not support 2.13
