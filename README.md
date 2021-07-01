@@ -320,7 +320,7 @@ requirements) for all the benchmarks:
 | akka-uct | MIT | MIT | 1.8 |  |
 | als | APACHE2 | MIT | 1.8 |  |
 | chi-square | APACHE2 | MIT | 1.8 |  |
-| db-shootout | APACHE2 | MIT | 1.8 |  |
+| db-shootout | APACHE2 | MIT | 1.8 | 11 |
 | dec-tree | APACHE2 | MIT | 1.8 |  |
 | dotty | BSD3 | MIT | 1.8 |  |
 | finagle-chirper | APACHE2 | MIT | 1.8 |  |
