@@ -61,7 +61,9 @@ trait SparkUtil {
     //
 
     val benchmarkName = getClass.getDeclaredAnnotation(classOf[Name]).value
-    val threadCount = bc.parameter("spark_thread_count").toPositiveInteger
+    val threadLimit = bc.parameter("spark_thread_limit").toPositiveInteger
+    val cpuCount = Runtime.getRuntime.availableProcessors()
+    val threadCount = Math.min(threadLimit, cpuCount)
 
     sparkSession = SparkSession
       .builder()
@@ -79,6 +81,9 @@ trait SparkUtil {
     }
 
     sparkContext.setLogLevel(sparkLogLevel.toString)
+    println(
+      s"NOTE: '$benchmarkName' benchmark uses Spark local executor with $threadCount (out of $cpuCount) threads."
+    )
   }
 
   def createRddFromCsv[T: ClassTag](

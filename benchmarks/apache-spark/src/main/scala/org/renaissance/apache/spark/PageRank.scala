@@ -19,9 +19,9 @@ import scala.io.BufferedSource
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
 @Parameter(
-  name = "spark_thread_count",
+  name = "spark_thread_limit",
   defaultValue = "$cpu.count",
-  summary = "Number of threads for the Spark local executor."
+  summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(
   name = "max_iterations",
