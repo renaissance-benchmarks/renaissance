@@ -49,7 +49,7 @@ jobs:
           - openjdk9
           - openjdk10
           - openjdk11
-          #- openjdk12
+          - openjdk12
           - openj9-openjdk8
           - openj9-openjdk11
           #- openj9-openjdk16
