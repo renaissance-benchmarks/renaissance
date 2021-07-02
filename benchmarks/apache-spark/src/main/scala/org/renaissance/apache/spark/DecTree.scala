@@ -113,8 +113,10 @@ final class DecTree extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputFile = bc.scratchDirectory().resolve("output.txt")
-    dumpResult(outputClassificationModel, outputFile)
+    if (dumpResultsBeforeTearDown && outputClassificationModel != null) {
+      val outputFile = bc.scratchDirectory().resolve("output.txt")
+      dumpResult(outputClassificationModel, outputFile)
+    }
 
     tearDownSparkContext()
   }

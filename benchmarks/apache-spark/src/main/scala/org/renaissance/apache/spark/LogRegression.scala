@@ -99,8 +99,10 @@ final class LogRegression extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputFile = bc.scratchDirectory().resolve("output.txt")
-    dumpResult(outputLogisticRegression, outputFile)
+    if (dumpResultsBeforeTearDown && outputLogisticRegression != null) {
+      val outputFile = bc.scratchDirectory().resolve("output.txt")
+      dumpResult(outputLogisticRegression, outputFile)
+    }
 
     tearDownSparkContext()
   }

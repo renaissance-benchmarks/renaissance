@@ -79,8 +79,10 @@ final class NaiveBayes extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputFile = bc.scratchDirectory().resolve("output.txt")
-    dumpResult(outputNaiveBayes, outputFile)
+    if (dumpResultsBeforeTearDown && outputNaiveBayes != null) {
+      val outputFile = bc.scratchDirectory().resolve("output.txt")
+      dumpResult(outputNaiveBayes, outputFile)
+    }
 
     tearDownSparkContext()
   }

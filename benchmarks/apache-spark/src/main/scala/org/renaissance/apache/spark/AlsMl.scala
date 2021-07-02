@@ -123,8 +123,8 @@ final class AlsMl extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputPath = bc.scratchDirectory().resolve("output")
-    if (outputAlsModel != null) {
+    if (dumpResultsBeforeTearDown && outputAlsModel != null) {
+      val outputPath = bc.scratchDirectory().resolve("output")
       dumpResult(outputAlsModel, outputPath)
     }
 

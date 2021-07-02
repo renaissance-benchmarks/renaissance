@@ -113,8 +113,10 @@ final class GaussMix extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext) = {
-    val outputFile = bc.scratchDirectory().resolve("output.txt")
-    dumpResult(outputGaussianMixture, outputFile)
+    if (dumpResultsBeforeTearDown && outputGaussianMixture != null) {
+      val outputFile = bc.scratchDirectory().resolve("output.txt")
+      dumpResult(outputGaussianMixture, outputFile)
+    }
 
     tearDownSparkContext()
   }

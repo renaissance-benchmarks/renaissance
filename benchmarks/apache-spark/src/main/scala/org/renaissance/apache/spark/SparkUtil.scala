@@ -69,6 +69,8 @@ trait SparkUtil {
     "org.apache.spark.sql.internal.SharedState" -> Level.ERROR
   )
 
+  protected val dumpResultsBeforeTearDown = false
+
   protected var sparkSession: SparkSession = _
   protected def sparkContext: SparkContext = sparkSession.sparkContext
 
