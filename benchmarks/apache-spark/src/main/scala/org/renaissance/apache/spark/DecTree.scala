@@ -7,34 +7,26 @@ import org.apache.spark.ml.classification.DecisionTreeClassifier
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.feature.VectorIndexer
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.SQLContext
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
-import org.renaissance.apache.spark.ResourceUtil.resourceAsLines
+import org.renaissance.apache.spark.ResourceUtil.duplicateLinesFromUrl
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 @Name("dec-tree")
 @Group("apache-spark")
-@Summary("Runs the Random Forest algorithm from Spark MLlib.")
+@Summary("Runs the Random Forest algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(40)
 @Parameter(
-  name = "spark_executor_count",
-  defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
+  name = "spark_thread_limit",
   defaultValue = "$cpu.count",
-  summary = "Number of threads per executor."
+  summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(
   name = "copy_count",
@@ -50,28 +42,17 @@ final class DecTree extends Benchmark with SparkUtil {
 
   private val inputResource = "/sample_libsvm_data.txt"
 
+  private val inputFeatureCount = 692
+
   private var inputTrainingData: DataFrame = _
 
   private var outputClassificationModel: DecisionTreeClassificationModel = _
 
-  private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
-    val lines = resourceAsLines(resourcePath)
-
-    for (_ <- 0 until copyCount) {
-      Files.write(
-        outputFile,
-        lines.asJavaCollection,
-        StandardOpenOption.CREATE,
-        StandardOpenOption.APPEND
-      )
-    }
-
-    outputFile
-  }
-
-  private def loadData(inputFile: Path): DataFrame = {
-    val sqlContext = new SQLContext(sparkContext)
-    sqlContext.read.format("libsvm").load(inputFile.toString)
+  private def loadData(inputFile: Path, featureCount: Int): DataFrame = {
+    sparkSession.read
+      .format("libsvm")
+      .option("numFeatures", featureCount)
+      .load(inputFile.toString)
   }
 
   def constructPipeline(): Pipeline = {
@@ -107,13 +88,13 @@ final class DecTree extends Benchmark with SparkUtil {
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
     setUpSparkContext(bc)
 
-    val inputFile = prepareInput(
-      inputResource,
+    val inputFile = duplicateLinesFromUrl(
+      getClass.getResource(inputResource),
       bc.parameter("copy_count").toPositiveInteger,
       bc.scratchDirectory().resolve("input.txt")
     )
 
-    inputTrainingData = ensureCached(loadData(inputFile))
+    inputTrainingData = ensureCached(loadData(inputFile, inputFeatureCount))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {

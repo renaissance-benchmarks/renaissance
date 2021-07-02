@@ -2,37 +2,27 @@ package org.renaissance.apache.spark
 
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.classification.LogisticRegressionModel
-import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
+import org.apache.spark.sql.DataFrame
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import org.renaissance.apache.spark.ResourceUtil.duplicateLinesFromUrl
 
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.util.stream.Collectors
 
 @Name("log-regression")
 @Group("apache-spark")
-@Summary("Runs the logistic regression workload from the Spark MLlib.")
+@Summary("Runs the Logistic Regression algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
 @Parameter(
-  name = "spark_executor_count",
-  defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
+  name = "spark_thread_limit",
   defaultValue = "$cpu.count",
-  summary = "Number of threads per executor."
+  summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(
   name = "copy_count",
@@ -53,6 +43,8 @@ final class LogRegression extends Benchmark with SparkUtil {
 
   private val inputResource = "/sample_libsvm_data.txt"
 
+  private val inputFeatureCount = 692
+
   private var maxIterationsParam: Int = _
 
   private val lrRegularizationParam = 0.1
@@ -61,41 +53,15 @@ final class LogRegression extends Benchmark with SparkUtil {
 
   private val lrConvergenceToleranceParam = 0.0
 
-  private var inputTuples: RDD[(Double, org.apache.spark.ml.linalg.Vector)] = _
+  private var inputDataFrame: DataFrame = _
 
   private var outputLogisticRegression: LogisticRegressionModel = _
 
-  private def prepareInput(resourcePath: String, copyCount: Int, outputFile: Path): Path = {
-    def loadInputResource() = {
-      val resourceStream = getClass.getResourceAsStream(resourcePath)
-      val reader = new BufferedReader(new InputStreamReader(resourceStream))
-      reader.lines().collect(Collectors.toList())
-    }
-
-    val lines = loadInputResource()
-    for (_ <- 0 until copyCount) {
-      Files.write(outputFile, lines, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-    }
-
-    outputFile
-  }
-
-  private def loadData(inputFile: Path) = {
-    val featureCount = 692
-
-    sparkContext
-      .textFile(inputFile.toString)
-      .map { line =>
-        val parts = line.split(" ")
-        val features = new Array[Double](featureCount)
-        parts.tail.foreach { part =>
-          val dimval = part.split(":")
-          val index = dimval(0).toInt - 1
-          val value = dimval(1).toInt
-          features(index) = value
-        }
-        (parts(0).toDouble, Vectors.dense(features))
-      }
+  private def loadData(inputFile: Path, featureCount: Int) = {
+    sparkSession.read
+      .format("libsvm")
+      .option("numFeatures", featureCount)
+      .load(inputFile.toString)
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
@@ -103,13 +69,13 @@ final class LogRegression extends Benchmark with SparkUtil {
 
     maxIterationsParam = bc.parameter("max_iterations").toPositiveInteger
 
-    val inputFile = prepareInput(
-      inputResource,
+    val inputFile = duplicateLinesFromUrl(
+      getClass.getResource(inputResource),
       bc.parameter("copy_count").toPositiveInteger,
       bc.scratchDirectory().resolve("input.txt")
     )
 
-    inputTuples = ensureCached(loadData(inputFile))
+    inputDataFrame = ensureCached(loadData(inputFile, inputFeatureCount))
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
@@ -119,14 +85,16 @@ final class LogRegression extends Benchmark with SparkUtil {
       .setTol(lrConvergenceToleranceParam)
       .setMaxIter(maxIterationsParam)
 
-    val sqlContext = new SQLContext(inputTuples.context)
-    import sqlContext.implicits._
-    outputLogisticRegression = lor.fit(inputTuples.toDF("label", "features"))
+    outputLogisticRegression = lor.fit(inputDataFrame)
 
     // TODO: add more in-depth validation
     Validators.compound(
       Validators.simple("class count", 2, outputLogisticRegression.numClasses),
-      Validators.simple("feature count", 692, outputLogisticRegression.numFeatures)
+      Validators.simple(
+        "feature count",
+        inputFeatureCount,
+        outputLogisticRegression.numFeatures
+      )
     )
   }
 

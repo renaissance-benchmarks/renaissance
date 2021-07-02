@@ -23,14 +23,9 @@ import scala.util.Random
 @Licenses(Array(License.APACHE2))
 @Repetitions(60)
 @Parameter(
-  name = "spark_executor_count",
-  defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
+  name = "spark_thread_limit",
   defaultValue = "$cpu.count",
-  summary = "Number of threads per executor."
+  summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(
   name = "point_count",

@@ -11,12 +11,12 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import org.renaissance.apache.spark.ResourceUtil.linesFromUrl
 import org.renaissance.apache.spark.ResourceUtil.writeResourceToFile
 
 import java.net.URL
 import java.nio.file.Path
 import scala.collection.Map
-import scala.io.Source
 import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
 @Name("movie-lens")
@@ -25,14 +25,9 @@ import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 @Licenses(Array(License.APACHE2))
 @Repetitions(20)
 @Parameter(
-  name = "spark_executor_count",
+  name = "spark_thread_limit",
   defaultValue = "4",
-  summary = "Number of executor instances."
-)
-@Parameter(
-  name = "spark_executor_thread_count",
-  defaultValue = "4",
-  summary = "Number of threads per executor."
+  summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(name = "input_file", defaultValue = "/ratings.csv")
 @Parameter(
@@ -70,7 +65,7 @@ final class MovieLens extends Benchmark with SparkUtil {
 
   private var alsConfigurations: Iterable[AlsConfig] = _
 
-  private val personalRatingsInputFile = "/movie-lens-my-ratings.csv"
+  private val personalRatingsInputFile = "/ratings-personal.csv"
 
   private val moviesInputFile = "/movies.csv"
 
@@ -97,40 +92,37 @@ final class MovieLens extends Benchmark with SparkUtil {
     var numUsers: Long = 0
     var numMovies: Long = 0
 
-    def loadPersonalRatings(inputFileURL: URL) = {
-      val source = Source.fromURL(inputFileURL)
-
-      val personalRatingsIter = source
-        .getLines()
-        .map { line =>
-          val parts = line.split(",")
-          val (user, movie, rating) = (parts(0), parts(1), parts(2))
-          Rating(user.toInt, movie.toInt, rating.toDouble)
+    private def parseRatingsCsvLines(lines: RDD[String]) = {
+      createRddFromCsv(
+        lines,
+        hasHeader = false,
+        delimiter = ",",
+        parts => {
+          val (userId, movieId, rating, timestamp) = (parts(0), parts(1), parts(2), parts(3))
+          val stratum = timestamp.toLong % 10
+          (stratum, Rating(userId.toInt, movieId.toInt, rating.toDouble))
         }
-        .filter(_.rating > 0.0)
+      )
+    }
 
-      if (personalRatingsIter.isEmpty) {
+    def loadPersonalRatings(url: URL) = {
+      // Get only entries with positive rating.
+      val lines = sparkContext.parallelize(linesFromUrl(url))
+      val ratings = parseRatingsCsvLines(lines).values.filter { _.rating > 0.0 }
+
+      if (ratings.isEmpty) {
+        // TODO Fail the benchmark here.
         sys.error("No ratings provided.")
       } else {
-        personalRatings = personalRatingsIter.toSeq
+        personalRatings = ratings.collect().toSeq
       }
 
-      personalRatingsRDD = ensureCached(sparkContext.parallelize(personalRatings, 1))
+      personalRatingsRDD = ensureCached(ratings)
     }
 
     def loadRatings(file: Path) = {
-      ratings = ensureCached(
-        createRddFromCsv(
-          file,
-          header = true,
-          delimiter = ",",
-          parts => {
-            val (user, movie, rating, timestamp) = (parts(0), parts(1), parts(2), parts(3))
-            val stratum = timestamp.toLong % 10
-            (stratum, Rating(user.toInt, movie.toInt, rating.toDouble))
-          }
-        )
-      )
+      val lines = sparkContext.textFile(file.toString)
+      ratings = ensureCached(parseRatingsCsvLines(lines))
 
       numRatings = ratings.count()
       numUsers = ratings.map(_._2.user).distinct().count()
@@ -139,8 +131,8 @@ final class MovieLens extends Benchmark with SparkUtil {
 
     def loadMovies(file: Path) = {
       movies = createRddFromCsv(
-        file,
-        header = true,
+        sparkContext.textFile(file.toString),
+        hasHeader = true,
         delimiter = ",",
         parts => {
           val (movieId, movieName) = (parts(0), parts(1))
@@ -149,28 +141,22 @@ final class MovieLens extends Benchmark with SparkUtil {
       ).collectAsMap()
     }
 
-    def splitRatings(numPartitions: Int, trainingThreshold: Int, validationThreshold: Int) = {
+    def splitRatings(trainingThreshold: Int, validationThreshold: Int) = {
       training = ensureCached(
         ratings
           .filter(x => x._1 < trainingThreshold)
           .values
           .union(personalRatingsRDD)
-          .repartition(numPartitions)
       )
       numTraining = training.count()
 
       validation = ensureCached(
-        ratings
-          .filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold)
-          .values
-          .repartition(numPartitions)
+        ratings.filter(x => x._1 >= trainingThreshold && x._1 < validationThreshold).values
       )
       numValidation = validation.count()
 
       test = ensureCached(
-        ratings
-          .filter(x => x._1 >= validationThreshold)
-          .values
+        ratings.filter(x => x._1 >= validationThreshold).values
       )
       numTest = test.count()
 
@@ -221,8 +207,9 @@ final class MovieLens extends Benchmark with SparkUtil {
       // Create a naive baseline and compare it with the best model.
 
       val meanRating = training.union(validation).map(_.rating).mean
-      val baselineRmse =
-        math.sqrt(test.map(x => (meanRating - x.rating) * (meanRating - x.rating)).mean)
+      val baselineRmse = math.sqrt(
+        test.map(x => (meanRating - x.rating) * (meanRating - x.rating)).mean
+      )
 
       val improvement = (baselineRmse - testRmse) / baselineRmse * 100
       println("The best model improves the baseline by " + "%1.2f".format(improvement) + "%.")
@@ -287,7 +274,7 @@ final class MovieLens extends Benchmark with SparkUtil {
 
     // Split ratings into train (60%), validation (20%), and test (20%) based on the
     // last digit of the timestamp, add myRatings to train, and cache them.
-    helper.splitRatings(4, 6, 8)
+    helper.splitRatings(6, 8)
   }
 
   def loadData(scratchDir: Path) = {

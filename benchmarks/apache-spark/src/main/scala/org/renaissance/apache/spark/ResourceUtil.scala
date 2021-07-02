@@ -2,40 +2,48 @@ package org.renaissance.apache.spark
 
 import java.io.FileNotFoundException
 import java.io.InputStream
+import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
+import java.nio.file.{StandardCopyOption => CopyOption}
+import java.nio.file.{StandardOpenOption => OpenOption}
 import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
+import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 private object ResourceUtil {
 
   /**
-   * Writes a resource associated with the {@link ResourceUtil} class
+   * Writes the resource associated with the [[ResourceUtil]] class
    * to a file, replacing an existing file.
    *
    * @param resourceName path to the resource
    * @param file path the output file
-   * @return {@link Path} path to the output file
+   * @return [[Path]] to the output file
    */
   def writeResourceToFile(resourceName: String, file: Path) = {
     val resourceStream = getResourceStream(resourceName)
-    Files.copy(resourceStream, file, StandardCopyOption.REPLACE_EXISTING)
+    try {
+      Files.copy(resourceStream, file, CopyOption.REPLACE_EXISTING)
+    } finally {
+      // This may mask a try-block exception, but at least it will fail anyway.
+      resourceStream.close()
+    }
 
     file
   }
 
   /**
-   * Writes a resource associated with the {@link ResourceUtil} class
+   * Writes the resource associated with the [[ResourceUtil]] class
    * to a file, replacing an existing file.
    * Checks that the file size is the same as expected.
    *
    * @param resourceName path to the resource
    * @param file path the output file
    * @param expectedSizeBytes Expected file size in bytes
-   * @return {@link Path} path to the output file
+   * @return [[Path]] to the output file
    */
   def writeResourceToFileCheckSize(resourceName: String, file: Path, expectedSizeBytes: Int) = {
     val stream = getClass.getResourceAsStream(resourceName)
@@ -56,13 +64,31 @@ private object ResourceUtil {
   }
 
   /**
-   * Turns a resource into a sequence of lines.
+   * Duplicates the lines from the input file a given number of times in the output file.
    *
-   * @param resourceName path to the resource
+   * @param url the [[URL]] of the input file
+   * @param copyCount the number of times to duplicate the input
+   * @param outputFile path to the output file
+   * @return [[Path]] to the output file
+   */
+  def duplicateLinesFromUrl(url: URL, copyCount: Int, outputFile: Path): Path = {
+    val lines = linesFromUrl(url).asJavaCollection
+
+    for (_ <- 0 until copyCount) {
+      Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
+    }
+
+    outputFile
+  }
+
+  /**
+   * Loads a file from the given [[URL]] as a sequence of lines.
+   *
+   * @param url input file [[URL]]
    * @return a sequence of lines
    */
-  def resourceAsLines(resourceName: String) = {
-    val source = Source.fromInputStream(getResourceStream(resourceName))
+  def linesFromUrl(url: URL): Seq[String] = {
+    val source = Source.fromURL(url)
     try {
       source.getLines().to[Seq]
     } finally {
@@ -71,12 +97,12 @@ private object ResourceUtil {
   }
 
   /**
-   * Creates a {@link Source} from a file within a ZIP resource
-   * associated with the {@link ResourceUtil} class.
+   * Creates a [[Source]] from a file within a ZIP resource
+   * associated with the [[ResourceUtil]] class.
    *
    * @param resourceName path to the ZIP resource
    * @param entryName name of the ZIP entry
-   * @return {@link Source} instance for the given file within a ZIP
+   * @return a [[Source]] for the given file within a ZIP
    */
   def sourceFromZipResource(resourceName: String, entryName: String): BufferedSource = {
     val zis = new ZipInputStream(getResourceStream(resourceName))
