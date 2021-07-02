@@ -25,7 +25,7 @@ import java.nio.file.Path
 @Repetitions(40)
 @Parameter(
   name = "spark_thread_limit",
-  defaultValue = "$cpu.count",
+  defaultValue = "6",
   summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(
