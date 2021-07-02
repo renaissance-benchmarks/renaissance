@@ -102,6 +102,7 @@ trait SparkUtil {
       .config("spark.local.dir", scratchDir.toString)
       .config("spark.port.maxRetries", portAllocationMaxRetries.toString)
       .config("spark.sql.warehouse.dir", scratchDir.resolve("warehouse").toString)
+      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .getOrCreate()
 
     if (useCheckpointDir) {
