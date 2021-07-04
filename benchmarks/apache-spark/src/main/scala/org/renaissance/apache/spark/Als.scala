@@ -16,7 +16,7 @@ import java.nio.file.Path
 import scala.jdk.CollectionConverters.asJavaCollectionConverter
 import scala.util.Random
 
-@Name("als-ml")
+@Name("als")
 @Group("apache-spark")
 @Summary("Runs the ALS algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
@@ -41,7 +41,7 @@ import scala.util.Random
 @Parameter(name = "als_iterations", defaultValue = "10")
 @Configuration(name = "test", settings = Array("user_count = 500"))
 @Configuration(name = "jmh")
-final class AlsMl extends Benchmark with SparkUtil {
+final class Als extends Benchmark with SparkUtil {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
