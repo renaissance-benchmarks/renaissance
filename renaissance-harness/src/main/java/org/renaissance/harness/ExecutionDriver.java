@@ -34,10 +34,13 @@ final class ExecutionDriver {
   private final ExecutionPolicy executionPolicy;
 
   /** Preformatted message to print before executing the benchmark. */
-  private final String beforeEachMessageFormat;
+  private final String beforeEachFormat;
 
-  /** Preformatted message to print after executing the benchmark. */
-  private final String afterEachMessageFormat;
+  /** Preformatted message to print after successful benchmark operation. */
+  private final String afterSuccessFormat;
+
+  /** Preformatted message to print after failed benchmark operation. */
+  private final String afterFailureFormat;
 
   /** The value of {@link System#nanoTime()} at VM start. */
   private final long vmStartNanos;
@@ -58,20 +61,17 @@ final class ExecutionDriver {
 
     this.benchmarkName = context.benchmarkName();
 
-    // Pre-format the before/after messages (escaping the format specifier
-    // for the operation index which keeps changing) so that we don't have
-    // to query the static information over and over.
-    this.beforeEachMessageFormat = String.format(
-      "====== %s (%s) [%s], iteration %%d started ======\n",
-      context.benchmarkName(), context.benchmarkPrimaryGroup(),
-      context.configurationName()
+    // Pre-format the message prefix so that we don't have to query
+    // the static information about a benchmark over and over.
+    String prefix = String.format(
+      "====== %s (%s) [%s], iteration", context.benchmarkName(),
+      context.benchmarkPrimaryGroup(), context.configurationName()
     );
 
-    this.afterEachMessageFormat = String.format(
-      "====== %s (%s) [%s], iteration %%d completed (%%.3f ms) ======\n",
-      context.benchmarkName(), context.benchmarkPrimaryGroup(),
-      context.configurationName()
-    );
+    // Add formats for the message parts that change.
+    this.beforeEachFormat = prefix + " %d started ======\n";
+    this.afterSuccessFormat = prefix + " %d completed (%.3f ms) ======\n";
+    this.afterFailureFormat = prefix + " %d failed (%s) ======\n";
   }
 
 
@@ -84,16 +84,22 @@ final class ExecutionDriver {
       try {
         eventDispatcher.notifyAfterBenchmarkSetUp(benchmarkName);
 
+        int operationIndex = 0;
+
         try {
-          int operationIndex = 0;
           while (executionPolicy.canExecute(benchmarkName, operationIndex)) {
             printBeforeEachMessage(operationIndex);
 
             final long durationNanos = executeOperation(operationIndex);
 
-            printAfterEachMessage(operationIndex, durationNanos);
+            printAfterSuccessMessage(operationIndex, durationNanos);
             operationIndex++;
           }
+
+        } catch (Throwable cause) {
+          // Print failure line with a cause and rethrow the exception.
+          printAfterFailureMessage(operationIndex, cause.getClass().getSimpleName());
+          throw cause;
 
         } finally {
           // Complement the notifyAfterBenchmarkSetUp() events.
@@ -149,15 +155,19 @@ final class ExecutionDriver {
 
 
   private void printBeforeEachMessage(int index) {
-    System.out.printf(beforeEachMessageFormat, index);
+    System.out.printf(beforeEachFormat, index);
   }
 
 
-  private void printAfterEachMessage(int index, long nanos) {
+  private void printAfterSuccessMessage(int index, long nanos) {
     final double millis = nanos / 1e6;
 
     // Use root locale to avoid locale-specific float formatting.
-    System.out.printf(Locale.ROOT, afterEachMessageFormat, index, millis);
+    System.out.printf(Locale.ROOT, afterSuccessFormat, index, millis);
+  }
+
+  private void printAfterFailureMessage(int index, String cause) {
+    System.out.printf(afterFailureFormat, index, cause);
   }
 
 
