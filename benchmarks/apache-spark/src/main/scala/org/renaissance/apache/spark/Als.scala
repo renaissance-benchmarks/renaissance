@@ -126,8 +126,10 @@ final class Als extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputPath = bc.scratchDirectory().resolve("output")
-    dumpResult(outputMatrixFactorization, outputPath)
+    if (dumpResultsBeforeTearDown && outputMatrixFactorization != null) {
+      val outputPath = bc.scratchDirectory().resolve("output")
+      dumpResult(outputMatrixFactorization, outputPath)
+    }
 
     tearDownSparkContext()
   }

@@ -103,8 +103,10 @@ final class ChiSquare extends Benchmark with SparkUtil {
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    val outputFile = bc.scratchDirectory().resolve("output.txt")
-    dumpResult(outputTestResults, outputFile)
+    if (dumpResultsBeforeTearDown && outputTestResults != null) {
+      val outputFile = bc.scratchDirectory().resolve("output.txt")
+      dumpResult(outputTestResults, outputFile)
+    }
 
     tearDownSparkContext()
   }
