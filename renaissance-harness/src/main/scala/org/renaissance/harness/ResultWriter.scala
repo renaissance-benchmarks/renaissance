@@ -207,6 +207,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
       "spec_vendor" -> runtime.getSpecVendor.toJson,
       "spec_version" -> runtime.getSpecVersion.toJson,
       "mode" -> systemPropertyAsJson("java.vm.info"),
+      "compressed_oops_mode" -> systemPropertyAsJson("java.vm.compressedOopsMode"),
       "args" -> runtime.getInputArguments.asScala.toList.toJson,
       "termination" -> (if (normalTermination) "normal" else "forced").toJson,
       "start_unix_ms" -> runtime.getStartTime.toJson,
@@ -375,8 +376,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
       // For each repetition, collect (name -> value) tuples for metrics into a map.
       val repetitions = (0 until repetitionCount).map(i =>
         metricNames
-          .map(name => metricsByName.get(name).map(values => (name -> values(i).toJson)))
-          .flatten
+          .flatMap(name => metricsByName.get(name).map(values => name -> values(i).toJson))
           .toMap
       )
 
