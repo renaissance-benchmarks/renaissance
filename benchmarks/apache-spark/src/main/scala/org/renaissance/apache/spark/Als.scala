@@ -24,7 +24,7 @@ import scala.util.Random
 @Repetitions(30)
 @Parameter(
   name = "spark_thread_limit",
-  defaultValue = "4",
+  defaultValue = "12",
   summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(

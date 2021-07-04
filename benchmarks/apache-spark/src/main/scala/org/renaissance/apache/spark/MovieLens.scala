@@ -26,7 +26,7 @@ import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 @Repetitions(20)
 @Parameter(
   name = "spark_thread_limit",
-  defaultValue = "4",
+  defaultValue = "8",
   summary = "Maximum number of threads for the Spark local executor."
 )
 @Parameter(name = "input_file", defaultValue = "/ratings.csv")
