@@ -191,3 +191,40 @@ jobs:
       - name: Run the suite with JMH
         shell: bash
         run: "tools/ci/bench-jmh.sh"
+
+  plugins:
+    runs-on: ubuntu-latest
+    container: "renaissancebench/buildenv:openjdk8-with-ant-gcc"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Cache SBT
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.cache/coursier
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+
+      - name: Environment configuration
+        shell: bash
+        run: "tools/ci/pre-show-env.sh"
+
+      - name: Build base
+        shell: bash
+        run: "tools/ci/build-base.sh"
+
+      - name: Build plugins
+        shell: bash
+        run: "tools/ci/build-plugins.sh"
+
+      - name: Stop SBT
+        shell: bash
+        run: "tools/ci/stop-sbt.sh"
+
+      - name: Run the suite with all plugins
+        shell: bash
+        run: "tools/ci/bench-plugins.sh"
