@@ -1,10 +1,9 @@
 package org.renaissance.apache.spark
 
-import org.apache.spark.mllib.recommendation.ALS
-import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
-import org.apache.spark.mllib.recommendation.Rating
-import org.apache.spark.rdd.RDD
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.ml.recommendation.ALS
+import org.apache.spark.ml.recommendation.ALS.Rating
+import org.apache.spark.ml.recommendation.ALSModel
+import org.apache.spark.sql.DataFrame
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -19,7 +18,7 @@ import scala.util.Random
 
 @Name("als")
 @Group("apache-spark")
-@Summary("Runs the ALS algorithm from the Spark MLlib.")
+@Summary("Runs the ALS algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
 @Parameter(
@@ -55,35 +54,33 @@ final class Als extends Benchmark with SparkUtil {
 
   private var alsIterationsParam: Int = _
 
-  private var inputRatings: RDD[Rating] = _
+  private var inputRatings: DataFrame = _
 
-  private var outputMatrixFactorization: MatrixFactorizationModel = _
+  private var outputAlsModel: ALSModel = _
+
+  private type Rating = ALS.Rating[Int]
 
   private def generateRatings(userCount: Int, productCount: Int): Seq[Rating] = {
     // TODO: Use a Renaissance-provided random generator.
     val rand = new Random(randomSeed)
 
-    for (userId <- 0 until userCount; productId <- 0 until productCount) yield {
+    for (userId <- 0 until userCount; itemId <- 0 until productCount) yield {
       val rating = 1 + rand.nextInt(3) + rand.nextInt(3)
-      Rating(userId, productId, rating)
+      Rating[Int](userId, itemId, rating)
     }
   }
 
   private def storeRatings(ratings: Seq[Rating], file: Path): Path = {
-    val lines = ratings.map(r => Rating.unapply(r).get.productIterator.mkString(","))
+    val header = Seq(Seq("user", "item", "rating").mkString(","))
+    val lines = header ++ ratings.map(r => Rating.unapply(r).get.productIterator.mkString(","))
     Files.write(file, lines.asJavaCollection)
   }
 
   private def loadRatings(file: Path) = {
-    createRddFromCsv(
-      sparkContext.textFile(file.toString),
-      hasHeader = false,
-      delimiter = ",",
-      parts => {
-        val (user, product, rating) = (parts(0), parts(1), parts(2))
-        Rating(user.toInt, product.toInt, rating.toDouble)
-      }
-    )
+    sparkSession.read
+      .option("header", true)
+      .schema("user INT, item INT, rating FLOAT")
+      .csv(file.toString)
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
@@ -108,38 +105,34 @@ final class Als extends Benchmark with SparkUtil {
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    def trainModel(ratings: RDD[Rating]) = {
+    def trainModel(ratings: DataFrame) = {
       new ALS()
-        .setIntermediateRDDStorageLevel(StorageLevel.MEMORY_ONLY)
-        .setFinalRDDStorageLevel(StorageLevel.MEMORY_ONLY)
-        .setIterations(alsIterationsParam)
-        .setLambda(alsLambdaParam)
+        .setIntermediateStorageLevel("MEMORY_ONLY")
+        .setFinalStorageLevel("MEMORY_ONLY")
+        .setMaxIter(alsIterationsParam)
+        .setRegParam(alsLambdaParam)
         .setRank(alsRankParam)
         .setSeed(randomSeed)
-        .run(ratings)
+        .fit(ratings)
     }
 
-    outputMatrixFactorization = trainModel(inputRatings)
+    outputAlsModel = trainModel(inputRatings)
 
     // TODO: add proper validation of the generated model
-    Validators.dummy(outputMatrixFactorization)
+    Validators.dummy(outputAlsModel)
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    if (dumpResultsBeforeTearDown && outputMatrixFactorization != null) {
+    if (dumpResultsBeforeTearDown && outputAlsModel != null) {
       val outputPath = bc.scratchDirectory().resolve("output")
-      dumpResult(outputMatrixFactorization, outputPath)
+      dumpResult(outputAlsModel, outputPath)
     }
 
     tearDownSparkContext()
   }
 
-  private def dumpResult(mfm: MatrixFactorizationModel, outputPath: Path): Unit = {
-    mfm.userFeatures
-      .coalesce(1)
-      .map {
-        case (user, features) => s"$user: ${features.mkString(", ")}"
-      }
-      .saveAsTextFile(outputPath.toString)
+  private def dumpResult(am: ALSModel, outputPath: Path): Unit = {
+    val outputFile = outputPath.resolve("users").toString
+    am.userFactors.coalesce(1).write.json(outputFile)
   }
 }

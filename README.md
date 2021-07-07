@@ -97,9 +97,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### apache-spark
 
-- `als` - Runs the ALS algorithm from the Spark MLlib. (default repetitions: 30)
-
-- `als-ml` - Runs the ALS algorithm from the Spark ML library. (default repetitions: 30)
+- `als` - Runs the ALS algorithm from the Spark ML library. (default repetitions: 30)
 
 - `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
 
@@ -321,7 +319,6 @@ requirements) for all the benchmarks:
 | :--------------- | :--------- | :----: | :----------------: | :-----------------: |
 | akka-uct | MIT | MIT | 1.8 |  |
 | als | APACHE2 | MIT | 1.8 |  |
-| als-ml | APACHE2 | MIT | 1.8 |  |
 | chi-square | APACHE2 | MIT | 1.8 |  |
 | db-shootout | APACHE2 | MIT | 1.8 | 11 |
 | dec-tree | APACHE2 | MIT | 1.8 |  |
