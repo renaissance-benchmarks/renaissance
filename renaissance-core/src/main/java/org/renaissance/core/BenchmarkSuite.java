@@ -204,6 +204,18 @@ public final class BenchmarkSuite {
     return ModuleLoader.createExtension(extClass, args);
   }
 
+  /** Loads and instantiates an extension specified in properties with given arguments. */
+  public <T> T createAutoExtension(
+    List<Path> classPath, String propertyName, Class<T> baseClass, String[] args
+  ) throws ModuleLoadingException {
+    final Class<? extends T> extClass = ModuleLoader.loadAutoExtension(
+      classPath, propertyName, baseClass
+    );
+
+    return ModuleLoader.createExtension(extClass, args);
+  }
+
+
   // Instance creation
 
   /** Creates a benchmark suite core without parameter overrides. */

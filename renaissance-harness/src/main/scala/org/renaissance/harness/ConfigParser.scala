@@ -51,11 +51,6 @@ private final class ConfigParser(tags: Map[String, String]) {
         .valueName("<class-path>!<class-name>")
         .text("Load external plugin. Can appear multiple times.")
         .action((v, c) => c.withPlugin(v))
-        .validate { v =>
-          val splitIndex = v.lastIndexOf('!')
-          if (splitIndex > 0 && (v.length - splitIndex) > 1) success
-          else failure("expected <class-path>!<class-name> in external plugin specification")
-        }
         .unbounded()
 
       opt[String]("with-arg")

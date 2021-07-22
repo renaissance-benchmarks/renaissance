@@ -311,18 +311,30 @@ object RenaissanceSuite {
     val splitIndex = specifier.lastIndexOf("!")
 
     val className = specifier.substring(splitIndex + 1)
-    if (className.isEmpty) {
-      exitWithError("class name is missing")
-    }
 
-    val classPathString = specifier.substring(0, splitIndex)
+    val classPathString =
+      if (splitIndex == -1) specifier else specifier.substring(0, splitIndex)
     val classPath = classPathString.split(File.pathSeparator).map(Paths.get(_)).toList
     classPath.filterNot(Files.isReadable).foreach { path =>
       exitWithError(s"'$path' does not exist or is not readable")
     }
 
     try {
-      suite.createExtension(classPath.asJava, className, classOf[Plugin], args.toArray[String])
+      if (splitIndex != -1) {
+        suite.createExtension(
+          classPath.asJava,
+          className,
+          classOf[Plugin],
+          args.toArray[String]
+        )
+      } else {
+        suite.createAutoExtension(
+          classPath.asJava,
+          "Renaissance-Plugin",
+          classOf[Plugin],
+          args.toArray[String]
+        )
+      }
     } catch {
       case e: ModuleLoadingException => exitWithError(e.getMessage)
     }

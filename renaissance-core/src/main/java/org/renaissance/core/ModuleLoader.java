@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -343,6 +344,73 @@ public final class ModuleLoader {
       // on OpenJDK only returns the class name as error message.
       throw new ModuleLoadingException(
         "could not find class '%s'", className
+      );
+    } catch (ClassCastException e) {
+      throw new ModuleLoadingException(
+        "class '%s' is not a subclass of '%s'", className, baseClass.getName()
+      );
+    }
+  }
+
+
+  /**
+   * Loads an extension class and casts it to the desired base class.
+   * The class name is read from a given property.
+   */
+  static <T> Class<? extends T> loadAutoExtension(
+    Collection<Path> classPath, String propertyName, Class<T> baseClass
+  ) throws ModuleLoadingException {
+    URL[] classPathUrls = pathsToUrls(classPath);
+    if (logger.isLoggable(Level.CONFIG)) {
+      logger.config(String.format(
+        "Class path for property %s: %s", propertyName,
+        Arrays.stream(classPathUrls).map(Object::toString).collect(joining(","))
+      ));
+    }
+
+    if (classPathUrls.length != classPath.size()) {
+      throw new ModuleLoadingException("malformed URL(s) in classpath specification");
+    }
+
+    String className = null;
+
+    try {
+      ClassLoader parent = ModuleLoader.class.getClassLoader();
+      ClassLoader loader = new URLClassLoader(classPathUrls, parent);
+
+      Enumeration<URL> manifests = loader.getResources("META-INF/MANIFEST.MF");
+      while (manifests.hasMoreElements()) {
+        try {
+          URL manifestUrl = manifests.nextElement();
+          Properties props = new Properties();
+          InputStream manifest = manifestUrl.openStream();
+          props.load(manifest);
+          manifest.close();
+          if (props.containsKey(propertyName)) {
+            className = props.getProperty(propertyName);
+            break;
+          }
+        } catch (IOException e) {
+          continue;
+        }
+      }
+      if (className == null) {
+        throw new ModuleLoadingException("classname to load not found in manifests");
+      }
+
+      Class<?> loadedClass = loader.loadClass(className);
+      return loadedClass.asSubclass(baseClass);
+
+    } catch (IOException e) {
+      // loader.getResources failed, we cannot recover from that
+      throw new ModuleLoadingException(
+        "could not find property %s", propertyName
+      );
+    } catch (ClassNotFoundException e) {
+      // Be a bit more verbose, because the ClassNotFoundException
+      // on OpenJDK only returns the class name as error message.
+      throw new ModuleLoadingException(
+        "could not find class '%s' from property %s", className, propertyName
       );
     } catch (ClassCastException e) {
       throw new ModuleLoadingException(
