@@ -21,10 +21,9 @@ RENAISSANCE_GIT_VERSION=$(git describe --tags --always --dirty=-SNAPSHOT || echo
 # Strip leading 'v' from the git-produced version
 RENAISSANCE_VERSION=${RENAISSANCE_GIT_VERSION#v}
 
-# Try to guess JVM version
-RENAISSANCE_JVM_MAJOR_VERSION="$( java -XshowSettings:properties -version 2>&1 \
-    | sed -n -e 's#^[ \t]*java.version[ ]*=[ ]\(.*\)#\1#p' \
-    | sed -e 's#1\.8#8#' -e 's#\([^.]*\).*#\1#' \
+# Try to guess JVM version (and replace 1.8 with 8)
+RENAISSANCE_JVM_MAJOR_VERSION="$( java -version 2>&1 \
+    | sed -n -e '/version[[:blank:]]\+"/ { s/.*version[[:blank:]]\+"\([^"]*\)".*/\1/; s/1[.]8/8/; s/^\([^.]*\)[.].*/\1/; p }' \
     || echo 8 )"
 
 # The base bundle
