@@ -205,10 +205,10 @@ public final class BenchmarkSuite {
   }
 
   /** Loads and instantiates an extension specified in properties with given arguments. */
-  public <T> T createAutoExtension(
+  public <T> T createDescribedExtension(
     List<Path> classPath, String propertyName, Class<T> baseClass, String[] args
   ) throws ModuleLoadingException {
-    final Class<? extends T> extClass = ModuleLoader.loadAutoExtension(
+    final Class<? extends T> extClass = ModuleLoader.loadDescribedExtension(
       classPath, propertyName, baseClass
     );
 
