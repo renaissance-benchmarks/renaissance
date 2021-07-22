@@ -328,7 +328,7 @@ object RenaissanceSuite {
           args.toArray[String]
         )
       } else {
-        suite.createAutoExtension(
+        suite.createDescribedExtension(
           classPath.asJava,
           "Renaissance-Plugin",
           classOf[Plugin],
