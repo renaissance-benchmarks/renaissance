@@ -8,8 +8,7 @@ get_plugin_spec() {
     local plugin_name="$( echo "$1" | tr -d - )"
     local plugin_version="$( sed -n 's#.*version[ ]*:=[ ]*"\([^"]*\)".*#\1#p' <"$plugin_dir/build.sbt" )"
     local plugin_jar="${plugin_dir}target/plugin-${plugin_name}-assembly-$plugin_version.jar"
-    local main_class="org.renaissance.plugins.$plugin_name.Main"
-    echo "${plugin_jar}!${main_class}"
+    echo "${plugin_jar}"
 }
 
 java \

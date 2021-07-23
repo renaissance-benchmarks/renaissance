@@ -13,6 +13,11 @@ lazy val pluginUbenchAgent = (project in file("."))
       case PathList("org", "renaissance", _*) => MergeStrategy.discard
       case _ => MergeStrategy.singleOrError
     },
+    packageOptions := Seq(
+      sbt.Package.ManifestAttributes(
+        ("Renaissance-Plugin", "org.renaissance.plugins.ubenchagent.Main")
+      )
+    ),
   )
   .dependsOn(
     renaissanceCore

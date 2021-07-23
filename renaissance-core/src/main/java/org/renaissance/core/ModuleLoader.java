@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -320,21 +321,33 @@ public final class ModuleLoader {
   static <T> Class<? extends T> loadExtension(
     Collection<Path> classPath, String className, Class<T> baseClass
   ) throws ModuleLoadingException {
-    URL[] classPathUrls = pathsToUrls(classPath);
-    if (logger.isLoggable(Level.CONFIG)) {
-      logger.config(String.format(
-        "Class path for %s: %s", className,
-        Arrays.stream(classPathUrls).map(Object::toString).collect(joining(","))
-      ));
+    ClassLoader loader = createClassLoaderFromPaths(classPath, className);
+    return loadExtensionFromClassLoader(loader, className, baseClass);
+  }
+
+
+  /**
+   * Loads an extension class and casts it to the desired base class.
+   * The class name is read from a given property.
+   */
+  static <T> Class<? extends T> loadDescribedExtension(
+    Collection<Path> classPath, String propertyName, Class<T> baseClass
+  ) throws ModuleLoadingException {
+    ClassLoader loader = createClassLoaderFromPaths(classPath, propertyName);
+    String className = getManifestProperty(loader, propertyName);
+
+    if (className == null) {
+      throw new ModuleLoadingException("classname to load not found in manifests");
     }
 
-    if (classPathUrls.length != classPath.size()) {
-      throw new ModuleLoadingException("malformed URL(s) in classpath specification");
-    }
+    return loadExtensionFromClassLoader(loader, className, baseClass);
+  }
 
+  /** Loads extension from initialized class loader. */
+  private static <T> Class<? extends T> loadExtensionFromClassLoader(
+    ClassLoader loader, String className, Class<T> baseClass
+  ) throws ModuleLoadingException {
     try {
-      ClassLoader parent = ModuleLoader.class.getClassLoader();
-      ClassLoader loader = new URLClassLoader(classPathUrls, parent);
       Class<?> loadedClass = loader.loadClass(className);
       return loadedClass.asSubclass(baseClass);
 
@@ -351,6 +364,52 @@ public final class ModuleLoader {
     }
   }
 
+  /** Create classloader from list of Path. */
+  private static ClassLoader createClassLoaderFromPaths(
+    Collection<Path> classPath,
+    String name
+  ) throws ModuleLoadingException {
+    URL[] classPathUrls = pathsToUrls(classPath);
+    if (logger.isLoggable(Level.CONFIG)) {
+      logger.config(String.format(
+        "Class path for %s: %s", name,
+        Arrays.stream(classPathUrls).map(Object::toString).collect(joining(","))
+      ));
+    }
+
+    if (classPathUrls.length != classPath.size()) {
+      throw new ModuleLoadingException("malformed URL(s) in classpath specification");
+    }
+
+    ClassLoader parent = ModuleLoader.class.getClassLoader();
+    return new URLClassLoader(classPathUrls, parent);
+  }
+
+  /** Read all manifests and find first one having given property.
+   * @returns Property value or null if not found.
+   */
+  private static String getManifestProperty(ClassLoader loader, String property) {
+    try {
+      Enumeration<URL> manifests = loader.getResources("META-INF/MANIFEST.MF");
+      while (manifests.hasMoreElements()) {
+        try {
+          URL manifestUrl = manifests.nextElement();
+          Properties props = new Properties();
+          InputStream manifest = manifestUrl.openStream();
+          props.load(manifest);
+          manifest.close();
+          if (props.containsKey(property)) {
+            return props.getProperty(property);
+          }
+        } catch (IOException e) {
+          continue;
+        }
+      }
+    } catch (IOException e) {
+      // Ignore.
+    }
+    return null;
+  }
 
   //
   // Utility methods to convert things to an array of URLs.

@@ -374,8 +374,10 @@ operation, and will pass the result of the `isLast` method to some other events.
 
 To make the harness use an external plugin, it needs to be specified on the command line.
 The harness can load multiple plugins, and each must be enabled using the
-`--plugin <class-path>!<class-name>` option. The `<class-path>` is the class path on which
-to look for the plugin class, and `<class-name>` is a fully qualified name of the plugin class.
+`--plugin <class-path>[!<class-name>]` option. The `<class-path>` is the class path on which
+to look for the plugin class, and `<class-name>` is a fully qualified name of the plugin class
+(the class-name can be omitted when specified as a `Renaissance-Plugin` property inside
+`META-INF/MANIFEST.MF` of the plugin JAR).
 Custom execution policy must be enabled using the `--policy <class-path>!<class-name>` option.
 The syntax is the same as in case of normal plugins (and the policy is also a plugin, which
 can register for all event types), but this option tells the harness to actually use the
