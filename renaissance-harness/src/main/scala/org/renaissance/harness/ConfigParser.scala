@@ -48,7 +48,7 @@ private final class ConfigParser(tags: Map[String, String]) {
         .maxOccurs(1)
 
       opt[String]("plugin")
-        .valueName("<class-path>!<class-name>")
+        .valueName("<class-path>[!<class-name>]")
         .text("Load external plugin. Can appear multiple times.")
         .action((v, c) => c.withPlugin(v))
         .unbounded()
