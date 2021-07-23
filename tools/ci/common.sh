@@ -21,6 +21,11 @@ RENAISSANCE_GIT_VERSION=$(git describe --tags --always --dirty=-SNAPSHOT || echo
 # Strip leading 'v' from the git-produced version
 RENAISSANCE_VERSION=${RENAISSANCE_GIT_VERSION#v}
 
+# Try to guess JVM version (and replace 1.8 with 8)
+RENAISSANCE_JVM_MAJOR_VERSION="$( java -version 2>&1 \
+    | sed -n -e '/version[[:blank:]]\+"/ { s/.*version[[:blank:]]\+"\([^"]*\)".*/\1/; s/1[.]8/8/; s/^\([^.]*\)[.].*/\1/; p }' \
+    || echo 8 )"
+
 # The base bundle
 RENAISSANCE_DIR="target"
 RENAISSANCE_JAR_NAME="renaissance-gpl-${RENAISSANCE_VERSION}.jar"
@@ -41,6 +46,15 @@ ci_sbt() {
 cp_reflink() {
 	[ "$OSTYPE" = "linux-gnu" ] && local REFLINK="--reflink=auto"
 	cp $REFLINK "$@"
+}
+
+get_jvm_workaround_args() {
+    if [ "$RENAISSANCE_JVM_MAJOR_VERSION" = "16" ]; then
+        echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+        echo "--add-opens=java.base/java.util=ALL-UNNAMED"
+        echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
+        echo "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+    fi
 }
 
 

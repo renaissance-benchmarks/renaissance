@@ -49,10 +49,14 @@ jobs:
           - openjdk9
           - openjdk10
           - openjdk11
-          #- openjdk12
+          - openjdk12
+          - openjdk13
+          - openjdk14
+          - openjdk15
+          - openjdk16
           - openj9-openjdk8
           - openj9-openjdk11
-          #- openj9-openjdk16
+          - openj9-openjdk16
     runs-on: ubuntu-latest
     container: "renaissancebench/buildenv:${{ matrix.image }}"
     continue-on-error: true
@@ -101,7 +105,7 @@ jobs:
   macos:
     strategy:
       matrix:
-        java: [ '8', '11' ] #, '13', '15' ]
+        java: [ '8', '11', '13', '15' ]
     runs-on: macos-latest
     continue-on-error: true
     steps:
@@ -150,7 +154,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        java: [ '8', '11' ] #, '13', '15' ]
+        java: [ '8', '11' , '13', '15' ]
     runs-on: windows-latest
     continue-on-error: true
     steps:
