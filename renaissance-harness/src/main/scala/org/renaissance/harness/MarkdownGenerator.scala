@@ -235,30 +235,22 @@ It is intended to be an open-source, collaborative project,
 in which the community can propose and improve benchmark workloads.
 
 
-### Building the suite
+### Running the suite
 
-To build the suite and create the so-called fat JAR (or super JAR), you only
-need to run `sbt` build tool as follows:
-
-```
-$$ tools/sbt/bin/sbt assembly
-```
-
-This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs and create the final JAR under the `target` directory.
-
-
-### Running the benchmarks
+To run the suite, you will need to download a Renaissance Suite JAR
+from <https://renaissance.dev/download>.
+If you wish to build it yourself, please, consult [CONTRIBUTING.md](CONTRIBUTING.md)
+for instructions on building.
 
 To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
+
 ```
-$$ java -jar '<renaissance-home>/target/renaissance-gpl-${tags("renaissanceVersion")}.jar' <benchmarks>
+$$ java -jar 'renaissance-gpl-${tags("renaissanceVersion")}.jar' <benchmarks>
 ```
 
-Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
-and `<benchmarks>` is the list of benchmarks that you wish to run.
+Above, `<benchmarks>` is the list of benchmarks that you wish to run.
 For example, you can specify `scala-kmeans` as the benchmark.
 
 The suite generally executes the benchmark's measured operation multiple times. By default,
@@ -517,6 +509,19 @@ the `${tags("renaissanceSuiteClass")}` and `${tags("moduleLoaderClass")}` classe
 
     s"""
 ## Contribution Guide
+
+### Building the suite
+
+To build the suite and create the so-called fat JAR (or super JAR), you only
+need to run `sbt` build tool as follows:
+
+```
+$$ tools/sbt/bin/sbt assembly
+```
+
+This will retrieve all the dependencies, compile all the benchmark projects and the harness,
+bundle the JARs and create the final JAR under the `target` directory.
+
 
 ### Code organization and internals
 

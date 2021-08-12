@@ -1,6 +1,19 @@
 
 ## Contribution Guide
 
+### Building the suite
+
+To build the suite and create the so-called fat JAR (or super JAR), you only
+need to run `sbt` build tool as follows:
+
+```
+$ tools/sbt/bin/sbt assembly
+```
+
+This will retrieve all the dependencies, compile all the benchmark projects and the harness,
+bundle the JARs and create the final JAR under the `target` directory.
+
+
 ### Code organization and internals
 
 The code is organized into three main parts:
