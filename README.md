@@ -45,6 +45,21 @@ execution can be achieved by providing the harness with a plugin implementing a 
 policy (see [below](#plugins) for details).
 
 
+### Licensing
+
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
+
+Depending on your needs, you can use either of the two distributions.
+
+The list below contains the licensing information (and JVM version requirements)
+for each benchmark.
+
+
+
 #### Complete list of command-line options
 
 The following is a complete list of command-line options.
@@ -89,65 +104,90 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### apache-spark
 
-- `als` - Runs the ALS algorithm from the Spark ML library. (default repetitions: 30)
+- `als` - Runs the ALS algorithm from the Spark ML library.
+  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `chi-square` - Runs the chi-square test from Spark MLlib. (default repetitions: 60)
+- `chi-square` - Runs the chi-square test from Spark MLlib.
+  Default repetitions: 60; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `dec-tree` - Runs the Random Forest algorithm from the Spark ML library. (default repetitions: 40)
+- `dec-tree` - Runs the Random Forest algorithm from the Spark ML library.
+  Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization. (default repetitions: 40)
+- `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization.
+  Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `log-regression` - Runs the Logistic Regression algorithm from the Spark ML library. (default repetitions: 20)
+- `log-regression` - Runs the Logistic Regression algorithm from the Spark ML library.
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `movie-lens` - Recommends movies using the ALS algorithm. (default repetitions: 20)
+- `movie-lens` - Recommends movies using the ALS algorithm.
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `naive-bayes` - Runs the multinomial Naive Bayes algorithm from the Spark ML library. (default repetitions: 30)
+- `naive-bayes` - Runs the multinomial Naive Bayes algorithm from the Spark ML library.
+  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `page-rank` - Runs a number of PageRank iterations, using RDDs. (default repetitions: 20)
+- `page-rank` - Runs a number of PageRank iterations, using RDDs.
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 #### concurrency
 
-- `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka. (default repetitions: 24)
+- `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka.
+  Default repetitions: 24; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `fj-kmeans` - Runs the k-means algorithm using the fork/join framework. (default repetitions: 30)
+- `fj-kmeans` - Runs the k-means algorithm using the fork/join framework.
+  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO. (default repetitions: 10)
+- `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO.
+  Default repetitions: 10; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 #### database
 
-- `db-shootout` - Executes a shootout test using several in-memory databases. (default repetitions: 16)
+- `db-shootout` - Executes a shootout test using several in-memory databases.
+  Default repetitions: 16; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 11
 
-- `neo4j-analytics` - Executes Neo4J graph queries against a movie database. (default repetitions: 20)
+- `neo4j-analytics` - Executes Neo4J graph queries against a movie database.
+  Default repetitions: 20; GPL3 license, GPL3 distribution; Supported JVM: 11 - 15
 
 #### functional
 
-- `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures. (default repetitions: 50)
+- `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures.
+  Default repetitions: 50; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `mnemonics` - Solves the phone mnemonics problem using JDK streams. (default repetitions: 16)
+- `mnemonics` - Solves the phone mnemonics problem using JDK streams.
+  Default repetitions: 16; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `par-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams. (default repetitions: 16)
+- `par-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams.
+  Default repetitions: 16; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams. (default repetitions: 80)
+- `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams.
+  Default repetitions: 80; GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
 
-- `scrabble` - Solves the Scrabble puzzle using JDK Streams. (default repetitions: 50)
+- `scrabble` - Solves the Scrabble puzzle using JDK Streams.
+  Default repetitions: 50; GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
 
 #### scala
 
-- `dotty` - Runs the Dotty compiler on a set of source code files. (default repetitions: 50)
+- `dotty` - Runs the Dotty compiler on a set of source code files.
+  Default repetitions: 50; BSD3 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM. (default repetitions: 30)
+- `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM.
+  Default repetitions: 30; BSD3 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `scala-doku` - Solves Sudoku Puzzles using Scala collections. (default repetitions: 20)
+- `scala-doku` - Solves Sudoku Puzzles using Scala collections.
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `scala-kmeans` - Runs the K-Means algorithm using Scala collections. (default repetitions: 50)
+- `scala-kmeans` - Runs the K-Means algorithm using Scala collections.
+  Default repetitions: 50; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM. (default repetitions: 60)
+- `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM.
+  Default repetitions: 60; BSD3, GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
 
 #### web
 
-- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle. (default repetitions: 90)
+- `finagle-chirper` - Simulates a microblogging service using Twitter Finagle.
+  Default repetitions: 90; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
-- `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response. (default repetitions: 12)
+- `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.
+  Default repetitions: 12; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 
 
@@ -156,17 +196,23 @@ purposes:
 
 #### dummy
 
-- `dummy-empty` - A dummy benchmark which only serves to test the harness. (default repetitions: 20)
+- `dummy-empty` - A dummy benchmark which only serves to test the harness.
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration). (default repetitions: 20)
+- `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration).
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters). (default repetitions: 20)
+- `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters).
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup). (default repetitions: 20)
+- `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup).
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `dummy-teardown-failing` - A dummy benchmark for testing the harness (fails during teardown). (default repetitions: 20)
+- `dummy-teardown-failing` - A dummy benchmark for testing the harness (fails during teardown).
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation). (default repetitions: 20)
+- `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation).
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 
 
@@ -242,47 +288,6 @@ $ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.12.0.j
 ### Contributing
 
 Please see the [contribution guide](CONTRIBUTING.md) for a description of the contribution process.
-
-
-### Licensing
-
-The Renaissance Suite comes in two distributions,
-and is available under both the MIT license and the GPL3 license.
-The GPL distribution with all the benchmarks is licensed under the GPL3 license,
-while the MIT distribution includes only those benchmarks that themselves
-have less restrictive licenses.
-
-Depending on your needs, you can use either of the two distributions.
-The following table contains the licensing information (and JVM version
-requirements) for all the benchmarks:
-
-| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
-| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
-| akka-uct | MIT | MIT | 1.8 |  |
-| als | APACHE2 | MIT | 1.8 |  |
-| chi-square | APACHE2 | MIT | 1.8 |  |
-| db-shootout | APACHE2 | MIT | 1.8 | 11 |
-| dec-tree | APACHE2 | MIT | 1.8 |  |
-| dotty | BSD3 | MIT | 1.8 |  |
-| finagle-chirper | APACHE2 | MIT | 1.8 |  |
-| finagle-http | APACHE2 | MIT | 1.8 |  |
-| fj-kmeans | APACHE2 | MIT | 1.8 |  |
-| future-genetic | APACHE2 | MIT | 1.8 |  |
-| gauss-mix | APACHE2 | MIT | 1.8 |  |
-| log-regression | APACHE2 | MIT | 1.8 |  |
-| mnemonics | MIT | MIT | 1.8 |  |
-| movie-lens | APACHE2 | MIT | 1.8 |  |
-| naive-bayes | APACHE2 | MIT | 1.8 |  |
-| neo4j-analytics | GPL3 | GPL3 | 11 | 15 |
-| page-rank | APACHE2 | MIT | 1.8 |  |
-| par-mnemonics | MIT | MIT | 1.8 |  |
-| philosophers | BSD3 | MIT | 1.8 |  |
-| reactors | MIT | MIT | 1.8 |  |
-| rx-scrabble | GPL2 | GPL3 | 1.8 |  |
-| scala-doku | MIT | MIT | 1.8 |  |
-| scala-kmeans | MIT | MIT | 1.8 |  |
-| scala-stm-bench7 | BSD3, GPL2 | GPL3 | 1.8 |  |
-| scrabble | GPL2 | GPL3 | 1.8 |  |
 
 
 ### Documentation

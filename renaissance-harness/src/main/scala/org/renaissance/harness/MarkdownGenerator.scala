@@ -109,7 +109,6 @@ object MarkdownGenerator {
     // Don't list dummy benchmarks in the benchmark table to reduce clutter.
     val realBenchmarks = selectBenchmarks(!_.groups().contains("dummy"))
     tags("benchmarksList") = formatBenchmarkListMarkdown(realBenchmarks)
-    tags("benchmarksTable") = formatBenchmarkTableMarkdown(realBenchmarks)
 
     // List dummy benchmarks separately.
     val dummyBenchmarks = selectBenchmarks(_.groups().contains("dummy"))
@@ -188,7 +187,11 @@ object MarkdownGenerator {
 
   private def formatBenchmarkListMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
     def formatItem(b: BenchmarkDescriptor) = {
-      s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
+      s"- `${b.name}` - ${b.summary}\n  " +
+        s"Default repetitions: ${b.repetitions}; " +
+        s"${b.licenses.asScala.mkString(", ")} license, ${b.distro} distribution; " +
+        s"Supported JVM: ${b.jvmVersionMin.map[String](_.toString).orElse("1.8")} " +
+          s"${b.jvmVersionMax.map[String]("- " + _.toString).orElse("and later")}"
     }
 
     val result = new StringBuffer
@@ -202,20 +205,6 @@ object MarkdownGenerator {
     }
 
     result.toString
-  }
-
-  private def formatBenchmarkTableMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
-    def formatRow(b: BenchmarkDescriptor) = {
-      s"| ${b.name} | ${b.licenses.asScala.mkString(", ")} | ${b.distro} " +
-        s"| ${b.jvmVersionMin.map[String](_.toString).orElse("")} " +
-        s"| ${b.jvmVersionMax.map[String](_.toString).orElse("")} |"
-    }
-
-    // Don't list dummy benchmarks in the benchmark table to reduce clutter.
-    benchmarks
-      .sortBy(_.name())
-      .map(formatRow)
-      .mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
@@ -264,6 +253,21 @@ times or executed for a long time. The number of repetitions and the execution t
 set for all benchmarks using the `-r` or `-t` options. More fine-grained control over benchmark
 execution can be achieved by providing the harness with a plugin implementing a custom execution
 policy (see [below](#plugins) for details).
+
+
+### Licensing
+
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
+
+Depending on your needs, you can use either of the two distributions.
+
+The list below contains the licensing information (and JVM version requirements)
+for each benchmark.
+
 
 
 #### Complete list of command-line options
@@ -358,23 +362,6 @@ $$ java -jar '${tags("jmhTargetPath")}/${tags("jmhJarPrefix")}-${tags("renaissan
 ### Contributing
 
 Please see the [contribution guide](CONTRIBUTING.md) for a description of the contribution process.
-
-
-### Licensing
-
-The Renaissance Suite comes in two distributions,
-and is available under both the MIT license and the GPL3 license.
-The GPL distribution with all the benchmarks is licensed under the GPL3 license,
-while the MIT distribution includes only those benchmarks that themselves
-have less restrictive licenses.
-
-Depending on your needs, you can use either of the two distributions.
-The following table contains the licensing information (and JVM version
-requirements) for all the benchmarks:
-
-| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
-| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
-${tags("benchmarksTable")}
 
 
 ### Documentation
