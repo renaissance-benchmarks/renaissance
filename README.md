@@ -327,3 +327,10 @@ Apart from documentation embedded directly in the source code, further
 information about design and internals of the suite can be found in the
 `documentation` folder of this project.
 
+
+### Support
+
+When you find a bug in the suite, when you want to propose a new benchmark or
+ask for help, please, open an [Issue](https://github.com/renaissance-benchmarks/renaissance/issues)
+at the project page at GitHub.
+
