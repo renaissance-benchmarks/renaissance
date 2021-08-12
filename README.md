@@ -59,45 +59,6 @@ The list below contains the licensing information (and JVM version requirements)
 for each benchmark.
 
 
-
-#### Complete list of command-line options
-
-The following is a complete list of command-line options.
-
-```
-Renaissance Benchmark Suite, version 0.12.0
-Usage: renaissance [options] [benchmark-specification]
-
-  -h, --help               Prints this usage text.
-  -r, --repetitions <count>
-                           Execute the measured operation a fixed number of times.
-  -t, --run-seconds <seconds>
-                           Execute the measured operation for fixed time (wall-clock).
-  --operation-run-seconds <seconds>
-                           Execute the measured operation for fixed accumulated operation time (wall-clock).
-  --policy <class-path>!<class-name>
-                           Use policy plugin to control repetition of measured operation execution.
-  --plugin <class-path>[!<class-name>]
-                           Load external plugin. Can appear multiple times.
-  --with-arg <value>       Adds an argument to the plugin or policy specified last. Can appear multiple times.
-  --csv <csv-file>         Output results as CSV to <csv-file>.
-  --json <json-file>       Output results as JSON to <json-file>.
-  -c, --configuration <conf-name>
-                           Use benchmark parameters from configuration <conf-name>.
-  -o, --override <name>=<value>
-                           Override the value of a configuration parameter <name> to <value>.
-  --scratch-base <dir>     Create scratch directories in <dir>. Defaults to current directory.
-  --keep-scratch           Keep the scratch directories after VM exit. Defaults to deleting scratch directories.
-  --no-forced-gc           Do not force garbage collection before each measured operation. Defaults to forced GC.
-  --no-jvm-check           Do not check benchmark JVM version requirements (for execution or raw-list).
-  --list                   Print the names and descriptions of all benchmarks.
-  --raw-list               Print the names of benchmarks compatible with this JVM (one per line).
-  --group-list             Print the names of all benchmark groups (one per line).
-  benchmark-specification  List of benchmarks (or groups) to execute (or 'all').
-
-```
-
-
 ### List of benchmarks
 
 The following is the complete list of benchmarks, separated into groups.
@@ -268,6 +229,44 @@ given using the `--with-arg <arg>` option, which appends `<arg>` to the list of 
 the plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
 (or `--policy`) option is encountered, the subsequent `--with-arg` options will append
 arguments to that plugin (or policy).
+
+
+#### Complete list of command-line options
+
+The following is a complete list of command-line options.
+
+```
+Renaissance Benchmark Suite, version 0.12.0
+Usage: renaissance [options] [benchmark-specification]
+
+  -h, --help               Prints this usage text.
+  -r, --repetitions <count>
+                           Execute the measured operation a fixed number of times.
+  -t, --run-seconds <seconds>
+                           Execute the measured operation for fixed time (wall-clock).
+  --operation-run-seconds <seconds>
+                           Execute the measured operation for fixed accumulated operation time (wall-clock).
+  --policy <class-path>!<class-name>
+                           Use policy plugin to control repetition of measured operation execution.
+  --plugin <class-path>[!<class-name>]
+                           Load external plugin. Can appear multiple times.
+  --with-arg <value>       Adds an argument to the plugin or policy specified last. Can appear multiple times.
+  --csv <csv-file>         Output results as CSV to <csv-file>.
+  --json <json-file>       Output results as JSON to <json-file>.
+  -c, --configuration <conf-name>
+                           Use benchmark parameters from configuration <conf-name>.
+  -o, --override <name>=<value>
+                           Override the value of a configuration parameter <name> to <value>.
+  --scratch-base <dir>     Create scratch directories in <dir>. Defaults to current directory.
+  --keep-scratch           Keep the scratch directories after VM exit. Defaults to deleting scratch directories.
+  --no-forced-gc           Do not force garbage collection before each measured operation. Defaults to forced GC.
+  --no-jvm-check           Do not check benchmark JVM version requirements (for execution or raw-list).
+  --list                   Print the names and descriptions of all benchmarks.
+  --raw-list               Print the names of benchmarks compatible with this JVM (one per line).
+  --group-list             Print the names of all benchmark groups (one per line).
+  benchmark-specification  List of benchmarks (or groups) to execute (or 'all').
+
+```
 
 
 ### JMH support

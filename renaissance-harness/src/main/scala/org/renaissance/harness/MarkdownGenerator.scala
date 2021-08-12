@@ -269,16 +269,6 @@ The list below contains the licensing information (and JVM version requirements)
 for each benchmark.
 
 
-
-#### Complete list of command-line options
-
-The following is a complete list of command-line options.
-
-```
-${tags("harnessUsage")}
-```
-
-
 ### List of benchmarks
 
 The following is the complete list of benchmarks, separated into groups.
@@ -342,6 +332,15 @@ given using the `--with-arg <arg>` option, which appends `<arg>` to the list of 
 the plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
 (or `--policy`) option is encountered, the subsequent `--with-arg` options will append
 arguments to that plugin (or policy).
+
+
+#### Complete list of command-line options
+
+The following is a complete list of command-line options.
+
+```
+${tags("harnessUsage")}
+```
 
 
 ### JMH support
