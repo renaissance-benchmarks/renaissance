@@ -66,88 +66,113 @@ The following is the complete list of benchmarks, separated into groups.
 #### apache-spark
 
 - `als` - Runs the ALS algorithm from the Spark ML library.
+  \
   Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `chi-square` - Runs the chi-square test from Spark MLlib.
+  \
   Default repetitions: 60; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `dec-tree` - Runs the Random Forest algorithm from the Spark ML library.
+  \
   Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization.
+  \
   Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `log-regression` - Runs the Logistic Regression algorithm from the Spark ML library.
+  \
   Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `movie-lens` - Recommends movies using the ALS algorithm.
+  \
   Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `naive-bayes` - Runs the multinomial Naive Bayes algorithm from the Spark ML library.
+  \
   Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs.
+  \
   Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 #### concurrency
 
 - `akka-uct` - Runs the Unbalanced Cobwebbed Tree actor workload in Akka.
+  \
   Default repetitions: 24; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `fj-kmeans` - Runs the k-means algorithm using the fork/join framework.
+  \
   Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `reactors` - Runs benchmarks inspired by the Savina microbenchmark workloads in a sequence on Reactors.IO.
+  \
   Default repetitions: 10; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 #### database
 
 - `db-shootout` - Executes a shootout test using several in-memory databases.
+  \
   Default repetitions: 16; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 11
 
 - `neo4j-analytics` - Executes Neo4J graph queries against a movie database.
+  \
   Default repetitions: 20; GPL3 license, GPL3 distribution; Supported JVM: 11 - 15
 
 #### functional
 
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures.
+  \
   Default repetitions: 50; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `mnemonics` - Solves the phone mnemonics problem using JDK streams.
+  \
   Default repetitions: 16; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `par-mnemonics` - Solves the phone mnemonics problem using parallel JDK streams.
+  \
   Default repetitions: 16; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `rx-scrabble` - Solves the Scrabble puzzle using the Rx streams.
+  \
   Default repetitions: 80; GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
 
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams.
+  \
   Default repetitions: 50; GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
 
 #### scala
 
 - `dotty` - Runs the Dotty compiler on a set of source code files.
+  \
   Default repetitions: 50; BSD3 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM.
+  \
   Default repetitions: 30; BSD3 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `scala-doku` - Solves Sudoku Puzzles using Scala collections.
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `scala-kmeans` - Runs the K-Means algorithm using Scala collections.
+  \
   Default repetitions: 50; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `scala-stm-bench7` - Runs the stmbench7 benchmark using ScalaSTM.
+  \
   Default repetitions: 60; BSD3, GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
 
 #### web
 
 - `finagle-chirper` - Simulates a microblogging service using Twitter Finagle.
+  \
   Default repetitions: 90; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 - `finagle-http` - Sends many small Finagle HTTP requests to a Finagle HTTP server and awaits response.
+  \
   Default repetitions: 12; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
 
@@ -158,21 +183,27 @@ purposes:
 #### dummy
 
 - `dummy-empty` - A dummy benchmark which only serves to test the harness.
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `dummy-failing` - A dummy benchmark for testing the harness (fails during iteration).
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `dummy-param` - A dummy benchmark for testing the harness (test configurable parameters).
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `dummy-setup-failing` - A dummy benchmark for testing the harness (fails during setup).
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `dummy-teardown-failing` - A dummy benchmark for testing the harness (fails during teardown).
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 - `dummy-validation-failing` - A dummy benchmark for testing the harness (fails during validation).
+  \
   Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 

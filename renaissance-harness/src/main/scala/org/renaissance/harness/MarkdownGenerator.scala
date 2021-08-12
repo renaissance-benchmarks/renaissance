@@ -187,7 +187,7 @@ object MarkdownGenerator {
 
   private def formatBenchmarkListMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
     def formatItem(b: BenchmarkDescriptor) = {
-      s"- `${b.name}` - ${b.summary}\n  " +
+      s"- `${b.name}` - ${b.summary}\n  \\\n  " +
         s"Default repetitions: ${b.repetitions}; " +
         s"${b.licenses.asScala.mkString(", ")} license, ${b.distro} distribution; " +
         s"Supported JVM: ${b.jvmVersionMin.map[String](_.toString).orElse("1.8")} " +
