@@ -232,6 +232,7 @@ This repository contains two such plugins: one that uses a native agent built wi
 [PAPI](https://icl.utk.edu/papi/) to collect information from hardware counters and
 a plugin for collecting information from a
 [CompilationMXBean](https://docs.oracle.com/javase/8/docs/api/java/lang/management/CompilationMXBean.html).
+See their respective READMEs under the `plugin` directory for more information.
 
 If you wish to create your own plugin, please consult
 [documentation/plugins.md](documentation/plugins.md) for more details.
