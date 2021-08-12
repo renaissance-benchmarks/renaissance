@@ -7,8 +7,8 @@ import org.renaissance.Plugin.ExecutionPolicy
 import org.renaissance.core.BenchmarkDescriptor
 import org.renaissance.core.BenchmarkSuite
 import org.renaissance.core.BenchmarkSuite.jvmSpecVersion
+import org.renaissance.core.BenchmarkSuite.ExtensionException
 import org.renaissance.core.DirUtils
-import org.renaissance.core.ModuleLoader.ModuleLoadingException
 import org.renaissance.harness.ExecutionPolicies.FixedOpCount
 import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
@@ -336,7 +336,7 @@ object RenaissanceSuite {
         )
       }
     } catch {
-      case e: ModuleLoadingException => exitWithError(e.getMessage)
+      case e: ExtensionException => exitWithError(e.getMessage)
     }
   }
 

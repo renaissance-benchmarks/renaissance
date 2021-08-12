@@ -205,7 +205,17 @@ public final class BenchmarkSuite {
 
   // Extension support
 
-/** Read all manifests and find first one having given property.
+  public static final class ExtensionException extends Exception {
+    ExtensionException(String message) {
+      super(message);
+    }
+
+    ExtensionException(String format, Object... args) {
+      super(String.format(format, args));
+    }
+  }
+
+  /** Read all manifests and find first one having given property.
    * @returns Property value or null if not found.
    */
   private static String getManifestProperty(ClassLoader loader, String property) {
@@ -235,7 +245,7 @@ public final class BenchmarkSuite {
   private static ClassLoader createClassLoaderFromPaths(
     Collection<Path> classPath,
     String name
-  ) throws ModuleLoadingException {
+  ) throws ExtensionException {
     URL[] classPathUrls = ModuleLoader.pathsToUrls(classPath);
     if (logger.isLoggable(Level.CONFIG)) {
       logger.config(String.format(
@@ -245,7 +255,7 @@ public final class BenchmarkSuite {
     }
 
     if (classPathUrls.length != classPath.size()) {
-      throw new ModuleLoadingException("malformed URL(s) in classpath specification");
+      throw new ExtensionException("malformed URL(s) in classpath specification");
     }
 
     ClassLoader parent = ModuleLoader.class.getClassLoader();
@@ -256,7 +266,7 @@ public final class BenchmarkSuite {
   /** Loads extension from initialized class loader. */
   static <T> Class<? extends T> loadFromClassLoader(
     ClassLoader loader, String className, Class<T> baseClass
-  ) throws ModuleLoadingException {
+  ) throws ExtensionException {
     try {
       Class<?> loadedClass = loader.loadClass(className);
       return loadedClass.asSubclass(baseClass);
@@ -264,11 +274,11 @@ public final class BenchmarkSuite {
     } catch (ClassNotFoundException e) {
       // Be a bit more verbose, because the ClassNotFoundException
       // on OpenJDK only returns the class name as error message.
-      throw new ModuleLoadingException(
+      throw new ExtensionException(
         "could not find class '%s'", className
       );
     } catch (ClassCastException e) {
-      throw new ModuleLoadingException(
+      throw new ExtensionException(
         "class '%s' is not a subclass of '%s'", className, baseClass.getName()
       );
     }
@@ -278,25 +288,33 @@ public final class BenchmarkSuite {
   /** Loads and instantiates an extension class with given arguments. */
   public <T> T createExtension(
     List<Path> classPath, String className, Class<T> baseClass, String[] args
-  ) throws ModuleLoadingException {
+  ) throws ExtensionException {
     ClassLoader loader = createClassLoaderFromPaths(classPath, className);
     final Class<? extends T> extClass = loadFromClassLoader(loader, className, baseClass);
-    return ModuleLoader.createExtension(extClass, args);
+    try {
+      return ModuleLoader.createExtension(extClass, args);
+    } catch (ModuleLoadingException e) {
+      throw new ExtensionException(e.getMessage());
+    }
   }
 
   /** Loads and instantiates an extension specified in properties with given arguments. */
   public <T> T createDescribedExtension(
     List<Path> classPath, String propertyName, Class<T> baseClass, String[] args
-  ) throws ModuleLoadingException {
+  ) throws ExtensionException {
     ClassLoader loader = createClassLoaderFromPaths(classPath, propertyName);
     String className = getManifestProperty(loader, propertyName);
 
     if (className == null) {
-      throw new ModuleLoadingException("classname to load not found in manifests");
+      throw new ExtensionException("classname to load not found in manifests");
     }
 
     final Class<? extends T> extClass = loadFromClassLoader(loader, className, baseClass);
-    return ModuleLoader.createExtension(extClass, args);
+    try {
+      return ModuleLoader.createExtension(extClass, args);
+    } catch (ModuleLoadingException e) {
+      throw new ExtensionException(e.getMessage());
+    }
   }
 
 
