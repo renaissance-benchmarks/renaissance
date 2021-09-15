@@ -7,7 +7,7 @@ lazy val apacheSpark = (project in file("."))
     name := "apache-spark",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.12.14",
+    scalaVersion := "2.12.15",
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
