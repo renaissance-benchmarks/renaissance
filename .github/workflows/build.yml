@@ -155,7 +155,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        java: [ '8', '11' , '13', '15' ]
+        java: [ '8', '11' , '13', '15', '17' ]
     runs-on: windows-latest
     continue-on-error: true
     steps:
@@ -165,9 +165,21 @@ jobs:
           fetch-depth: 0
       - name: Setup correct Java version
         uses: actions/setup-java@v2
+        if: ${{ matrix.java != '17' }}
         with:
           distribution: adopt
           java-version: ${{ matrix.java }}
+      - name: Fetch JDK 17
+        if: ${{ matrix.java == '17' }}
+        run: |
+          aria2c -d ${{ runner.temp }} -o openjdk-17_windows-x64_bin.zip https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/openjdk-17_windows-x64_bin.zip
+      - name: Setup JDK 17
+        uses: actions/setup-java@v2
+        if: ${{ matrix.java == '17' }}
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: jdkfile
+          jdkFile: ${{ runner.temp }}/openjdk-17_windows-x64_bin.zip
 
       - name: Environment configuration
         shell: bash
