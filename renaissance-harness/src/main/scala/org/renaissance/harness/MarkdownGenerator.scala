@@ -24,7 +24,7 @@ import scala.util.Success
 import scala.util.Try
 
 /**
- * Generates README.md and CONTRIBUTING.md files for the suite.
+ * Generates README.md file for the suite.
  * This is currently part of the harness because is relies on
  * Scala string interpolation and collects information from
  * several (harness-internal) places.
@@ -53,7 +53,6 @@ object MarkdownGenerator {
     val tags = initTagValues(benchmarks, config.tags)
 
     writeFile(() => formatReadme(tags), "README.md")
-    writeFile(() => formatContribution(tags), "CONTRIBUTING.md")
   }
 
   private def parseArgs(args: Array[String]) = {
@@ -109,7 +108,6 @@ object MarkdownGenerator {
     // Don't list dummy benchmarks in the benchmark table to reduce clutter.
     val realBenchmarks = selectBenchmarks(!_.groups().contains("dummy"))
     tags("benchmarksList") = formatBenchmarkListMarkdown(realBenchmarks)
-    tags("benchmarksTable") = formatBenchmarkTableMarkdown(realBenchmarks)
 
     // List dummy benchmarks separately.
     val dummyBenchmarks = selectBenchmarks(_.groups().contains("dummy"))
@@ -152,10 +150,6 @@ object MarkdownGenerator {
     val harnessConfigParser = new ConfigParser(tags.toMap)
     tags("harnessUsage") = harnessConfigParser.usage()
 
-    val exampleBenchmarkClass = "MyJavaBenchmark"
-    tags("exampleBenchmarkClass") = exampleBenchmarkClass
-    tags("exampleBenchmarkName") = "my-java-benchmark"
-
     tags.toMap
   }
 
@@ -188,7 +182,11 @@ object MarkdownGenerator {
 
   private def formatBenchmarkListMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
     def formatItem(b: BenchmarkDescriptor) = {
-      s"- `${b.name}` - ${b.summary} (default repetitions: ${b.repetitions})"
+      s"- `${b.name}` - ${b.summary}\n  \\\n  " +
+        s"Default repetitions: ${b.repetitions}; " +
+        s"${b.licenses.asScala.mkString(", ")} license, ${b.distro} distribution; " +
+        s"Supported JVM: ${b.jvmVersionMin.map[String](_.toString).orElse("1.8")} " +
+        s"${b.jvmVersionMax.map[String]("- " + _.toString).orElse("and later")}"
     }
 
     val result = new StringBuffer
@@ -202,20 +200,6 @@ object MarkdownGenerator {
     }
 
     result.toString
-  }
-
-  private def formatBenchmarkTableMarkdown(benchmarks: Seq[BenchmarkDescriptor]) = {
-    def formatRow(b: BenchmarkDescriptor) = {
-      s"| ${b.name} | ${b.licenses.asScala.mkString(", ")} | ${b.distro} " +
-        s"| ${b.jvmVersionMin.map[String](_.toString).orElse("")} " +
-        s"| ${b.jvmVersionMax.map[String](_.toString).orElse("")} |"
-    }
-
-    // Don't list dummy benchmarks in the benchmark table to reduce clutter.
-    benchmarks
-      .sortBy(_.name())
-      .map(formatRow)
-      .mkString("\n")
   }
 
   def formatReadme(tags: Map[String, String]): String = {
@@ -235,30 +219,22 @@ It is intended to be an open-source, collaborative project,
 in which the community can propose and improve benchmark workloads.
 
 
-### Building the suite
+### Running the suite
 
-To build the suite and create the so-called fat JAR (or super JAR), you only
-need to run `sbt` build tool as follows:
-
-```
-$$ tools/sbt/bin/sbt assembly
-```
-
-This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs and create the final JAR under the `target` directory.
-
-
-### Running the benchmarks
+To run the suite, you will need to download a Renaissance Suite JAR
+from <https://renaissance.dev/download>.
+If you wish to build it yourself, please, consult [CONTRIBUTING.md](CONTRIBUTING.md)
+for instructions on building.
 
 To run a Renaissance benchmark, you need to have a JRE installed.
 This allows you to execute the following `java` command:
 
+
 ```
-$$ java -jar '<renaissance-home>/target/renaissance-gpl-${tags("renaissanceVersion")}.jar' <benchmarks>
+$$ java -jar 'renaissance-gpl-${tags("renaissanceVersion")}.jar' <benchmarks>
 ```
 
-Above, the `<renaissance-home>` is the path to the root directory of the Renaissance distribution,
-and `<benchmarks>` is the list of benchmarks that you wish to run.
+Above, `<benchmarks>` is the list of benchmarks that you wish to run.
 For example, you can specify `scala-kmeans` as the benchmark.
 
 The suite generally executes the benchmark's measured operation multiple times. By default,
@@ -274,13 +250,18 @@ execution can be achieved by providing the harness with a plugin implementing a 
 policy (see [below](#plugins) for details).
 
 
-#### Complete list of command-line options
+### Licensing
 
-The following is a complete list of command-line options.
+The Renaissance Suite comes in two distributions,
+and is available under both the MIT license and the GPL3 license.
+The GPL distribution with all the benchmarks is licensed under the GPL3 license,
+while the MIT distribution includes only those benchmarks that themselves
+have less restrictive licenses.
 
-```
-${tags("harnessUsage")}
-```
+Depending on your needs, you can use either of the two distributions.
+
+The list below contains the licensing information (and JVM version requirements)
+for each benchmark.
 
 
 ### List of benchmarks
@@ -312,76 +293,27 @@ you will need to be able to tell the harness when to keep executing the benchmar
 stop.
 
 To this end, the suite provides hooks for plugins which can subscribe to events related to
-harness state and benchmark execution. A plugin is a user-defined class which must implement
-the `${tags("pluginClass")}` marker interface and provide at least a default (parameter-less)
-constructor. However, such a minimal plugin would not receive any notifications. To receive
-notifications, the plugin class must implement interfaces from the `${tags("pluginClass")}`
-interface name space depending on the type of events it wants to receive, or services it wants
-to provide. This is demonstrated in the following example:
+harness state and benchmark execution.
 
-```scala
-class SimplePlugin extends ${tags("pluginClass")}
-  with ${tags("afterHarnessInitListenerClass")}
-  with ${tags("afterOperationSetUpListenerClass")}
-  with ${tags("beforeOperationTearDownListenerClass")} {
+This repository contains two such plugins: one that uses a native agent built with
+[PAPI](https://icl.utk.edu/papi/) to collect information from hardware counters and
+a plugin for collecting information from a
+[CompilationMXBean](https://docs.oracle.com/javase/8/docs/api/java/lang/management/CompilationMXBean.html).
+See their respective READMEs under the `plugin` directory for more information.
 
-  override def afterHarnessInit() = {
-    // Initialize the plugin after the harness finished initializing
-  }
-
-  override def afterOperationSetUp(benchmark: String, index: Int) = {
-    // Notify the tool that the measured operation is about to start.
-  }
-
-  override def beforeOperationTearDown(benchmark: String, index: Int) = {
-    // Notify the tool that the measured operations has finished.
-  }
-}
-```
-
-The following interfaces provide common (paired) event types which allow a plugin to hook
-into a specific point in the benchmark execution sequence. They are analogous to common
-annotations known from testing frameworks such as JUnit. Harness-level events occur only
-once per the whole execution, benchmark-level events occur once for each benchmark
-executed, and operation-level events occur once for each execution of the measured
-operation.
-- `${tags("afterHarnessInitListenerClass")}`, `${tags("beforeHarnessShutdownListenerClass")}`
-- `${tags("beforeBenchmarkSetUpListenerClass")}`, `${tags("afterBenchmarkTearDownListenerClass")}`
-- `${tags("afterBenchmarkSetUpListenerClass")}`, `${tags("beforeBenchmarkTearDownListenerClass")}`
-- `${tags("afterOperationSetUpListenerClass")}`, `${tags("beforeOperationTearDownListenerClass")}`
-
-The following interfaces provide special non-paired event types:
-- `${tags("measurementResultListenerClass")}`, intended for plugins that want to receive
-measurements results (perhaps to store them in a custom format). The harness calls the
-`onMeasurementResult` method with the name of the metric and its value, but only if the
-benchmark operation produces a valid result.
-- `${tags("benchmarkFailureListenerClass")}`, which indicates that the benchmark execution
-has either failed in some way (the benchmark triggered an exception), or that the benchmark
-operation produced a result which failed validation. This means that no measurements results
-will be received.
-
-And finally the following interfaces are used by the harness to request
-services from plugins:
-- `${tags("measurementResultPublisherClass")}`, intended for plugins that want to collect
-values of additional metrics around the execution of the benchmark operation. The harness
-calls the `onMeasurementResultsRequested` method with an instance of event dispatcher which
-the plugin is supposed to use to notify other result listeners about custom measurement results.
-- `${tags("policyClass")}`, intended for plugins that want to control the execution
-of the benchmark's measured operation. Such a plugin should implement other interfaces to
-get enough information to determine, per-benchmark, whether to execute the measured operation
-or not. The harness calls the `canExecute` method before executing the benchmark's measured
-operation, and will pass the result of the `isLast` method to some other events.
+If you wish to create your own plugin, please consult
+[documentation/plugins.md](documentation/plugins.md) for more details.
 
 To make the harness use an external plugin, it needs to be specified on the command line.
 The harness can load multiple plugins, and each must be enabled using the
 `--plugin <class-path>[!<class-name>]` option. The `<class-path>` is the class path on which
-to look for the plugin class, and `<class-name>` is a fully qualified name of the plugin class
-(the class-name can be omitted when specified as a `Renaissance-Plugin` property inside
-`META-INF/MANIFEST.MF` of the plugin JAR).
+to look for the plugin class (optionally, you may add `<class-name>` to specify a fully
+qualified name of the plugin class).
+
 Custom execution policy must be enabled using the `--policy <class-path>!<class-name>` option.
 The syntax is the same as in case of normal plugins (and the policy is also a plugin, which
 can register for all event types), but this option tells the harness to actually use the
-plugin to control benchmark execution. Other than that, policy is treated the same was as
+plugin to control benchmark execution. Other than that, policy is treated the same way as a
 plugin.
 
 When registering plugins for pair events (harness init/shutdown, benchmark set up/tear down,
@@ -395,10 +327,16 @@ Plugins (and policies) can receive additional command line arguments. Each argum
 given using the `--with-arg <arg>` option, which appends `<arg>` to the list of arguments for
 the plugin (or policy) that was last mentioned on the command line. Whenever a `--plugin`
 (or `--policy`) option is encountered, the subsequent `--with-arg` options will append
-arguments to that plugin (or policy). A plugin that wants to receive command line arguments
-must define a constructor which takes an array of strings (`String[]`) or a string vararg
-(`String...`) as parameter. The harness tries to use this constructor first and falls back
-to the default (parameter-less) constructor.
+arguments to that plugin (or policy).
+
+
+### Complete list of command-line options
+
+The following is a complete list of command-line options.
+
+```
+${tags("harnessUsage")}
+```
 
 
 ### JMH support
@@ -421,280 +359,19 @@ $$ java -jar '${tags("jmhTargetPath")}/${tags("jmhJarPrefix")}-${tags("renaissan
 Please see the [contribution guide](CONTRIBUTING.md) for a description of the contribution process.
 
 
-### Licensing
+### Documentation
 
-The Renaissance Suite comes in two distributions,
-and is available under both the MIT license and the GPL3 license.
-The GPL distribution with all the benchmarks is licensed under the GPL3 license,
-while the MIT distribution includes only those benchmarks that themselves
-have less restrictive licenses.
-
-Depending on your needs, you can use either of the two distributions.
-The following table contains the licensing information (and JVM version
-requirements) for all the benchmarks:
-
-| Benchmark        | Licenses   | Distro | JVM required (min) | JVM supported (max) |
-| :--------------- | :--------- | :----: | :----------------: | :-----------------: |
-${tags("benchmarksTable")}
+Apart from documentation embedded directly in the source code, further
+information about design and internals of the suite can be found in the
+`documentation` folder of this project.
 
 
-### Design overview
+### Support
 
-The Renaissance benchmark suite is organized into several `sbt` projects:
+When you find a bug in the suite, when you want to propose a new benchmark or
+ask for help, please, open an [Issue](https://github.com/renaissance-benchmarks/renaissance/issues)
+at the project page at GitHub.
 
-- the `renaissance-core` folder that contains a set of *core* classes
-  (common interfaces and a harness launcher)
-- the `renaissance-harness` folder that contains the actual harness
-- the `benchmarks` folder contains a set of *subprojects*, each containing a set of benchmarks
-  for a specific domain (and having a separate set of dependencies)
-
-The *core* project is written in pure Java, and it contains the basic benchmark API.
-Its most important elements are the `${tags("benchmarkClass")}` interface,
-which must be implemented by each benchmark, and the annotations in the
-`${tags("benchmarkClass")}` interface name space, which are used to provide
-benchmark meta data, such as a summary or a detailed description.
-Consequently, each *subproject* depends on the *core* project.
-
-Classes from the *core* are loaded (when Renaissance is started) by the default
-classloader. Classes from other projects (including the harness and individual benchmarks)
-and external plugins or execution policies are loaded by separate classloaders. This
-separation helps ensure that there are no clashes between dependencies of different
-projects (each benchmark may depend on different versions of external libraries).
-
-The *harness* project implements the functionality necessary to parse the input
-arguments, to run the benchmarks, to generate documentation, and so on. The *harness*
-is written in a mix of Java and Scala, and is loaded by the *core* in a separate classloader
-to ensure clean environment for running the benchmarks.
-
-The JARs of the subprojects (benchmarks and harness) are copied as generated
-*resources* and embedded into the resulting JAR artifact.
-
-```
-renaissance-core
-  ^
-  | (classpath dependencies)
-  |
-  |-- renaissance harness
-  |
-  |-- benchmark one
-  | `-- dependencies for benchmark one
-  |
-  |-- ...
-  |
-  `-- benchmark n
-```
-
-When the harness is started, it uses the input arguments to select the benchmark,
-and then unpacks the JARs of the corresponding benchmark group into a temporary directory.
-The harness then creates a classloader that searches the unpacked JARs and loads the
-benchmark group. The class loader is created directly below the default class loader.
-Because the default class loader contains only base JRE classes and common interfaces
-of *core*, it ensures that dependencies of a benchmark are never mixed with any
-dependencies of any other benchmark or the harness.
-
-```
-        boot class loader (JDK)
-                   ^
-                   |
-          system class loader
-                (core)
-         ^                   ^
-         |                   |
-  URL class loader    URL class loader
-     (harness)          (benchmark)
-```
-
-We need to do this to, e.g., avoid accidentally resolving the wrong class
-by going through the system class loader (this can easily happen with,
-e.g. Apache Spark and Scala, due to the way that Spark internally resolves some classes).
-
-You can find further details in the top-level `build.sbt` file, and in the source code of
-the `${tags("renaissanceSuiteClass")}` and `${tags("moduleLoaderClass")}` classes.
-"""
-  }
-
-  def formatContribution(tags: Map[String, String]): String = {
-
-    s"""
-## Contribution Guide
-
-### Code organization and internals
-
-The code is organized into three main parts:
-
-- `renaissance-core`: these are the core APIs that a benchmark needs to work with,
-  such as the runtime configuration, the benchmark base class or the policy.
-- `renaissance-harness`: this is the overall suite project, which is responsible for
-  parsing the arguments, loading the classes, and running the benchmark.
-- a set of projects in the `benchmarks` directory: these are the individual groups of benchmarks
-  that share a common set of dependencies. A group is typically thematic, relating to
-  a particular framework or a JVM language, and benchmarks in different groups depend
-  on a different set of libraries, or even the same libraries with different versions.
-  The bundling mechanism of the suite takes care that the dependencies of the different groups
-  never clash with each other.
-
-
-### Adding a new benchmark
-
-To add a new benchmark to an existing group, identify the respective project
-in the `benchmarks` directory, and add a new top-level Scala (Java) class
-that extends (implements) the `${tags("benchmarkClass")}` interface.
-
-Here is an example:
-
-```scala
-import org.renaissance._
-import org.renaissance.Benchmark._
-
-@Summary("Runs some performance-critical Java code.")
-final class ${tags("exampleBenchmarkClass")} extends ${tags("benchmarkClass")} {
-  override def run(context: ${tags("contextClass")}): ${tags("benchmarkResultClass")} = {
-    // This is the benchmark body, which in this case calls some Java code.
-    JavaCode.runSomeJavaCode()
-    // Return object for later validation of the operation result.
-    return new ${tags("exampleBenchmarkClass")}Result()
-  }
-}
-```
-
-Above, the name of the benchmark will be automatically generated from the class name.
-In this case, the name will be `${tags("exampleBenchmarkName")}`.
-
-To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
-create an additional `sbt` project in the `benchmarks` directory,
-using an existing project, such as `scala-stdlib`, as an example.
-The project will be automatically picked up by the build system
-and included into the Renaissance distribution.
-
-Once the benchmark has been added, one needs to make sure to be compliant with the code
-formatting of the project (rules defined in `.scalafmt.conf`).
-A convenient sbt task can do that check:
-```
-$$ tools/sbt/bin/sbt renaissanceFormatCheck
-```
-
-Another one can directly update the source files to match the desired format:
-```
-$$ tools/sbt/bin/sbt renaissanceFormat
-```
-
-Moreover, the contents of the `README.md` and `CONTRIBUTING.md` files are automatically generated
-from the codebase. Updating those files can be done with the `--readme` command-line flag.
-Using sbt, one would do:
-```
-$$ tools/sbt/bin/sbt runMain ${tags("launcherClassFull")} --readme
-```
-
-### IDE development
-
-#### IntelliJ
-
-In order to work on the project with IntelliJ, one needs to install the following plugins :
-  - `Scala` : part of the codebase uses Scala and Renaissance is organized in sbt projects.
-  - `scalafmt` (optional) : adds an action that can be triggered with `Code -> Reformat with scalafmt`
-  which will reformat the code according to the formatting rule defined in `.scalafmt.conf`
-  (same as the `renaissanceFormat` sbt task).
-
-Then, the root of this repository can be opened as an IntelliJ project.
-
-### Benchmark evaluation and release process
-
-In the open-source spirit, anyone can propose an additional benchmark by opening a pull request.
-The code is then inspected by the community -- typically, the suite maintainers are involved
-in the review, but anybody else is free join the discussion.
-During the discussion, the reviewers suggest the ways in which
-the benchmark could be improved.
-
-Before submitting a pull request, it is recommendable to open an issue first,
-and discuss the benchmark proposal with the maintainers.
-
-
-#### Benchmark criteria
-
-Here is some of the quality criteria that a new benchmark should satisfy:
-
-- *Stylistically conformant*: the benchmark code must conform to existing formatting
-  and stylistic standards in the suite.
-- *Meaningful*: it must represent a meaningful workload that is either frequently executed,
-  or it consists of code patterns and coding styles that are desired or arguably preferable,
-  or it encodes some important algorithm, a data structure or a framework,
-  or is significant in some other important way.
-  If the benchmark is automatically generated by some tool,
-  then it must be accompanied with a detailed explanation of why the workload is useful.
-- *Observable*: it must constitute a run that is observable and measurable. For example,
-  the run should last sufficiently long so that it is possible to accurately measure
-  its running time, gather profiling information or observe a performance effect.
-  Typically, this means that the benchmark duration should be between 0.5 and 10 seconds.
-- *Deterministic*: the performance effects of the benchmark should be reproducible.
-  Even if the benchmark consists of, for example, concurrent code that is inherently
-  non-deterministic, the benchmark should behave relatively deterministically in terms
-  of the number of threads that it creates, the objects it allocates, and the total amount
-  of computation that it needs to do. For example, each of the benchmark repetitions should have
-  a relatively stable running time on major JVMs.
-- *New*: it must contain some new functionality that is not yet reflected in any of the existing
-  benchmarks. If there is significant overlap with an existing benchmark, then it should be
-  explained why the new benchmark is necessary.
-- *Self-contained*: it must be runnable within a single JVM instance, without any additional
-  software installation, operating system functionality, operating system services,
-  other running processes, online services, networked deployments or similar.
-  The JVM installation should be sufficient to run all the code of the benchmark.
-  For example, if the benchmark is exercising Apache Spark, then the workers should run
-  in the local mode, and if the benchmark targets a database, then it should be embedded.
-  The benefit is that the performance effects of the benchmark are easy to measure,
-  and the code is reproducible everywhere.
-- *Open-source*: the benchmark must consist of open-source code, with well-defined licenses.
-
-
-#### Code of Conduct
-
-We would also like to point you to the
-[Renaissance Code of Conduct](${tags("codeOfConductUrl")}). As a member
-of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
-the community.
-
-#### Release process
-
-While the open-source process is designed to accept contributions on an ongoing basis,
-we expect that this benchmark suite will grow considerably over the course of time.
-We will therefore regularly release snapshots of this suite, which will be readily available.
-These will be known as *minor releases*.
-
-Although we will strive to have high-quality, meaningful benchmarks, it will be necessary
-to proliferate the most important ones, and publish them as *major releases*.
-This way, researchers and developers will be able to test their software
-against those benchmarks that were deemed most relevant.
-A major release will still include all the benchmarks in the suite, but the list of highlighted
-benchmarks might evolve between major releases.
-
-Once a year, a committee convenes and discusses which important benchmarks were contributed
-since the last release, and should become highlighted in the next major release.
-The committee consists of members from various universities and companies,
-who are involved in research and development in virtual machine, compiler, memory management,
-static and dynamic analysis, and performance engineering.
-
-The committee goes over the benchmark list, and inspect the new ones since the last release.
-The members can recommend specific benchmarks for inclusion in the highlighted list,
-and can present their arguments about why those benchmarks should be included.
-In addition, the members can recommend the exclusion of some benchmarks.
-The committee members then vote, and the majority is the basis for a decision.
-
-The new major release is then bundled and the binaries are made available publicly.
-
-The current members of the committee are:
-
-- Walter Binder, Universita della Svizzera italiana
-- Steve Blackburn, Australian National University
-- Lubomir Bulej, Charles University
-- Gilles Duboscq, Oracle Labs
-- Francois Farquet, Oracle Labs
-- Vojtech Horky, Charles University
-- David Leopoldseder, Johannes Kepler University Linz
-- Guillaume Martres, Ecole Polytechnique Federale de Lausanne
-- Aleksandar Prokopec, Oracle Labs
-- Andrea Rosa, Universita della Svizzera italiana
-- Denys Shabalin, Ecole Polytechnique Federale de Lausanne
-- Petr Tuma, Charles University
-- Alex Villazon, Universidad Privada Boliviana
 """
   }
 }
