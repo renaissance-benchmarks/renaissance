@@ -8,7 +8,7 @@ lazy val actorsReactors = (project in file("."))
     name := "actors-reactors",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.12.14"
+    scalaVersion := "2.12.15"
   )
   .dependsOn(
     renaissanceCore % "provided",

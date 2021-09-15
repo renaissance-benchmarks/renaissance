@@ -5,7 +5,7 @@ lazy val twitterFinagle = (project in file("."))
     name := "twitter-finagle",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.12.14",
+    scalaVersion := "2.12.15",
     libraryDependencies := Seq(
       "com.twitter" %% "finagle-http" % "19.4.0",
       "com.twitter" %% "finagle-stats" % "19.4.0",
