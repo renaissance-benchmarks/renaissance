@@ -36,7 +36,7 @@ echo ""
 # Check that README.md is up-to-date.
 echo ":: Running pre-push markdown check ::"
 
-RENAISSANCE_GIT_VERSION=$(git describe --dirty=-SNAPSHOT)
+RENAISSANCE_GIT_VERSION=$(git describe --abbrev=7 --dirty=-SNAPSHOT)
 RENAISSANCE_VERSION=${RENAISSANCE_GIT_VERSION#v}
 
 java -jar "$ROOT_DIR/target/renaissance-gpl-$RENAISSANCE_VERSION.jar" --readme || \
