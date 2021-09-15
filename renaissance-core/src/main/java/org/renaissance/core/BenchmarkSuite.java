@@ -6,15 +6,25 @@ import org.renaissance.BenchmarkParameter;
 import org.renaissance.core.BenchmarkDescriptor.Configuration;
 import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Provides core services for a benchmark suite. In addition to querying
@@ -23,6 +33,8 @@ import java.util.function.Predicate;
  * services for loading extensions.
  */
 public final class BenchmarkSuite {
+  private static final Class<?> thisClass = BenchmarkSuite.class;
+  private static final Logger logger = Logging.getPackageLogger(thisClass);
 
   private final Path scratchRootDir;
   private final String configurationName;
@@ -193,26 +205,116 @@ public final class BenchmarkSuite {
 
   // Extension support
 
+  public static final class ExtensionException extends Exception {
+    ExtensionException(String message) {
+      super(message);
+    }
+
+    ExtensionException(String format, Object... args) {
+      super(String.format(format, args));
+    }
+  }
+
+  /** Read all manifests and find first one having given property.
+   * @returns Property value or null if not found.
+   */
+  private static String getManifestProperty(ClassLoader loader, String property) {
+    try {
+      Enumeration<URL> manifests = loader.getResources("META-INF/MANIFEST.MF");
+      while (manifests.hasMoreElements()) {
+        try {
+          URL manifestUrl = manifests.nextElement();
+          Properties props = new Properties();
+          InputStream manifest = manifestUrl.openStream();
+          props.load(manifest);
+          manifest.close();
+          if (props.containsKey(property)) {
+            return props.getProperty(property);
+          }
+        } catch (IOException e) {
+          continue;
+        }
+      }
+    } catch (IOException e) {
+      // Ignore.
+    }
+    return null;
+  }
+
+ /** Create classloader from list of Path. */
+  private static ClassLoader createClassLoaderFromPaths(
+    Collection<Path> classPath,
+    String name
+  ) throws ExtensionException {
+    URL[] classPathUrls = ModuleLoader.pathsToUrls(classPath);
+    if (logger.isLoggable(Level.CONFIG)) {
+      logger.config(String.format(
+        "Class path for %s: %s", name,
+        Arrays.stream(classPathUrls).map(Object::toString).collect(Collectors.joining(","))
+      ));
+    }
+
+    if (classPathUrls.length != classPath.size()) {
+      throw new ExtensionException("malformed URL(s) in classpath specification");
+    }
+
+    ClassLoader parent = ModuleLoader.class.getClassLoader();
+    return new URLClassLoader(classPathUrls, parent);
+  }
+
+
+  /** Loads extension from initialized class loader. */
+  static <T> Class<? extends T> loadFromClassLoader(
+    ClassLoader loader, String className, Class<T> baseClass
+  ) throws ExtensionException {
+    try {
+      Class<?> loadedClass = loader.loadClass(className);
+      return loadedClass.asSubclass(baseClass);
+
+    } catch (ClassNotFoundException e) {
+      // Be a bit more verbose, because the ClassNotFoundException
+      // on OpenJDK only returns the class name as error message.
+      throw new ExtensionException(
+        "could not find class '%s'", className
+      );
+    } catch (ClassCastException e) {
+      throw new ExtensionException(
+        "class '%s' is not a subclass of '%s'", className, baseClass.getName()
+      );
+    }
+  }
+
+
   /** Loads and instantiates an extension class with given arguments. */
   public <T> T createExtension(
     List<Path> classPath, String className, Class<T> baseClass, String[] args
-  ) throws ModuleLoadingException {
-    final Class<? extends T> extClass = ModuleLoader.loadExtension(
-      classPath, className, baseClass
-    );
-
-    return ModuleLoader.createExtension(extClass, args);
+  ) throws ExtensionException {
+    ClassLoader loader = createClassLoaderFromPaths(classPath, className);
+    final Class<? extends T> extClass = loadFromClassLoader(loader, className, baseClass);
+    try {
+      return ModuleLoader.createExtension(extClass, args);
+    } catch (ModuleLoadingException e) {
+      throw new ExtensionException(e.getMessage());
+    }
   }
 
   /** Loads and instantiates an extension specified in properties with given arguments. */
   public <T> T createDescribedExtension(
     List<Path> classPath, String propertyName, Class<T> baseClass, String[] args
-  ) throws ModuleLoadingException {
-    final Class<? extends T> extClass = ModuleLoader.loadDescribedExtension(
-      classPath, propertyName, baseClass
-    );
+  ) throws ExtensionException {
+    ClassLoader loader = createClassLoaderFromPaths(classPath, propertyName);
+    String className = getManifestProperty(loader, propertyName);
 
-    return ModuleLoader.createExtension(extClass, args);
+    if (className == null) {
+      throw new ExtensionException("classname to load not found in manifests");
+    }
+
+    final Class<? extends T> extClass = loadFromClassLoader(loader, className, baseClass);
+    try {
+      return ModuleLoader.createExtension(extClass, args);
+    } catch (ModuleLoadingException e) {
+      throw new ExtensionException(e.getMessage());
+    }
   }
 
 
