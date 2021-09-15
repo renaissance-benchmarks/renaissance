@@ -49,7 +49,7 @@ cp_reflink() {
 }
 
 get_jvm_workaround_args() {
-    if [ "$RENAISSANCE_JVM_MAJOR_VERSION" = "16" ]; then
+    if [ "$RENAISSANCE_JVM_MAJOR_VERSION" = "16" -o "$RENAISSANCE_JVM_MAJOR_VERSION" = "17" ]; then
         echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
         echo "--add-opens=java.base/java.util=ALL-UNNAMED"
         echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
