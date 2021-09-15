@@ -61,9 +61,10 @@ Another one can directly update the source files to match the desired format:
 $ tools/sbt/bin/sbt renaissanceFormat
 ```
 
-Moreover, the contents of the `README.md` and `CONTRIBUTING.md` files are automatically generated
+Moreover, the contents of the `README.md` file is automatically generated
 from the codebase. Updating those files can be done with the `--readme` command-line flag.
 Using sbt, one would do:
+
 ```
 $ tools/sbt/bin/sbt runMain org.renaissance.core.Launcher --readme
 ```

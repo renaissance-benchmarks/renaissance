@@ -24,7 +24,7 @@ import scala.util.Success
 import scala.util.Try
 
 /**
- * Generates README.md and CONTRIBUTING.md files for the suite.
+ * Generates README.md file for the suite.
  * This is currently part of the harness because is relies on
  * Scala string interpolation and collects information from
  * several (harness-internal) places.
@@ -53,7 +53,6 @@ object MarkdownGenerator {
     val tags = initTagValues(benchmarks, config.tags)
 
     writeFile(() => formatReadme(tags), "README.md")
-    writeFile(() => formatContribution(tags), "CONTRIBUTING.md")
   }
 
   private def parseArgs(args: Array[String]) = {
@@ -150,10 +149,6 @@ object MarkdownGenerator {
 
     val harnessConfigParser = new ConfigParser(tags.toMap)
     tags("harnessUsage") = harnessConfigParser.usage()
-
-    val exampleBenchmarkClass = "MyJavaBenchmark"
-    tags("exampleBenchmarkClass") = exampleBenchmarkClass
-    tags("exampleBenchmarkName") = "my-java-benchmark"
 
     tags.toMap
   }
@@ -377,191 +372,6 @@ When you find a bug in the suite, when you want to propose a new benchmark or
 ask for help, please, open an [Issue](https://github.com/renaissance-benchmarks/renaissance/issues)
 at the project page at GitHub.
 
-"""
-  }
-
-  def formatContribution(tags: Map[String, String]): String = {
-
-    s"""
-## Contribution Guide
-
-### Building the suite
-
-To build the suite and create the so-called fat JAR (or super JAR), you only
-need to run `sbt` build tool as follows:
-
-```
-$$ tools/sbt/bin/sbt assembly
-```
-
-This will retrieve all the dependencies, compile all the benchmark projects and the harness,
-bundle the JARs and create the final JAR under the `target` directory.
-
-
-### Adding a new benchmark
-
-To add a new benchmark to an existing group, identify the respective project
-in the `benchmarks` directory, and add a new top-level Scala (Java) class
-that extends (implements) the `${tags("benchmarkClass")}` interface.
-
-We recommend you also consult [Design overview document](documentation/design.md)
-to understand how the whole project is organized.
-
-Here is an example:
-
-```scala
-import org.renaissance._
-import org.renaissance.Benchmark._
-
-@Summary("Runs some performance-critical Java code.")
-final class ${tags("exampleBenchmarkClass")} extends ${tags("benchmarkClass")} {
-  override def run(context: ${tags("contextClass")}): ${tags("benchmarkResultClass")} = {
-    // This is the benchmark body, which in this case calls some Java code.
-    JavaCode.runSomeJavaCode()
-    // Return object for later validation of the operation result.
-    return new ${tags("exampleBenchmarkClass")}Result()
-  }
-}
-```
-
-Above, the name of the benchmark will be automatically generated from the class name.
-In this case, the name will be `${tags("exampleBenchmarkName")}`.
-
-To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
-create an additional `sbt` project in the `benchmarks` directory,
-using an existing project, such as `scala-stdlib`, as an example.
-The project will be automatically picked up by the build system
-and included into the Renaissance distribution.
-
-Once the benchmark has been added, one needs to make sure to be compliant with the code
-formatting of the project (rules defined in `.scalafmt.conf`).
-A convenient sbt task can do that check:
-```
-$$ tools/sbt/bin/sbt renaissanceFormatCheck
-```
-
-Another one can directly update the source files to match the desired format:
-```
-$$ tools/sbt/bin/sbt renaissanceFormat
-```
-
-Moreover, the contents of the `README.md` and `CONTRIBUTING.md` files are automatically generated
-from the codebase. Updating those files can be done with the `--readme` command-line flag.
-Using sbt, one would do:
-```
-$$ tools/sbt/bin/sbt runMain ${tags("launcherClassFull")} --readme
-```
-
-### IDE development
-
-#### IntelliJ
-
-In order to work on the project with IntelliJ, one needs to install the following plugins :
-  - `Scala` : part of the codebase uses Scala and Renaissance is organized in sbt projects.
-  - `scalafmt` (optional) : adds an action that can be triggered with `Code -> Reformat with scalafmt`
-  which will reformat the code according to the formatting rule defined in `.scalafmt.conf`
-  (same as the `renaissanceFormat` sbt task).
-
-Then, the root of this repository can be opened as an IntelliJ project.
-
-### Benchmark evaluation and release process
-
-In the open-source spirit, anyone can propose an additional benchmark by opening a pull request.
-The code is then inspected by the community -- typically, the suite maintainers are involved
-in the review, but anybody else is free join the discussion.
-During the discussion, the reviewers suggest the ways in which
-the benchmark could be improved.
-
-Before submitting a pull request, it is recommendable to open an issue first,
-and discuss the benchmark proposal with the maintainers.
-
-
-#### Benchmark criteria
-
-Here is some of the quality criteria that a new benchmark should satisfy:
-
-- *Stylistically conformant*: the benchmark code must conform to existing formatting
-  and stylistic standards in the suite.
-- *Meaningful*: it must represent a meaningful workload that is either frequently executed,
-  or it consists of code patterns and coding styles that are desired or arguably preferable,
-  or it encodes some important algorithm, a data structure or a framework,
-  or is significant in some other important way.
-  If the benchmark is automatically generated by some tool,
-  then it must be accompanied with a detailed explanation of why the workload is useful.
-- *Observable*: it must constitute a run that is observable and measurable. For example,
-  the run should last sufficiently long so that it is possible to accurately measure
-  its running time, gather profiling information or observe a performance effect.
-  Typically, this means that the benchmark duration should be between 0.5 and 10 seconds.
-- *Deterministic*: the performance effects of the benchmark should be reproducible.
-  Even if the benchmark consists of, for example, concurrent code that is inherently
-  non-deterministic, the benchmark should behave relatively deterministically in terms
-  of the number of threads that it creates, the objects it allocates, and the total amount
-  of computation that it needs to do. For example, each of the benchmark repetitions should have
-  a relatively stable running time on major JVMs.
-- *New*: it must contain some new functionality that is not yet reflected in any of the existing
-  benchmarks. If there is significant overlap with an existing benchmark, then it should be
-  explained why the new benchmark is necessary.
-- *Self-contained*: it must be runnable within a single JVM instance, without any additional
-  software installation, operating system functionality, operating system services,
-  other running processes, online services, networked deployments or similar.
-  The JVM installation should be sufficient to run all the code of the benchmark.
-  For example, if the benchmark is exercising Apache Spark, then the workers should run
-  in the local mode, and if the benchmark targets a database, then it should be embedded.
-  The benefit is that the performance effects of the benchmark are easy to measure,
-  and the code is reproducible everywhere.
-- *Open-source*: the benchmark must consist of open-source code, with well-defined licenses.
-
-
-#### Code of Conduct
-
-We would also like to point you to the
-[Renaissance Code of Conduct](${tags("codeOfConductUrl")}). As a member
-of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
-the community.
-
-#### Release process
-
-While the open-source process is designed to accept contributions on an ongoing basis,
-we expect that this benchmark suite will grow considerably over the course of time.
-We will therefore regularly release snapshots of this suite, which will be readily available.
-These will be known as *minor releases*.
-
-Although we will strive to have high-quality, meaningful benchmarks, it will be necessary
-to proliferate the most important ones, and publish them as *major releases*.
-This way, researchers and developers will be able to test their software
-against those benchmarks that were deemed most relevant.
-A major release will still include all the benchmarks in the suite, but the list of highlighted
-benchmarks might evolve between major releases.
-
-Once a year, a committee convenes and discusses which important benchmarks were contributed
-since the last release, and should become highlighted in the next major release.
-The committee consists of members from various universities and companies,
-who are involved in research and development in virtual machine, compiler, memory management,
-static and dynamic analysis, and performance engineering.
-
-The committee goes over the benchmark list, and inspect the new ones since the last release.
-The members can recommend specific benchmarks for inclusion in the highlighted list,
-and can present their arguments about why those benchmarks should be included.
-In addition, the members can recommend the exclusion of some benchmarks.
-The committee members then vote, and the majority is the basis for a decision.
-
-The new major release is then bundled and the binaries are made available publicly.
-
-The current members of the committee are:
-
-- Walter Binder, Universita della Svizzera italiana
-- Steve Blackburn, Australian National University
-- Lubomir Bulej, Charles University
-- Gilles Duboscq, Oracle Labs
-- Francois Farquet, Oracle Labs
-- Vojtech Horky, Charles University
-- David Leopoldseder, Johannes Kepler University Linz
-- Guillaume Martres, Ecole Polytechnique Federale de Lausanne
-- Aleksandar Prokopec, Oracle Labs
-- Andrea Rosa, Universita della Svizzera italiana
-- Denys Shabalin, Ecole Polytechnique Federale de Lausanne
-- Petr Tuma, Charles University
-- Alex Villazon, Universidad Privada Boliviana
 """
   }
 }
