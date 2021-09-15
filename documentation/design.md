@@ -14,6 +14,8 @@ which must be implemented by each benchmark, and the annotations in the
 `Benchmark` interface name space, which are used to provide
 benchmark meta data, such as a summary or a detailed description.
 Consequently, each *subproject* depends on the *core* project.
+The *core* project also provides APIs that a benchmark needs to work with,
+such as the runtime configuration or the policy.
 
 Classes from the *core* are loaded (when Renaissance is started) by the default
 classloader. Classes from other projects (including the harness and individual benchmarks)
@@ -25,6 +27,13 @@ The *harness* project implements the functionality necessary to parse the input
 arguments, to run the benchmarks, to generate documentation, and so on. The *harness*
 is written in a mix of Java and Scala, and is loaded by the *core* in a separate classloader
 to ensure clean environment for running the benchmarks.
+
+The set of subprojects in the `benchmarks` directory are the individual groups of benchmarks
+that share a common set of dependencies. A group is typically thematic, relating to
+a particular framework or a JVM language, and benchmarks in different groups depend
+on a different set of libraries, or even the same libraries with different versions.
+The bundling mechanism of the suite takes care that the dependencies of the different groups
+never clash with each other.
 
 The JARs of the subprojects (benchmarks and harness) are copied as generated
 *resources* and embedded into the resulting JAR artifact.

@@ -14,27 +14,14 @@ This will retrieve all the dependencies, compile all the benchmark projects and 
 bundle the JARs and create the final JAR under the `target` directory.
 
 
-### Code organization and internals
-
-The code is organized into three main parts:
-
-- `renaissance-core`: these are the core APIs that a benchmark needs to work with,
-  such as the runtime configuration, the benchmark base class or the policy.
-- `renaissance-harness`: this is the overall suite project, which is responsible for
-  parsing the arguments, loading the classes, and running the benchmark.
-- a set of projects in the `benchmarks` directory: these are the individual groups of benchmarks
-  that share a common set of dependencies. A group is typically thematic, relating to
-  a particular framework or a JVM language, and benchmarks in different groups depend
-  on a different set of libraries, or even the same libraries with different versions.
-  The bundling mechanism of the suite takes care that the dependencies of the different groups
-  never clash with each other.
-
-
 ### Adding a new benchmark
 
 To add a new benchmark to an existing group, identify the respective project
 in the `benchmarks` directory, and add a new top-level Scala (Java) class
 that extends (implements) the `Benchmark` interface.
+
+We recommend you also consult [Design overview document](documentation/design.md)
+to understand how the whole project is organized.
 
 Here is an example:
 
