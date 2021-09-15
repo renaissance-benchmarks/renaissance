@@ -1,6 +1,24 @@
 
 ## Contribution Guide
 
+This document provides a high-level overview of how to contribute to
+Renaissance Benchmark Suite.
+Details are described in standalone files in the `documentation`
+subdirectory inside project repository (tarball).
+
+We would also like to point you to the
+[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/blob/master/CODE-OF-CONDUCT.md). As a member
+of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
+the community.
+
+
+### Setting up your environment
+
+Renaissance Benchmark Suite is built via SBT and is written in both
+Java and Scala.
+Several tips on how to setup your IDE are in `documentation/ide.md`.
+
+
 ### Building the suite
 
 To build the suite and create the so-called fat JAR (or super JAR), you only
@@ -14,74 +32,11 @@ This will retrieve all the dependencies, compile all the benchmark projects and 
 bundle the JARs and create the final JAR under the `target` directory.
 
 
-### Adding a new benchmark
+### Making a contribution
 
-To add a new benchmark to an existing group, identify the respective project
-in the `benchmarks` directory, and add a new top-level Scala (Java) class
-that extends (implements) the `Benchmark` interface.
-
-We recommend you also consult [Design overview document](documentation/design.md)
-to understand how the whole project is organized.
-
-Here is an example:
-
-```scala
-import org.renaissance._
-import org.renaissance.Benchmark._
-
-@Summary("Runs some performance-critical Java code.")
-final class MyJavaBenchmark extends Benchmark {
-  override def run(context: BenchmarkContext): BenchmarkResult = {
-    // This is the benchmark body, which in this case calls some Java code.
-    JavaCode.runSomeJavaCode()
-    // Return object for later validation of the operation result.
-    return new MyJavaBenchmarkResult()
-  }
-}
-```
-
-Above, the name of the benchmark will be automatically generated from the class name.
-In this case, the name will be `my-java-benchmark`.
-
-To create a new group of benchmarks (for example, benchmarks that depend on a new framework),
-create an additional `sbt` project in the `benchmarks` directory,
-using an existing project, such as `scala-stdlib`, as an example.
-The project will be automatically picked up by the build system
-and included into the Renaissance distribution.
-
-Once the benchmark has been added, one needs to make sure to be compliant with the code
-formatting of the project (rules defined in `.scalafmt.conf`).
-A convenient sbt task can do that check:
-```
-$ tools/sbt/bin/sbt renaissanceFormatCheck
-```
-
-Another one can directly update the source files to match the desired format:
-```
-$ tools/sbt/bin/sbt renaissanceFormat
-```
-
-Moreover, the contents of the `README.md` file is automatically generated
-from the codebase. Updating those files can be done with the `--readme` command-line flag.
-Using sbt, one would do:
-
-```
-$ tools/sbt/bin/sbt runMain org.renaissance.core.Launcher --readme
-```
-
-### IDE development
-
-#### IntelliJ
-
-In order to work on the project with IntelliJ, one needs to install the following plugins :
-  - `Scala` : part of the codebase uses Scala and Renaissance is organized in sbt projects.
-  - `scalafmt` (optional) : adds an action that can be triggered with `Code -> Reformat with scalafmt`
-  which will reformat the code according to the formatting rule defined in `.scalafmt.conf`
-  (same as the `renaissanceFormat` sbt task).
-
-Then, the root of this repository can be opened as an IntelliJ project.
-
-### Benchmark evaluation and release process
+Contribution to Renaissance Benchmark Suite is not only about adding new benchmarks.
+We welcome authors of new plugins, testers of not-so-common platforms and we are
+open to general discussion about improving the suite too.
 
 In the open-source spirit, anyone can propose an additional benchmark by opening a pull request.
 The code is then inspected by the community -- typically, the suite maintainers are involved
@@ -92,8 +47,15 @@ the benchmark could be improved.
 Before submitting a pull request, it is recommendable to open an issue first,
 and discuss the benchmark proposal with the maintainers.
 
+More details about the actual source code organization and guides can be found in the following
+files.
 
-#### Benchmark criteria
+ * Overall suite design: `documentation/design.md`
+ * Adding a new benchmark: `documentation/adding-benchmark.md`
+ * Adding a plugin: `documentation/plugins.md`
+
+
+### Benchmark evaluation and release process
 
 Here is some of the quality criteria that a new benchmark should satisfy:
 
@@ -129,12 +91,7 @@ Here is some of the quality criteria that a new benchmark should satisfy:
 - *Open-source*: the benchmark must consist of open-source code, with well-defined licenses.
 
 
-#### Code of Conduct
 
-We would also like to point you to the
-[Renaissance Code of Conduct](https://github.com/renaissance-benchmarks/renaissance/blob/master/CODE-OF-CONDUCT.md). As a member
-of the Renaissance community, make sure that you follow it to guarantee an enjoyable experience for every member of
-the community.
 
 #### Release process
 
