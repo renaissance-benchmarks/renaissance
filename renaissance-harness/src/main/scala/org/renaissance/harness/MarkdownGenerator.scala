@@ -335,7 +335,7 @@ the plugin (or policy) that was last mentioned on the command line. Whenever a `
 arguments to that plugin (or policy).
 
 
-#### Complete list of command-line options
+### Complete list of command-line options
 
 The following is a complete list of command-line options.
 
