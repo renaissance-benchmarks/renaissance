@@ -16,7 +16,7 @@ ROOT_DIR="$(git rev-parse --show-toplevel || realpath "$( dirname "$0" )/../../"
 CACHE_DIR="$HOME/.prebuilt"
 
 # Raw version as produced by git
-RENAISSANCE_GIT_VERSION=$(git describe --tags --always --dirty=-SNAPSHOT || echo "ci-SNAPSHOT" )
+RENAISSANCE_GIT_VERSION=$(git describe --tags --always --abbrev=7 --dirty=-SNAPSHOT || echo "ci-SNAPSHOT" )
 
 # Strip leading 'v' from the git-produced version
 RENAISSANCE_VERSION=${RENAISSANCE_GIT_VERSION#v}
