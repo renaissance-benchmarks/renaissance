@@ -22,8 +22,10 @@ RENAISSANCE_GIT_VERSION=$(git describe --tags --always --abbrev=7 --dirty=-SNAPS
 RENAISSANCE_VERSION=${RENAISSANCE_GIT_VERSION#v}
 
 # Try to guess JVM version (and replace 1.8 with 8)
+# The awful splitting and use of 'NN*' instead of 'N\+' is because
+# we need to support non-GNU sed too
 RENAISSANCE_JVM_MAJOR_VERSION="$( java -version 2>&1 \
-    | sed -n -e '/version[[:blank:]]\+"/ { s/.*version[[:blank:]]\+"\([^"]*\)".*/\1/; s/1[.]8/8/; s/^\([^.]*\)[.].*/\1/; p }' \
+    | sed -n -e '/version[[:blank:]][[:blank:]]*"/{' -e 's/.*version[[:blank:]][[:blank:]]*"\([^"]*\)".*/\1/; s/1[.]8/8/; s/^\([^.]*\)[.].*/\1/; p' -e '}' \
     || echo 8 )"
 
 # The base bundle
@@ -49,7 +51,7 @@ cp_reflink() {
 }
 
 get_jvm_workaround_args() {
-    if [ "$RENAISSANCE_JVM_MAJOR_VERSION" = "16" ]; then
+    if [ "$RENAISSANCE_JVM_MAJOR_VERSION" = "16" -o "$RENAISSANCE_JVM_MAJOR_VERSION" = "17" ]; then
         echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
         echo "--add-opens=java.base/java.util=ALL-UNNAMED"
         echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
