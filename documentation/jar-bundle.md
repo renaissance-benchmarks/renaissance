@@ -1,7 +1,7 @@
 # Renaissance JAR bundle content
 
 This document describes the structure of the JAR file with the benchmark
-(e.g., `target/renaissance-gpl-0.12.0-2-SNAPSHOT.jar`).
+(e.g., `target/renaissance-gpl-0.13.0-2-SNAPSHOT.jar`).
 
 Directly inside the JAR are classes from the `renaissance-core` subproject
 that also contain the launcher. This also ensures that these classes are
