@@ -7,3 +7,4 @@ Further documentation is available in the following files.
  * [plugins.md](plugins.md) - plugin internals and quick how-to on writing your own
  * [ide.md](ide.md) - tips for setting-up your IDE
  * [jar-bundle.md](jar-bundle.md) - contents of the fat JAR with the suite
+ * [making-release.md](making-release.md) - flight plan for making Renaissance releases
