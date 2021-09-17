@@ -21,7 +21,11 @@ lazy val database = (project in file("."))
         ExclusionRule("net.openhft", "chronicle-bytes"),
         ExclusionRule("net.openhft", "chronicle-threads"),
         ExclusionRule("org.slf4j", "slf4j-api")
-      )
+      ),
+      // Force newer JNA to support more platforms/architectures.
+      "net.java.dev.jna" % "jna-platform" % "5.9.0",
+      // Add simple binding to silence SLF4J warnings.
+      "org.slf4j" % "slf4j-simple" % "1.7.32"
     )
   )
   .dependsOn(
