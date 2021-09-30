@@ -187,16 +187,14 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
     os match {
       case unixOs: UnixOperatingSystemMXBean =>
         // Gag possible exceptions.
-        Try(
-          result ++= Seq(
-            "phys_mem_total" -> unixOs.getTotalPhysicalMemorySize.toJson,
-            "phys_mem_free" -> unixOs.getFreePhysicalMemorySize.toJson,
-            "virt_mem_committed" -> unixOs.getCommittedVirtualMemorySize.toJson,
-            "swap_space_total" -> unixOs.getTotalSwapSpaceSize.toJson,
-            "swap_space_free" -> unixOs.getFreeSwapSpaceSize.toJson,
-            "max_fd_count" -> unixOs.getMaxFileDescriptorCount.toJson,
-            "open_fd_count" -> unixOs.getOpenFileDescriptorCount.toJson
-          )
+        result ++= Seq(
+          "phys_mem_total" -> Try(unixOs.getTotalPhysicalMemorySize).toOption.toJson,
+          "phys_mem_free" -> Try(unixOs.getFreePhysicalMemorySize).toOption.toJson,
+          "virt_mem_committed" -> Try(unixOs.getCommittedVirtualMemorySize).toOption.toJson,
+          "swap_space_total" -> Try(unixOs.getTotalSwapSpaceSize).toOption.toJson,
+          "swap_space_free" -> Try(unixOs.getFreeSwapSpaceSize).toOption.toJson,
+          "max_fd_count" -> Try(unixOs.getMaxFileDescriptorCount).toOption.toJson,
+          "open_fd_count" -> Try(unixOs.getOpenFileDescriptorCount).toOption.toJson
         )
 
       // No extra information to collect on non-Unix systems.
