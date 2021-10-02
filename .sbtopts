@@ -1,7 +1,0 @@
-# SBT laucher evicts most memory-related JVM options and attempts to determine
-# their values itself based on the amount of memory passed to the -mem option.
-# The code cache size is set to 1/8 of the -mem value, resulting in 128M code
-# cache for the default -mem value of 1024. This is not enough for a clean
-# build, in which the code cache size grows to slightly over 200M. Setting the
-# -mem option to 2048 gives us 256M of code cache.
--mem 2048
