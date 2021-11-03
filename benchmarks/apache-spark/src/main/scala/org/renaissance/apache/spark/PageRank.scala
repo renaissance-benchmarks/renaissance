@@ -13,7 +13,6 @@ import org.renaissance.apache.spark.ResourceUtil.sourceFromZipResource
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.regex.Pattern
-import scala.collection.JavaConverters._
 import scala.io.BufferedSource
 
 @Name("page-rank")
@@ -76,6 +75,8 @@ final class PageRank extends Benchmark with SparkUtil {
     lineCount: Int,
     outputFile: Path
   ): Path = {
+    import scala.jdk.CollectionConverters._
+
     try {
       var lines = source.getLines().dropWhile(_.startsWith("#"))
       if (lineCount >= 0) {
@@ -83,7 +84,7 @@ final class PageRank extends Benchmark with SparkUtil {
       }
 
       // Write output using UTF-8 encoding.
-      Files.write(outputFile, lines.toSeq.asJavaCollection)
+      Files.write(outputFile, lines.toSeq.asJava)
     } finally {
       source.close()
     }
@@ -142,10 +143,12 @@ final class PageRank extends Benchmark with SparkUtil {
       // by rank, and the ordering is then relaxed so that neighboring ranks that
       // differ only slightly are considered equal.
       //
-      override def validate() = {
+      override def validate(): Unit = {
+        import scala.jdk.CollectionConverters._
+
         Assert.assertEquals(expectedRankCountParam, rankCount, "ranks count")
 
-        val preSortedEntries = ranks.sortBy { case (_, rank) => rank }.collect
+        val preSortedEntries = ranks.sortBy { case (_, rank) => rank }.collect()
         val sortedEntries = relaxedRanks(preSortedEntries, rankDifferenceLimit).sortBy {
           case (url, rank) => (rank, url)
         }
@@ -154,7 +157,7 @@ final class PageRank extends Benchmark with SparkUtil {
         Validators.hashing(expectedRankHashParam, rankLines.asJava).validate()
       }
 
-      private def relaxedRanks(entries: Seq[(Int, Double)], diffLimit: Double) = {
+      private def relaxedRanks(entries: Array[(Int, Double)], diffLimit: Double) = {
         var prevRank = entries.head._2
         var groupRank = prevRank
 

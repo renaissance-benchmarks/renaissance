@@ -59,11 +59,10 @@ trait SparkUtil {
     //   "(via SPARK_LOCAL_DIRS in mesos/standalone/kubernetes and LOCAL_DIRS in YARN)."
     "org.apache.spark.SparkConf" -> Level.ERROR,
     // Masks the following warnings:
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeSystemBLAS"
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeRefBLAS"
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeSystemLAPACK"
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeRefLAPACK"
-    "com.github.fommil.netlib" -> Level.ERROR,
+    //   "Failed to load implementation from: dev.ludovic.netlib.blas.JNIBLAS"
+    //   "Failed to load implementation from: dev.ludovic.netlib.blas.ForeignLinkerBLAS"
+    //   "Failed to load implementation from: dev.ludovic.netlib.lapack.JNILAPACK"
+    "dev.ludovic.netlib" -> Level.ERROR,
     // Masks the following warning:
     //   "URL.setURLStreamHandlerFactory failed to set FsUrlStreamHandlerFactory"
     "org.apache.spark.sql.internal.SharedState" -> Level.ERROR
@@ -126,7 +125,7 @@ trait SparkUtil {
   }
 
   private def dropFirstLine(lines: RDD[String]): RDD[String] = {
-    val first = lines.first
+    val first = lines.first()
     lines.filter { line => line != first }
   }
 
@@ -136,7 +135,7 @@ trait SparkUtil {
 
   // Used to find sources of log messages.
   private def printCurrentLoggers() = {
-    import scala.jdk.CollectionConverters.enumerationAsScalaIteratorConverter
+    import scala.jdk.CollectionConverters._
 
     println(
       LogManager.getCurrentLoggers.asScala

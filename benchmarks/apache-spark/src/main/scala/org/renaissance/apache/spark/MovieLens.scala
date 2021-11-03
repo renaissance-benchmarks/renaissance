@@ -17,7 +17,6 @@ import org.renaissance.apache.spark.ResourceUtil.writeResourceToFile
 import java.net.URL
 import java.nio.file.Path
 import scala.collection.Map
-import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
 @Name("movie-lens")
 @Group("apache-spark")
@@ -110,7 +109,7 @@ final class MovieLens extends Benchmark with SparkUtil {
       val lines = sparkContext.parallelize(linesFromUrl(url))
       val ratings = parseRatingsCsvLines(lines).values.filter { _.rating > 0.0 }
 
-      if (ratings.isEmpty) {
+      if (ratings.isEmpty()) {
         // TODO Fail the benchmark here.
         sys.error("No ratings provided.")
       } else {
@@ -206,9 +205,9 @@ final class MovieLens extends Benchmark with SparkUtil {
 
       // Create a naive baseline and compare it with the best model.
 
-      val meanRating = training.union(validation).map(_.rating).mean
+      val meanRating = training.union(validation).map(_.rating).mean()
       val baselineRmse = math.sqrt(
-        test.map(x => (meanRating - x.rating) * (meanRating - x.rating)).mean
+        test.map(x => (meanRating - x.rating) * (meanRating - x.rating)).mean()
       )
 
       val improvement = (baselineRmse - testRmse) / baselineRmse * 100
@@ -248,6 +247,8 @@ final class MovieLens extends Benchmark with SparkUtil {
   }
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
+    import scala.jdk.CollectionConverters._
+
     //
     // Without a checkpoint directory set, JMH runs of this
     // benchmark in Travis CI tend to crash with stack overflow.
