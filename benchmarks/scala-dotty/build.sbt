@@ -5,7 +5,7 @@ lazy val scalaDotty = (project in file("."))
     name := "scala-dotty",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.13.6",
+    scalaVersion := "2.13.7",
     scalacOptions += "-Ytasty-reader",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala3-compiler_3" % "3.0.0",

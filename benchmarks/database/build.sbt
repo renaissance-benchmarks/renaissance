@@ -5,7 +5,7 @@ lazy val database = (project in file("."))
     name := "database",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.13.6",
+    scalaVersion := "2.13.7",
     libraryDependencies ++= Seq(
       "com.github.jnr" % "jnr-posix" % "3.0.29",
       "org.apache.commons" % "commons-math3" % "3.6.1",
