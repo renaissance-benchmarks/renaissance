@@ -115,30 +115,11 @@ final class FinagleChirper extends Benchmark {
           }
       }
 
-      val compInt = new Comparator[Integer] {
-        override def compare(c1: Integer, c2: Integer): Int = {
-          c1.compareTo(c2);
-        }
-        def naturalOrder(): Comparator[Integer] =
-          return new Comparator[Integer] {
-            override def compare(c1: Integer, c2: Integer): Int = {
-              c1.compareTo(c2);
-            }
-            override def reversed(): Comparator[Integer] = {
-              Comparator.reverseOrder[Integer];
-            }
-          }
-      }
-
       counts
         .entrySet()
         .parallelStream()
-        .map[Integer](
-          new java.util.function.Function[Entry[String], Integer] {
-            override def apply(t: Entry[String]): Integer = t.getCount
-          }
-        )
-        .max(compInt.naturalOrder())
+        .map[Integer]((t: Entry[String]) => t.getCount)
+        .max(Comparator.naturalOrder[Integer]())
         .get
         .toLong
     }
