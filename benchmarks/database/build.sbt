@@ -23,7 +23,7 @@ lazy val database = (project in file("."))
         ExclusionRule("org.slf4j", "slf4j-api")
       ),
       // Force newer JNA to support more platforms/architectures.
-      "net.java.dev.jna" % "jna-platform" % "5.9.0",
+      "net.java.dev.jna" % "jna-platform" % "5.10.0",
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % "1.7.32"
     )

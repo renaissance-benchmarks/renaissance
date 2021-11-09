@@ -12,7 +12,7 @@ lazy val scalaDotty = (project in file("."))
       // The following is required to compile the workload sources.
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       // Force newer JNA to support more platforms/architectures.
-      "net.java.dev.jna" % "jna" % "5.9.0"
+      "net.java.dev.jna" % "jna" % "5.10.0"
     )
   )
   .dependsOn(
