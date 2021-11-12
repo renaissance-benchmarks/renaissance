@@ -213,7 +213,10 @@ lazy val renaissance: Project = {
     "java.base/java.lang.invoke",
     "java.base/java.util",
     "java.base/java.nio",
-    "java.base/sun.nio.ch"
+    "java.base/sun.nio.ch",
+    "java.management/sun.management",
+    "java.management/sun.management.counter",
+    "java.management/sun.management.counter.perf"
   )
 
   val p = Project("renaissance", file("."))
