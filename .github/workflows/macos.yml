@@ -1,0 +1,52 @@
+name: MacOS (legacy)
+on: [push, pull_request]
+jobs:
+  macos:
+    strategy:
+      matrix:
+        java: [ '8', '11', '13', '15' ]
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup correct Java version
+        uses: actions/setup-java@v2
+        with:
+          distribution: adopt
+          java-version: ${{ matrix.java }}
+
+      - name: Environment configuration
+        shell: bash
+        run: "tools/ci/pre-show-env.sh"
+
+      - name: Build base
+        shell: bash
+        run: "tools/ci/build-base.sh"
+
+      - name: Build JMH
+        shell: bash
+        run: "tools/ci/build-jmh.sh"
+
+      - name: Stop SBT
+        shell: bash
+        run: "tools/ci/stop-sbt.sh"
+
+      - name: Check JMH
+        shell: bash
+        run: "tools/ci/check-jmh.sh"
+
+      - name: Dummy run and environment configuration
+        shell: bash
+        run: "tools/ci/bench-show-env.sh"
+
+      - name: Run the suite
+        shell: bash
+        run: "tools/ci/bench-base.sh"
+
+      - name: Run the suite with JMH
+        shell: bash
+        run: "tools/ci/bench-jmh.sh"

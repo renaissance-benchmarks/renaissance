@@ -1,4 +1,4 @@
-name: build
+name: Main
 on: [push, pull_request]
 jobs:
   checks:
@@ -9,6 +9,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - name: Cache SBT
         uses: actions/cache@v2
         with:
@@ -17,6 +18,7 @@ jobs:
             ~/.sbt
             ~/.cache/coursier
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+
       - name: Check file encoding"
         shell: bash
         run: tools/ci/check-encoding.sh
@@ -42,30 +44,15 @@ jobs:
         run: tools/ci/check-markdown.sh
 
   linux:
-    strategy:
-      matrix:
-        image:
-          - openjdk8
-          - openjdk9
-          - openjdk10
-          - openjdk11
-          - openjdk12
-          - openjdk13
-          - openjdk14
-          - openjdk15
-          - openjdk16
-          - openjdk17
-          - openj9-openjdk8
-          - openj9-openjdk11
-          - openj9-openjdk16
     runs-on: ubuntu-latest
-    container: "renaissancebench/buildenv:${{ matrix.image }}"
+    container: "renaissancebench/buildenv:openjdk17"
     continue-on-error: true
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
       - name: Cache SBT
         uses: actions/cache@v2
         with:
@@ -104,9 +91,6 @@ jobs:
         run: "tools/ci/bench-jmh.sh"
 
   macos:
-    strategy:
-      matrix:
-        java: [ '8', '11', '13', '15', '17' ]
     runs-on: macos-latest
     continue-on-error: true
     steps:
@@ -114,21 +98,15 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Setup correct Java version
-        uses: actions/setup-java@v2
-        if: ${{ matrix.java != '17' }}
-        with:
-          distribution: adopt
-          java-version: ${{ matrix.java }}
+
       - name: Fetch JDK 17
-        if: ${{ matrix.java == '17' }}
         run: |
           aria2c -d ${{ runner.temp }} -o openjdk-17_macos-x64_bin.tar.gz https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/openjdk-17_macos-x64_bin.tar.gz
+
       - name: Setup JDK 17
         uses: actions/setup-java@v2
-        if: ${{ matrix.java == '17' }}
         with:
-          java-version: ${{ matrix.java }}
+          java-version: 17
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/openjdk-17_macos-x64_bin.tar.gz
 
@@ -165,9 +143,6 @@ jobs:
         run: "tools/ci/bench-jmh.sh"
 
   windows:
-    strategy:
-      matrix:
-        java: [ '8', '11' , '13', '15', '17' ]
     runs-on: windows-latest
     continue-on-error: true
     steps:
@@ -175,21 +150,15 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Setup correct Java version
-        uses: actions/setup-java@v2
-        if: ${{ matrix.java != '17' }}
-        with:
-          distribution: adopt
-          java-version: ${{ matrix.java }}
+
       - name: Fetch JDK 17
-        if: ${{ matrix.java == '17' }}
         run: |
           aria2c -d ${{ runner.temp }} -o openjdk-17_windows-x64_bin.zip https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/openjdk-17_windows-x64_bin.zip
+
       - name: Setup JDK 17
         uses: actions/setup-java@v2
-        if: ${{ matrix.java == '17' }}
         with:
-          java-version: ${{ matrix.java }}
+          java-version: 17
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/openjdk-17_windows-x64_bin.zip
 
@@ -220,40 +189,3 @@ jobs:
       - name: Run the suite with JMH
         shell: bash
         run: "tools/ci/bench-jmh.sh"
-
-  plugins:
-    runs-on: ubuntu-latest
-    container: "renaissancebench/buildenv:openjdk8-with-ant-gcc"
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Cache SBT
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.cache/coursier
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
-
-      - name: Environment configuration
-        shell: bash
-        run: "tools/ci/pre-show-env.sh"
-
-      - name: Build base
-        shell: bash
-        run: "tools/ci/build-base.sh"
-
-      - name: Build plugins
-        shell: bash
-        run: "tools/ci/build-plugins.sh"
-
-      - name: Stop SBT
-        shell: bash
-        run: "tools/ci/stop-sbt.sh"
-
-      - name: Run the suite with all plugins
-        shell: bash
-        run: "tools/ci/bench-plugins.sh"
