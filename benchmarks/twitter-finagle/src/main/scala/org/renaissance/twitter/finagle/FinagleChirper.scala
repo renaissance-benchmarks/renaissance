@@ -31,6 +31,7 @@ import java.util.Comparator
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection._
+import scala.collection.parallel.CollectionConverters._
 import scala.io.Source
 import scala.util.hashing.byteswap32
 
@@ -52,17 +53,17 @@ final class FinagleChirper extends Benchmark {
     var requestCount = 0
     var postCount = 0
 
-    def analyze[T](feed: Seq[String], zero: T, f: String => T, op: (T, T) => T): T = {
+    def analyze[T](feed: SeqView[String], zero: T, f: String => T, op: (T, T) => T): T = {
       val a = new Accumulator(zero)(op)
       for (msg <- feed) a.accumulate(f(msg))
       a.get()
     }
 
-    def longestMessageInFeed(feed: Seq[String]): String = {
+    def longestMessageInFeed(feed: SeqView[String]): String = {
       analyze[String](feed, "", x => x, (x, y) => if (x.length > y.length) x else y)
     }
 
-    def longestMessageInAllFeeds(allFeeds: Seq[Seq[String]]): String = {
+    def longestMessageInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
       var result = ""
       for (feed <- allFeeds) {
         val r = longestMessageInFeed(feed)
@@ -71,7 +72,7 @@ final class FinagleChirper extends Benchmark {
       result
     }
 
-    def hashStartCountInAllFeeds(allFeeds: Seq[Seq[String]]): Long = {
+    def hashStartCountInAllFeeds(allFeeds: Seq[IndexedSeqView[String]]): Long = {
       var result = 0L
       for (feed <- allFeeds) {
         result += analyze[Long](
@@ -86,7 +87,7 @@ final class FinagleChirper extends Benchmark {
       result
     }
 
-    def longestRechirpInAllFeeds(allFeeds: Seq[Seq[String]]): String = {
+    def longestRechirpInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
       var result = ""
       for (feed <- allFeeds) {
         val s = analyze[String](
@@ -104,7 +105,7 @@ final class FinagleChirper extends Benchmark {
       result
     }
 
-    def mostRechirpsInAllFeeds(allFeeds: Seq[(String, Seq[String])]): Long = {
+    def mostRechirpsInAllFeeds(allFeeds: Seq[(String, SeqView[String])]): Long = {
       val counts = ConcurrentHashMultiset.create[String]()
       allFeeds.par.foreach {
         case (username, feed) =>
@@ -114,30 +115,11 @@ final class FinagleChirper extends Benchmark {
           }
       }
 
-      val compInt = new Comparator[Integer] {
-        override def compare(c1: Integer, c2: Integer): Int = {
-          c1.compareTo(c2);
-        }
-        def naturalOrder(): Comparator[Integer] =
-          return new Comparator[Integer] {
-            override def compare(c1: Integer, c2: Integer): Int = {
-              c1.compareTo(c2);
-            }
-            override def reversed(): Comparator[Integer] = {
-              Comparator.reverseOrder[Integer];
-            }
-          }
-      }
-
       counts
         .entrySet()
         .parallelStream()
-        .map[Integer](
-          new java.util.function.Function[Entry[String], Integer] {
-            override def apply(t: Entry[String]): Integer = t.getCount
-          }
-        )
-        .max(compInt.naturalOrder())
+        .map[Integer]((t: Entry[String]) => t.getCount)
+        .max(Comparator.naturalOrder[Integer]())
         .get
         .toLong
     }
@@ -234,7 +216,7 @@ final class FinagleChirper extends Benchmark {
               val hash = byteswap32(username.length + username.charAt(0))
               val offset = math.abs(hash) % (messages.length - startingFeedSize)
               val startingMessages = messages.slice(offset, offset + startingFeedSize)
-              feeds(username) = startingMessages.to[mutable.ArrayBuffer]
+              feeds(username) = startingMessages.to(mutable.ArrayBuffer)
             }
             println("Resetting master, feed map size: " + feeds.size)
             val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
@@ -490,7 +472,7 @@ final class FinagleChirper extends Benchmark {
     val source =
       Source.fromInputStream(getResourceStream(resourceName), StandardCharsets.UTF_8.name)
     try {
-      source.getLines().map { _.trim }.filterNot { _.isEmpty }.to[IndexedSeq]
+      source.getLines().map { _.trim }.filterNot { _.isEmpty }.toIndexedSeq
     } finally {
       source.close()
     }
