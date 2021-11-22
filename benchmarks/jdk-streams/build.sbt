@@ -5,7 +5,7 @@ lazy val jdkStreams = (project in file("."))
     name := "jdk-streams",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.13.6"
+    scalaVersion := "2.13.7"
   )
   .dependsOn(
     renaissanceCore % "provided"

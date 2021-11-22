@@ -5,7 +5,7 @@ lazy val rx = (project in file("."))
     name := "rx",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.13.6",
+    scalaVersion := "2.13.7",
     libraryDependencies ++= Seq(
       "io.reactivex" % "rxjava" % "1.3.7"
     )
