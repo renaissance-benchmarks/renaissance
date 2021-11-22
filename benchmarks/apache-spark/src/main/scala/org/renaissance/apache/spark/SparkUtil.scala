@@ -27,11 +27,21 @@ trait SparkUtil {
 
   private val portAllocationMaxRetries: Int = 16
 
-  // Copied from https://github.com/cdarlint/winutils
-  // The mapping is filename to its size (for a basic sanity checking)
+  /*
+   * Hadoop binaries for Windows.
+   *
+   * Downloaded from https://github.com/kontext-tech/winutils.
+   *
+   * Make sure the included binaries match the version of Hadoop
+   * coming with Spark. For Spark version 3.2.0, the corresponding
+   * Hadoop version is 3.3.0.
+   *
+   * When updating the binaries, make sure to update the file sizes
+   * in the map below -- they are used for basic sanity checks.
+   */
   private val hadoopExtrasForWindows = Map(
     "winutils.exe" -> 112640,
-    "hadoop.dll" -> 85504
+    "hadoop.dll" -> 87040
   )
 
   // Windows libraries that should be System.load()-ed
@@ -147,15 +157,17 @@ trait SparkUtil {
   }
 
   /**
-   * Spark version 3.1.2 uses Hadoop version 3.2.0. The dependencies
-   * do not include a binary zip for Hadoop on Windows. Instead,
-   * Renaissance includes winutils.exe as a resource, downloaded from
-   * https://github.com/cdarlint/winutils/tree/master/hadoop-3.2.0/bin
+   * Even though Hadoop is a dependency for Spark benchmarks, the
+   * artifacts do not include binaries (winutils.exe and hadoop.dll)
+   * needed for running Hadoop on Windows.
    *
-   * When updating Spark in Renaissance, the file must be updated to the
-   * corresponding Hadoop version from https://github.com/cdarlint/winutils
+   * The benchmark includes the binaries as a resource and extracts
+   * them when running on the Windows platform. For this reason, the
+   * version of the binaries should match the version of Hadoop that
+   * comes with the currently used version of Spark, and may need to
+   * be updated when updating Spark.
    *
-   * Also don't forget to update [[winutilsSize]] to match the binary.
+   * See [[hadoopExtrasForWindows]] for more details.
    */
   private def setUpHadoop(hadoopHomeDir: Path): Unit = {
     if (sys.props.get("os.name").toString.contains("Windows")) {
