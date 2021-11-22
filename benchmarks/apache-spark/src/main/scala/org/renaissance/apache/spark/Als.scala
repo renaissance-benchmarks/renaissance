@@ -13,7 +13,6 @@ import org.renaissance.License
 
 import java.nio.file.Files
 import java.nio.file.Path
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
 import scala.util.Random
 
 @Name("als")
@@ -66,14 +65,16 @@ final class Als extends Benchmark with SparkUtil {
 
     for (userId <- 0 until userCount; itemId <- 0 until productCount) yield {
       val rating = 1 + rand.nextInt(3) + rand.nextInt(3)
-      Rating[Int](userId, itemId, rating)
+      Rating[Int](userId, itemId, rating.toFloat)
     }
   }
 
   private def storeRatings(ratings: Seq[Rating], file: Path): Path = {
+    import scala.jdk.CollectionConverters._
+
     val header = Seq(Seq("user", "item", "rating").mkString(","))
     val lines = header ++ ratings.map(r => Rating.unapply(r).get.productIterator.mkString(","))
-    Files.write(file, lines.asJavaCollection)
+    Files.write(file, lines.asJava)
   }
 
   private def loadRatings(file: Path) = {

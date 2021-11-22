@@ -11,7 +11,6 @@ import java.nio.file.{StandardOpenOption => OpenOption}
 import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
 
 private object ResourceUtil {
 
@@ -72,7 +71,9 @@ private object ResourceUtil {
    * @return [[Path]] to the output file
    */
   def duplicateLinesFromUrl(url: URL, copyCount: Int, outputFile: Path): Path = {
-    val lines = linesFromUrl(url).asJavaCollection
+    import scala.jdk.CollectionConverters._
+
+    val lines = linesFromUrl(url).asJava
 
     for (_ <- 0 until copyCount) {
       Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
@@ -90,7 +91,7 @@ private object ResourceUtil {
   def linesFromUrl(url: URL): Seq[String] = {
     val source = Source.fromURL(url)
     try {
-      source.getLines().to[Seq]
+      source.getLines().toSeq
     } finally {
       source.close()
     }

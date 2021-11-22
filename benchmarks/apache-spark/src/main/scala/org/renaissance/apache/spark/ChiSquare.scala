@@ -14,7 +14,6 @@ import org.renaissance.License
 
 import java.nio.file.Files
 import java.nio.file.Path
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
 import scala.util.Random
 
 @Name("chi-square")
@@ -51,6 +50,8 @@ final class ChiSquare extends Benchmark with SparkUtil {
   private var outputTestResults: Array[ChiSqTestResult] = _
 
   private def prepareInput(pointCount: Int, componentCount: Int, outputFile: Path): Path = {
+    import scala.jdk.CollectionConverters._
+
     // TODO: Use a Renaissance-provided random generator.
     val rand = new Random(0L)
 
@@ -69,7 +70,7 @@ final class ChiSquare extends Benchmark with SparkUtil {
     }
 
     // Write output using UTF-8 encoding.
-    Files.write(outputFile, lines.asJavaCollection)
+    Files.write(outputFile, lines.asJava)
   }
 
   private def loadData(inputFile: Path) = {
