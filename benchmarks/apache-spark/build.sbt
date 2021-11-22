@@ -1,13 +1,13 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-val sparkVersion = "3.1.2"
+val sparkVersion = "3.2.0"
 
 lazy val apacheSpark = (project in file("."))
   .settings(
     name := "apache-spark",
     version := (renaissanceCore / version).value,
     organization := (renaissanceCore / organization).value,
-    scalaVersion := "2.12.15",
+    scalaVersion := "2.13.7",
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,

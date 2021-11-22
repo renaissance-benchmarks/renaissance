@@ -17,7 +17,7 @@ import org.renaissance.apache.spark.ResourceUtil.writeResourceToFile
 import java.net.URL
 import java.nio.file.Path
 import scala.collection.Map
-import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
+import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 @Name("movie-lens")
 @Group("apache-spark")

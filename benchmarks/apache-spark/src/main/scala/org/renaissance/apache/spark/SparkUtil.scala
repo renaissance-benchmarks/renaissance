@@ -136,7 +136,7 @@ trait SparkUtil {
 
   // Used to find sources of log messages.
   private def printCurrentLoggers() = {
-    import scala.jdk.CollectionConverters.enumerationAsScalaIteratorConverter
+    import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 
     println(
       LogManager.getCurrentLoggers.asScala

@@ -11,7 +11,7 @@ import java.nio.file.{StandardOpenOption => OpenOption}
 import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
+import scala.collection.JavaConverters.asJavaCollectionConverter
 
 private object ResourceUtil {
 
@@ -90,7 +90,7 @@ private object ResourceUtil {
   def linesFromUrl(url: URL): Seq[String] = {
     val source = Source.fromURL(url)
     try {
-      source.getLines().to[Seq]
+      source.getLines().to(Seq)
     } finally {
       source.close()
     }

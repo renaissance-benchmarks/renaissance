@@ -13,7 +13,7 @@ import org.renaissance.License
 
 import java.nio.file.Files
 import java.nio.file.Path
-import scala.jdk.CollectionConverters.asJavaCollectionConverter
+import scala.collection.JavaConverters.asJavaCollectionConverter
 import scala.util.Random
 
 @Name("als")
