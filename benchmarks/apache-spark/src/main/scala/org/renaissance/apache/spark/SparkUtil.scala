@@ -69,6 +69,12 @@ trait SparkUtil {
     //   "(via SPARK_LOCAL_DIRS in mesos/standalone/kubernetes and LOCAL_DIRS in YARN)."
     "org.apache.spark.SparkConf" -> Level.ERROR,
     // Masks the following warnings:
+    //   "Failed to load implementation from: com.github.fommil.netlib.NativeSystemBLAS"
+    //   "Failed to load implementation from: com.github.fommil.netlib.NativeRefBLAS"
+    //   "Failed to load implementation from: com.github.fommil.netlib.NativeSystemLAPACK"
+    //   "Failed to load implementation from: com.github.fommil.netlib.NativeRefLAPACK"
+    "com.github.fommil.netlib" -> Level.ERROR,
+    // Masks the following warnings:
     //   "Failed to load implementation from: dev.ludovic.netlib.blas.JNIBLAS"
     //   "Failed to load implementation from: dev.ludovic.netlib.blas.ForeignLinkerBLAS"
     //   "Failed to load implementation from: dev.ludovic.netlib.lapack.JNILAPACK"
