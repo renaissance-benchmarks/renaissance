@@ -16,7 +16,6 @@ import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.util.function.Predicate
-import scala.collection.SortedMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
@@ -101,7 +100,7 @@ object MarkdownGenerator {
     tags("jmhTargetPath") = "renaissance-jmh/target/scala-2.12"
     tags("jmhJarPrefix") = "renaissance-jmh-assembly"
 
-    def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]) = {
+    def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]): Seq[BenchmarkDescriptor] = {
       benchmarks.getMatchingBenchmarks(filter).asScala.toSeq
     }
 
@@ -189,14 +188,12 @@ object MarkdownGenerator {
         s"${b.jvmVersionMax.map[String]("- " + _.toString).orElse("and later")}"
     }
 
-    val result = new StringBuffer
-    SortedMap.from(benchmarks.sortBy(_.name()).groupBy(_.primaryGroup()).toSeq).foreach {
-      entry =>
-        {
-          val (group, benches) = entry
-          result.append(s"#### $group").append("\n\n")
-          result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
-        }
+    val result = new StringBuilder()
+    val benchmarksByGroup = benchmarks.groupBy(_.primaryGroup())
+    benchmarks.map(_.primaryGroup()).sorted.distinct.foreach { group =>
+      val benches = benchmarksByGroup(group).sortBy(_.name())
+      result.append(s"#### $group").append("\n\n")
+      result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
     }
 
     result.toString
