@@ -24,11 +24,11 @@ jobs:
 
       - name: Build base
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar assembly
+        run: java -jar tools/sbt/bin/sbt-launch.jar renaissance/package
 
       - name: Build JMH
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar renaissanceJmh/jmh:assembly
+        run: java -jar tools/sbt/bin/sbt-launch.jar renaissanceJmh/package
 
       - name: Check JMH
         shell: bash
