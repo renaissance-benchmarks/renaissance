@@ -306,13 +306,13 @@ Usage: renaissance [options] [benchmark-specification]
 You can also build and run Renaissance with JMH. To build a JMH-enabled JAR, run:
 
 ```
-$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
+$ tools/sbt/bin/sbt renaissanceJmh/package
 ```
 
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/scala-2.12/renaissance-jmh-assembly-0.13.0.jar'
+$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.13.0.jar'
 ```
 
 
