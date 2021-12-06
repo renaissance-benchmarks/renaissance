@@ -307,7 +307,9 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
   )
   .dependsOn(
     renaissanceCore % "provided",
-    RootProject(uri("benchmarks/scala-stm/scala-stm-library"))
+    RootProject(
+      uri("benchmarks/scala-stm/scala-stm-library")
+    ) % "compile->compile;compile->test"
   )
 
 val finagleVersion = "21.10.0"
