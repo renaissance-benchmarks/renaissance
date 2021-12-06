@@ -1,7 +1,5 @@
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-lazy val actorsReactors = RootProject(uri(".."))
-
 val scalaTestVersion = "3.1.4"
 val scalaCheckVersion = "1.13.4"
 val akkaVersion = "2.6.12"
@@ -9,6 +7,8 @@ val scalaMeterVersion = "0.19"
 val json4sJacksonVersion = "3.5.5"
 val rapidoidVersion = "5.3.5"
 val commonsTextVersion = "1.9"
+
+lazy val parentProject = ProjectRef(uri("../../.."), "actorsReactorsBenchmarks")
 
 // BrowserTest configuration is meant for browser-based tests.
 lazy val BrowserTest = config("browser") extend (Test)
@@ -25,7 +25,7 @@ def projectSettings(suffix: String) = {
   Seq(
     name := s"reactors$suffix",
     organization := "io.reactors",
-    scalaVersion := (actorsReactors / scalaVersion).value,
+    scalaVersion := (parentProject / scalaVersion).value,
     logBuffered := false,
     scalacOptions ++= Seq(
       "-deprecation", "-feature", "-no-specialization"
