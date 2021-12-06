@@ -18,7 +18,8 @@ public final class Launcher {
   private static final Logger logger = Logging.getPackageLogger(Launcher.class);
 
   private static final String MARKDOWN_GENERATOR = "org.renaissance.harness.MarkdownGenerator";
-  private static final String RENAISSANCE_SUITE = "org.renaissance.harness.RenaissanceSuite";
+  private static final String HARNESS_MAIN_CLASS = "org.renaissance.harness.RenaissanceSuite";
+  private static final String HARNESS_MODULE_NAME = "renaissance-harness_2.13";
 
 
   public static void main(String[] args) {
@@ -34,7 +35,7 @@ public final class Launcher {
         // TODO Launch the generator from the build system.
         launchHarnessClass(MARKDOWN_GENERATOR, generatorArgs);
       } else {
-        launchHarnessClass(RENAISSANCE_SUITE, args);
+        launchHarnessClass(HARNESS_MAIN_CLASS, args);
       }
 
     } catch (LaunchException e) {
@@ -108,7 +109,7 @@ public final class Launcher {
     ModuleLoader loader, String className, String[] args
   ) throws LaunchException {
     try {
-      ClassLoader classLoader = loader.createClassLoaderForModule("renaissance-harness");
+      ClassLoader classLoader = loader.createClassLoaderForModule(HARNESS_MODULE_NAME);
       Class<?> suiteClass = classLoader.loadClass(className);
       Method suiteMain = suiteClass.getMethod("main", String[].class);
       suiteMain.invoke(null, new Object[] { args });
