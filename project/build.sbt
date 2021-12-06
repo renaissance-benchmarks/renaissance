@@ -1,9 +1,5 @@
-lazy val renaissanceCore = RootProject(uri("../renaissance-core"))
-
-lazy val renaissanceBuild = (project in file("."))
-  .settings(
-    name := "renaissance-build"
-  )
-  .dependsOn(
-    renaissanceCore
-  )
+//
+// Make sure to compile the core classes so that Renaissance
+// root project can use them in utility code.
+//
+dependsOn(RootProject(uri("../renaissance-core")))
