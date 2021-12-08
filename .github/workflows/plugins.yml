@@ -21,16 +21,16 @@ jobs:
 
       - name: Environment configuration
         shell: bash
-        run: "tools/ci/pre-show-env.sh"
+        run: tools/ci/pre-show-env.sh
 
       - name: Build base
         shell: bash
-        run: "tools/ci/build-base.sh"
+        run: tools/ci/build-base.sh
 
       - name: Build plugins
         shell: bash
-        run: "tools/ci/build-plugins.sh"
+        run: tools/ci/build-plugins.sh
 
       - name: Run the suite with all plugins
         shell: bash
-        run: "tools/ci/bench-plugins.sh"
+        run: tools/ci/bench-plugins.sh

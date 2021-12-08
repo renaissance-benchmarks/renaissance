@@ -36,20 +36,20 @@ jobs:
 
       - name: Environment configuration
         shell: bash
-        run: "tools/ci/pre-show-env.sh"
+        run: tools/ci/pre-show-env.sh
 
       - name: Build base & JMH bundles
         shell: bash
-        run: "tools/ci/build-both.sh"
+        run: tools/ci/build-both.sh
 
       - name: Check JMH bundle
         shell: bash
-        run: "tools/ci/check-jmh.sh"
+        run: tools/ci/check-jmh.sh
 
       - name: Run the suite
         shell: bash
-        run: "tools/ci/bench-base.sh"
+        run: tools/ci/bench-base.sh
 
       - name: Run the suite with JMH
         shell: bash
-        run: "tools/ci/bench-jmh.sh"
+        run: tools/ci/bench-jmh.sh
