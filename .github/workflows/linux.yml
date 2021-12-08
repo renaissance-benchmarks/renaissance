@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: "tools/ci/build-both.sh"
 
-      - name: Check JMH
+      - name: Check JMH bundle
         shell: bash
         run: "tools/ci/check-jmh.sh"
 

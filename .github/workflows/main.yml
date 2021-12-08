@@ -19,19 +19,19 @@ jobs:
             ~/.cache/coursier
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
 
-      - name: Check file encoding"
+      - name: Check file encoding
         shell: bash
         run: tools/ci/check-encoding.sh
 
-      - name: "Check source code formatting"
+      - name: Check source code formatting
         shell: bash
         run: tools/ci/check-formatting.sh
 
-      - name: "Build default JAR"
+      - name: Build the base bundle
         shell: bash
         run: tools/ci/build-base.sh
 
-      - name: "Check generated files are up-to-date"
+      - name: Check generated files are up-to-date
         shell: bash
         run: tools/ci/check-markdown.sh
 
@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: tools/ci/build-both.sh
 
-      - name: Check JMH
+      - name: Check JMH bundle
         shell: bash
         run: "tools/ci/check-jmh.sh"
 
@@ -102,7 +102,7 @@ jobs:
         shell: bash
         run: tools/ci/build-both.sh
 
-      - name: Check JMH
+      - name: Check JMH bundle
         shell: bash
         run: "tools/ci/check-jmh.sh"
 
@@ -146,7 +146,7 @@ jobs:
         shell: bash
         run: java -jar tools/sbt/bin/sbt-launch.jar 'renaissance/package;renaissanceJmh/package'
 
-      - name: Check JMH
+      - name: Check JMH bundle
         shell: bash
         run: "tools/ci/check-jmh.sh"
 
