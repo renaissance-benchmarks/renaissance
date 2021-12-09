@@ -31,10 +31,6 @@ jobs:
         shell: bash
         run: "tools/ci/build-plugins.sh"
 
-      - name: Stop SBT
-        shell: bash
-        run: "tools/ci/stop-sbt.sh"
-
       - name: Run the suite with all plugins
         shell: bash
         run: "tools/ci/bench-plugins.sh"

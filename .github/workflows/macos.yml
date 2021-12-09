@@ -31,10 +31,6 @@ jobs:
         shell: bash
         run: "tools/ci/build-jmh.sh"
 
-      - name: Stop SBT
-        shell: bash
-        run: "tools/ci/stop-sbt.sh"
-
       - name: Check JMH
         shell: bash
         run: "tools/ci/check-jmh.sh"
