@@ -24,7 +24,7 @@ jobs:
 
       - name: Build both base & JMH bundles
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar 'renaissance/package;renaissanceJmh/package'
+        run: tools/sbt/bin/sbt --batch 'renaissance/package;renaissanceJmh/package'
 
       - name: Check JMH bundle
         shell: bash
