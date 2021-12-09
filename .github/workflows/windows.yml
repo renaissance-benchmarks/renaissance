@@ -22,13 +22,9 @@ jobs:
         shell: bash
         run: "tools/ci/pre-show-env.sh"
 
-      - name: Build base
+      - name: Build both base & JMH bundles
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar renaissance/package
-
-      - name: Build JMH
-        shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar renaissanceJmh/package
+        run: java -jar tools/sbt/bin/sbt-launch.jar 'renaissance/package;renaissanceJmh/package'
 
       - name: Check JMH
         shell: bash

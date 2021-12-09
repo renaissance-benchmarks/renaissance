@@ -38,13 +38,9 @@ jobs:
         shell: bash
         run: "tools/ci/pre-show-env.sh"
 
-      - name: Build base
+      - name: Build base & JMH bundles
         shell: bash
-        run: "tools/ci/build-base.sh"
-
-      - name: Build JMH
-        shell: bash
-        run: "tools/ci/build-jmh.sh"
+        run: "tools/ci/build-both.sh"
 
       - name: Check JMH
         shell: bash
