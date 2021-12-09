@@ -6,15 +6,18 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.Plugin
 import org.renaissance.Plugin._
 import org.renaissance.core.BenchmarkDescriptor
-import org.renaissance.core.BenchmarkRegistry
+import org.renaissance.core.BenchmarkSuite
 import org.renaissance.core.Launcher
 import org.renaissance.core.ModuleLoader
 import scopt.OptionParser
 
-import java.io.File
 import java.io.IOException
 import java.io.PrintWriter
+import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
+import java.util.Collections
+import java.util.Optional
 import java.util.function.Predicate
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -31,7 +34,7 @@ import scala.util.Try
 object MarkdownGenerator {
 
   private final class LocalConfig {
-    var metadata: File = _
+    var metadataUri: Optional[URI] = Optional.empty()
 
     val tags: mutable.Map[String, String] = mutable.Map()
 
@@ -40,15 +43,15 @@ object MarkdownGenerator {
       this
     }
 
-    def setMetadata(path: String): LocalConfig = {
-      this.metadata = new File(path)
+    def setMetadataUri(uri: URI): LocalConfig = {
+      metadataUri = Optional.of(uri)
       this
     }
   }
 
   def main(args: Array[String]): Unit = {
     val config = parseArgs(args)
-    val benchmarks = createRegistry(config.metadata)
+    val benchmarks = createSuite(config.metadataUri)
     val tags = initTagValues(benchmarks, config.tags)
 
     writeFile(() => formatReadme(tags), "README.md")
@@ -63,9 +66,10 @@ object MarkdownGenerator {
       opt[String]('v', "version")
         .text("Sets the Renaissance suite version.")
         .action((version, c) => c.setTag("renaissanceVersion", version))
-      opt[String]('m', "metadata")
+      opt[URI]('m', "metadata")
+        .valueName("<uri>")
         .text("Sets the path to the property file with benchmark metadata.")
-        .action((path, c) => c.setMetadata(path))
+        .action((uri, c) => c.setMetadataUri(uri))
     }
 
     parser.parse(args, new LocalConfig) match {
@@ -74,23 +78,27 @@ object MarkdownGenerator {
     }
   }
 
-  private def createRegistry(metadata: File) = {
-    var provider = Try(BenchmarkRegistry.createFromProperties(metadata))
-    if (metadata == null) {
-      provider = Try(BenchmarkRegistry.create())
-    }
+  private def createSuite(metadataOverrideUri: Optional[URI]) = {
+    //
+    // Create a benchmark suite with default benchmark metadata URI (unless
+    // overridden), but with no parameter overrides and no module loader.
+    //
+    val provider = Try(BenchmarkSuite.create(
+      Paths.get(""), "default", metadataOverrideUri,
+      Collections.emptyMap(), false /* without module loader */
+    ))
 
     provider match {
       case Success(registry) => registry
-      case Failure(exception) =>
-        Console.err.println("error: " + exception.getMessage)
+      case Failure(cause) =>
+        Console.err.println("error: " + cause.getMessage)
         Console.err.println("error: failed to initialize benchmark registry")
         sys.exit(1)
     }
   }
 
   private def initTagValues(
-    benchmarks: BenchmarkRegistry,
+    suite: BenchmarkSuite,
     tags: mutable.Map[String, String]
   ) = {
     val githubUrl = "https://github.com/renaissance-benchmarks/renaissance/"
@@ -101,7 +109,7 @@ object MarkdownGenerator {
     tags("jmhJarPrefix") = "renaissance-jmh"
 
     def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]): Seq[BenchmarkDescriptor] = {
-      benchmarks.getMatchingBenchmarks(filter).asScala.toSeq
+      suite.getMatchingBenchmarks(filter).asScala.toSeq
     }
 
     // Don't list dummy benchmarks in the benchmark table to reduce clutter.

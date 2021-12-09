@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -127,6 +128,9 @@ public final class BenchmarkDescriptor {
     return settingValue("jvm_version_max").flatMap(this::parseVersion);
   }
 
+  public Version scalaVersion() {
+    return Version.parse(settingValue("scala_version").orElse("2.13"));
+  }
 
   private Optional<Version> parseVersion(String stringVersion) {
     return Optional.ofNullable(
@@ -155,6 +159,17 @@ public final class BenchmarkDescriptor {
       .anyMatch(k -> k.startsWith(prefix));
   }
 
+  Properties toProperties() {
+    Properties result = new Properties();
+
+    String prefix = String.format("benchmark.%s.", benchmarkName);
+    benchmarkSettings.entrySet().stream()
+      // Only keep entries for this benchmark
+      .filter(e -> e.getKey().startsWith(prefix))
+      .forEach(e -> result.setProperty(e.getKey(), e.getValue()));
+
+    return result;
+  }
 
   final class Configuration {
     private final String configurationName;

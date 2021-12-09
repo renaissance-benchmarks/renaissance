@@ -1,6 +1,12 @@
 package org.renaissance.harness
 
 import scopt.OptionParser
+import scopt.Read
+
+import java.net.URI
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 private final class ConfigParser(tags: Map[String, String]) {
 
@@ -111,15 +117,40 @@ private final class ConfigParser(tags: Map[String, String]) {
 
       opt[Unit]("list")
         .text("Print the names and descriptions of all benchmarks.")
-        .action((_, c) => c.withList)
+        .action((_, c) => c.withList())
 
       opt[Unit]("raw-list")
         .text("Print the names of benchmarks compatible with this JVM (one per line).")
-        .action((_, c) => c.withRawList)
+        .action((_, c) => c.withRawList())
 
       opt[Unit]("group-list")
         .text("Print the names of all benchmark groups (one per line).")
-        .action((_, c) => c.withGroupList)
+        .action((_, c) => c.withGroupList())
+
+      opt[Unit]("extract")
+        .text("Extracts the selected benchmarks without running them.")
+        .action((_, c) => c.withExtract())
+
+      opt[String]("extract-base")
+        .valueName("<dir>")
+        .validate { v =>
+          val base = Paths.get(v)
+          if (Files.isDirectory(base) && Files.isWritable(base)) success
+          else failure(s"the directory '$v' does not exist or is not writable")
+        }
+        .text("Extract benchmarks to directories in <dir>. Defaults to current directory.")
+        .action((v, c) => c.withExtractBase(v))
+
+      opt[URI]("benchmark-metadata")
+        .valueName("<path-or-uri>")
+        .text("Path or an URI pointing to a .properties file with benchmark metadata.")
+        .action((uri, c) => c.withBenchmarkMetadata(uri))
+
+      opt[Unit]("standalone")
+        .text(
+          "Run harness in standalone mode. Disables benchmark module loader."
+        )
+        .action((_, c) => c.withStandalone())
 
       arg[String]("benchmark-specification")
         .text("List of benchmarks (or groups) to execute (or 'all').")

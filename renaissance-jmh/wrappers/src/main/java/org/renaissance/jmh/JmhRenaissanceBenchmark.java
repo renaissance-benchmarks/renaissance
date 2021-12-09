@@ -13,20 +13,22 @@ import org.renaissance.BenchmarkResult;
 import org.renaissance.BenchmarkResult.ValidationException;
 import org.renaissance.core.BenchmarkDescriptor;
 import org.renaissance.core.BenchmarkSuite;
-import org.renaissance.core.DirUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.renaissance.core.DirUtils.createScratchDirectory;
 
 public abstract class JmhRenaissanceBenchmark {
 
   /**
    * Determines whether to fake runs for incompatible benchmarks. This
    * is needed to avoid JMH failures in automated runs using different JVM
-   * versions. Some of the benchmarks require specific range of JVM versions
+   * versions. Some benchmarks require specific range of JVM versions
    * and there is no way to signal incompatibility from JMH, apart from an
    * exception (which will fail JMH).
    */
@@ -59,8 +61,7 @@ public abstract class JmhRenaissanceBenchmark {
     final Path scratchRootDir = createScratchRoot();
 
     // Get benchmark information and fake the run if necessary.
-    final BenchmarkSuite suite = BenchmarkSuite.create(scratchRootDir, configuration);
-
+    final BenchmarkSuite suite = createSuite(scratchRootDir);
     BenchmarkDescriptor bd = suite.getBenchmark(name);
     if (!suite.isBenchmarkCompatible(bd)) {
       String message = String.format(
@@ -86,12 +87,24 @@ public abstract class JmhRenaissanceBenchmark {
 
   private Path createScratchRoot() {
     try {
-      return DirUtils.createScratchDirectory(
+      return createScratchDirectory(
         Paths.get(scratchBaseDir), "jmh-", keepScratch
       );
 
     } catch (IOException e) {
       throw new RuntimeException("failed to create scratch root", e);
+    }
+  }
+
+  private BenchmarkSuite createSuite(Path scratchRootDir) {
+    try {
+      return BenchmarkSuite.create(
+        scratchRootDir, configuration,
+        Optional.empty(), emptyMap(),
+        true /* with module loader */
+      );
+    } catch (IOException e) {
+      throw new RuntimeException("failed to create benchmark suite", e);
     }
   }
 
