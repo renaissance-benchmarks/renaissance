@@ -20,6 +20,4 @@ lazy val pluginUbenchAgent = (project in file("."))
       )
     ),
   )
-  .dependsOn(
-    renaissanceCore
-  )
+  .dependsOn(renaissanceCore % "provided")

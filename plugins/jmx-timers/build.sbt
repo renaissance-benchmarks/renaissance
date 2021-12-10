@@ -20,6 +20,4 @@ lazy val pluginJMXTimers = (project in file("."))
       )
     ),
   )
-  .dependsOn(
-    renaissanceCore
-  )
+  .dependsOn(renaissanceCore % "provided")
