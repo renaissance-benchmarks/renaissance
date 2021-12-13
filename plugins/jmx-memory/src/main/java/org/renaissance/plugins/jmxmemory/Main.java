@@ -4,6 +4,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
+import javax.management.ObjectName;
 
 import org.renaissance.Plugin;
 
@@ -11,6 +12,45 @@ public class Main implements Plugin,
     Plugin.AfterOperationSetUpListener,
     Plugin.BeforeOperationTearDownListener,
     Plugin.MeasurementResultPublisher {
+
+  /** Mock garbage collector MX bean.
+   *
+   * Returns values that should be easy to distinguish from true MX beans
+   * and are marking the data as invalid.
+   * Methods that are not even called are implemented as least-effort.
+   */
+  private static class MockGCBean implements GarbageCollectorMXBean {
+    @Override
+    public long getCollectionCount() {
+      return -1;
+    }
+
+    @Override
+    public long getCollectionTime() {
+      return -1;
+    }
+
+    @Override
+    public String[] getMemoryPoolNames() {
+      return new String[] { "this-is-mock" };
+    }
+
+    @Override
+    public boolean isValid() {
+      return false;
+    }
+
+    @Override
+    public String getName() {
+      return this.getClass().getName();
+    }
+
+    @Override
+    public ObjectName getObjectName() {
+      return null;
+    }
+  }
+
 
   GarbageCollectorMXBean youngGenerationMXBean;
   GarbageCollectorMXBean oldGenerationMXBean;
@@ -44,6 +84,16 @@ public class Main implements Plugin,
         warn("Unknown garbage collector %s.", name);
       }
     }
+
+    if (youngGenerationMXBean == null) {
+      warn("MXBean for young generation not found, using mock.");
+      youngGenerationMXBean = new MockGCBean();
+    }
+    if (oldGenerationMXBean == null) {
+      warn("MXBean for old generation not found, using mock.");
+      oldGenerationMXBean = new MockGCBean();
+    }
+
     memoryMXBean = ManagementFactory.getMemoryMXBean();
   }
 
