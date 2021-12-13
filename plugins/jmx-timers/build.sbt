@@ -14,10 +14,8 @@ lazy val pluginJMXTimers = (project in file("."))
       case _ => MergeStrategy.singleOrError
     },
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
-    packageOptions := Seq(
-      sbt.Package.ManifestAttributes(
-        ("Renaissance-Plugin", "org.renaissance.plugins.jmxtimers.Main")
-      )
+    packageOptions += sbt.Package.ManifestAttributes(
+      ("Renaissance-Plugin", "org.renaissance.plugins.jmxtimers.Main")
     ),
   )
   .dependsOn(renaissanceCore % "provided")
