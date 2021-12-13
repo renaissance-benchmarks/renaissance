@@ -12,64 +12,70 @@ public class Main implements Plugin,
     Plugin.BeforeOperationTearDownListener,
     Plugin.MeasurementResultPublisher {
 
-  GarbageCollectorMXBean __youngGenerationMXBean;
-  GarbageCollectorMXBean __oldGenerationMXBean;
-  MemoryMXBean __memoryMXBean;
+  GarbageCollectorMXBean youngGenerationMXBean;
+  GarbageCollectorMXBean oldGenerationMXBean;
+  MemoryMXBean memoryMXBean;
 
-  long __youngCollectionsBefore;
-  long __youngCollectionsAfter;
-  long __youngTimeBefore;
-  long __youngTimeAfter;
+  long youngCollectionsBefore;
+  long youngCollectionsAfter;
+  long youngTimeBefore;
+  long youngTimeAfter;
 
-  long __oldCollectionsBefore;
-  long __oldCollectionsAfter;
-  long __oldTimeBefore;
-  long __oldTimeAfter;
+  long oldCollectionsBefore;
+  long oldCollectionsAfter;
+  long oldTimeBefore;
+  long oldTimeAfter;
 
-  MemoryUsage __memoryUsageBefore;
-  MemoryUsage __memoryUsageAfter;
+  MemoryUsage memoryUsageBefore;
+  MemoryUsage memoryUsageAfter;
 
   public Main() {
-    for (GarbageCollectorMXBean collector : ManagementFactory.getGarbageCollectorMXBeans ()) {
-      String name = collector.getName ();
-           if (name.equals ("G1 Young Generation")) __youngGenerationMXBean = collector;
-      else if (name.equals ("G1 Old Generation")) __oldGenerationMXBean = collector;
-      else if (name.equals ("PS Scavenge")) __youngGenerationMXBean = collector;
-      else if (name.equals ("PS MarkSweep")) __oldGenerationMXBean = collector;
-      else assert false : String.format ("[jmx-memory] Unknown garbage collector %s.", name);
+    for (GarbageCollectorMXBean collector : ManagementFactory.getGarbageCollectorMXBeans()) {
+      String name = collector.getName();
+      if (name.equals("G1 Young Generation")) {
+        youngGenerationMXBean = collector;
+      } else if (name.equals("G1 Old Generation")) {
+        oldGenerationMXBean = collector;
+      } else if (name.equals("PS Scavenge")) {
+        youngGenerationMXBean = collector;
+      } else if (name.equals("PS MarkSweep")) {
+        oldGenerationMXBean = collector;
+      } else {
+        assert false : String.format("[jmx-memory] Unknown garbage collector %s.", name);
+      }
     }
-    __memoryMXBean = ManagementFactory.getMemoryMXBean ();
+    memoryMXBean = ManagementFactory.getMemoryMXBean();
   }
 
   @Override
   public void afterOperationSetUp(String benchmark, int opIndex, boolean isLastOp) {
-    __youngCollectionsBefore = __youngGenerationMXBean.getCollectionCount ();
-    __oldCollectionsBefore = __oldGenerationMXBean.getCollectionCount ();
-    __youngTimeBefore = __youngGenerationMXBean.getCollectionTime ();
-    __oldTimeBefore = __oldGenerationMXBean.getCollectionTime ();
-    __memoryUsageBefore = __memoryMXBean.getHeapMemoryUsage ();
+    youngCollectionsBefore = youngGenerationMXBean.getCollectionCount();
+    oldCollectionsBefore = oldGenerationMXBean.getCollectionCount();
+    youngTimeBefore = youngGenerationMXBean.getCollectionTime();
+    oldTimeBefore = oldGenerationMXBean.getCollectionTime();
+    memoryUsageBefore = memoryMXBean.getHeapMemoryUsage();
   }
 
   @Override
   public void beforeOperationTearDown(String benchmark, int opIndex, long harnessDuration) {
-    __youngCollectionsAfter = __youngGenerationMXBean.getCollectionCount ();
-    __oldCollectionsAfter = __oldGenerationMXBean.getCollectionCount ();
-    __youngTimeAfter = __youngGenerationMXBean.getCollectionTime ();
-    __oldTimeAfter = __oldGenerationMXBean.getCollectionTime ();
-    __memoryUsageAfter = __memoryMXBean.getHeapMemoryUsage ();
+    youngCollectionsAfter = youngGenerationMXBean.getCollectionCount();
+    oldCollectionsAfter = oldGenerationMXBean.getCollectionCount();
+    youngTimeAfter = youngGenerationMXBean.getCollectionTime();
+    oldTimeAfter = oldGenerationMXBean.getCollectionTime();
+    memoryUsageAfter = memoryMXBean.getHeapMemoryUsage();
   }
 
   @Override
   public void onMeasurementResultsRequested(String benchmark, int opIndex, Plugin.MeasurementResultListener dispatcher) {
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_young_collection_count", __youngCollectionsAfter);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_young_collection_delta", __youngCollectionsAfter - __youngCollectionsBefore);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_young_collection_total_ms", __youngTimeAfter);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_young_collection_time_ms", __youngTimeAfter - __youngTimeBefore);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_old_collection_count", __oldCollectionsAfter);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_old_collection_delta", __oldCollectionsAfter - __oldCollectionsBefore);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_old_collection_total_ms", __oldTimeAfter);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_old_collection_time_ms", __oldTimeAfter - __oldTimeBefore);
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_used_size", __memoryUsageAfter.getUsed ());
-    dispatcher.onMeasurementResult (benchmark, "jmx_memory_used_delta", __memoryUsageAfter.getUsed () - __memoryUsageBefore.getUsed ());
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_young_collection_count", youngCollectionsAfter);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_young_collection_delta", youngCollectionsAfter - youngCollectionsBefore);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_young_collection_total_ms", youngTimeAfter);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_young_collection_time_ms", youngTimeAfter - youngTimeBefore);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_old_collection_count", oldCollectionsAfter);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_old_collection_delta", oldCollectionsAfter - oldCollectionsBefore);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_old_collection_total_ms", oldTimeAfter);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_old_collection_time_ms", oldTimeAfter - oldTimeBefore);
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_used_size", memoryUsageAfter.getUsed());
+    dispatcher.onMeasurementResult(benchmark, "jmx_memory_used_delta", memoryUsageAfter.getUsed() - memoryUsageBefore.getUsed());
   }
 }
