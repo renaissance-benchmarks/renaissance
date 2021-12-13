@@ -41,7 +41,7 @@ public class Main implements Plugin,
       } else if (name.equals("PS MarkSweep")) {
         oldGenerationMXBean = collector;
       } else {
-        assert false : String.format("[jmx-memory] Unknown garbage collector %s.", name);
+        warn("Unknown garbage collector %s.", name);
       }
     }
     memoryMXBean = ManagementFactory.getMemoryMXBean();
@@ -77,5 +77,9 @@ public class Main implements Plugin,
     dispatcher.onMeasurementResult(benchmark, "jmx_memory_old_collection_time_ms", oldTimeAfter - oldTimeBefore);
     dispatcher.onMeasurementResult(benchmark, "jmx_memory_used_size", memoryUsageAfter.getUsed());
     dispatcher.onMeasurementResult(benchmark, "jmx_memory_used_delta", memoryUsageAfter.getUsed() - memoryUsageBefore.getUsed());
+  }
+
+  private void warn(String msg, Object... args) {
+    System.err.printf("[jmx-memory plugin] WARNING: " + msg + "\n", args);
   }
 }
