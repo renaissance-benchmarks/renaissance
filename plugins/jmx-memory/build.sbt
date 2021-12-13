@@ -1,6 +1,6 @@
 lazy val renaissanceCore = RootProject(uri("../../renaissance-core"))
 
-lazy val pluginJMXTimers = (project in file("."))
+lazy val pluginJMXMemory = (project in file("."))
   .settings(
     name := "plugin-jmxmemory",
     version := "0.0.1",
