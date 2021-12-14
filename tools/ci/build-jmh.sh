@@ -2,4 +2,4 @@
 source "$(dirname "$0")/common.sh"
 
 # Build the JMH bundle if missing
-[ -s "$RENAISSANCE_JMH_JAR" ] || ci_sbt --batch renaissanceJmh/package
+[ -s "$RENAISSANCE_JMH_JAR" ] || ci_sbt --batch renaissanceJmhPackage

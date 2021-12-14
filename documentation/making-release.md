@@ -28,16 +28,16 @@ making a release. These can be eventually automated:
 
 - [ ] Build the Renaissance bundle using a version number
   override corresponding to the upcoming release:
-  - `sbt -Dproject.version=<version> assembly`
+  - `sbt -Dproject.version=<version> renaissancePackage`
 - [ ] Update `README.md` in the project root by running:
   - `java -jar target/renaissance-gpl-<version>.jar --readme`
 - [ ] Update version numbers in files that are not generated.
   - `documentation/jar-bundle.md`
   - `plugins/jmx-timers/README.md`
   - `plugins/ubench-agent/README.md`
-- [ ] Set `git.baseVersion` in `renaissance-core/version.sbt` to the next
-  version **after** the release version. This provides a reasonable base
-  version for *git-less* operation.
+- [ ] Set `git.baseVersion` in `version.sbt` to the next version **after**
+  the release version. This provides a reasonable base version for 
+  *git-less* operation.
 - [ ] Commit the changes locally, directly to the `master` branch
   of the repository.
 - [ ] Tag the HEAD commit using an **annotated tag**. The annotated
@@ -59,7 +59,7 @@ and publish the releases on GitHub and on the Renaissance web site.
   - `git clean -dxf`
   - `ln -s tools/sbt/bin/sbt sbt`
 - [ ] Build both the GPL and MIT bundles.
-  - `./sbt 'assembly; set nonGplOnly := true; assembly'`
+  - `./sbt 'renaissancePackage; set nonGplOnly := true; renaissancePackage'`
   - If everything went well, you should end up with the following files:
     - `target/renaissance-gpl-<version>.jar`
     - `target/renaissance-mit-<version>.jar`
@@ -67,6 +67,7 @@ and publish the releases on GitHub and on the Renaissance web site.
   SBT does not support `-C` alà `make`, you can use the following commands
   (assuming you have a `sbt` symlink in the project root).
   - `pushd plugins/jmx-timers && { ../../sbt assembly; popd; }`
+  - `pushd plugins/jmx-memory && { ../../sbt assembly; popd; }`
   - `pushd plugins/ubench-agent && { ./build-ubench-agent.sh && ../../sbt assembly; popd; }`
   - If everything went well, you should end up with the following files
     with plugin-specific version numbers:

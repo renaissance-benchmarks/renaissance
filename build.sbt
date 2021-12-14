@@ -72,6 +72,9 @@ addCommandAlias(
   ";renaissance/scalafmtCheck;renaissance/scalafmtSbtCheck"
 )
 
+addCommandAlias("renaissancePackage", ";renaissance/package")
+addCommandAlias("renaissanceJmhPackage", ";renaissanceJmh/package")
+
 /**
  * Generates MANIFEST.MF attributes for top-level JAR files.
  *

@@ -341,7 +341,7 @@ ${tags("harnessUsage")}
 You can also build and run Renaissance with JMH. To build a JMH-enabled JAR, run:
 
 ```
-$$ tools/sbt/bin/sbt renaissanceJmh/package
+$$ tools/sbt/bin/sbt renaissanceJmhPackage
 ```
 
 To run the benchmarks using JMH, you can execute the following `java` command:
