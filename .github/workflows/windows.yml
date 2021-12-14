@@ -20,28 +20,24 @@ jobs:
 
       - name: Environment configuration
         shell: bash
-        run: "tools/ci/pre-show-env.sh"
+        run: tools/ci/pre-show-env.sh
 
-      - name: Build base
+      - name: Build both base & JMH bundles
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar assembly
+        run: tools/sbt/bin/sbt --batch 'renaissance/package;renaissanceJmh/package'
 
-      - name: Build JMH
+      - name: Check JMH bundle
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar renaissanceJmh/jmh:assembly
-
-      - name: Check JMH
-        shell: bash
-        run: "tools/ci/check-jmh.sh"
+        run: tools/ci/check-jmh.sh
 
       - name: Dummy run and environment configuration
         shell: bash
-        run: "tools/ci/bench-show-env.sh"
+        run: tools/ci/bench-show-env.sh
 
       - name: Run the suite
         shell: bash
-        run: "tools/ci/bench-base.sh"
+        run: tools/ci/bench-base.sh
 
       - name: Run the suite with JMH
         shell: bash
-        run: "tools/ci/bench-jmh.sh"
+        run: tools/ci/bench-jmh.sh

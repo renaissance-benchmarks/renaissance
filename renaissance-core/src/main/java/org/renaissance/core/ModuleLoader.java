@@ -59,11 +59,12 @@ public final class ModuleLoader {
 
   /**
    * Creates a module loader with a given scratch root directory. The module
-   * loader loads a property file with a module description and allows loading
-   * modules using independent class loaders.
+   * loader allows loading modules using independent class loaders. Modules
+   * are defined in a property file and each contains a list of JAR files
+   * representing a module-specific class path.
    *
-   * @param scratchRootDir The root of the scratch directory where module
-   * module dependencies are extracted.
+   * @param scratchRootDir The root of the scratch directory into which
+   * module dependencies get extracted.
    */
   static ModuleLoader create(Path scratchRootDir) {
     logger.fine(() -> String.format(

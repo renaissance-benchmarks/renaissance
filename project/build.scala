@@ -181,12 +181,13 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
 
 object Benchmarks {
 
-  // Return tuples with (name, distro license, all licenses, description and default repetitions)
   def listBenchmarks(
     projectName: String,
     classPath: Seq[File],
-    logger: Option[Logger]
+    loggerOption: Option[Logger]
   ): Seq[BenchmarkInfo] = {
+    import scala.jdk.CollectionConverters.enumerationAsScalaIteratorConverter
+
     //
     // Load the Benchmark base class and create a class loader for the project
     // with the class loader of the Benchmark class as its parent. This will allow
@@ -202,8 +203,8 @@ object Benchmarks {
     // the benchmark interface and collect metadata from class annotations.
     //
     val result = mutable.Buffer[BenchmarkInfo]()
-    for (jarFile <- classPath.map(jar => new JarFile(jar))) {
-      for (entry <- JavaConverters.enumerationAsScalaIterator(jarFile.entries())) {
+    for (jarFile <- classPath.map(new JarFile(_))) {
+      for (entry <- jarFile.entries().asScala) {
         if (entry.getName.startsWith("org/renaissance") && entry.getName.endsWith(".class")) {
           val benchClassName = entry.getName
             .substring(0, entry.getName.length - ".class".length)
@@ -217,7 +218,7 @@ object Benchmarks {
             // Print info to see what benchmarks are picked up by the build.
             val benchClass = clazz.asSubclass(benchBase)
             val info = new BenchmarkInfo(projectName, benchClass)
-            if (logger.nonEmpty) logBenchmark(info, logger.get)
+            logBenchmark(info, loggerOption)
             result += info
           }
         }
@@ -227,11 +228,14 @@ object Benchmarks {
     result
   }
 
-  def logBenchmark(b: BenchmarkInfo, logger: Logger): Unit = {
-    logger.info(s"class: ${b.className}")
-    logger.info(s"\tbenchmark: ${b.name} (${b.printableGroups})")
-    logger.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
-    logger.info(s"\trepetitions: ${b.repetitions}")
-    logger.info(s"\tsummary: ${b.summary}")
+  def logBenchmark(b: BenchmarkInfo, loggerOption: Option[Logger]): Unit = {
+    // Do nothing if there is no logger.
+    loggerOption.foreach { log =>
+      log.info(s"class: ${b.className}")
+      log.info(s"\tbenchmark: ${b.name} (${b.printableGroups})")
+      log.info(s"\tlicensing: ${b.printableLicenses} => ${b.distro}")
+      log.info(s"\trepetitions: ${b.repetitions}")
+      log.info(s"\tsummary: ${b.summary}")
+    }
   }
 }

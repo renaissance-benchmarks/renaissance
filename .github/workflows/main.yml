@@ -19,27 +19,19 @@ jobs:
             ~/.cache/coursier
           key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
 
-      - name: Check file encoding"
+      - name: Check file encoding
         shell: bash
         run: tools/ci/check-encoding.sh
 
-      - name: "Start SBT"
-        shell: bash
-        run: tools/ci/check-sbt.sh
-
-      - name: "Check source code formatting"
+      - name: Check source code formatting
         shell: bash
         run: tools/ci/check-formatting.sh
 
-      - name: "Build default JAR"
+      - name: Build the base bundle
         shell: bash
         run: tools/ci/build-base.sh
 
-      - name: "Stop SBT"
-        shell: bash
-        run: tools/ci/stop-sbt.sh
-
-      - name: "Check generated files are up-to-date"
+      - name: Check generated files are up-to-date
         shell: bash
         run: tools/ci/check-markdown.sh
 
@@ -64,31 +56,23 @@ jobs:
 
       - name: Environment configuration
         shell: bash
-        run: "tools/ci/pre-show-env.sh"
+        run: tools/ci/pre-show-env.sh
 
-      - name: Build base
+      - name: Build both base & JMH bundles
         shell: bash
-        run: "tools/ci/build-base.sh"
+        run: tools/ci/build-both.sh
 
-      - name: Build JMH
+      - name: Check JMH bundle
         shell: bash
-        run: "tools/ci/build-jmh.sh"
-
-      - name: Stop SBT
-        shell: bash
-        run: "tools/ci/stop-sbt.sh"
-
-      - name: Check JMH
-        shell: bash
-        run: "tools/ci/check-jmh.sh"
+        run: tools/ci/check-jmh.sh
 
       - name: Run the suite
         shell: bash
-        run: "tools/ci/bench-base.sh"
+        run: tools/ci/bench-base.sh
 
       - name: Run the suite with JMH
         shell: bash
-        run: "tools/ci/bench-jmh.sh"
+        run: tools/ci/bench-jmh.sh
 
   macos:
     runs-on: macos-latest
@@ -112,35 +96,27 @@ jobs:
 
       - name: Environment configuration
         shell: bash
-        run: "tools/ci/pre-show-env.sh"
+        run: tools/ci/pre-show-env.sh
 
-      - name: Build base
+      - name: Build both base & JMH bundles
         shell: bash
-        run: "tools/ci/build-base.sh"
+        run: tools/ci/build-both.sh
 
-      - name: Build JMH
+      - name: Check JMH bundle
         shell: bash
-        run: "tools/ci/build-jmh.sh"
-
-      - name: Stop SBT
-        shell: bash
-        run: "tools/ci/stop-sbt.sh"
-
-      - name: Check JMH
-        shell: bash
-        run: "tools/ci/check-jmh.sh"
+        run: tools/ci/check-jmh.sh
 
       - name: Dummy run and environment configuration
         shell: bash
-        run: "tools/ci/bench-show-env.sh"
+        run: tools/ci/bench-show-env.sh
 
       - name: Run the suite
         shell: bash
-        run: "tools/ci/bench-base.sh"
+        run: tools/ci/bench-base.sh
 
       - name: Run the suite with JMH
         shell: bash
-        run: "tools/ci/bench-jmh.sh"
+        run: tools/ci/bench-jmh.sh
 
   windows:
     runs-on: windows-latest
@@ -164,28 +140,24 @@ jobs:
 
       - name: Environment configuration
         shell: bash
-        run: "tools/ci/pre-show-env.sh"
+        run: tools/ci/pre-show-env.sh
 
-      - name: Build base
+      - name: Build both base & JMH bundles
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar assembly
+        run: tools/sbt/bin/sbt --batch 'renaissance/package;renaissanceJmh/package'
 
-      - name: Build JMH
+      - name: Check JMH bundle
         shell: bash
-        run: java -jar tools/sbt/bin/sbt-launch.jar renaissanceJmh/jmh:assembly
-
-      - name: Check JMH
-        shell: bash
-        run: "tools/ci/check-jmh.sh"
+        run: tools/ci/check-jmh.sh
 
       - name: Dummy run and environment configuration
         shell: bash
-        run: "tools/ci/bench-show-env.sh"
+        run: tools/ci/bench-show-env.sh
 
       - name: Run the suite
         shell: bash
-        run: "tools/ci/bench-base.sh"
+        run: tools/ci/bench-base.sh
 
       - name: Run the suite with JMH
         shell: bash
-        run: "tools/ci/bench-jmh.sh"
+        run: tools/ci/bench-jmh.sh

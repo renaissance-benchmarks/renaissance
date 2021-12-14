@@ -16,7 +16,6 @@ import java.io.IOException
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.util.function.Predicate
-import scala.collection.SortedMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
@@ -98,10 +97,10 @@ object MarkdownGenerator {
     tags("logoUrl") = githubUrl + "raw/master/website/resources/images/mona-lisa-round.png"
     tags("codeOfConductUrl") = githubUrl + "blob/master/CODE-OF-CONDUCT.md"
 
-    tags("jmhTargetPath") = "renaissance-jmh/target/scala-2.12"
-    tags("jmhJarPrefix") = "renaissance-jmh-assembly"
+    tags("jmhTargetPath") = "renaissance-jmh/target"
+    tags("jmhJarPrefix") = "renaissance-jmh"
 
-    def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]) = {
+    def selectBenchmarks(filter: Predicate[BenchmarkDescriptor]): Seq[BenchmarkDescriptor] = {
       benchmarks.getMatchingBenchmarks(filter).asScala.toSeq
     }
 
@@ -189,14 +188,12 @@ object MarkdownGenerator {
         s"${b.jvmVersionMax.map[String]("- " + _.toString).orElse("and later")}"
     }
 
-    val result = new StringBuffer
-    SortedMap.from(benchmarks.sortBy(_.name()).groupBy(_.primaryGroup()).toSeq).foreach {
-      entry =>
-        {
-          val (group, benches) = entry
-          result.append(s"#### $group").append("\n\n")
-          result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
-        }
+    val result = new StringBuilder()
+    val benchmarksByGroup = benchmarks.groupBy(_.primaryGroup())
+    benchmarks.map(_.primaryGroup()).sorted.distinct.foreach { group =>
+      val benches = benchmarksByGroup(group).sortBy(_.name())
+      result.append(s"#### $group").append("\n\n")
+      result.append(benches.map(formatItem).mkString("\n\n")).append("\n\n")
     }
 
     result.toString
@@ -344,7 +341,7 @@ ${tags("harnessUsage")}
 You can also build and run Renaissance with JMH. To build a JMH-enabled JAR, run:
 
 ```
-$$ tools/sbt/bin/sbt renaissanceJmh/jmh:assembly
+$$ tools/sbt/bin/sbt renaissanceJmhPackage
 ```
 
 To run the benchmarks using JMH, you can execute the following `java` command:
