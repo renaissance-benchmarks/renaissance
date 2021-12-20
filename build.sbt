@@ -262,7 +262,8 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
     name := "jdk-concurrent",
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
-      "io.jenetics" % "jenetics" % "4.4.0"
+      // Jenetics 6.0.0 requires benchmark update.
+      "io.jenetics" % "jenetics" % "5.2.0"
     )
   )
   .dependsOn(renaissanceCore % "provided")
