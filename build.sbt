@@ -111,7 +111,11 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
+val commonsIoVersion = "2.11.0"
+val commonsLoggingVersion = "1.2"
+val commonsCompressVersion = "1.21"
 val commonsMath3Version = "3.6.1"
+val commonsTextVersion = "1.9"
 val guavaVersion = "23.0"
 val jnaVersion = "5.10.0"
 val nettyVersion = "4.1.72.Final"
@@ -207,7 +211,11 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "io.netty" % "netty-all" % nettyVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
+      "commons-io" % "commons-io" % commonsIoVersion,
+      "commons-logging" % "commons-logging" % commonsLoggingVersion,
+      "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
+      "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
