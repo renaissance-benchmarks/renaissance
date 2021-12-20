@@ -112,6 +112,7 @@ val generateManifestAttributesTask = Def.task {
 //
 
 val scalaCollectionCompatVersion = "2.6.0"
+val scalaParallelCollectionsVersion = "1.0.4"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -198,6 +199,7 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.spark" %% "spark-mllib" % sparkVersion
       // Force common versions of other dependencies.
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -332,7 +334,7 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "com.twitter" %% "finagle-core" % finagleVersion,
       "com.twitter" %% "util-core" % finagleVersion,
       "com.google.guava" % "guava" % "19.0",
-      "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion
       // Force common versions of other dependencies.
