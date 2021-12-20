@@ -113,6 +113,7 @@ val generateManifestAttributesTask = Def.task {
 
 val guavaVersion = "23.0"
 val jnaVersion = "5.10.0"
+val nettyVersion = "4.1.72.Final"
 val scalaCollectionCompatVersion = "2.6.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val slf4jVersion = "1.7.32"
@@ -199,7 +200,10 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
-      "org.apache.spark" %% "spark-mllib" % sparkVersion
+      "org.apache.spark" %% "spark-mllib" % sparkVersion,
+      // Force newer Netty version.
+      // Overrides versions pulled in by dependencies.
+      "io.netty" % "netty-all" % nettyVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
@@ -269,6 +273,7 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
       // Force common versions of other dependencies.
+      "io.netty" % "netty-all" % nettyVersion,
       "org.slf4j" % "slf4j-nop" % slf4jVersion
     )
   )
@@ -346,6 +351,7 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Force common versions of other dependencies.
+      "io.netty" % "netty-all" % nettyVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
