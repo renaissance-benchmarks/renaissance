@@ -297,7 +297,7 @@ lazy val rxBenchmarks = (project in file("benchmarks/rx"))
     name := "rx",
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
-      "io.reactivex" % "rxjava" % "1.3.7"
+      "io.reactivex" % "rxjava" % "1.3.8"
     )
   )
   .dependsOn(renaissanceCore % "provided")
