@@ -111,6 +111,8 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
+val scalaCollectionCompatVersion = "2.6.0"
+
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
     commonSettingsNoScala,
@@ -144,7 +146,7 @@ lazy val renaissanceHarness212 = (project in file("renaissance-harness"))
     renaissanceHarnessCommonSettings,
     libraryDependencies ++= Seq(
       // Needed to compile Scala 2.13 collections with Scala 2.12.
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -194,6 +196,8 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
       "org.apache.spark" %% "spark-mllib" % sparkVersion
+      // Force common versions of other dependencies.
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -331,6 +335,8 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion
+      // Force common versions of other dependencies.
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
