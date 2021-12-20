@@ -111,6 +111,7 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
+val commonsMath3Version = "3.6.1"
 val guavaVersion = "23.0"
 val jnaVersion = "5.10.0"
 val nettyVersion = "4.1.72.Final"
@@ -206,6 +207,7 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "io.netty" % "netty-all" % nettyVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
+      "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
@@ -221,7 +223,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
       "com.github.jnr" % "jnr-posix" % "3.0.29",
-      "org.apache.commons" % "commons-math3" % "3.6.1",
+      "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.agrona" % "agrona" % "0.9.7",
       "net.openhft" % "zero-allocation-hashing" % "0.6",
       "org.mapdb" % "mapdb" % "3.0.1",
