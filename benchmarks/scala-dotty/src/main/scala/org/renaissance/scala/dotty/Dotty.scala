@@ -46,7 +46,7 @@ final class Dotty extends Benchmark {
    *
    * find . -type f -name '*.tasty'|egrep -v '(Classfile|ByteCode)\.tasty' | LC_ALL=C sort|xargs cat|md5sum
    */
-  private val expectedTastyHash: String = "7376f5f353dea8da455afb6abfee237e"
+  private val expectedTastyHash: String = "af5ff4a3e1d189395c07c187167450ed"
 
   private val excludedTastyFiles = Seq("Classfile.tasty", "ByteCode.tasty")
 

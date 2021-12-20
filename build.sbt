@@ -308,7 +308,7 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
     scalaVersion := scalaVersion213,
     scalacOptions += "-Ytasty-reader",
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala3-compiler_3" % "3.0.0",
+      "org.scala-lang" % "scala3-compiler_3" % "3.0.2",
       // The following is required to compile the workload sources.
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       // Force newer JNA to support more platforms/architectures.
