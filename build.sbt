@@ -112,6 +112,7 @@ val generateManifestAttributesTask = Def.task {
 //
 
 val guavaVersion = "23.0"
+val jnaVersion = "5.10.0"
 val scalaCollectionCompatVersion = "2.6.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 
@@ -206,7 +207,6 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   )
   .dependsOn(renaissanceCore % "provided")
 
-val jnaVersion = "5.10.0"
 val slf4jSimpleVersion = "1.7.32"
 
 lazy val databaseBenchmarks = (project in file("benchmarks/database"))
@@ -265,7 +265,7 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       "org.neo4j" % "neo4j" % "4.2.4",
       "net.liftweb" %% "lift-json" % "3.4.3",
       // Force newer JNA to support more platforms/architectures.
-      "net.java.dev.jna" % "jna" % jnaVersion
+      "net.java.dev.jna" % "jna" % jnaVersion,
     )
   )
   .dependsOn(renaissanceCore % "provided")
