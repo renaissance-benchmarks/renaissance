@@ -115,6 +115,7 @@ val guavaVersion = "23.0"
 val jnaVersion = "5.10.0"
 val scalaCollectionCompatVersion = "2.6.0"
 val scalaParallelCollectionsVersion = "1.0.4"
+val slf4jVersion = "1.7.32"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -203,11 +204,12 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "com.google.guava" % "guava" % guavaVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
-
-val slf4jSimpleVersion = "1.7.32"
 
 lazy val databaseBenchmarks = (project in file("benchmarks/database"))
   .settings(
@@ -232,7 +234,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion
     )
@@ -266,6 +268,8 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       "net.liftweb" %% "lift-json" % "3.4.3",
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
+      // Force common versions of other dependencies.
+      "org.slf4j" % "slf4j-nop" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -340,7 +344,7 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "com.twitter" %% "util-core" % finagleVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Force common versions of other dependencies.
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
