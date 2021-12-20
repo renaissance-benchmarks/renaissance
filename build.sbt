@@ -280,8 +280,8 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     name := "neo4j",
     scalaVersion := scalaVersion212,
     libraryDependencies ++= Seq(
-      // neo4j 4.2 does not support 2.13
-      "org.neo4j" % "neo4j" % "4.2.4",
+      // neo4j 4.4 does not support Scala 2.13 yet.
+      "org.neo4j" % "neo4j" % "4.4.0",
       "net.liftweb" %% "lift-json" % "3.5.0",
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
