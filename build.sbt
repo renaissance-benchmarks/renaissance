@@ -111,6 +111,18 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
+val commonsIoVersion = "2.11.0"
+val commonsLoggingVersion = "1.2"
+val commonsCompressVersion = "1.21"
+val commonsMath3Version = "3.6.1"
+val commonsTextVersion = "1.9"
+val guavaVersion = "23.0"
+val jnaVersion = "5.10.0"
+val nettyVersion = "4.1.72.Final"
+val scalaCollectionCompatVersion = "2.6.0"
+val scalaParallelCollectionsVersion = "1.0.4"
+val slf4jVersion = "1.7.32"
+
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
     commonSettingsNoScala,
@@ -144,7 +156,7 @@ lazy val renaissanceHarness212 = (project in file("renaissance-harness"))
     renaissanceHarnessCommonSettings,
     libraryDependencies ++= Seq(
       // Needed to compile Scala 2.13 collections with Scala 2.12.
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0"
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -167,7 +179,7 @@ lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
       // akka-actor 2.6.x supports Scala 2.12, 2.13
-      "com.typesafe.akka" %% "akka-actor" % "2.6.12"
+      "com.typesafe.akka" %% "akka-actor" % "2.6.17"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -193,13 +205,27 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
-      "org.apache.spark" %% "spark-mllib" % sparkVersion
+      "org.apache.spark" %% "spark-mllib" % sparkVersion,
+      // Force newer Netty version.
+      // Overrides versions pulled in by dependencies.
+      "io.netty" % "netty-all" % nettyVersion,
+      // Force newer Zookeeper version.
+      "org.apache.zookeeper" % "zookeeper" % "3.6.3",
+      // Force common versions of other dependencies.
+      "com.google.guava" % "guava" % guavaVersion,
+      "commons-io" % "commons-io" % commonsIoVersion,
+      "commons-logging" % "commons-logging" % commonsLoggingVersion,
+      "org.apache.commons" % "commons-compress" % commonsCompressVersion,
+      "org.apache.commons" % "commons-math3" % commonsMath3Version,
+      "org.apache.commons" % "commons-text" % commonsTextVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
-
-val jnaVersion = "5.10.0"
-val slf4jSimpleVersion = "1.7.32"
 
 lazy val databaseBenchmarks = (project in file("benchmarks/database"))
   .settings(
@@ -207,7 +233,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
       "com.github.jnr" % "jnr-posix" % "3.0.29",
-      "org.apache.commons" % "commons-math3" % "3.6.1",
+      "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.agrona" % "agrona" % "0.9.7",
       "net.openhft" % "zero-allocation-hashing" % "0.6",
       "org.mapdb" % "mapdb" % "3.0.1",
@@ -224,7 +250,9 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
+      // Force common versions of other dependencies.
+      "com.google.guava" % "guava" % guavaVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -234,7 +262,8 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
     name := "jdk-concurrent",
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
-      "io.jenetics" % "jenetics" % "4.4.0"
+      // Jenetics 6.0.0 requires benchmark update.
+      "io.jenetics" % "jenetics" % "5.2.0"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -251,11 +280,14 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     name := "neo4j",
     scalaVersion := scalaVersion212,
     libraryDependencies ++= Seq(
-      // neo4j 4.2 does not support 2.13
-      "org.neo4j" % "neo4j" % "4.2.4",
-      "net.liftweb" %% "lift-json" % "3.4.3",
+      // neo4j 4.4 does not support Scala 2.13 yet.
+      "org.neo4j" % "neo4j" % "4.4.0",
+      "net.liftweb" %% "lift-json" % "3.5.0",
       // Force newer JNA to support more platforms/architectures.
-      "net.java.dev.jna" % "jna" % jnaVersion
+      "net.java.dev.jna" % "jna" % jnaVersion,
+      // Force common versions of other dependencies.
+      "io.netty" % "netty-all" % nettyVersion,
+      "org.slf4j" % "slf4j-nop" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -265,7 +297,7 @@ lazy val rxBenchmarks = (project in file("benchmarks/rx"))
     name := "rx",
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
-      "io.reactivex" % "rxjava" % "1.3.7"
+      "io.reactivex" % "rxjava" % "1.3.8"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -276,7 +308,7 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
     scalaVersion := scalaVersion213,
     scalacOptions += "-Ytasty-reader",
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala3-compiler_3" % "3.0.0",
+      "org.scala-lang" % "scala3-compiler_3" % "3.0.2",
       // The following is required to compile the workload sources.
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       // Force newer JNA to support more platforms/architectures.
@@ -315,7 +347,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
     ) % "compile->compile;compile->test"
   )
 
-val finagleVersion = "21.10.0"
+val finagleVersion = "21.11.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .settings(
@@ -323,14 +355,17 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
     scalaVersion := scalaVersion213,
     scalacOptions ++= Seq("-deprecation", "-feature"),
     libraryDependencies := Seq(
+      "com.google.guava" % "guava" % guavaVersion,
       "com.twitter" %% "finagle-http" % finagleVersion,
       "com.twitter" %% "finagle-stats" % finagleVersion,
       "com.twitter" %% "finagle-core" % finagleVersion,
       "com.twitter" %% "util-core" % finagleVersion,
-      "com.google.guava" % "guava" % "19.0",
-      "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
+      // Force common versions of other dependencies.
+      "io.netty" % "netty-all" % nettyVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
