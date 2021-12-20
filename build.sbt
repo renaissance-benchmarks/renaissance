@@ -209,6 +209,8 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       // Force newer Netty version.
       // Overrides versions pulled in by dependencies.
       "io.netty" % "netty-all" % nettyVersion,
+      // Force newer Zookeeper version.
+      "org.apache.zookeeper" % "zookeeper" % "3.6.3",
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
