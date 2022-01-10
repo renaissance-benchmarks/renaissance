@@ -2,9 +2,16 @@ import org.renaissance.License
 import sbt.Def
 import sbt.Package
 import sbt.io.RegularFileFilter
+import sbt.io.Using
 
+import java.io.OutputStream
 import java.nio.file.Paths
 import java.util.Properties
+import java.util.jar.Attributes
+import java.util.jar.Attributes.Name
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 import scala.collection._
 
 enablePlugins(GitVersioning)
@@ -61,6 +68,9 @@ lazy val commonSettingsNoScala = Seq(
 
 val scalaVersion212 = "2.12.15"
 val scalaVersion213 = "2.13.7"
+
+val modulesPropertiesName = "modules.properties"
+val benchmarksPropertiesName = "benchmarks.properties"
 
 addCommandAlias(
   "renaissanceFormat",
@@ -453,7 +463,7 @@ lazy val generateModulesProperties = taskKey[Seq[File]](
 
 renaissance / generateModulesProperties := {
   val properties = makeModulesProperties(modulesWithDependencies.value)
-  val outputFile = (Compile / resourceManaged).value / "modules.properties"
+  val outputFile = (Compile / resourceManaged).value / modulesPropertiesName
   sLog.value.info(s"Writing $outputFile ...")
   Seq(Utils.storeProperties(properties, "Module jars", outputFile))
 }
@@ -500,7 +510,7 @@ lazy val generateBenchmarksProperties = taskKey[Seq[File]](
 
 renaissance / generateBenchmarksProperties := {
   val properties = makeBenchmarksProperties(distroBenchmarkDescriptors.value)
-  val outputFile = (Compile / resourceManaged).value / "benchmarks.properties"
+  val outputFile = (Compile / resourceManaged).value / benchmarksPropertiesName
   sLog.value.info(s"Writing $outputFile ...")
   Seq(Utils.storeProperties(properties, "Benchmark details", outputFile))
 }
@@ -592,6 +602,77 @@ def mapClassesToAssemblyTask(classpath: Classpath) =
     }
   }
 
+//
+// Tasks related to generating metadata-only jars for benchmarks.
+// This makes them easier to run manually (for debugging purposes).
+//
+
+lazy val generateStandaloneJars = taskKey[Seq[File]](
+  "Generates metadata-only jars for standalone benchmark execution." +
+    "Includes only benchmarks matching the currently configured distribution."
+)
+
+renaissance / generateStandaloneJars := {
+  val modulesWithDeps = modulesWithDependencies.value.toMap
+  val outputBase = (Compile / resourceManaged).value / "single"
+
+  distroBenchmarkDescriptors.value.map { bench =>
+    val deps = modulesWithDeps(bench.module) ++ modulesWithDeps(
+      s"renaissance-harness_${bench.scalaVersion}"
+    ) ++ modulesWithDeps("renaissance-core")
+
+    val jars = deps.map { case (_, entry) => s"../$entry" }.toSet
+    val mainClass = "org.renaissance.harness.RenaissanceSuite"
+    val outputJar = outputBase / s"${bench.name}.jar"
+    val properties = makeBenchmarksProperties(Seq(bench))
+    createStandaloneJar(mainClass, properties, jars, outputJar)
+  }
+}
+
+def createStandaloneJar(
+  mainClass: String,
+  metadata: Properties,
+  jars: Set[String],
+  outputJar: File
+): File = {
+  //
+  // Create an almost empty jar for launching the benchmark in standalone
+  // mode. Reuse the current manifest, but change the main class attribute,
+  // add the Class-Path attribute with all the jars needed by the benchmark,
+  // and add the Renaissance-Use-Modules attribute to tell the harness to
+  // avoid using modules. Finally, add benchmark.properties file describing
+  // the single benchmark.
+  //
+  val manifest = new Manifest
+
+  Seq(
+    Name.MANIFEST_VERSION -> "1.0",
+    Name.MAIN_CLASS -> mainClass,
+    Name.CLASS_PATH -> jars.mkString(" "),
+    new Name("Renaissance-Use-Modules") -> false.toString
+  ).foldLeft(manifest.getMainAttributes) {
+    case (attrs, (name, value)) =>
+      attrs.put(name, value)
+      attrs
+  }
+
+  // Wrapper for JarOutputStream with manifest.
+  val jarOutputStream = Using.wrap((os: OutputStream) => new JarOutputStream(os, manifest))
+
+  // Write the jar file.
+  IO.createDirectory(outputJar.getParentFile)
+  Using.fileOutputStream(append = false)(outputJar) { fos =>
+    jarOutputStream(fos) { jos =>
+      // Store benchmark properties.
+      jos.putNextEntry(new JarEntry(benchmarksPropertiesName))
+      metadata.store(jos, "Benchmark metadata")
+      jos.closeEntry()
+    }
+  }
+
+  outputJar
+}
+
 /**
  * This is the root project. The tasks that generate metadata files and
  * the final bundle depend on [[renaissanceModules]] which contains the
@@ -608,10 +689,11 @@ lazy val renaissance = (project in file("."))
       Seq(
         // The main class for the JAR is the Launcher from the core package.
         mainClass := (renaissanceCore / Compile / mainClass).value,
-        // Generate benchmark metadata used by the launcher/harness.
+        // Generate module and benchmark metadata and metadata-only jars.
         resourceGenerators ++= Seq(
           generateModulesProperties.taskValue,
-          generateBenchmarksProperties.taskValue
+          generateBenchmarksProperties.taskValue,
+          generateStandaloneJars.taskValue
         ),
         // Set additional manifest attributes, especially Add-Opens.
         packageBin / packageOptions += generateManifestAttributesTask.value,
