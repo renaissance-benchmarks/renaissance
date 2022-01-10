@@ -421,7 +421,9 @@ val renaissanceModules = aggregateProjects :+ renaissanceCore
  * The task produces a sequence of tuples with the following structure:
  * (project name, runtime jars, scala version)
  */
-def collectModulesDetailsTask(projects: Seq[Project]) =
+def collectModulesDetailsTask(
+  projects: Seq[Project]
+): Def.Initialize[Task[Seq[(String, Seq[File], String)]]] =
   Tasks.collect(projects.map { project =>
     // Create a task to produce output tuple for a specific project.
     Def.task {
@@ -432,55 +434,91 @@ def collectModulesDetailsTask(projects: Seq[Project]) =
     }
   })
 
-/**
- * Generates module metadata file with the given name and for
- * the given modules as a managed compilation resource.
- */
-def generateModulesMetadataTask(modules: Seq[Project], baseName: String) =
-  Def.task {
-    val log = sLog.value
+//
+// Tasks related to generating 'modules.properties'.
+// This makes them easier to run manually (for debugging purposes).
+//
 
-    val modulesDetails = collectModulesDetailsTask(modules).value
+lazy val modulesWithDependencies = taskKey[Seq[(String, Seq[(File, String)])]](
+  "Collects runtime dependency jars for Renaissance modules"
+)
 
-    val modulesProps = new Properties
-    mapModuleJarsToAssemblyEntries(modulesDetails).foreach {
-      case (moduleName, moduleJarEntries) =>
-        val jarLine = moduleJarEntries.map { case (_, jarEntry) => jarEntry }.mkString(",")
-        modulesProps.setProperty(moduleName, jarLine)
-    }
+renaissance / modulesWithDependencies := mapModuleJarsToAssemblyEntries(
+  collectModulesDetailsTask(renaissanceModules).value
+)
 
-    val outputFile = (Compile / resourceManaged).value / baseName
+lazy val generateModulesProperties = taskKey[Seq[File]](
+  "Generates 'modules.properties' file as a resource containing module metadata."
+)
 
-    log.info(s"Writing $outputFile ...")
-    Seq(Utils.storeProperties(modulesProps, "Module jars", outputFile))
+renaissance / generateModulesProperties := {
+  val properties = makeModulesProperties(modulesWithDependencies.value)
+  val outputFile = (Compile / resourceManaged).value / "modules.properties"
+  sLog.value.info(s"Writing $outputFile ...")
+  Seq(Utils.storeProperties(properties, "Module jars", outputFile))
+}
+
+def makeModulesProperties(modules: Seq[(String, Seq[(File, String)])]) = {
+  // Collect metadata into Properties, mutating the initial instance.
+  modules.foldLeft(new Properties) {
+    case (props, (module, dependencies)) =>
+      val jarLine = dependencies.map { case (_, jarEntry) => jarEntry }.mkString(",")
+      props.setProperty(module, jarLine)
+      props
+  }
+}
+
+//
+// Tasks related to generating 'benchmarks.properties'.
+// This makes them easier to run manually (for debugging purposes).
+//
+
+lazy val benchmarkDescriptors = taskKey[Seq[BenchmarkInfo]](
+  "Produces a collection of benchmark descriptors for all benchmarks."
+)
+
+renaissance / benchmarkDescriptors := collectModulesDetailsTask(renaissanceBenchmarks).value
+  .flatMap {
+    // Find benchmarks in each benchmark module and return the descriptors.
+    case (moduleName, moduleJars, scalaVersion) =>
+      Benchmarks.listBenchmarks(moduleName, moduleJars, scalaVersion, None)
   }
 
-/**
- * Generates benchmark metadata file with the given name and for
- * the given benchmarks as a managed compilation resource.
- */
-def generateBenchmarksMetadataTask(modules: Seq[Project], baseName: String) =
-  Def.task {
-    val log = sLog.value
+lazy val distroBenchmarkDescriptors = taskKey[Seq[BenchmarkInfo]](
+  "Produces a collection of benchmark descriptors. " +
+    "Includes only benchmarks matching the currently configured distribution."
+)
 
-    val benchmarksProps = new Properties
-    collectModulesDetailsTask(modules).value.foreach {
-      case (moduleName, moduleJars, binaryVersion) =>
-        for (bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, Some(log))) {
-          if (!nonGplOnly.value || bench.distro == License.MIT) {
-            benchmarksProps.setProperty(s"benchmark.${bench.name}.scala_version", binaryVersion)
-            for ((k, v) <- bench.toMap) {
-              benchmarksProps.setProperty(s"benchmark.${bench.name}.$k", v)
-            }
-          }
-        }
-    }
+renaissance / distroBenchmarkDescriptors := benchmarkDescriptors.value.filter(b =>
+  !nonGplOnly.value || b.distro == License.MIT
+)
 
-    val outputFile = (Compile / resourceManaged).value / baseName
+lazy val generateBenchmarksProperties = taskKey[Seq[File]](
+  "Generates 'benchmarks.properties' file as a resource containing benchmark metadata. " +
+    "Includes only benchmarks matching the currently configured distribution."
+)
 
-    log.info(s"Writing $outputFile ...")
-    Seq(Utils.storeProperties(benchmarksProps, "Benchmark details", outputFile))
+renaissance / generateBenchmarksProperties := {
+  val properties = makeBenchmarksProperties(distroBenchmarkDescriptors.value)
+  val outputFile = (Compile / resourceManaged).value / "benchmarks.properties"
+  sLog.value.info(s"Writing $outputFile ...")
+  Seq(Utils.storeProperties(properties, "Benchmark details", outputFile))
+}
+
+def makeBenchmarksProperties(benchmarks: Seq[BenchmarkInfo]) = {
+  //
+  // Map benchmark property names into global name space and collect
+  // metadata for all benchmarks into a single Properties instance.
+  //
+  benchmarks.foldLeft(new Properties) {
+    case (props, bench) =>
+      bench.toMap.foreach {
+        case (k, v) =>
+          props.setProperty(s"benchmark.${bench.name}.$k", v)
+      }
+      props
   }
+}
 
 def mapModuleJarsToAssemblyEntries(modulesDetails: Seq[(String, Seq[File], String)]) = {
   //
@@ -572,11 +610,8 @@ lazy val renaissance = (project in file("."))
         mainClass := (renaissanceCore / Compile / mainClass).value,
         // Generate benchmark metadata used by the launcher/harness.
         resourceGenerators ++= Seq(
-          generateModulesMetadataTask(renaissanceModules, "modules.properties").taskValue,
-          generateBenchmarksMetadataTask(
-            renaissanceBenchmarks,
-            "benchmarks.properties"
-          ).taskValue
+          generateModulesProperties.taskValue,
+          generateBenchmarksProperties.taskValue
         ),
         // Set additional manifest attributes, especially Add-Opens.
         packageBin / packageOptions += generateManifestAttributesTask.value,
@@ -622,9 +657,9 @@ def generateJmhWrappersTask(modules: Seq[Project]) =
     IO.delete(outputDir)
 
     collectModulesDetailsTask(modules).value.flatMap {
-      case (moduleName, moduleJars, _) =>
+      case (moduleName, moduleJars, scalaVersion) =>
         for {
-          bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, None)
+          bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, scalaVersion, None)
           if (!nonGplOnly.value || bench.distro == License.MIT) &&
             (!bench.groups.contains("dummy") || bench.name == "dummy-empty")
         } yield {
