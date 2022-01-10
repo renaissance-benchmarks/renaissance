@@ -6,9 +6,7 @@ import org.renaissance.BenchmarkParameter;
 import org.renaissance.core.BenchmarkDescriptor.Configuration;
 import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
@@ -17,29 +15,20 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Predicate;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
 
-import static java.lang.Boolean.parseBoolean;
 import static java.util.function.Function.identity;
-import static java.util.jar.Attributes.Name;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toList;
@@ -48,7 +37,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.renaissance.core.ResourceUtils.getManifestAttributeValue;
 import static org.renaissance.core.ResourceUtils.getMetadataUrl;
 import static org.renaissance.core.ResourceUtils.loadPropertiesAsMap;
-import static org.renaissance.core.ResourceUtils.resourceFileName;
 
 /**
  * Provides core services for a benchmark suite. Represents a collection of
@@ -142,98 +130,6 @@ public final class BenchmarkSuite {
     boolean minSatisfied = jvmVersion.compareTo(bd.jvmVersionMin()) >= 0;
     boolean maxSatisfied = jvmVersion.compareTo(bd.jvmVersionMax()) <= 0;
     return minSatisfied && maxSatisfied;
-  }
-
-
-  /**
-   * Extracts a {@link Benchmark} to the given directory, including the
-   * harness compiled by a matching version of Scala.
-   */
-  public List<Path> extractBenchmark(
-    String mainClass, BenchmarkDescriptor bd, Path destDir
-  ) throws IOException {
-    List<Path> jars = new ArrayList<>();
-    if (moduleLoader.isPresent()) {
-      ModuleLoader loader = moduleLoader.get();
-      jars.addAll(loader.extractModule(bd.module(), destDir));
-
-      String harnessModule = String.format("renaissance-harness_%s", bd.scalaVersion());
-      jars.addAll(loader.extractModule(harnessModule, destDir));
-
-      jars.addAll(loader.extractModule("renaissance-core", destDir));
-
-      // Create a jar file for standalone execution.
-      jars.add(createStandaloneJar(
-        mainClass, bd.toProperties(), jars, destDir.resolve("standalone.jar")
-      ));
-    }
-
-    return jars;
-  }
-
-  private Path createStandaloneJar(
-    String mainClass, Properties metadata, List<Path> jars, Path outputJar
-  ) throws IOException {
-    //
-    // Create an almost empty jar for launching the benchmark in standalone
-    // mode. Reuse the current manifest, but change the main class attribute,
-    // add the Class-Path attribute with all the jars needed by the benchmark,
-    // and add the Renaissance-Use-Modules attribute to tell the harness to
-    // avoid using modules. Finally, add benchmark.properties file describing
-    // the single benchmark.
-    //
-    Manifest manifest = getManifest(thisClass.getClassLoader());
-    Attributes attributes = manifest.getMainAttributes();
-
-    // Change the main class.
-    attributes.put(Name.MAIN_CLASS, mainClass);
-
-    // Put all other jars on the class path.
-    String classPath = jars.stream().map(p -> p.getFileName().toString()).collect(joining(" "));
-    attributes.put(Name.CLASS_PATH, classPath);
-
-    // Tell the harness to avoid using modules.
-    attributes.put(new Name(USE_MODULES_ATTRIBUTE), Boolean.toString(false));
-
-    // Update the implementation title.
-    attributes.put(Name.IMPLEMENTATION_TITLE, "renaissance");
-
-    // Benchmark metadata.
-    String propertiesName = resourceFileName(benchmarkMetadataUri.getPath());
-
-    // Write the jar file.
-    try (
-      // Close the output stream if writing the manifest fails.
-      FileOutputStream fos = new FileOutputStream(outputJar.toFile());
-    ) {
-      JarOutputStream jos = new JarOutputStream(fos, manifest);
-
-      // Store benchmark properties.
-      jos.putNextEntry(new ZipEntry(propertiesName));
-      metadata.store(jos, "Benchmark metadata");
-      jos.closeEntry();
-
-      jos.close();
-
-      return outputJar;
-    }
-  }
-
-  private static Manifest getManifest(ClassLoader classLoader) throws IOException {
-    try (
-      // Close the stream after reading the manifest.
-      InputStream mis = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME);
-    ) {
-      return new Manifest(mis);
-    }
-  }
-
-  private static Manifest getManifest(String jarName) throws IOException {
-    try (
-      JarFile jar = new JarFile(jarName)
-    ) {
-      return jar.getManifest();
-    }
   }
 
   /**
@@ -416,7 +312,7 @@ public final class BenchmarkSuite {
 
   /** Loads and instantiates an extension class with given arguments. */
   public <T> T createExtension(
-    List<Path> classPath, String className, Class<T> baseClass, String[] args
+    Collection<Path> classPath, String className, Class<T> baseClass, String[] args
   ) throws ExtensionException {
     ClassLoader loader = createClassLoaderFromPaths(classPath, className);
     final Class<? extends T> extClass = loadFromClassLoader(loader, className, baseClass);
@@ -429,7 +325,7 @@ public final class BenchmarkSuite {
 
   /** Loads and instantiates an extension specified in properties with given arguments. */
   public <T> T createDescribedExtension(
-    List<Path> classPath, String classNameAttribute, Class<T> baseClass, String[] args
+    Collection<Path> classPath, String classNameAttribute, Class<T> baseClass, String[] args
   ) throws ExtensionException {
     ClassLoader loader = createClassLoaderFromPaths(classPath, classNameAttribute);
     Optional<String> className = getManifestAttributeValue(loader, classNameAttribute);

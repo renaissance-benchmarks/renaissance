@@ -15,10 +15,8 @@ import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
 
 import java.io.File
-import java.io.IOException
 import java.io.PrintStream
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Locale
 import java.util.concurrent.TimeUnit.MILLISECONDS
@@ -87,10 +85,6 @@ object RenaissanceSuite {
       print(formatGroupList(realBenchmarks))
     } else if (config.benchmarkSpecifiers.isEmpty) {
       print(parser.usage())
-    } else if (config.extractOnly) {
-      // Extract selected benchmarks to individual directories.
-      val benchmarks = selectBenchmarks(suite, config.benchmarkSpecifiers)
-      extractBenchmarks(suite, benchmarks, config.extractBase)
     } else {
       // Collect specified benchmarks compatible with the JVM.
       var benchmarks = selectBenchmarks(suite, config.benchmarkSpecifiers)
@@ -144,27 +138,6 @@ object RenaissanceSuite {
     while (cause != null) {
       output.println(s"cause: ${initialCause.getMessage}")
       cause = cause.getCause
-    }
-  }
-
-  private def extractBenchmarks(
-    suite: BenchmarkSuite,
-    benchmarks: Seq[BenchmarkDescriptor],
-    extractBase: Path
-  ): Unit = {
-    // Strip companion object suffix from class name.
-    val mainClass = RenaissanceSuite.getClass.getName.stripSuffix("$")
-
-    for (descriptor <- benchmarks) {
-      try {
-        val extractDir = Files.createDirectories(extractBase.resolve(descriptor.name()))
-        suite.extractBenchmark(mainClass, descriptor, extractDir)
-      } catch {
-        case ioe: IOException =>
-          Console.err.println(
-            s"Failed to extract benchmark '${descriptor.name()}': ${ioe.getMessage}"
-          )
-      }
     }
   }
 

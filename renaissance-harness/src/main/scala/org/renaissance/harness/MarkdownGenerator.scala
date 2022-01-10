@@ -83,10 +83,15 @@ object MarkdownGenerator {
     // Create a benchmark suite with default benchmark metadata URI (unless
     // overridden), but with no parameter overrides and no module loader.
     //
-    val provider = Try(BenchmarkSuite.create(
-      Paths.get(""), "default", metadataOverrideUri,
-      Collections.emptyMap(), false /* without module loader */
-    ))
+    val provider = Try(
+      BenchmarkSuite.create(
+        Paths.get(""),
+        "default",
+        metadataOverrideUri,
+        Collections.emptyMap(),
+        false /* without module loader */
+      )
+    )
 
     provider match {
       case Success(registry) => registry

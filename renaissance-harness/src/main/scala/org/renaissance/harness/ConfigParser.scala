@@ -1,12 +1,8 @@
 package org.renaissance.harness
 
 import scopt.OptionParser
-import scopt.Read
 
 import java.net.URI
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 
 private final class ConfigParser(tags: Map[String, String]) {
 
@@ -126,20 +122,6 @@ private final class ConfigParser(tags: Map[String, String]) {
       opt[Unit]("group-list")
         .text("Print the names of all benchmark groups (one per line).")
         .action((_, c) => c.withGroupList())
-
-      opt[Unit]("extract")
-        .text("Extracts the selected benchmarks without running them.")
-        .action((_, c) => c.withExtract())
-
-      opt[String]("extract-base")
-        .valueName("<dir>")
-        .validate { v =>
-          val base = Paths.get(v)
-          if (Files.isDirectory(base) && Files.isWritable(base)) success
-          else failure(s"the directory '$v' does not exist or is not writable")
-        }
-        .text("Extract benchmarks to directories in <dir>. Defaults to current directory.")
-        .action((v, c) => c.withExtractBase(v))
 
       opt[URI]("benchmark-metadata")
         .valueName("<path-or-uri>")

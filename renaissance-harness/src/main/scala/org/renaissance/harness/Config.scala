@@ -189,10 +189,10 @@ private final class Config {
 
   /**
    * Determines whether to use a separate class loader for each benchmark
-   * module. Defaults to [[true]] to ensure separation of benchmarks from
+   * module. Defaults to 'true' to ensure separation of benchmarks from
    * the harness and from each other.
    *
-   * If set to [[false]], the harness will load everything using a single
+   * If set to 'false', the harness will load everything using a single
    * (default) classloader. This is useful for running single benchmarks
    * without the main bundle in environments that do not support multiple
    * classloaders, such as the Native Image.
@@ -224,29 +224,6 @@ private final class Config {
 
   def withKeepScratch() = {
     keepScratch = true
-    this
-  }
-
-  /**
-   * Extract the selected benchmarks without running them. In addition to
-   * benchmark dependencies, this also includes the harness compiled with
-   * the same Scala version as the rest of the benchmark.
-   */
-  var extractOnly = false
-
-  def withExtract() = {
-    extractOnly = true
-    this
-  }
-
-  /**
-   * The base directory into which to place subdirectories with extracted
-   * benchmarks. Uses current directory by default.
-   */
-  var extractBase: Path = Paths.get("")
-
-  def withExtractBase(dir: String) = {
-    extractBase = Paths.get(dir)
     this
   }
 
