@@ -663,7 +663,7 @@ def createStandaloneJar(
   val jarOutputStream = Using.wrap((os: OutputStream) => new JarOutputStream(os, manifest))
 
   // Write the jar file.
-  IO.createDirectory(outputJar.getParentFile)
+  Option(outputJar.getParentFile).foreach { dir => IO.createDirectory(dir) }
   Using.fileOutputStream(append = false)(outputJar) { fos =>
     jarOutputStream(fos) { jos =>
       // Store benchmark properties.
