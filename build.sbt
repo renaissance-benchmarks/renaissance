@@ -1,6 +1,7 @@
 import org.renaissance.License
 import sbt.Def
 import sbt.Package
+import sbt.Package.ManifestAttributes
 import sbt.io.RegularFileFilter
 import sbt.io.Using
 
@@ -613,54 +614,81 @@ lazy val generateStandaloneJars = taskKey[Seq[File]](
 )
 
 renaissance / generateStandaloneJars := {
-  val modulesWithDeps = modulesWithDependencies.value.toMap
-  val outputBase = (Compile / resourceManaged).value / "single"
+  val outputDir = (Compile / resourceManaged).value / "single"
+  sLog.value.debug(s"Deleting standalone jars in $outputDir")
+  IO.delete(outputDir)
 
+  val modulesWithDeps = modulesWithDependencies.value.toMap
+  val basePkgOptions = (Compile / packageBin / packageOptions).value
+
+  sLog.value.info(s"Creating standalone jars in $outputDir")
   distroBenchmarkDescriptors.value.map { bench =>
+    // Collect all dependencies, together with core and harness packages.
     val deps = modulesWithDeps(bench.module) ++ modulesWithDeps(
       s"renaissance-harness_${bench.scalaVersion}"
     ) ++ modulesWithDeps("renaissance-core")
 
+    // Paths in the manifest are unix-style.
     val jars = deps.map { case (_, entry) => s"../$entry" }.toSet
-    val mainClass = "org.renaissance.harness.RenaissanceSuite"
-    val outputJar = outputBase / s"${bench.name}.jar"
+
+    //
+    // Copy manifest attributes and override the 'Main-Class' attribute to
+    // refer to the harness main class (instead of the launcher). Set the
+    // 'Class-Path' attribute to refer to all the dependencies used by this
+    // benchmark, and set the 'Renaissance-Use-Modules' attribute to tell the
+    // harness to avoid using modules.
+    //
+    val pkgOptions = basePkgOptions :+ Package.ManifestAttributes(
+      Name.MANIFEST_VERSION -> "1.0",
+      Name.MAIN_CLASS -> harnessMainClass,
+      Name.CLASS_PATH -> jars.mkString(" "),
+      new Name("Renaissance-Use-Modules") -> false.toString
+    )
+
+    val manifest = createPackageManifest(pkgOptions)
     val properties = makeBenchmarksProperties(Seq(bench))
-    createStandaloneJar(mainClass, properties, jars, outputJar)
+    val outputJar = outputDir / s"${bench.name}.jar"
+    createStandaloneJar(manifest, properties, outputJar, Some(sLog.value))
   }
 }
 
-def createStandaloneJar(
-  mainClass: String,
-  metadata: Properties,
-  jars: Set[String],
-  outputJar: File
-): File = {
-  //
-  // Create an almost empty jar for launching the benchmark in standalone
-  // mode. Reuse the current manifest, but change the main class attribute,
-  // add the Class-Path attribute with all the jars needed by the benchmark,
-  // and add the Renaissance-Use-Modules attribute to tell the harness to
-  // avoid using modules. Finally, add benchmark.properties file describing
-  // the single benchmark.
-  //
-  val manifest = new Manifest
+def createPackageManifest(packageOptions: Seq[PackageOption]) = {
+  packageOptions.foldLeft(new Manifest) {
+    // Collect manifest attributes.
+    case (manifest, ManifestAttributes(attributes @ _*)) =>
+      attributes.foldLeft(manifest.getMainAttributes) {
+        case (attrs, (name, value)) =>
+          attrs.put(name, value)
+          attrs
+      }
+      manifest
 
-  Seq(
-    Name.MANIFEST_VERSION -> "1.0",
-    Name.MAIN_CLASS -> mainClass,
-    Name.CLASS_PATH -> jars.mkString(" "),
-    new Name("Renaissance-Use-Modules") -> false.toString
-  ).foldLeft(manifest.getMainAttributes) {
-    case (attrs, (name, value)) =>
-      attrs.put(name, value)
-      attrs
+    // Ignore other package options.
+    case (manifest, _) =>
+      manifest
   }
+}
+
+/**
+ * Creates a JAR containing only the manifest and the properties
+ * file with the metadata of a single benchmark. Such a JAR can be
+ * used to execute a single benchmark without module loading.
+ */
+def createStandaloneJar(
+  manifest: Manifest,
+  metadata: Properties,
+  outputJar: File,
+  maybeLog: Option[Logger]
+): File = {
+  maybeLog.foreach { log => log.debug(s"Writing standalone $outputJar ...") }
 
   // Wrapper for JarOutputStream with manifest.
   val jarOutputStream = Using.wrap((os: OutputStream) => new JarOutputStream(os, manifest))
 
-  // Write the jar file.
+  // Create leading directories.
   Option(outputJar.getParentFile).foreach { dir => IO.createDirectory(dir) }
+
+  // Write the jar file.
   Using.fileOutputStream(append = false)(outputJar) { fos =>
     jarOutputStream(fos) { jos =>
       // Store benchmark properties.
