@@ -70,6 +70,7 @@ val scalaVersion213 = "2.13.7"
 
 val modulesPropertiesName = "modules.properties"
 val benchmarksPropertiesName = "benchmarks.properties"
+val harnessMainClass = "org.renaissance.harness.RenaissanceSuite"
 
 addCommandAlias(
   "renaissanceFormat",
@@ -146,7 +147,7 @@ val renaissanceHarnessCommonSettings = Seq(
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / scalacOptions ++= Seq("-deprecation"),
-  Compile / mainClass := Some("org.renaissance.harness.RenaissanceSuite"),
+  Compile / mainClass := Some(harnessMainClass),
   Compile / packageBin / packageOptions += generateManifestAttributesTask.value
 )
 
