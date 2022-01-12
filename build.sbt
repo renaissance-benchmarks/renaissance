@@ -411,7 +411,7 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
  * 'clean' task on the [[renaissance]] (root) project would break the build.
  */
 val aggregateProjects =
-  renaissanceBenchmarks ++ Seq(renaissanceHarness213, renaissanceHarness212)
+  renaissanceBenchmarks :+ renaissanceHarness213 :+ renaissanceHarness212
 
 /**
  * The [[renaissanceModules]] collection contains projects that represent
@@ -430,10 +430,8 @@ val renaissanceModules = aggregateProjects :+ renaissanceCore
  * The task produces a sequence of tuples with the following structure:
  * (project name, runtime jars, scala version)
  */
-def collectModulesDetailsTask(
-  projects: Seq[Project]
-): Def.Initialize[Task[Seq[(String, Seq[File], String)]]] =
-  Tasks.collect(projects.map { project =>
+def collectModulesDetailsTask(projects: Seq[Project]) =
+  Tasks.collect[(String, Seq[File], String)](projects.map { project =>
     // Create a task to produce output tuple for a specific project.
     Def.task {
       val projectName = (project / name).value
@@ -731,7 +729,7 @@ lazy val renaissance = (project in file("."))
  * The task returns a collection of generated source files.
  */
 def generateJmhWrappersTask(modules: Seq[Project]) =
-  Def.task {
+  Def.task[Seq[File]] {
     val log = sLog.value
 
     // Delete all subdirectories in the output directory.
@@ -757,32 +755,29 @@ def generateJmhWrappersTask(modules: Seq[Project]) =
  * Because the JMH generator produces sources and resources at the same time,
  * the task returns two corresponding file collections.
  */
-def generateJmhSourcesResourcesTask(
-  wrappers: Project
-): Def.Initialize[Task[(Seq[File], Seq[File])]] =
-  Def
-    .task {
-      val log = sLog.value
+def generateJmhSourcesResourcesTask(wrappers: Project) =
+  Def.task[(Seq[File], Seq[File])] {
+    val log = sLog.value
 
-      val inputBytecodeDir = (wrappers / Compile / classDirectory).value
-      val outputSourceDir = (Compile / sourceManaged).value
-      val outputResourceDir = (Compile / resourceManaged).value
+    val inputBytecodeDir = (wrappers / Compile / classDirectory).value
+    val outputSourceDir = (Compile / sourceManaged).value
+    val outputResourceDir = (Compile / resourceManaged).value
 
-      val jmhMainClass = "org.openjdk.jmh.generators.bytecode.JmhBytecodeGenerator"
-      val jmhClasspath = (Compile / dependencyClasspath).value.map(_.data)
-      val jmhOptions = Seq(inputBytecodeDir, outputSourceDir, outputResourceDir).map(_.toString)
+    val jmhMainClass = "org.openjdk.jmh.generators.bytecode.JmhBytecodeGenerator"
+    val jmhClasspath = (Compile / dependencyClasspath).value.map(_.data)
+    val jmhOptions = Seq(inputBytecodeDir, outputSourceDir, outputResourceDir).map(_.toString)
 
-      log.debug(
-        s"Running JMH generator...\n\toptions: $jmhOptions\n\tclasspath: $jmhClasspath"
-      )
-      val sbtRun = new Run(scalaInstance.value, true, taskTemporaryDirectory.value)
-      sbtRun.run(jmhMainClass, jmhClasspath, jmhOptions, sLog.value).get
+    log.debug(
+      s"Running JMH generator...\n\toptions: $jmhOptions\n\tclasspath: $jmhClasspath"
+    )
+    val sbtRun = new Run(scalaInstance.value, true, taskTemporaryDirectory.value)
+    sbtRun.run(jmhMainClass, jmhClasspath, jmhOptions, sLog.value).get
 
-      // Return sources and resources separately.
-      val sourceFiles = (outputSourceDir ** RegularFileFilter).get
-      val resourceFiles = (outputResourceDir ** RegularFileFilter).get
-      (sourceFiles, resourceFiles)
-    }
+    // Return sources and resources separately.
+    val sourceFiles = (outputSourceDir ** RegularFileFilter).get
+    val resourceFiles = (outputResourceDir ** RegularFileFilter).get
+    (sourceFiles, resourceFiles)
+  }
 
 /**
  * Generates assembly mappings for the contents of JAR files on the given
