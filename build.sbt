@@ -7,7 +7,6 @@ import sbt.io.Using
 import java.io.OutputStream
 import java.nio.file.Paths
 import java.util.Properties
-import java.util.jar.Attributes
 import java.util.jar.Attributes.Name
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
@@ -457,13 +456,15 @@ renaissance / modulesWithDependencies := mapModuleJarsToAssemblyEntries(
   collectModulesDetailsTask(renaissanceModules).value
 )
 
-lazy val generateModulesProperties = taskKey[Seq[File]](
-  "Generates 'modules.properties' file as a resource containing module metadata."
+lazy val generateModulesProperties = inputKey[Seq[File]](
+  "Collects module metadata and stores it in a properties file of given name."
 )
 
 renaissance / generateModulesProperties := {
+  import complete.DefaultParsers._
+  val outputName = trimmed(OptSpace ~> StringBasic).parsed
+  val outputFile = (Compile / resourceManaged).value / outputName
   val properties = makeModulesProperties(modulesWithDependencies.value)
-  val outputFile = (Compile / resourceManaged).value / modulesPropertiesName
   sLog.value.info(s"Writing $outputFile ...")
   Seq(Utils.storeProperties(properties, "Module jars", outputFile))
 }
@@ -503,14 +504,16 @@ renaissance / distroBenchmarkDescriptors := benchmarkDescriptors.value.filter(b 
   !nonGplOnly.value || b.distro == License.MIT
 )
 
-lazy val generateBenchmarksProperties = taskKey[Seq[File]](
-  "Generates 'benchmarks.properties' file as a resource containing benchmark metadata. " +
+lazy val generateBenchmarksProperties = inputKey[Seq[File]](
+  "Collects benchmark metadata and stores it in a properties file of given name." +
     "Includes only benchmarks matching the currently configured distribution."
 )
 
 renaissance / generateBenchmarksProperties := {
+  import complete.DefaultParsers._
+  val outputName = trimmed(OptSpace ~> StringBasic).parsed
+  val outputFile = (Compile / resourceManaged).value / outputName
   val properties = makeBenchmarksProperties(distroBenchmarkDescriptors.value)
-  val outputFile = (Compile / resourceManaged).value / benchmarksPropertiesName
   sLog.value.info(s"Writing $outputFile ...")
   Seq(Utils.storeProperties(properties, "Benchmark details", outputFile))
 }
@@ -691,8 +694,8 @@ lazy val renaissance = (project in file("."))
         mainClass := (renaissanceCore / Compile / mainClass).value,
         // Generate module and benchmark metadata and metadata-only jars.
         resourceGenerators ++= Seq(
-          generateModulesProperties.taskValue,
-          generateBenchmarksProperties.taskValue,
+          generateModulesProperties.toTask(modulesPropertiesName).taskValue,
+          generateBenchmarksProperties.toTask(benchmarksPropertiesName).taskValue,
           generateStandaloneJars.taskValue
         ),
         // Set additional manifest attributes, especially Add-Opens.
