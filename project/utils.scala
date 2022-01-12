@@ -10,7 +10,14 @@ import java.util.Properties
 
 object Utils {
 
-  def storeProperties(props: Properties, comments: String, file: sbt.File) = {
+  def storeProperties(
+    props: Properties,
+    comments: String,
+    file: sbt.File,
+    maybeLog: Option[Logger]
+  ) = {
+    maybeLog.foreach { log => log.info(s"Writing $file ...") }
+
     // Create leading directories.
     Option(file.getParentFile).foreach { dir => IO.createDirectory(dir) }
 

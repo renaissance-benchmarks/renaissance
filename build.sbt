@@ -465,8 +465,7 @@ renaissance / generateModulesProperties := {
   val outputName = trimmed(OptSpace ~> StringBasic).parsed
   val outputFile = (Compile / resourceManaged).value / outputName
   val properties = makeModulesProperties(modulesWithDependencies.value)
-  sLog.value.info(s"Writing $outputFile ...")
-  Seq(Utils.storeProperties(properties, "Module jars", outputFile))
+  Seq(Utils.storeProperties(properties, "Module jars", outputFile, Some(sLog.value)))
 }
 
 def makeModulesProperties(modules: Seq[(String, Seq[(File, String)])]) = {
@@ -514,8 +513,7 @@ renaissance / generateBenchmarksProperties := {
   val outputName = trimmed(OptSpace ~> StringBasic).parsed
   val outputFile = (Compile / resourceManaged).value / outputName
   val properties = makeBenchmarksProperties(distroBenchmarkDescriptors.value)
-  sLog.value.info(s"Writing $outputFile ...")
-  Seq(Utils.storeProperties(properties, "Benchmark details", outputFile))
+  Seq(Utils.storeProperties(properties, "Benchmark details", outputFile, Some(sLog.value)))
 }
 
 def makeBenchmarksProperties(benchmarks: Seq[BenchmarkInfo]) = {
