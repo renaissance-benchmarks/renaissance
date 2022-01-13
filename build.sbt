@@ -60,7 +60,7 @@ ThisBuild / Compile / scalacOptions += "-target:jvm-1.8"
 ThisBuild / git.useGitDescribe := true
 
 val scalaVersion212 = "2.12.15"
-val scalaVersion213 = "2.13.7"
+val scalaVersion213 = "2.13.8"
 
 val modulesPropertiesName = "modules.properties"
 val benchmarksPropertiesName = "benchmarks.properties"
