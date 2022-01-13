@@ -769,33 +769,35 @@ lazy val renaissance = (project in file("."))
 
 val jmhVersion = "1.33"
 
+//
+// Tasks related to generating JMH wrappers jars for benchmarks.
+// This makes them easier to run manually (for debugging purposes).
+//
+
+lazy val generateJmhWrappers = taskKey[Seq[File]](
+  "Generates wrappers for benchmark execution under JMH." +
+    "Includes only benchmarks matching the currently configured distribution, " +
+    "but excludes dummy benchmarks (with the exception of dummy-empty)."
+)
+
 /**
- * Generates JMH wrappers for Renaissance benchmarks in the given modules.
- * Each wrapper is derived from a common base class and includes just the
- * benchmark-specific information needed to run the benchmark under JMH.
- * The task returns a collection of generated source files.
+ * Generates JMH wrappers for Renaissance benchmarks. Each wrapper is derived
+ * from a common base class and includes just the benchmark-specific information
+ * needed to run the benchmark under JMH. The task returns a collection of
+ * generated source files.
  */
-def generateJmhWrappersTask(modules: Seq[Project]) =
-  Def.task[Seq[File]] {
-    val log = sLog.value
+renaissanceJmhWrappers / generateJmhWrappers := {
+  val outputDir = (Compile / sourceManaged).value
 
-    // Delete all subdirectories in the output directory.
-    val outputDir = (Compile / sourceManaged).value
-    log.debug(s"Deleting JMH wrappers in $outputDir")
-    IO.delete(outputDir)
+  // Delete all subdirectories in the output directory.
+  sLog.value.debug(s"Deleting JMH wrappers in $outputDir")
+  IO.delete(outputDir)
 
-    collectModulesDetailsTask(modules).value.flatMap {
-      case (moduleName, moduleJars, scalaVersion) =>
-        for {
-          bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, scalaVersion, None)
-          if (!nonGplOnly.value || bench.distro == License.MIT) &&
-            (!bench.groups.contains("dummy") || bench.name == "dummy-empty")
-        } yield {
-          log.info(s"Generating JMH wrappers for ${bench.name}")
-          RenaissanceJmh.generateJmhWrapperBenchmarkClass(bench, outputDir.toPath)
-        }
-    }
+  distroRealBenchmarkDescriptors.value.map { bench =>
+    sLog.value.info(s"Generating JMH wrappers for ${bench.name}")
+    RenaissanceJmh.generateJmhWrapperBenchmarkClass(bench, outputDir.toPath)
   }
+}
 
 /**
  * Generates JMH sources and resources for the generated benchmark wrappers.
@@ -804,8 +806,6 @@ def generateJmhWrappersTask(modules: Seq[Project]) =
  */
 def generateJmhSourcesResourcesTask(wrappers: Project) =
   Def.task[(Seq[File], Seq[File])] {
-    val log = sLog.value
-
     val inputBytecodeDir = (wrappers / Compile / classDirectory).value
     val outputSourceDir = (Compile / sourceManaged).value
     val outputResourceDir = (Compile / resourceManaged).value
@@ -814,7 +814,7 @@ def generateJmhSourcesResourcesTask(wrappers: Project) =
     val jmhClasspath = (Compile / dependencyClasspath).value.map(_.data)
     val jmhOptions = Seq(inputBytecodeDir, outputSourceDir, outputResourceDir).map(_.toString)
 
-    log.debug(
+    sLog.value.debug(
       s"Running JMH generator...\n\toptions: $jmhOptions\n\tclasspath: $jmhClasspath"
     )
     val sbtRun = new Run(scalaInstance.value, true, taskTemporaryDirectory.value)
@@ -870,7 +870,7 @@ lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
     libraryDependencies := Seq(
       "org.openjdk.jmh" % "jmh-core" % jmhVersion
     ),
-    Compile / sourceGenerators += generateJmhWrappersTask(renaissanceBenchmarks).taskValue
+    Compile / sourceGenerators += generateJmhWrappers.taskValue
   )
   // We need the module and benchmark metadata in addition to core classes.
   .dependsOn(renaissance)
