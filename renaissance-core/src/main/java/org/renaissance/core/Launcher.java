@@ -8,11 +8,14 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
+
+import static org.renaissance.core.DirUtils.createScratchDirectory;
 
 public final class Launcher {
   private static final Logger logger = Logging.getPackageLogger(Launcher.class);
@@ -20,6 +23,8 @@ public final class Launcher {
   private static final String MARKDOWN_GENERATOR = "org.renaissance.harness.MarkdownGenerator";
   private static final String HARNESS_MAIN_CLASS = "org.renaissance.harness.RenaissanceSuite";
   private static final String HARNESS_MODULE_NAME = "renaissance-harness_2.13";
+
+  private static final URI moduleMetadataUri = URI.create("resource:/modules.properties");
 
 
   public static void main(String[] args) {
@@ -43,6 +48,7 @@ public final class Launcher {
         e.getMessage(), Optional.of(e.getCause())
       ));
 
+      System.err.println(e.getMessage());
       System.exit(1);
     }
   }
@@ -51,30 +57,38 @@ public final class Launcher {
   private static void launchHarnessClass(
     String className, String[] args
   ) throws LaunchException {
+    //
+    // Determine the launcher scratch base directory, in which to create the
+    // actual scratch directory. By default, we use the current directory as
+    // the scratch base, even though it may seem tempting to put it in the
+    // system temporary directory. However, temporary directory (on Linux) is
+    // often backed by "tmpfs" file system and storing data there may create
+    // artificial memory pressure, causing the system to swap other things
+    // out and impact the results.
+    //
+    Path scratchBaseDir = getScratchBase(args);
+    logger.config(() -> "Scratch base: "+ printable(scratchBaseDir));
+
+    Path scratchRootDir = createScratchRoot(scratchBaseDir, getKeepScratch(args));
+    logger.config(() -> "Scratch root (launcher): " + printable(scratchRootDir));
+
+    // Create module loader with launcher-specific scratch root.
     try {
-      //
-      // Determine the launcher scratch base directory, in which to create the
-      // actual scratch directory. By default, we use the current directory as
-      // the scratch base, even though it may seem tempting to put it in the
-      // system temporary directory. However, temporary directory (on Linux) is
-      // often backed by "tmpfs" file system and storing data there may create
-      // artificial memory pressure, causing the system to swap other things
-      // out and impact the results.
-      //
-      Path scratchBaseDir = getScratchBase(args);
-
-      logger.config(() -> "Scratch base: "+ printable(scratchBaseDir));
-      Path scratchRootDir = DirUtils.createScratchDirectory(
-        scratchBaseDir, "launcher-", getKeepScratch(args)
-      );
-
-      // Create module loader with launcher-specific scratch root.
-      logger.config(() -> "Scratch root (launcher): " + printable(scratchRootDir));
-      ModuleLoader loader = ModuleLoader.create(scratchRootDir);
+      ModuleLoader loader = ModuleLoader.create(scratchRootDir, moduleMetadataUri);
       loadAndInvokeHarnessClass(loader, className, args);
 
     } catch (IOException e) {
-      throw new LaunchException(e, "Failed to create scratch directory: ");
+      throw new LaunchException(e, "failed to create module loader");
+    }
+  }
+
+  private static Path createScratchRoot(
+    Path scratchBaseDir, boolean keepScratch
+  ) throws LaunchException {
+    try {
+      return createScratchDirectory(scratchBaseDir, "launcher-", keepScratch);
+    } catch (IOException e) {
+      throw new LaunchException(e, "failed to create scratch directory");
     }
   }
 
@@ -136,10 +150,10 @@ public final class Launcher {
   }
 
 
-  private static String prefixStackTrace(final String prefix, Optional<Throwable> optionalCause) {
+  private static String prefixStackTrace(final CharSequence prefix, Optional<Throwable> optionalCause) {
     final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    final PrintStream printer = new PrintStream(bytes);
 
+    final PrintStream printer = new PrintStream(bytes);
     printer.append(prefix);
     optionalCause.ifPresent(cause -> cause.printStackTrace(printer));
     printer.close();

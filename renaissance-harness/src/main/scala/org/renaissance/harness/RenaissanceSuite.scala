@@ -6,14 +6,16 @@ import org.renaissance.Plugin
 import org.renaissance.Plugin.ExecutionPolicy
 import org.renaissance.core.BenchmarkDescriptor
 import org.renaissance.core.BenchmarkSuite
-import org.renaissance.core.BenchmarkSuite.jvmSpecVersion
 import org.renaissance.core.BenchmarkSuite.ExtensionException
+import org.renaissance.core.BenchmarkSuite.getManifestUseModulesValue
+import org.renaissance.core.BenchmarkSuite.jvmSpecVersion
 import org.renaissance.core.DirUtils
 import org.renaissance.harness.ExecutionPolicies.FixedOpCount
 import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
 
 import java.io.File
+import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Locale
@@ -22,6 +24,9 @@ import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
 import scala.collection._
 import scala.jdk.CollectionConverters._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object RenaissanceSuite {
 
@@ -38,7 +43,7 @@ object RenaissanceSuite {
     )
 
     val config = parser.parse(args) match {
-      case Some(c) => c
+      case Some(parsedConfig) => parsedConfig
       case None => sys.exit(1)
     }
 
@@ -49,12 +54,22 @@ object RenaissanceSuite {
       config.keepScratch
     )
 
-    // Setup suite core services.
-    val suite = BenchmarkSuite.create(
-      scratchRoot,
-      config.configuration,
-      config.parameterOverrides.asJava
-    )
+    // Create benchmark suite core.
+    val suite: BenchmarkSuite = Try(
+      BenchmarkSuite.create(
+        scratchRoot,
+        config.configuration,
+        config.benchmarkMetadataOverrideUri,
+        config.parameterOverrides.asJava,
+        getManifestUseModulesValue.orElse(config.useModules)
+      )
+    ) match {
+      case Success(suite) => suite
+      case Failure(cause) =>
+        Console.err.println("error: unable to initialize benchmark suite")
+        printCauseChain(cause, Console.err)
+        sys.exit(1)
+    }
 
     // Load information about available benchmarks.
     val realBenchmarks = suite.getMatchingBenchmarks(benchmarkIsReal).asScala
@@ -115,6 +130,14 @@ object RenaissanceSuite {
 
       // Note: no access to Config beyond this point.
       runBenchmarks(suite, benchmarks, policy, dispatcher)
+    }
+  }
+
+  private def printCauseChain(initialCause: Throwable, output: PrintStream): Unit = {
+    var cause = initialCause
+    while (cause != null) {
+      output.println(s"cause: ${initialCause.getMessage}")
+      cause = cause.getCause
     }
   }
 

@@ -2,35 +2,31 @@ package org.renaissance.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
-import static java.util.Collections.emptyMap;
-import static java.util.function.Function.identity;
+import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
+import static org.renaissance.core.ResourceUtils.extractResources;
+import static org.renaissance.core.ResourceUtils.getMetadataUrl;
+import static org.renaissance.core.ResourceUtils.loadPropertiesAsMap;
 
 public final class ModuleLoader {
-  private static final String MODULES_PROPERTIES = "/modules.properties";
-
-  private static final String RESOURCE_PATH_SEPARATOR = "/";
 
   private static final Class<?> thisClass = ModuleLoader.class;
   private static final Logger logger = Logging.getPackageLogger(thisClass);
@@ -65,68 +61,40 @@ public final class ModuleLoader {
    *
    * @param scratchRootDir The root of the scratch directory into which
    * module dependencies get extracted.
+   * @param moduleMetadataUri A {@link URI} pointing to a properties file
+   * containing the list of JAR files for each module.
    */
-  static ModuleLoader create(Path scratchRootDir) {
+  static ModuleLoader create(
+    Path scratchRootDir, URI moduleMetadataUri
+  ) throws IOException {
     logger.fine(() -> String.format(
-      "Creating module loader with scratch root '%s'", scratchRootDir
+      "Creating module loader, scratchRootDir='%s', moduleMetadata='%s'",
+      scratchRootDir, moduleMetadataUri
     ));
 
-    final Map<String, Set<String>> moduleJarPaths = loadModuleJarPaths(MODULES_PROPERTIES);
-    return new ModuleLoader(scratchRootDir, moduleJarPaths);
-  }
+    URL metadataUrl = getMetadataUrl(moduleMetadataUri);
+    Map<String, String> properties = loadPropertiesAsMap(metadataUrl);
+    Map<String, Set<String>> moduleJars = collectModuleJars(properties);
 
-
-  /**
-   * Loads the set of JAR resource paths for all modules from a property file.
-   * This method should not throw any exception because it is used in a static
-   * class initializer.
-   *
-   * @param resourceName the name of the resource to load.
-   * @return A {@link Map} with the module name as the key and a {@link Set}
-   * of JAR file paths as the value.
-   */
-  private static Map<String, Set<String>> loadModuleJarPaths(String resourceName) {
-    logger.fine(() -> String.format (
-      "Loading module JAR sets from resource '%s'", resourceName
-    ));
-
-    try (
-      InputStream stream = ModuleLoader.class.getResourceAsStream(resourceName)
-    ) {
-      Map<String, Set<String>> result = loadModuleProperties(stream);
-
-      if (logger.isLoggable(Level.CONFIG)) {
-        logModuleJarPaths(result);
-      }
-
-      return result;
-
-    } catch (IOException e) {
-      // Fail gracefully with an empty collection.
-      logger.severe("Failed to load module JAR paths: "+ e.getMessage());
-      return emptyMap();
+    if (logger.isLoggable(Level.CONFIG)) {
+      logModuleJars(moduleJars);
     }
+
+    return new ModuleLoader(scratchRootDir, moduleJars);
   }
 
-
-  private static Map<String, Set<String>> loadModuleProperties(InputStream stream)
-  throws IOException {
-    Properties props = new Properties();
-    props.load(stream);
-
-    return props.stringPropertyNames().stream().collect(toMap(
-      identity(), name -> pathsToSet(props.getProperty(name))
-    ));
+  private static Map<String, Set<String>> collectModuleJars(Map<String, String> properties) {
+    return properties.entrySet().stream()
+      .collect(toMap(Map.Entry::getKey, entry -> pathsToSet(entry.getValue())));
   }
-
 
   private static Set<String> pathsToSet(String paths) {
     // Convert "path1/to/jar1,path2/to/jar2,..." into a set of paths.
-    return new LinkedHashSet<>(Arrays.asList(paths.split(",")));
+    return new LinkedHashSet<>(asList(paths.split(",")));
   }
 
 
-  private static <T extends Collection<?>> void logModuleJarPaths(Map<String, T> result) {
+  private static <T extends Collection<?>> void logModuleJars(Map<String, T> result) {
     logger.config(String.format(
       "Found %d modules: %s", result.size(), result.keySet()
     ));
@@ -143,6 +111,22 @@ public final class ModuleLoader {
   }
 
 
+  /**
+   * Extracts the given module to the given directory. Both the module and
+   * the destination directory are expected to exist.
+   */
+  List<Path> extractModule(String name, Path dest) throws IOException {
+    logger.fine(() -> String.format("Extracting module '%s' to %s", name, dest));
+
+    Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
+    if (jarResourcePaths != null) {
+      return extractResources(jarResourcePaths, dest);
+    } else {
+      // Not supposed to happen, the caller should use the right module.
+      throw new NoSuchElementException("there is no such module: "+ name);
+    }
+  }
+
   ClassLoader createClassLoaderForModule(String name) throws ModuleLoadingException {
     logger.fine(() -> String.format("Creating class loader for module '%s'", name));
 
@@ -152,27 +136,34 @@ public final class ModuleLoader {
     // the JAR files in the module directory (but create a new classloader) to
     // avoid repeatedly extracting the JAR files for the same module.
     //
+    if (!jarResourcePathsByModule.containsKey(name)) {
+      throw new ModuleLoadingException("module not found: %s", name);
+    }
+
     try {
-      Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
-      if (jarResourcePaths == null) {
-        throw new ModuleLoadingException("module not found");
-      }
-
       Path moduleJarsDir = createModuleJarsDirectory(name);
-      List<Path> filePaths = extractResources(jarResourcePaths, moduleJarsDir);
-      final URL[] urls = pathsToUrls(filePaths);
+      Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
 
-      // Make sure that all paths were converted to URL.
-      if (urls.length != filePaths.size()) {
-        throw new ModuleLoadingException("malformed URL(s) in module JAR paths");
+      try {
+        List<Path> filePaths = extractResources(jarResourcePaths, moduleJarsDir);
+        final URL[] urls = pathsToUrls(filePaths);
+
+        // Make sure all paths were converted to URL.
+        if (urls.length != filePaths.size()) {
+          throw new ModuleLoadingException("malformed URL(s) in module JAR paths");
+        }
+
+        logger.fine(() -> String.format(
+          "Module '%s' class path (%d entries): %s",
+          name, filePaths.size(), makeClassPath(filePaths)
+        ));
+
+        return new URLClassLoader(urls, thisClass.getClassLoader());
+
+      } catch (IOException e) {
+        // Just wrap the underlying IOException.
+        throw new ModuleLoadingException(e.getMessage(), e);
       }
-
-      logger.fine(() -> String.format(
-        "Module '%s' class path (%d entries): %s",
-        name, filePaths.size(), makeClassPath(filePaths)
-      ));
-
-      return new URLClassLoader(urls, thisClass.getClassLoader());
 
     } catch (IOException e) {
       throw new ModuleLoadingException(
@@ -183,7 +174,7 @@ public final class ModuleLoader {
 
 
   private Path createModuleJarsDirectory(String name) throws IOException {
-    // Create '<module-name>/lib' directory in scratch root.
+    // Put module jars into '<scratch-root>/<module-name>/lib' directory.
     Path result = Files.createDirectories(
       scratchRootDir.resolve(name).resolve("lib")
     );
@@ -198,80 +189,6 @@ public final class ModuleLoader {
 
   private static String makeClassPath(Collection<Path> paths) {
     return paths.stream().map(Path::toString).collect(joining(File.pathSeparator));
-  }
-
-
-  private static List<Path> extractResources(
-    Iterable<String> resourcePaths, Path outputDirPath
-  ) throws ModuleLoadingException {
-    List<Path> result = new ArrayList<>();
-
-    for (String resourcePath : resourcePaths) {
-      Path outputFilePath = outputDirPath.resolve(resourceFileName(resourcePath));
-      logger.finer(() -> String.format(
-        "Resource '%s' expected at '%s'", resourcePath, outputFilePath
-      ));
-
-      if (!Files.exists(outputFilePath)) {
-        logger.finer(() -> String.format(
-          "File '%s' does not exist, extracting resource", outputFilePath
-        ));
-
-        try {
-          extractResource(resourcePath, outputFilePath);
-
-        } catch (IOException e) {
-          // Report the particular resource and target.
-          throw new ModuleLoadingException(
-            "could not extract resource '%s' into '%s': %s",
-            resourcePath, outputFilePath, e.getMessage()
-          );
-        }
-
-      } else {
-        logger.finer(() -> String.format(
-          "File '%s' already exists, skipping extraction", outputFilePath
-        ));
-      }
-
-      result.add(outputFilePath);
-    }
-
-    return result;
-  }
-
-
-  private static String resourceAbsolutePath(String resourcePath) {
-    return resourcePath.startsWith(RESOURCE_PATH_SEPARATOR)
-      ? resourcePath : RESOURCE_PATH_SEPARATOR + resourcePath;
-  }
-
-
-  /** Returns the last component of a resource path (base name). */
-  private static String resourceFileName(String resourcePath) {
-    final int nameStart = resourcePath.lastIndexOf(RESOURCE_PATH_SEPARATOR);
-    return nameStart >= 0 ? resourcePath.substring(nameStart + 1) : resourcePath;
-  }
-
-
-  private static void extractResource(String resourcePath, Path outputFilePath)
-  throws IOException {
-    final String absResourcePath = resourceAbsolutePath(resourcePath);
-
-    try (
-      InputStream resourceStream = thisClass.getResourceAsStream(absResourcePath)
-    ) {
-      if (resourceStream == null) {
-        // This should only happen in case of build misconfiguration.
-        throw new IOException("resource not found");
-      }
-
-      // Copy the stream contents to the file (without overwriting).
-      long bytesWritten = Files.copy(resourceStream, outputFilePath);
-      logger.finer(() -> String.format(
-        "Wrote %d bytes to '%s'", bytesWritten, outputFilePath
-      ));
-    }
   }
 
 
@@ -349,7 +266,7 @@ public final class ModuleLoader {
 
   //
 
-  public static final class ModuleLoadingException extends Exception {
+  static final class ModuleLoadingException extends Exception {
     ModuleLoadingException(String message) {
       super(message);
     }

@@ -2,6 +2,8 @@ package org.renaissance.harness
 
 import scopt.OptionParser
 
+import java.net.URI
+
 private final class ConfigParser(tags: Map[String, String]) {
 
   private val parser = createParser(tags)
@@ -111,15 +113,26 @@ private final class ConfigParser(tags: Map[String, String]) {
 
       opt[Unit]("list")
         .text("Print the names and descriptions of all benchmarks.")
-        .action((_, c) => c.withList)
+        .action((_, c) => c.withList())
 
       opt[Unit]("raw-list")
         .text("Print the names of benchmarks compatible with this JVM (one per line).")
-        .action((_, c) => c.withRawList)
+        .action((_, c) => c.withRawList())
 
       opt[Unit]("group-list")
         .text("Print the names of all benchmark groups (one per line).")
-        .action((_, c) => c.withGroupList)
+        .action((_, c) => c.withGroupList())
+
+      opt[URI]("benchmark-metadata")
+        .valueName("<path-or-uri>")
+        .text("Path or an URI pointing to a .properties file with benchmark metadata.")
+        .action((uri, c) => c.withBenchmarkMetadata(uri))
+
+      opt[Unit]("standalone")
+        .text(
+          "Run harness in standalone mode. Disables benchmark module loader."
+        )
+        .action((_, c) => c.withStandalone())
 
       arg[String]("benchmark-specification")
         .text("List of benchmarks (or groups) to execute (or 'all').")

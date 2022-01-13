@@ -296,6 +296,9 @@ Usage: renaissance [options] [benchmark-specification]
   --list                   Print the names and descriptions of all benchmarks.
   --raw-list               Print the names of benchmarks compatible with this JVM (one per line).
   --group-list             Print the names of all benchmark groups (one per line).
+  --benchmark-metadata <path-or-uri>
+                           Path or an URI pointing to a .properties file with benchmark metadata.
+  --standalone             Run harness in standalone mode. Disables benchmark module loader.
   benchmark-specification  List of benchmarks (or groups) to execute (or 'all').
 
 ```

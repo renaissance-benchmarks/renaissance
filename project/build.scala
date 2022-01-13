@@ -10,7 +10,11 @@ import java.util.jar.JarFile
 import java.util.regex.Pattern
 import scala.collection._
 
-class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
+class BenchmarkInfo(
+  val module: String,
+  val benchClass: Class[_ <: Benchmark],
+  val scalaVersion: String
+) {
 
   private def kebabCase(s: String): String = {
     val camelCaseName = if (s.last == '$') s.init else s
@@ -173,10 +177,14 @@ class BenchmarkInfo(val module: String, val benchClass: Class[_ <: Benchmark]) {
       "repetitions" -> repetitions.toString,
       "distro" -> distro.toString,
       "jvm_version_min" -> jvmVersionMin,
-      "jvm_version_max" -> jvmVersionMax
+      "jvm_version_max" -> jvmVersionMax,
+      "scala_version" -> scalaVersion
     ) ++ parameters ++ configurations()
   }
 
+  override def toString: String = {
+    s"$name (module=$module, scala=$scalaVersion, distro=$distro)"
+  }
 }
 
 object Benchmarks {
@@ -184,6 +192,7 @@ object Benchmarks {
   def listBenchmarks(
     projectName: String,
     classPath: Seq[File],
+    scalaVersion: String,
     loggerOption: Option[Logger]
   ): Seq[BenchmarkInfo] = {
     import scala.jdk.CollectionConverters.enumerationAsScalaIteratorConverter
@@ -217,7 +226,7 @@ object Benchmarks {
           if (isEligible) {
             // Print info to see what benchmarks are picked up by the build.
             val benchClass = clazz.asSubclass(benchBase)
-            val info = new BenchmarkInfo(projectName, benchClass)
+            val info = new BenchmarkInfo(projectName, benchClass, scalaVersion)
             logBenchmark(info, loggerOption)
             result += info
           }

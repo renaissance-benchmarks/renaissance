@@ -1,10 +1,17 @@
 import org.renaissance.License
 import sbt.Def
 import sbt.Package
+import sbt.Package.ManifestAttributes
 import sbt.io.RegularFileFilter
+import sbt.io.Using
 
+import java.io.OutputStream
 import java.nio.file.Paths
 import java.util.Properties
+import java.util.jar.Attributes.Name
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
+import java.util.jar.Manifest
 import scala.collection._
 
 enablePlugins(GitVersioning)
@@ -52,15 +59,21 @@ ThisBuild / Compile / scalacOptions += "-target:jvm-1.8"
 // Determine project version using 'git describe'.
 ThisBuild / git.useGitDescribe := true
 
+val scalaVersion212 = "2.12.15"
+val scalaVersion213 = "2.13.7"
+
+val modulesPropertiesName = "modules.properties"
+val benchmarksPropertiesName = "benchmarks.properties"
+val harnessMainClass = "org.renaissance.harness.RenaissanceSuite"
+
 lazy val commonSettingsNoScala = Seq(
   // Don't add Scala version to JAR name.
   crossPaths := false,
   // Don't include Scala library as dependency.
-  autoScalaLibrary := false
+  autoScalaLibrary := false,
+  // Override default Scala version to use Scala 2.13 harness.
+  scalaVersion := scalaVersion213
 )
-
-val scalaVersion212 = "2.12.15"
-val scalaVersion213 = "2.13.7"
 
 addCommandAlias(
   "renaissanceFormat",
@@ -137,7 +150,7 @@ val renaissanceHarnessCommonSettings = Seq(
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / scalacOptions ++= Seq("-deprecation"),
-  Compile / mainClass := Some("org.renaissance.harness.RenaissanceSuite"),
+  Compile / mainClass := Some(harnessMainClass),
   Compile / packageBin / packageOptions += generateManifestAttributesTask.value
 )
 
@@ -402,7 +415,7 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
  * 'clean' task on the [[renaissance]] (root) project would break the build.
  */
 val aggregateProjects =
-  renaissanceBenchmarks ++ Seq(renaissanceHarness213, renaissanceHarness212)
+  renaissanceBenchmarks :+ renaissanceHarness213 :+ renaissanceHarness212
 
 /**
  * The [[renaissanceModules]] collection contains projects that represent
@@ -422,7 +435,7 @@ val renaissanceModules = aggregateProjects :+ renaissanceCore
  * (project name, runtime jars, scala version)
  */
 def collectModulesDetailsTask(projects: Seq[Project]) =
-  Tasks.collect(projects.map { project =>
+  Tasks.collect[(String, Seq[File], String)](projects.map { project =>
     // Create a task to produce output tuple for a specific project.
     Def.task {
       val projectName = (project / name).value
@@ -432,55 +445,103 @@ def collectModulesDetailsTask(projects: Seq[Project]) =
     }
   })
 
-/**
- * Generates module metadata file with the given name and for
- * the given modules as a managed compilation resource.
- */
-def generateModulesMetadataTask(modules: Seq[Project], baseName: String) =
-  Def.task {
-    val log = sLog.value
+//
+// Tasks related to generating 'modules.properties'.
+// This makes them easier to run manually (for debugging purposes).
+//
 
-    val modulesDetails = collectModulesDetailsTask(modules).value
+lazy val modulesWithDependencies = taskKey[Seq[(String, Seq[(File, String)])]](
+  "Collects runtime dependency jars for Renaissance modules"
+)
 
-    val modulesProps = new Properties
-    mapModuleJarsToAssemblyEntries(modulesDetails).foreach {
-      case (moduleName, moduleJarEntries) =>
-        val jarLine = moduleJarEntries.map { case (_, jarEntry) => jarEntry }.mkString(",")
-        modulesProps.setProperty(moduleName, jarLine)
-    }
+renaissance / modulesWithDependencies := mapModuleJarsToAssemblyEntries(
+  collectModulesDetailsTask(renaissanceModules).value
+)
 
-    val outputFile = (Compile / resourceManaged).value / baseName
+lazy val generateModulesProperties = inputKey[Seq[File]](
+  "Collects module metadata and stores it in a properties file of given name."
+)
 
-    log.info(s"Writing $outputFile ...")
-    Seq(Utils.storeProperties(modulesProps, "Module jars", outputFile))
+renaissance / generateModulesProperties := {
+  import complete.DefaultParsers._
+  val outputName = trimmed(OptSpace ~> StringBasic).parsed
+  val outputFile = (Compile / resourceManaged).value / outputName
+  val properties = makeModulesProperties(modulesWithDependencies.value)
+  Seq(Utils.storeProperties(properties, "Module jars", outputFile, Some(sLog.value)))
+}
+
+def makeModulesProperties(modules: Seq[(String, Seq[(File, String)])]) = {
+  // Collect metadata into Properties, mutating the initial instance.
+  modules.foldLeft(new Properties) {
+    case (props, (module, dependencies)) =>
+      val jarLine = dependencies.map { case (_, jarEntry) => jarEntry }.mkString(",")
+      props.setProperty(module, jarLine)
+      props
+  }
+}
+
+//
+// Tasks related to generating 'benchmarks.properties'.
+// This makes them easier to run manually (for debugging purposes).
+//
+
+lazy val benchmarkDescriptors = taskKey[Seq[BenchmarkInfo]](
+  "Produces a collection of benchmark descriptors for all benchmarks."
+)
+
+renaissance / benchmarkDescriptors := collectModulesDetailsTask(renaissanceBenchmarks).value
+  .flatMap {
+    // Find benchmarks in each benchmark module and return the descriptors.
+    case (moduleName, moduleJars, scalaVersion) =>
+      Benchmarks.listBenchmarks(moduleName, moduleJars, scalaVersion, None)
   }
 
-/**
- * Generates benchmark metadata file with the given name and for
- * the given benchmarks as a managed compilation resource.
- */
-def generateBenchmarksMetadataTask(modules: Seq[Project], baseName: String) =
-  Def.task {
-    val log = sLog.value
+lazy val distroBenchmarkDescriptors = taskKey[Seq[BenchmarkInfo]](
+  "Produces a collection of benchmark descriptors. " +
+    "Includes only benchmarks matching the currently configured distribution."
+)
 
-    val benchmarksProps = new Properties
-    collectModulesDetailsTask(modules).value.foreach {
-      case (moduleName, moduleJars, binaryVersion) =>
-        for (bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, Some(log))) {
-          if (!nonGplOnly.value || bench.distro == License.MIT) {
-            benchmarksProps.setProperty(s"benchmark.${bench.name}.scala_version", binaryVersion)
-            for ((k, v) <- bench.toMap) {
-              benchmarksProps.setProperty(s"benchmark.${bench.name}.$k", v)
-            }
-          }
-        }
-    }
+renaissance / distroBenchmarkDescriptors := benchmarkDescriptors.value.filter(b =>
+  !nonGplOnly.value || b.distro == License.MIT
+)
 
-    val outputFile = (Compile / resourceManaged).value / baseName
+lazy val distroRealBenchmarkDescriptors = taskKey[Seq[BenchmarkInfo]](
+  "Produces a collection of benchmark descriptors. " +
+    "Includes only benchmarks matching the currently configured distribution, " +
+    "but excludes dummy benchmarks (with the exception of dummy-empty)."
+)
 
-    log.info(s"Writing $outputFile ...")
-    Seq(Utils.storeProperties(benchmarksProps, "Benchmark details", outputFile))
+renaissance / distroRealBenchmarkDescriptors := distroBenchmarkDescriptors.value.filter(b =>
+  !b.groups.contains("dummy") || b.name == "dummy-empty"
+)
+
+lazy val generateBenchmarksProperties = inputKey[Seq[File]](
+  "Collects benchmark metadata and stores it in a properties file of given name." +
+    "Includes only benchmarks matching the currently configured distribution."
+)
+
+renaissance / generateBenchmarksProperties := {
+  import complete.DefaultParsers._
+  val outputName = trimmed(OptSpace ~> StringBasic).parsed
+  val outputFile = (Compile / resourceManaged).value / outputName
+  val properties = makeBenchmarksProperties(distroBenchmarkDescriptors.value)
+  Seq(Utils.storeProperties(properties, "Benchmark details", outputFile, Some(sLog.value)))
+}
+
+def makeBenchmarksProperties(benchmarks: Seq[BenchmarkInfo]) = {
+  //
+  // Map benchmark property names into global name space and collect
+  // metadata for all benchmarks into a single Properties instance.
+  //
+  benchmarks.foldLeft(new Properties) {
+    case (props, bench) =>
+      bench.toMap.foreach {
+        case (k, v) =>
+          props.setProperty(s"benchmark.${bench.name}.$k", v)
+      }
+      props
   }
+}
 
 def mapModuleJarsToAssemblyEntries(modulesDetails: Seq[(String, Seq[File], String)]) = {
   //
@@ -554,6 +615,108 @@ def mapClassesToAssemblyTask(classpath: Classpath) =
     }
   }
 
+//
+// Tasks related to generating metadata-only jars for benchmarks.
+// This makes them easier to run manually (for debugging purposes).
+//
+
+lazy val generateStandaloneJars = taskKey[Seq[File]](
+  "Generates metadata-only jars for standalone benchmark execution." +
+    "Includes only benchmarks matching the currently configured distribution, " +
+    "but excludes dummy benchmarks (with the exception of dummy-empty)."
+)
+
+renaissance / generateStandaloneJars := {
+  val outputDir = (Compile / resourceManaged).value / "single"
+
+  sLog.value.debug(s"Deleting standalone jars in $outputDir")
+  IO.delete(outputDir)
+
+  val modulesWithDeps = modulesWithDependencies.value.toMap
+  val basePkgOptions = (Compile / packageBin / packageOptions).value
+
+  sLog.value.info(s"Creating standalone jars in $outputDir")
+  distroRealBenchmarkDescriptors.value.map { bench =>
+    sLog.value.debug(s"Generating standalone JAR for ${bench.name}")
+
+    // Collect all dependencies, together with core and harness packages.
+    val deps = modulesWithDeps(bench.module) ++ modulesWithDeps(
+      s"renaissance-harness_${bench.scalaVersion}"
+    ) ++ modulesWithDeps("renaissance-core")
+
+    // Paths in the manifest are unix-style.
+    val jars = deps.map { case (_, entry) => s"../$entry" }.toSet
+
+    //
+    // Copy manifest attributes and override the 'Main-Class' attribute to
+    // refer to the harness main class (instead of the launcher). Set the
+    // 'Class-Path' attribute to refer to all the dependencies used by this
+    // benchmark, and set the 'Renaissance-Use-Modules' attribute to tell the
+    // harness to avoid using modules.
+    //
+    val pkgOptions = basePkgOptions :+ Package.ManifestAttributes(
+      Name.MANIFEST_VERSION -> "1.0",
+      Name.MAIN_CLASS -> harnessMainClass,
+      Name.CLASS_PATH -> jars.mkString(" "),
+      new Name("Renaissance-Use-Modules") -> false.toString
+    )
+
+    val manifest = createPackageManifest(pkgOptions)
+    val properties = makeBenchmarksProperties(Seq(bench))
+    val outputJar = outputDir / s"${bench.name}.jar"
+    createStandaloneJar(manifest, properties, outputJar, Some(sLog.value))
+  }
+}
+
+def createPackageManifest(packageOptions: Seq[PackageOption]) = {
+  packageOptions.foldLeft(new Manifest) {
+    // Collect manifest attributes.
+    case (manifest, ManifestAttributes(attributes @ _*)) =>
+      attributes.foldLeft(manifest.getMainAttributes) {
+        case (attrs, (name, value)) =>
+          attrs.put(name, value)
+          attrs
+      }
+      manifest
+
+    // Ignore other package options.
+    case (manifest, _) =>
+      manifest
+  }
+}
+
+/**
+ * Creates a JAR containing only the manifest and the properties
+ * file with the metadata of a single benchmark. Such a JAR can be
+ * used to execute a single benchmark without module loading.
+ */
+def createStandaloneJar(
+  manifest: Manifest,
+  metadata: Properties,
+  outputJar: File,
+  maybeLog: Option[Logger]
+): File = {
+  maybeLog.foreach { log => log.debug(s"Writing $outputJar ...") }
+
+  // Wrapper for JarOutputStream with manifest.
+  val jarOutputStream = Using.wrap((os: OutputStream) => new JarOutputStream(os, manifest))
+
+  // Create leading directories.
+  Option(outputJar.getParentFile).foreach { dir => IO.createDirectory(dir) }
+
+  // Write the jar file.
+  Using.fileOutputStream(append = false)(outputJar) { fos =>
+    jarOutputStream(fos) { jos =>
+      // Store benchmark properties without intermediate file.
+      jos.putNextEntry(new JarEntry(benchmarksPropertiesName))
+      metadata.store(jos, "Benchmark metadata")
+      jos.closeEntry()
+    }
+  }
+
+  outputJar
+}
+
 /**
  * This is the root project. The tasks that generate metadata files and
  * the final bundle depend on [[renaissanceModules]] which contains the
@@ -570,13 +733,11 @@ lazy val renaissance = (project in file("."))
       Seq(
         // The main class for the JAR is the Launcher from the core package.
         mainClass := (renaissanceCore / Compile / mainClass).value,
-        // Generate benchmark metadata used by the launcher/harness.
+        // Generate module and benchmark metadata and metadata-only jars.
         resourceGenerators ++= Seq(
-          generateModulesMetadataTask(renaissanceModules, "modules.properties").taskValue,
-          generateBenchmarksMetadataTask(
-            renaissanceBenchmarks,
-            "benchmarks.properties"
-          ).taskValue
+          generateModulesProperties.toTask(modulesPropertiesName).taskValue,
+          generateBenchmarksProperties.toTask(benchmarksPropertiesName).taskValue,
+          generateStandaloneJars.taskValue
         ),
         // Set additional manifest attributes, especially Add-Opens.
         packageBin / packageOptions += generateManifestAttributesTask.value,
@@ -606,65 +767,65 @@ lazy val renaissance = (project in file("."))
 // JMH support
 //
 
+val jmhVersion = "1.33"
+
+//
+// Tasks related to generating JMH wrappers jars for benchmarks.
+// This makes them easier to run manually (for debugging purposes).
+//
+
+lazy val generateJmhWrappers = taskKey[Seq[File]](
+  "Generates wrappers for benchmark execution under JMH." +
+    "Includes only benchmarks matching the currently configured distribution, " +
+    "but excludes dummy benchmarks (with the exception of dummy-empty)."
+)
+
 /**
- * Generates JMH wrappers for Renaissance benchmarks in the given modules.
- * Each wrapper is derived from a common base class and includes just the
- * benchmark-specific information needed to run the benchmark under JMH.
- * The task returns a collection of generated source files.
+ * Generates JMH wrappers for Renaissance benchmarks. Each wrapper is derived
+ * from a common base class and includes just the benchmark-specific information
+ * needed to run the benchmark under JMH. The task returns a collection of
+ * generated source files.
  */
-def generateJmhWrappersTask(modules: Seq[Project]) =
-  Def.task {
-    val log = sLog.value
+renaissanceJmhWrappers / generateJmhWrappers := {
+  val outputDir = (Compile / sourceManaged).value
 
-    // Delete all subdirectories in the output directory.
-    val outputDir = (Compile / sourceManaged).value
-    log.debug(s"Deleting JMH wrappers in $outputDir")
-    IO.delete(outputDir)
+  // Delete all subdirectories in the output directory.
+  sLog.value.debug(s"Deleting JMH wrappers in $outputDir")
+  IO.delete(outputDir)
 
-    collectModulesDetailsTask(modules).value.flatMap {
-      case (moduleName, moduleJars, _) =>
-        for {
-          bench <- Benchmarks.listBenchmarks(moduleName, moduleJars, None)
-          if (!nonGplOnly.value || bench.distro == License.MIT) &&
-            (!bench.groups.contains("dummy") || bench.name == "dummy-empty")
-        } yield {
-          log.info(s"Generating JMH wrappers for ${bench.name}")
-          RenaissanceJmh.generateJmhWrapperBenchmarkClass(bench, outputDir.toPath)
-        }
-    }
+  sLog.value.info(s"Generating JMH wrappers in $outputDir")
+  distroRealBenchmarkDescriptors.value.map { bench =>
+    sLog.value.debug(s"Generating JMH wrapper for ${bench.name}")
+    RenaissanceJmh.generateJmhWrapperBenchmarkClass(bench, outputDir.toPath)
   }
+}
 
 /**
  * Generates JMH sources and resources for the generated benchmark wrappers.
  * Because the JMH generator produces sources and resources at the same time,
  * the task returns two corresponding file collections.
  */
-def generateJmhSourcesResourcesTask(
-  wrappers: Project
-): Def.Initialize[Task[(Seq[File], Seq[File])]] =
-  Def
-    .task {
-      val log = sLog.value
+def generateJmhSourcesResourcesTask(wrappers: Project) =
+  Def.task[(Seq[File], Seq[File])] {
+    val inputBytecodeDir = (wrappers / Compile / classDirectory).value
+    val outputSourceDir = (Compile / sourceManaged).value
+    val outputResourceDir = (Compile / resourceManaged).value
 
-      val inputBytecodeDir = (wrappers / Compile / classDirectory).value
-      val outputSourceDir = (Compile / sourceManaged).value
-      val outputResourceDir = (Compile / resourceManaged).value
+    val jmhMainClass = "org.openjdk.jmh.generators.bytecode.JmhBytecodeGenerator"
+    val jmhClasspath = (Compile / dependencyClasspath).value.map(_.data)
+    val jmhOptions = Seq(inputBytecodeDir, outputSourceDir, outputResourceDir).map(_.toString)
 
-      val jmhMainClass = "org.openjdk.jmh.generators.bytecode.JmhBytecodeGenerator"
-      val jmhClasspath = (Compile / dependencyClasspath).value.map(_.data)
-      val jmhOptions = Seq(inputBytecodeDir, outputSourceDir, outputResourceDir).map(_.toString)
+    sLog.value.debug(
+      s"Running JMH generator...\n\toptions: $jmhOptions\n\tclasspath: $jmhClasspath"
+    )
+    val sbtRun = new Run(scalaInstance.value, true, taskTemporaryDirectory.value)
+    sbtRun.run(jmhMainClass, jmhClasspath, jmhOptions, sLog.value).get
 
-      log.debug(
-        s"Running JMH generator...\n\toptions: $jmhOptions\n\tclasspath: $jmhClasspath"
-      )
-      val sbtRun = new Run(scalaInstance.value, true, taskTemporaryDirectory.value)
-      sbtRun.run(jmhMainClass, jmhClasspath, jmhOptions, sLog.value).get
-
-      // Return sources and resources separately.
-      val sourceFiles = (outputSourceDir ** RegularFileFilter).get
-      val resourceFiles = (outputResourceDir ** RegularFileFilter).get
-      (sourceFiles, resourceFiles)
-    }
+    // Return sources and resources separately.
+    val sourceFiles = (outputSourceDir ** RegularFileFilter).get
+    val resourceFiles = (outputResourceDir ** RegularFileFilter).get
+    (sourceFiles, resourceFiles)
+  }
 
 /**
  * Generates assembly mappings for the contents of JAR files on the given
@@ -699,8 +860,6 @@ def mapJarContentsToAssemblyTask(classpath: Classpath) =
     }
   }
 
-val jmhVersion = "1.33"
-
 /**
  * This project generates JMH wrappers for Renaissance benchmarks. The
  * compiled wrappers are used by the [[renaissanceJmh]] project below.
@@ -712,7 +871,7 @@ lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
     libraryDependencies := Seq(
       "org.openjdk.jmh" % "jmh-core" % jmhVersion
     ),
-    Compile / sourceGenerators += generateJmhWrappersTask(renaissanceBenchmarks).taskValue
+    Compile / sourceGenerators += generateJmhWrappers.taskValue
   )
   // We need the module and benchmark metadata in addition to core classes.
   .dependsOn(renaissance)

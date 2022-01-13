@@ -1,5 +1,7 @@
 import sbt.File
 import sbt.Logger
+import sbt.io.IO
+import sbt.io.Using
 
 import java.io.FileOutputStream
 import java.nio.file.Files
@@ -8,16 +10,22 @@ import java.util.Properties
 
 object Utils {
 
-  def storeProperties(props: Properties, comments: String, file: sbt.File) = {
-    file.getParentFile.mkdirs()
+  def storeProperties(
+    props: Properties,
+    comments: String,
+    file: sbt.File,
+    maybeLog: Option[Logger]
+  ) = {
+    maybeLog.foreach { log => log.info(s"Writing $file ...") }
 
-    val fos = new FileOutputStream(file)
-    try {
+    // Create leading directories.
+    Option(file.getParentFile).foreach { dir => IO.createDirectory(dir) }
+
+    Using.fileOutputStream(append = false)(file) { fos =>
       props.store(fos, comments)
-      file
-    } finally {
-      fos.close()
     }
+
+    file
   }
 
   /**
