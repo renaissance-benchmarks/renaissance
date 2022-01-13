@@ -622,11 +622,13 @@ def mapClassesToAssemblyTask(classpath: Classpath) =
 
 lazy val generateStandaloneJars = taskKey[Seq[File]](
   "Generates metadata-only jars for standalone benchmark execution." +
-    "Includes only benchmarks matching the currently configured distribution."
+    "Includes only benchmarks matching the currently configured distribution, " +
+    "but excludes dummy benchmarks (with the exception of dummy-empty)."
 )
 
 renaissance / generateStandaloneJars := {
   val outputDir = (Compile / resourceManaged).value / "single"
+
   sLog.value.debug(s"Deleting standalone jars in $outputDir")
   IO.delete(outputDir)
 
@@ -634,7 +636,9 @@ renaissance / generateStandaloneJars := {
   val basePkgOptions = (Compile / packageBin / packageOptions).value
 
   sLog.value.info(s"Creating standalone jars in $outputDir")
-  distroBenchmarkDescriptors.value.map { bench =>
+  distroRealBenchmarkDescriptors.value.map { bench =>
+    sLog.value.info(s"Generating standalone JAR for ${bench.name}")
+
     // Collect all dependencies, together with core and harness packages.
     val deps = modulesWithDeps(bench.module) ++ modulesWithDeps(
       s"renaissance-harness_${bench.scalaVersion}"
@@ -692,7 +696,7 @@ def createStandaloneJar(
   outputJar: File,
   maybeLog: Option[Logger]
 ): File = {
-  maybeLog.foreach { log => log.debug(s"Writing standalone $outputJar ...") }
+  maybeLog.foreach { log => log.debug(s"Writing $outputJar ...") }
 
   // Wrapper for JarOutputStream with manifest.
   val jarOutputStream = Using.wrap((os: OutputStream) => new JarOutputStream(os, manifest))
@@ -703,7 +707,7 @@ def createStandaloneJar(
   // Write the jar file.
   Using.fileOutputStream(append = false)(outputJar) { fos =>
     jarOutputStream(fos) { jos =>
-      // Store benchmark properties.
+      // Store benchmark properties without intermediate file.
       jos.putNextEntry(new JarEntry(benchmarksPropertiesName))
       metadata.store(jos, "Benchmark metadata")
       jos.closeEntry()
