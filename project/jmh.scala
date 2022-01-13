@@ -2,7 +2,6 @@ import sbt.io.IO
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
 import java.nio.file.Path
 
 object RenaissanceJmh {
@@ -29,7 +28,11 @@ public class $jmhClassName extends JmhRenaissanceBenchmark {
 """
 
     val packagePath = packageName.split("[.]").mkString(File.separator)
-    val outputDir = Files.createDirectories(outputBaseDir.resolve(packagePath))
+    val outputDir = outputBaseDir.resolve(packagePath)
+
+    // Use the SBT variant that contains some workarounds for Windows.
+    IO.createDirectory(outputDir.toFile)
+
     val outputFile = outputDir.resolve(jmhClassName + ".java").toFile
     IO.write(outputFile, content, StandardCharsets.UTF_8)
     outputFile
