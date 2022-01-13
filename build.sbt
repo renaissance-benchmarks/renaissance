@@ -767,7 +767,7 @@ lazy val renaissance = (project in file("."))
 // JMH support
 //
 
-val jmhVersion = "1.33"
+val jmhVersion = "1.34"
 
 //
 // Tasks related to generating JMH wrappers jars for benchmarks.
