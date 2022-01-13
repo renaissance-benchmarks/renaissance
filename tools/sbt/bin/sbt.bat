@@ -18,13 +18,14 @@ set _JAVACMD=
 set _SBT_OPTS=
 set _JAVA_OPTS=
 
-set init_sbt_version=1.5.6
+set init_sbt_version=1.6.1
 set sbt_default_mem=1024
 set default_sbt_opts=
 set default_java_opts=-Dfile.encoding=UTF-8
 set sbt_jar=
 set build_props_sbt_version=
 set run_native_client=
+set shutdownall=
 
 set sbt_args_print_version=
 set sbt_args_print_sbt_version=
@@ -42,11 +43,14 @@ set sbt_args_ivy=
 set sbt_args_supershell=
 set sbt_args_timings=
 set sbt_args_traces=
+set sbt_args_sbt_boot=
+set sbt_args_sbt_cache=
 set sbt_args_sbt_create=
 set sbt_args_sbt_dir=
 set sbt_args_sbt_version=
 set sbt_args_mem=
 set sbt_args_client=
+set sbt_args_no_server=
 
 rem users can set SBT_OPTS via .sbtopts
 if exist .sbtopts for /F %%A in (.sbtopts) do (
@@ -202,6 +206,15 @@ if defined _no_colors_arg (
   goto args_loop
 )
 
+if "%~0" == "-no-server" set _no_server_arg=true
+if "%~0" == "--no-server" set _no_server_arg=true
+
+if defined _no_server_arg (
+  set _no_server_arg=
+  set sbt_args_no_server=1
+  goto args_loop
+)
+
 if "%~0" == "-no-global" set _no_global_arg=true
 if "%~0" == "--no-global" set _no_global_arg=true
 
@@ -251,6 +264,21 @@ if defined _sbt_boot_arg (
  set _sbt_boot_arg=
  if not "%~1" == "" (
    set sbt_args_sbt_boot=%1
+   shift
+   goto args_loop
+ ) else (
+   echo "%~0" is missing a value
+   goto error
+ )
+)
+
+if "%~0" == "-sbt-cache" set _sbt_cache_arg=true
+if "%~0" == "--sbt-cache" set _sbt_cache_arg=true
+
+if defined _sbt_cache_arg (
+ set _sbt_cache_arg=
+ if not "%~1" == "" (
+   set sbt_args_sbt_cache=%1
    shift
    goto args_loop
  ) else (
@@ -382,6 +410,11 @@ if defined _timings_arg (
   goto args_loop
 )
 
+if "%~0" == "shutdownall" (
+  set shutdownall=1
+  goto args_loop
+)
+
 if "%~0" == "--script-version" (
   set sbt_args_print_sbt_script_version=1
   goto args_loop
@@ -491,7 +524,7 @@ goto args_loop
 rem Confirm a user's intent if the current directory does not look like an sbt
 rem top-level directory and the "new" command was not given.
 
-if not defined sbt_args_sbt_create if not defined sbt_args_print_version if not defined sbt_args_print_sbt_version if not defined sbt_args_print_sbt_script_version if not exist build.sbt (
+if not defined sbt_args_sbt_create if not defined sbt_args_print_version if not defined sbt_args_print_sbt_version if not defined sbt_args_print_sbt_script_version if not defined shutdownall if not exist build.sbt (
   if not exist project\ (
     if not defined sbt_new (
       echo [warn] Neither build.sbt nor a 'project' directory in the current directory: "%CD%"
@@ -517,6 +550,16 @@ if not defined sbt_args_sbt_create if not defined sbt_args_print_version if not 
 call :process
 
 rem avoid bootstrapping/java version check for script version
+
+if !shutdownall! equ 1 (
+  set count=0
+  for /f "tokens=1" %%i in ('jps -lv ^| findstr "xsbt.boot.Boot"') do (
+    taskkill /F /PID %%i
+    set /a count=!count!+1
+  )
+  echo shutdown !count! sbt processes
+  goto :eof
+)
 
 if !sbt_args_print_sbt_script_version! equ 1 (
   echo !init_sbt_version!
@@ -587,6 +630,10 @@ if defined sbt_args_sbt_boot (
   set _SBT_OPTS=-Dsbt.boot.directory=!sbt_args_sbt_boot! !_SBT_OPTS!
 )
 
+if defined sbt_args_sbt_cache (
+  set _SBT_OPTS=-Dsbt.global.localcache=!sbt_args_sbt_cache! !_SBT_OPTS!
+)
+
 if defined sbt_args_ivy (
   set _SBT_OPTS=-Dsbt.ivy.home=!sbt_args_ivy! !_SBT_OPTS!
 )
@@ -607,6 +654,10 @@ if defined sbt_args_timings (
 
 if defined sbt_args_traces (
   set _SBT_OPTS=-Dsbt.traces=true !_SBT_OPTS!
+)
+
+if defined sbt_args_no_server (
+  set _SBT_OPTS=-Dsbt.io.virtual=false -Dsbt.server.autostart=false !_SBT_OPTS!
 )
 
 rem TODO: _SBT_OPTS needs to be processed as args and diffed against SBT_ARGS
@@ -932,6 +983,7 @@ echo   --timings           display task timings report on shutdown
 echo   --sbt-create        start sbt even if current directory contains no sbt project
 echo   --sbt-dir   ^<path^>  path to global settings/plugins directory ^(default: ~/.sbt^)
 echo   --sbt-boot  ^<path^>  path to shared boot directory ^(default: ~/.sbt/boot in 0.11 series^)
+echo   --sbt-cache ^<path^>  path to global cache directory ^(default: operating system specific^)
 echo   --ivy       ^<path^>  path to local Ivy repository ^(default: ~/.ivy2^)
 echo   --mem    ^<integer^>  set memory options ^(default: %sbt_default_mem%^)
 echo   --no-share          use all local caches; no sharing
