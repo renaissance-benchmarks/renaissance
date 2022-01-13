@@ -505,6 +505,16 @@ renaissance / distroBenchmarkDescriptors := benchmarkDescriptors.value.filter(b 
   !nonGplOnly.value || b.distro == License.MIT
 )
 
+lazy val distroRealBenchmarkDescriptors = taskKey[Seq[BenchmarkInfo]](
+  "Produces a collection of benchmark descriptors. " +
+    "Includes only benchmarks matching the currently configured distribution, " +
+    "but excludes dummy benchmarks (with the exception of dummy-empty)."
+)
+
+renaissance / distroRealBenchmarkDescriptors := distroBenchmarkDescriptors.value.filter(b =>
+  !b.groups.contains("dummy") || b.name == "dummy-empty"
+)
+
 lazy val generateBenchmarksProperties = inputKey[Seq[File]](
   "Collects benchmark metadata and stores it in a properties file of given name." +
     "Includes only benchmarks matching the currently configured distribution."
