@@ -192,7 +192,7 @@ lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
       // akka-actor 2.6.x supports Scala 2.12, 2.13
-      "com.typesafe.akka" %% "akka-actor" % "2.6.17"
+      "com.typesafe.akka" %% "akka-actor" % "2.6.18"
     )
   )
   .dependsOn(renaissanceCore % "provided")
