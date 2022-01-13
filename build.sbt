@@ -637,7 +637,7 @@ renaissance / generateStandaloneJars := {
 
   sLog.value.info(s"Creating standalone jars in $outputDir")
   distroRealBenchmarkDescriptors.value.map { bench =>
-    sLog.value.info(s"Generating standalone JAR for ${bench.name}")
+    sLog.value.debug(s"Generating standalone JAR for ${bench.name}")
 
     // Collect all dependencies, together with core and harness packages.
     val deps = modulesWithDeps(bench.module) ++ modulesWithDeps(
@@ -793,8 +793,9 @@ renaissanceJmhWrappers / generateJmhWrappers := {
   sLog.value.debug(s"Deleting JMH wrappers in $outputDir")
   IO.delete(outputDir)
 
+  sLog.value.info(s"Generating JMH wrappers in $outputDir")
   distroRealBenchmarkDescriptors.value.map { bench =>
-    sLog.value.info(s"Generating JMH wrappers for ${bench.name}")
+    sLog.value.debug(s"Generating JMH wrapper for ${bench.name}")
     RenaissanceJmh.generateJmhWrapperBenchmarkClass(bench, outputDir.toPath)
   }
 }
