@@ -767,6 +767,8 @@ lazy val renaissance = (project in file("."))
 // JMH support
 //
 
+val jmhVersion = "1.33"
+
 /**
  * Generates JMH wrappers for Renaissance benchmarks in the given modules.
  * Each wrapper is derived from a common base class and includes just the
@@ -856,8 +858,6 @@ def mapJarContentsToAssemblyTask(classpath: Classpath) =
         }
     }
   }
-
-val jmhVersion = "1.33"
 
 /**
  * This project generates JMH wrappers for Renaissance benchmarks. The
