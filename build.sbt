@@ -59,19 +59,21 @@ ThisBuild / Compile / scalacOptions += "-target:jvm-1.8"
 // Determine project version using 'git describe'.
 ThisBuild / git.useGitDescribe := true
 
-lazy val commonSettingsNoScala = Seq(
-  // Don't add Scala version to JAR name.
-  crossPaths := false,
-  // Don't include Scala library as dependency.
-  autoScalaLibrary := false
-)
-
 val scalaVersion212 = "2.12.15"
 val scalaVersion213 = "2.13.7"
 
 val modulesPropertiesName = "modules.properties"
 val benchmarksPropertiesName = "benchmarks.properties"
 val harnessMainClass = "org.renaissance.harness.RenaissanceSuite"
+
+lazy val commonSettingsNoScala = Seq(
+  // Don't add Scala version to JAR name.
+  crossPaths := false,
+  // Don't include Scala library as dependency.
+  autoScalaLibrary := false,
+  // Override default Scala version to use Scala 2.13 harness.
+  scalaVersion := scalaVersion213
+)
 
 addCommandAlias(
   "renaissanceFormat",
