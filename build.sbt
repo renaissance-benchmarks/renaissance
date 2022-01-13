@@ -265,7 +265,8 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Force common versions of other dependencies.
-      "com.google.guava" % "guava" % guavaVersion
+      "com.google.guava" % "guava" % guavaVersion,
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
