@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set +e
-declare builtin_sbt_version="1.5.6"
+declare builtin_sbt_version="1.6.1"
 declare -a residual_args
 declare -a java_args
 declare -a scalac_args
@@ -10,10 +10,11 @@ declare -a sbt_options
 declare -a print_version
 declare -a print_sbt_version
 declare -a print_sbt_script_version
+declare -a shutdownall
 declare -a original_args
 declare java_cmd=java
 declare java_version
-declare init_sbt_version=1.5.6
+declare init_sbt_version=1.6.1
 declare sbt_default_mem=1024
 declare -r default_sbt_opts=""
 declare -r default_java_opts="-Dfile.encoding=UTF-8"
@@ -21,6 +22,7 @@ declare sbt_verbose=
 declare sbt_debug=
 declare build_props_sbt_version=
 declare use_sbtn=
+declare no_server=
 declare sbtn_command="$SBTN_CMD"
 declare sbtn_version="1.4.7"
 
@@ -306,6 +308,16 @@ addDefaultMemory() {
   fi
 }
 
+addSbtScriptProperty () {
+  if [[ "${java_args[@]}" == *-Dsbt.script=* ]]; then
+    :
+  else
+    sbt_script=$0
+    sbt_script=${sbt_script/ /%20}
+    addJava "-Dsbt.script=$sbt_script"
+  fi
+}
+
 require_arg () {
   local type="$1"
   local opt="$2"
@@ -484,6 +496,12 @@ run() {
   elif [[ $print_version ]]; then
     execRunner "$java_cmd" -jar "$sbt_jar" "sbtVersion" | tail -1 | sed -e 's/\[info\]/sbt version in this project:/g'
     echo "sbt script version: $init_sbt_version"
+  elif [[ $shutdownall ]]; then
+    local sbt_processes=( $(jps -v | grep sbt-launch | cut -f1 -d ' ') )
+    for procId in "${sbt_processes[@]}"; do
+      kill -9 $procId
+    done
+    echo "shutdown ${#sbt_processes[@]} sbt processes"
   else
     # run sbt
     execRunner "$java_cmd" \
@@ -522,6 +540,7 @@ Usage: `basename "$0"` [options]
   -V | --version      print sbt version information
   --numeric-version   print the numeric sbt version (sbt sbtVersion)
   --script-version    print the version of sbt script
+  shutdownall         shutdown all running sbt-launch processes
   -d | --debug        set sbt log level to debug
   -debug-inc | --debug-inc
                       enable extra debugging for the incremental debugger
@@ -535,6 +554,7 @@ Usage: `basename "$0"` [options]
   --sbt-create        start sbt even if current directory contains no sbt project
   --sbt-dir   <path>  path to global settings/plugins directory (default: ~/.sbt)
   --sbt-boot  <path>  path to shared boot directory (default: ~/.sbt/boot in 0.11 series)
+  --sbt-cache <path>  path to global cache directory (default: operating system specific)
   --ivy       <path>  path to local Ivy repository (default: ~/.ivy2)
   --mem    <integer>  set memory options (default: $sbt_default_mem)
   --no-share          use all local caches; no sharing
@@ -612,6 +632,7 @@ map_args () {
            -traces|--traces) options=( "${options[@]}" "-Dsbt.traces=true" ) && shift ;;
              --supershell=*) options=( "${options[@]}" "-Dsbt.supershell=${1:13}" ) && shift ;;
               -supershell=*) options=( "${options[@]}" "-Dsbt.supershell=${1:12}" ) && shift ;;
+     -no-server|--no-server) options=( "${options[@]}" "-Dsbt.io.virtual=false" "-Dsbt.server.autostart=false" ) && shift ;;
                   --color=*) options=( "${options[@]}" "-Dsbt.color=${1:8}" ) && shift ;;
                    -color=*) options=( "${options[@]}" "-Dsbt.color=${1:7}" ) && shift ;;
        -no-share|--no-share) options=( "${options[@]}" "${noshare_opts[@]}" ) && shift ;;
@@ -636,6 +657,7 @@ process_args () {
       -V|-version|--version) print_version=1 && shift ;;
           --numeric-version) print_sbt_version=1 && shift ;;
            --script-version) print_sbt_script_version=1 && shift ;;
+                shutdownall) shutdownall=1 && shift ;;
           -d|-debug|--debug) sbt_debug=1 && addSbt "-debug" && shift ;;
            -client|--client) use_sbtn=1 && shift ;;
                    --server) use_sbtn=0 && shift ;;
@@ -645,6 +667,10 @@ process_args () {
              -batch|--batch) exec </dev/null && shift ;;
 
          -sbt-jar|--sbt-jar) require_arg path "$1" "$2" && sbt_jar="$2" && shift 2 ;;
+     -sbt-cache|--sbt-cache) require_arg path "$1" "$2" &&
+                             sbt_cache="$2" &&
+                             addJava "-Dsbt.global.localcache=$2" &&
+                             shift 2 ;;
  -sbt-version|--sbt-version) require_arg version "$1" "$2" && sbt_version="$2" && shift 2 ;;
      -java-home|--java-home) require_arg path "$1" "$2" &&
                              java_cmd="$2/bin/java" &&
@@ -776,6 +802,7 @@ else
   java_version="$(jdk_version)"
   vlog "[process_args] java_version = '$java_version'"
   addDefaultMemory
+  addSbtScriptProperty
   set -- "${residual_args[@]}"
   argumentCount=$#
   run

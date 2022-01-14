@@ -60,7 +60,7 @@ ThisBuild / Compile / scalacOptions += "-target:jvm-1.8"
 ThisBuild / git.useGitDescribe := true
 
 val scalaVersion212 = "2.12.15"
-val scalaVersion213 = "2.13.7"
+val scalaVersion213 = "2.13.8"
 
 val modulesPropertiesName = "modules.properties"
 val benchmarksPropertiesName = "benchmarks.properties"
@@ -134,7 +134,7 @@ val jnaVersion = "5.10.0"
 val nettyVersion = "4.1.72.Final"
 val scalaCollectionCompatVersion = "2.6.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "1.7.32"
+val slf4jVersion = "1.7.33"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -192,7 +192,7 @@ lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
     scalaVersion := scalaVersion213,
     libraryDependencies ++= Seq(
       // akka-actor 2.6.x supports Scala 2.12, 2.13
-      "com.typesafe.akka" %% "akka-actor" % "2.6.17"
+      "com.typesafe.akka" %% "akka-actor" % "2.6.18"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -265,7 +265,8 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Force common versions of other dependencies.
-      "com.google.guava" % "guava" % guavaVersion
+      "com.google.guava" % "guava" % guavaVersion,
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -294,7 +295,7 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     scalaVersion := scalaVersion212,
     libraryDependencies ++= Seq(
       // neo4j 4.4 does not support Scala 2.13 yet.
-      "org.neo4j" % "neo4j" % "4.4.0",
+      "org.neo4j" % "neo4j" % "4.4.2",
       "net.liftweb" %% "lift-json" % "3.5.0",
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
@@ -360,7 +361,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
     ) % "compile->compile;compile->test"
   )
 
-val finagleVersion = "21.11.0"
+val finagleVersion = "21.12.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .settings(
@@ -767,7 +768,7 @@ lazy val renaissance = (project in file("."))
 // JMH support
 //
 
-val jmhVersion = "1.33"
+val jmhVersion = "1.34"
 
 //
 // Tasks related to generating JMH wrappers jars for benchmarks.
