@@ -70,6 +70,10 @@ jobs:
         shell: bash
         run: tools/ci/bench-base.sh
 
+      - name: Run the suite in standalone mode
+        shell: bash
+        run: tools/ci/bench-standalone.sh
+
       - name: Run the suite with JMH
         shell: bash
         run: tools/ci/bench-jmh.sh
@@ -114,6 +118,10 @@ jobs:
         shell: bash
         run: tools/ci/bench-base.sh
 
+      - name: Run the suite in standalone mode
+        shell: bash
+        run: tools/ci/bench-standalone.sh
+
       - name: Run the suite with JMH
         shell: bash
         run: tools/ci/bench-jmh.sh
@@ -157,6 +165,10 @@ jobs:
       - name: Run the suite
         shell: bash
         run: tools/ci/bench-base.sh
+
+      - name: Run the suite in standalone mode
+        shell: bash
+        run: tools/ci/bench-standalone.sh
 
       - name: Run the suite with JMH
         shell: bash
