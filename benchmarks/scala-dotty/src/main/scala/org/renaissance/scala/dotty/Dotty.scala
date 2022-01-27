@@ -17,13 +17,18 @@ import org.renaissance.core.DirUtils
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLClassLoader
+import java.nio.file.Files
 import java.nio.file.Files.copy
 import java.nio.file.Files.createDirectories
 import java.nio.file.Files.notExists
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import java.security.DigestInputStream
 import java.security.MessageDigest
+import java.util.jar
+import java.util.jar.Attributes
+import java.util.jar.JarFile
 import java.util.zip.ZipInputStream
 import scala.collection._
 
@@ -85,29 +90,20 @@ final class Dotty extends Benchmark {
 
   override def setUpBeforeAll(bc: BenchmarkContext): Unit = {
     /*
-     * Construct the classpath for the compiler. Unfortunately, Dotty is
-     * unable to use the current classloader (either of this class or this
-     * thread), so we have to pass the classpath to it explicitly. Note
-     * that -usejavacp would not work as that reads from java.class.path
-     * property and we do not want to modify global properties here.
+     * Dotty is unable to use the current class loader (either of this class
+     * or this thread), and passing the class loader to the compiler seems to
+     * be impossible with the current API (see the discussion at
+     * https://github.com/renaissance-benchmarks/renaissance/issues/176).
      *
-     * Because we know that our classloader is actually an URLClassLoader
-     * which loads the benchmark JARs from a temporary directory, we just
-     * convert all the URLs to plain file paths.
+     * So we instead pass the class path as a command line option. Note that
+     * the '-usejavacp' option does not help, because it reads from the
+     * 'java.class.path' system property, which does not contain anything
+     * useful and we do not want to modify it here.
      *
-     * Note that using the URLs directly is not possible, because they
-     * contain the "file://" protocol prefix, which is not handled well
-     * on Windows (when on the classpath).
-     *
-     * Note that it would be best to pass the classloader to the compiler
-     * but that seems to be impossible with current API (see discussion
-     * at https://github.com/renaissance-benchmarks/renaissance/issues/176).
+     * However, constructing the class path is a bit involved.
+     * See the [[buildDottyClassPath]] method for details.
      */
-    val classPathJars = Thread.currentThread.getContextClassLoader
-      .asInstanceOf[URLClassLoader]
-      .getURLs
-      .map(url => new File(url.toURI).getPath)
-      .toBuffer
+    val dottyClassPath = buildDottyClassPath(System.getProperty("java.class.path"))
 
     val scratchDir = bc.scratchDirectory()
     val sourceDir = scratchDir.resolve("src")
@@ -121,7 +117,7 @@ final class Dotty extends Benchmark {
       "3.0-migration",
       // Class path with dependency jars.
       "-classpath",
-      classPathJars.mkString(File.pathSeparator),
+      dottyClassPath.mkString(File.pathSeparator),
       // Output directory for compiled baseFiles.
       "-d",
       dottyOutputDir.toString,
@@ -132,6 +128,68 @@ final class Dotty extends Benchmark {
 
     // Compile all sources as a single batch.
     dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
+  }
+
+  private def buildDottyClassPath(classPath: String): Seq[Path] = {
+    /*
+     * If we are running with module loading enabled, we know that our class
+     * loader will be an instance of URLClassLoader which loads the benchmark
+     * JARs from a temporary directory. In that case, we can just convert all
+     * the URLs to plain file paths.
+     *
+     * Note that using the URLs directly is not possible, because they
+     * contain the "file://" protocol prefix, which is not handled well
+     * on Windows (when on the classpath).
+     *
+     * If we are running in standalone mode, the class loader may or may not
+     * be an URLClassloader instance and even if it is, it will not contain
+     * anything useful. In that case, we read the manifest from the jar file
+     * referenced by 'java.class.path' and construct the class path using the
+     * value of the 'Class-Path' attribute.
+     */
+    def loadCurrentManifest(classLoader: ClassLoader) = {
+      val mis = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME)
+      try {
+        new jar.Manifest(mis)
+      } finally {
+        mis.close()
+      }
+    }
+
+    def classPathFromManifest(jmf: jar.Manifest, base: Path) = {
+      jmf.getMainAttributes
+        .getValue(Attributes.Name.CLASS_PATH)
+        .split(" ")
+        .map(path => base.resolveSibling(path).normalize())
+        .toSeq
+    }
+
+    //
+    // If the current class path consists solely of 'dotty.jar', try
+    // to build the class path from the jar manifest, otherwise try to
+    // get URLs from the class loader. If even that fails (we may be
+    // running without module loading with all jars specified on the
+    // command line), fall back to the current class path.
+    //
+    val classLoader = Thread.currentThread.getContextClassLoader
+
+    val classPathElements = classPath.split(File.pathSeparatorChar).map(Paths.get(_))
+    if (classPathElements.length == 1) {
+      val singlePath = classPathElements.head
+      if (!Files.isDirectory(singlePath) && singlePath.endsWith("dotty.jar")) {
+        // We are probably running in 'java -jar' mode.
+        val mf = loadCurrentManifest(classLoader)
+        return classPathFromManifest(mf, singlePath)
+      }
+    }
+
+    classLoader match {
+      case ucl: URLClassLoader =>
+        ucl.getURLs.map(url => Paths.get(url.toURI)).toSeq
+      case _ =>
+        // Fall back to current class path.
+        classPathElements
+    }
   }
 
   override def setUpBeforeEach(bc: BenchmarkContext): Unit = {
