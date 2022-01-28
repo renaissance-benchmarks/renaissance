@@ -147,12 +147,12 @@ final class Dotty extends Benchmark {
      * referenced by 'java.class.path' and construct the class path using the
      * value of the 'Class-Path' attribute.
      */
-    def loadCurrentManifest(classLoader: ClassLoader) = {
-      val mis = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME)
+    def loadJarManifest(jarPath: Path) = {
+      val jarFile = new JarFile(jarPath.toFile)
       try {
-        new jar.Manifest(mis)
+        jarFile.getManifest
       } finally {
-        mis.close()
+        jarFile.close()
       }
     }
 
@@ -171,19 +171,17 @@ final class Dotty extends Benchmark {
     // running without module loading with all jars specified on the
     // command line), fall back to the current class path.
     //
-    val classLoader = Thread.currentThread.getContextClassLoader
-
     val classPathElements = classPath.split(File.pathSeparatorChar).map(Paths.get(_))
     if (classPathElements.length == 1) {
-      val singlePath = classPathElements.head
-      if (!Files.isDirectory(singlePath) && singlePath.endsWith("dotty.jar")) {
+      val singleJar = classPathElements.head
+      if (!Files.isDirectory(singleJar) && singleJar.endsWith("dotty.jar")) {
         // We are probably running in 'java -jar' mode.
-        val mf = loadCurrentManifest(classLoader)
-        return classPathFromManifest(mf, singlePath)
+        val mf = loadJarManifest(singleJar)
+        return classPathFromManifest(mf, singleJar)
       }
     }
 
-    classLoader match {
+    Thread.currentThread.getContextClassLoader match {
       case ucl: URLClassLoader =>
         ucl.getURLs.map(url => Paths.get(url.toURI)).toSeq
       case _ =>
