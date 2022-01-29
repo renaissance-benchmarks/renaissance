@@ -38,6 +38,10 @@ jobs:
         shell: bash
         run: tools/ci/bench-base.sh
 
+      - name: Run the suite in standalone mode
+        shell: bash
+        run: tools/ci/bench-standalone.sh
+
       - name: Run the suite with JMH
         shell: bash
         run: tools/ci/bench-jmh.sh
