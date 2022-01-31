@@ -32,7 +32,7 @@ making a release. These can be eventually automated:
 - [ ] Update `README.md` in the project root by running:
   - `java -jar target/renaissance-gpl-<version>.jar --readme`
 - [ ] Update version numbers in files that are not generated.
-  - `documentation/jar-bundle.md`
+  - `plugins/jmx-memory/README.md`
   - `plugins/jmx-timers/README.md`
   - `plugins/ubench-agent/README.md`
 - [ ] Set `git.baseVersion` in `version.sbt` to the next version **after**
@@ -66,13 +66,14 @@ and publish the releases on GitHub and on the Renaissance web site.
 - [ ] Build the plugins to make them a bit more accessible to people. Because
   SBT does not support `-C` alà `make`, you can use the following commands
   (assuming you have a `sbt` symlink in the project root).
-  - `pushd plugins/jmx-timers && { ../../sbt assembly; popd; }`
   - `pushd plugins/jmx-memory && { ../../sbt assembly; popd; }`
+  - `pushd plugins/jmx-timers && { ../../sbt assembly; popd; }`
   - `pushd plugins/ubench-agent && { ./build-ubench-agent.sh && ../../sbt assembly; popd; }`
   - If everything went well, you should end up with the following files
     with plugin-specific version numbers:
+    - `plugins/jmx-memory/target/plugin-jmxmemory-assembly-<ver>.jar`
     - `plugins/jmx-timers/target/plugin-jmxtimers-assembly-<ver>.jar`
-    - `plugins/ubench-agent/target/plugin-jmxtimers-assembly-<ver>.jar`
+    - `plugins/ubench-agent/target/plugin-ubenchagent-assembly-<ver>.jar`
   - Note that we do not distribute the `libubench-agent.so` library because
     it depends on local installation of PAPI and is quite fragile.
 - [ ] Attach all the artifacts to the GitHub release draft.
