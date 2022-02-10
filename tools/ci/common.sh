@@ -51,12 +51,16 @@ cp_reflink() {
 }
 
 get_jvm_workaround_args() {
-    if [ "$RENAISSANCE_JVM_MAJOR_VERSION" = "16" -o "$RENAISSANCE_JVM_MAJOR_VERSION" = "17" ]; then
-        echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
-        echo "--add-opens=java.base/java.util=ALL-UNNAMED"
-        echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
-        echo "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
-    fi
+    case "$RENAISSANCE_JVM_MAJOR_VERSION" in
+        16|17|18-ea|19-ea)
+            echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
+            echo "--add-opens=java.base/java.util=ALL-UNNAMED"
+            echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
+            echo "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+            ;;
+        *)
+            ;;
+    esac
 }
 
 
