@@ -65,6 +65,7 @@ val scalaVersion213 = "2.13.8"
 val modulesPropertiesName = "modules.properties"
 val benchmarksPropertiesName = "benchmarks.properties"
 val harnessMainClass = "org.renaissance.harness.RenaissanceSuite"
+val launcherMainClass = "org.renaissance.core.Launcher"
 
 lazy val commonSettingsNoScala = Seq(
   // Don't add Scala version to JAR name.
@@ -139,7 +140,8 @@ val slf4jVersion = "1.7.33"
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
     commonSettingsNoScala,
-    name := "renaissance-core"
+    name := "renaissance-core",
+    Compile / mainClass := Some(launcherMainClass)
   )
 
 val renaissanceHarnessCommonSettings = Seq(
