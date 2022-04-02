@@ -118,7 +118,7 @@ final class FinagleChirper extends Benchmark {
       counts
         .entrySet()
         .parallelStream()
-        .map[Integer]((t: Entry[String]) => t.getCount)
+        .map[Integer] { t: Entry[String] => t.getCount }
         .max(Comparator.naturalOrder[Integer]())
         .get
         .toLong
