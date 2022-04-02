@@ -60,7 +60,25 @@ final class FinagleChirper extends Benchmark {
       op: (T, T) => T
     ): T = {
       val a = new Accumulator(zero)(op)
-      for (msg <- feed) a.accumulate(f(msg))
+
+      //
+      // Process the feed WITHOUT using an iterator, because the underlying ArrayBuffer
+      // might be modified during the iteration (when new chirps are added to it) and
+      // trigger a ConcurrentModificationException.
+      //
+      // This is because reading the chirps from the ArrayBuffer is not synchronized
+      // when computing the /api/stats methods as futures and there is no way to take
+      // a lightweight read-only snapshot of the feed. Instead, reading the feed is
+      // inherently racy, but the race should be benign -- chirps added while computing
+      // the result of a stat API request will not be considered in the ongoing request.
+      //
+      // Because chirps are only added to the feed, accessing the ArrayBuffer using an
+      // explicit index should produce the same result even if the underlying storage
+      // array changes. This requires that the underlying array in ArrayBuffer is only
+      // updated AFTER all previous elements have been copied to the new array.
+      //
+      feed.indices.foreach { i => a.accumulate(f(feed(i))) }
+
       a.get()
     }
 
