@@ -53,17 +53,40 @@ final class FinagleChirper extends Benchmark {
     var requestCount = 0
     var postCount = 0
 
-    def analyze[T](feed: SeqView[String], zero: T, f: String => T, op: (T, T) => T): T = {
+    def analyze[T](
+      feed: IndexedSeqView[String],
+      zero: T,
+      f: String => T,
+      op: (T, T) => T
+    ): T = {
       val a = new Accumulator(zero)(op)
-      for (msg <- feed) a.accumulate(f(msg))
+
+      //
+      // Process the feed WITHOUT using an iterator, because the underlying ArrayBuffer
+      // might be modified during the iteration (when new chirps are added to it) and
+      // trigger a ConcurrentModificationException.
+      //
+      // This is because reading the chirps from the ArrayBuffer is not synchronized
+      // when computing the /api/stats methods as futures and there is no way to take
+      // a lightweight read-only snapshot of the feed. Instead, reading the feed is
+      // inherently racy, but the race should be benign -- chirps added while computing
+      // the result of a stat API request will not be considered in the ongoing request.
+      //
+      // Because chirps are only added to the feed, accessing the ArrayBuffer using an
+      // explicit index should produce the same result even if the underlying storage
+      // array changes. This requires that the underlying array in ArrayBuffer is only
+      // updated AFTER all previous elements have been copied to the new array.
+      //
+      feed.indices.foreach { i => a.accumulate(f(feed(i))) }
+
       a.get()
     }
 
-    def longestMessageInFeed(feed: SeqView[String]): String = {
+    def longestMessageInFeed(feed: IndexedSeqView[String]): String = {
       analyze[String](feed, "", x => x, (x, y) => if (x.length > y.length) x else y)
     }
 
-    def longestMessageInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
+    def longestMessageInAllFeeds(allFeeds: Seq[IndexedSeqView[String]]): String = {
       var result = ""
       for (feed <- allFeeds) {
         val r = longestMessageInFeed(feed)
@@ -87,7 +110,7 @@ final class FinagleChirper extends Benchmark {
       result
     }
 
-    def longestRechirpInAllFeeds(allFeeds: Seq[SeqView[String]]): String = {
+    def longestRechirpInAllFeeds(allFeeds: Seq[IndexedSeqView[String]]): String = {
       var result = ""
       for (feed <- allFeeds) {
         val s = analyze[String](
@@ -105,7 +128,7 @@ final class FinagleChirper extends Benchmark {
       result
     }
 
-    def mostRechirpsInAllFeeds(allFeeds: Seq[(String, SeqView[String])]): Long = {
+    def mostRechirpsInAllFeeds(allFeeds: Seq[(String, IndexedSeqView[String])]): Long = {
       val counts = ConcurrentHashMultiset.create[String]()
       allFeeds.par.foreach {
         case (username, feed) =>
@@ -118,7 +141,7 @@ final class FinagleChirper extends Benchmark {
       counts
         .entrySet()
         .parallelStream()
-        .map[Integer]((t: Entry[String]) => t.getCount)
+        .map[Integer] { t: Entry[String] => t.getCount }
         .max(Comparator.naturalOrder[Integer]())
         .get
         .toLong
