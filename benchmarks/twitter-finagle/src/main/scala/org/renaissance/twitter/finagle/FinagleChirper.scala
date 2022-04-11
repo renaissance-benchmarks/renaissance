@@ -31,6 +31,8 @@ import java.util.Comparator
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection._
+import scala.collection.immutable.ArraySeq
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.parallel.CollectionConverters._
 import scala.io.Source
 import scala.util.hashing.byteswap32
@@ -47,9 +49,35 @@ import scala.util.hashing.byteswap32
 @Configuration(name = "jmh")
 final class FinagleChirper extends Benchmark {
 
+  /**
+   * A variant of [[ArrayBuffer]] with support for taking a light-weight snapshot of
+   * the underlying array. The snapshot consists of the array reference together with
+   * the number of items present and DOES NOT protect against direct modifications of
+   * the existing elements or removal of elements from the underlying array. However,
+   * it allows iterating over elements that were present at the time of the snapshot,
+   * even if the original buffer is appended to after the snapshot was taken.
+   */
+  final class FeedBuffer[A](initialSize: Int) extends mutable.ArrayBuffer[A](initialSize) {
+    def this() = this(FeedBuffer.DefaultInitialSize)
+
+    def snapshotView(): IndexedSeqView[A] = {
+      val snapshot = immutable.ArraySeq.unsafeWrapArray(array).asInstanceOf[ArraySeq[A]]
+      snapshot.view.take(length)
+    }
+  }
+
+  object FeedBuffer {
+    final val DefaultInitialSize = ArrayBuffer.DefaultInitialSize
+
+    def from[A](coll: collection.IterableOnce[A]): FeedBuffer[A] = {
+      val initialSize = DefaultInitialSize.max(coll.knownSize)
+      new FeedBuffer[A](initialSize) ++= coll
+    }
+  }
+
   class Master extends Service[Request, Response] {
     val lock = new AnyRef
-    val feeds = new concurrent.TrieMap[String, mutable.ArrayBuffer[String]]
+    val feeds = new concurrent.TrieMap[String, FeedBuffer[String]]
     var requestCount = 0
     var postCount = 0
 
@@ -60,25 +88,7 @@ final class FinagleChirper extends Benchmark {
       op: (T, T) => T
     ): T = {
       val a = new Accumulator(zero)(op)
-
-      //
-      // Process the feed WITHOUT using an iterator, because the underlying ArrayBuffer
-      // might be modified during the iteration (when new chirps are added to it) and
-      // trigger a ConcurrentModificationException.
-      //
-      // This is because reading the chirps from the ArrayBuffer is not synchronized
-      // when computing the /api/stats methods as futures and there is no way to take
-      // a lightweight read-only snapshot of the feed. Instead, reading the feed is
-      // inherently racy, but the race should be benign -- chirps added while computing
-      // the result of a stat API request will not be considered in the ongoing request.
-      //
-      // Because chirps are only added to the feed, accessing the ArrayBuffer using an
-      // explicit index should produce the same result even if the underlying storage
-      // array changes. This requires that the underlying array in ArrayBuffer is only
-      // updated AFTER all previous elements have been copied to the new array.
-      //
-      feed.indices.foreach { i => a.accumulate(f(feed(i))) }
-
+      feed.foreach { msg => a.accumulate(f(msg)) }
       a.get()
     }
 
@@ -173,7 +183,7 @@ final class FinagleChirper extends Benchmark {
                 val response = Response(req.version, Status.Ok, BufReader(buf))
                 Future.value(response)
               case None =>
-                feeds(username) = new mutable.ArrayBuffer[String]
+                feeds(username) = new FeedBuffer[String]
                 val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
                 Future.value(response)
             }
@@ -183,7 +193,7 @@ final class FinagleChirper extends Benchmark {
             val ord = req.getIntParam("ord")
             val buf = req.content
             val content = Buf.Utf16.unapply(buf).get
-            feeds.putIfAbsent(username, new mutable.ArrayBuffer[String])
+            feeds.putIfAbsent(username, new FeedBuffer[String])
             val feed = feeds(username)
             feed += content
             val responseBuf = Buf.ByteArray.Owned(Array[Byte]('o', 'k'))
@@ -192,7 +202,7 @@ final class FinagleChirper extends Benchmark {
           case "/api/stats/longest" =>
             val allFeeds =
               for ((_, feed) <- feeds.readOnlySnapshot())
-                yield feed.view.take(feed.length)
+                yield feed.snapshotView()
             FuturePool.unboundedPool {
               val message = longestMessageInAllFeeds(allFeeds.toSeq)
               val bytes = message.getBytes("UTF-8")
@@ -202,7 +212,7 @@ final class FinagleChirper extends Benchmark {
           case "/api/stats/hash-tag-count" =>
             val allFeeds =
               for ((_, feed) <- feeds.readOnlySnapshot())
-                yield feed.view.take(feed.length)
+                yield feed.snapshotView()
             FuturePool.unboundedPool {
               val count = hashStartCountInAllFeeds(allFeeds.toSeq)
               val buffer = ByteBuffer.allocate(8)
@@ -214,7 +224,7 @@ final class FinagleChirper extends Benchmark {
           case "/api/stats/longest-rechirp" =>
             val allFeeds =
               for ((_, feed) <- feeds.readOnlySnapshot())
-                yield feed.view.take(feed.length)
+                yield feed.snapshotView()
             FuturePool.unboundedPool {
               val message = longestRechirpInAllFeeds(allFeeds.toSeq)
               val bytes = message.getBytes("UTF-8")
@@ -224,7 +234,7 @@ final class FinagleChirper extends Benchmark {
           case "/api/stats/most-rechirps" =>
             val allFeeds =
               for ((username, feed) <- feeds.readOnlySnapshot())
-                yield (username, feed.view.take(feed.length))
+                yield (username, feed.snapshotView())
             FuturePool.unboundedPool {
               val count = mostRechirpsInAllFeeds(allFeeds.toSeq)
               val buffer = ByteBuffer.allocate(8)
@@ -239,7 +249,7 @@ final class FinagleChirper extends Benchmark {
               val hash = byteswap32(username.length + username.charAt(0))
               val offset = math.abs(hash) % (messages.length - startingFeedSize)
               val startingMessages = messages.slice(offset, offset + startingFeedSize)
-              feeds(username) = startingMessages.to(mutable.ArrayBuffer)
+              feeds(username) = FeedBuffer.from(startingMessages)
             }
             println("Resetting master, feed map size: " + feeds.size)
             val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
