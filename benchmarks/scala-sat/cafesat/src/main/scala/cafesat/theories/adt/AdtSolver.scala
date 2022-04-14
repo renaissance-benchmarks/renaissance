@@ -817,7 +817,7 @@ class AdtSolver {
 
   def dumpTerms(): String =
     (terms.zipWithIndex map { case (term, i) =>
-      val strI = i.formatted("%2d")
+      val strI = "%2d".format(i)
       s"   $strI: $term"
     }).mkString("Terms:\n", "\n", "")
 
