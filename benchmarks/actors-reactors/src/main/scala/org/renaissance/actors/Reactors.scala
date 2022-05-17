@@ -534,8 +534,7 @@ private object Roundabout {
       }
     })
 
-    system.spawn(Reactor[Array[Channel[Int]]] { self =>
-      roundabout ! self.main.channel
+    val roundRobinDistributor = system.spawn(Reactor[Array[Channel[Int]]] { self =>
       self.main.events.onEvent { chs =>
         var i = 0
         while (i < Roundabout.NUM_MESSAGES) {
@@ -545,6 +544,8 @@ private object Roundabout {
         self.main.seal()
       }
     })
+
+    roundabout ! roundRobinDistributor
 
     Validators.simple(
       "Roundabout",
