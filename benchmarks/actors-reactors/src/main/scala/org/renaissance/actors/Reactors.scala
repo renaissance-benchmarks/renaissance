@@ -407,16 +407,7 @@ private object PingPong {
     // Inner class to handle circular reference between ping and pong.
     class PingPongInner {
       val ping: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
-        val pong: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
-          var left = sz
-          self.main.events onEvent { _ =>
-            ping ! "pong"
-            left -= 1
-            if (left == 0) self.main.seal()
-          }
-        })
         var left = sz
-        pong ! "ping"
         self.main.events onEvent { _ =>
           left -= 1
           if (left > 0) {
@@ -427,8 +418,22 @@ private object PingPong {
           }
         }
       })
+
+      val pong: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
+        var left = sz
+        self.main.events onEvent { _ =>
+          left -= 1
+          if (left == 0) {
+            self.main.seal()
+          }
+
+          ping ! "pong"
+        }
+      })
     }
-    new PingPongInner
+
+    val pair = new PingPongInner
+    pair.pong ! "serve"
 
     Validators.simple("PingPong", 0, Await.result(done.future, Duration.Inf).longValue())
   }
@@ -456,16 +461,7 @@ private object StreamingPingPong {
     // Inner class to handle circular reference between ping and pong.
     class PingPongInner {
       val ping: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
-        val pong: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
-          var left = sz
-          self.main.events onEvent { _ =>
-            ping ! "pong"
-            left -= 1
-            if (left == 0) self.main.seal()
-          }
-        })
         var left = sz
-        for (_ <- 0 until StreamingPingPong.WINDOW_SIZE) pong ! "ping"
         self.main.events onEvent { _ =>
           left -= 1
           if (left > 0) {
@@ -476,8 +472,24 @@ private object StreamingPingPong {
           }
         }
       })
+
+      val pong: Channel[String] = system.spawn(Reactor { self: Reactor[String] =>
+        var left = sz
+        self.main.events onEvent { _ =>
+          left -= 1
+          if (left == 0) {
+            self.main.seal()
+          }
+
+          ping ! "pong"
+        }
+      })
     }
-    new PingPongInner
+
+    val pair = new PingPongInner
+    for (_ <- 0 until StreamingPingPong.WINDOW_SIZE) {
+      pair.pong ! "serve"
+    }
 
     Validators.simple(
       "StreamingPingPong",
