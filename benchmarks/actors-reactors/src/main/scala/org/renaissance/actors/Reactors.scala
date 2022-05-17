@@ -588,9 +588,10 @@ private object ThreadRing {
           }
         })
       }).toArray
-      ring(0) ! 666
     }
-    new RingInner
+
+    val ring = new RingInner
+    ring.ring(0) ! 666
 
     Validators.simple("ThreadRing", 0, Await.result(done.future, Duration.Inf).longValue)
   }
