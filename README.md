@@ -26,7 +26,7 @@ This allows you to execute the following `java` command:
 
 
 ```
-$ java -jar 'renaissance-gpl-0.14.0.jar' <benchmarks>
+$ java -jar 'renaissance-gpl-0.14.1.jar' <benchmarks>
 ```
 
 Above, `<benchmarks>` is the list of benchmarks that you wish to run.
@@ -268,7 +268,7 @@ arguments to that plugin (or policy).
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version 0.14.0
+Renaissance Benchmark Suite, version 0.14.1
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
@@ -315,7 +315,7 @@ $ tools/sbt/bin/sbt renaissanceJmhPackage
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.14.0.jar'
+$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.14.1.jar'
 ```
 
 

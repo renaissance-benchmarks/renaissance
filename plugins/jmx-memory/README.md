@@ -20,7 +20,7 @@ To use the plugin, simply add it with the `--plugin` option when starting the su
 Note that we specify an output file as the counters are not visible on the standard output.
 
 ```shell
-java renaissance-gpl-0.14.0.jar \
+java renaissance-gpl-0.14.1.jar \
   --plugin plugin-jmxmemory-assembly-0.0.1.jar\
   --json results.json \
   ...

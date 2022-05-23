@@ -16,10 +16,9 @@ To make a release, you first need to put on your wordsmith hat:
   - Keep the main message in the **first paragraph**, because that's
     what gets displayed on the front page.
   - `website/YYYY-MM-DD-renaissance-<maj>-<min>-<patch>.md`
-- [ ] Merge the announcement to the Renaissance repository through a PR.
-- [ ] Copy and commit the announcement locally to the `master` branch of
-  the [website repository](https://github.com/renaissance-benchmarks/renaissance-benchmarks.github.io).
-  - Don't push it to GitHub yet (wait for phase 3).
+- [ ] Create a PR for the announcement in the Renaissance
+    [website repository](https://github.com/renaissance-benchmarks/renaissance-benchmarks.github.io)
+  - Don't merge it until you make the GitHub release (wait for phase 3)
 
 ## Phase 2
 
@@ -31,7 +30,7 @@ making a release. These can be eventually automated:
   - `sbt -Dproject.version=<version> renaissancePackage`
 - [ ] Update `README.md` in the project root by running:
   - `java -jar target/renaissance-gpl-<version>.jar --readme`
-- [ ] Update version numbers in files that are not generated.
+- [ ] Manually update version numbers in files that are not generated:
   - `plugins/jmx-memory/README.md`
   - `plugins/jmx-timers/README.md`
   - `plugins/ubench-agent/README.md`
@@ -95,5 +94,5 @@ build the artifacts, proceed as follows:
 - [ ] Preferably wait until CI finishes playing with the `master` branch,
   hoping the badges on the main page of the web site stay green.
 - [ ] Select tag in the GitHub release draft and publish the release.
-- [ ] Push the commit with the release announcement in the `master` branch
-  of the web site repository to GitHub to publish it.
+- [ ] Merge the release announcement PR to the `master` branch
+  of the web site repository to publish it.

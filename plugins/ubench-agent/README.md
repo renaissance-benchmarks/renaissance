@@ -34,7 +34,7 @@ Note that we specify an output file as the counters are not visible on the
 standard output.
 
 ```shell
-java -agentpath:libubench-agent.so-jar -jar renaissance-gpl-0.14.0.jar \
+java -agentpath:libubench-agent.so-jar -jar renaissance-gpl-0.14.1.jar \
   --plugin plugin-ubenchagent-assembly-0.0.1.jar --with-arg PAPI_L1_DCM,PAPI_L2_DCM \
   --json results.json \
   ...
