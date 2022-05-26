@@ -1,5 +1,8 @@
 name: Linux
-on: [push, pull_request]
+on:
+  workflow_run:
+    workflows: [Main]
+    types: [completed]
 jobs:
   linux:
     strategy:
@@ -20,6 +23,8 @@ jobs:
           - openj9-openjdk11
           - openj9-openjdk16
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    continue-on-error: true
     container: "renaissancebench/buildenv:${{ matrix.image }}"
     steps:
       - name: Git checkout
@@ -34,7 +39,7 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
             ~/.cache/coursier
-          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
+          key: ${{ runner.os }}-sbt-${{ hashFiles('build.sbt') }}
 
       - name: Environment configuration
         shell: bash
