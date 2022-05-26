@@ -1,11 +1,15 @@
 name: MacOS (legacy)
-on: [push, pull_request]
+on:
+  workflow_run:
+    workflows: [Main]
+    types: [completed]
 jobs:
   macos:
     strategy:
       matrix:
         java: [ '8', '11', '13', '15' ]
     runs-on: macos-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     continue-on-error: true
     steps:
       - name: Git checkout
