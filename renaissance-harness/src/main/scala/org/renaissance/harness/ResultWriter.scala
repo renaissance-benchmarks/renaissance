@@ -12,6 +12,7 @@ import java.io.File
 import java.lang.management.MemoryUsage
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -101,15 +102,19 @@ private abstract class ResultWriter
     } yield (benchName, benchFailed, metricsByName, repetitionCount)
 
   protected final def writeToFile(file: Path, string: String): Unit = {
-    val writer = Files.newBufferedWriter(
-      file,
-      StandardOpenOption.CREATE,
-      StandardOpenOption.TRUNCATE_EXISTING
-    )
-    try {
-      writer.append(string)
-    } finally {
-      writer.close()
+    if (file.equals(Paths.get("-"))) {
+      println(string)
+    } else {
+      val writer = Files.newBufferedWriter(
+        file,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING
+      )
+      try {
+        writer.append(string)
+      } finally {
+        writer.close()
+      }
     }
   }
 
