@@ -1,5 +1,8 @@
 name: Main
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
 jobs:
   checks:
     runs-on: ubuntu-latest
