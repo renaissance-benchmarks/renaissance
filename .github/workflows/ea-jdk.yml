@@ -1,0 +1,53 @@
+name: EA JDK
+on:
+  push:
+  schedule:
+    - cron: "17 23 17 * *"
+
+jobs:
+  linux-ea:
+    runs-on: ubuntu-latest
+    container: "fedora:34"
+    steps:
+      - name: Install base requirements
+        shell: bash
+        run: dnf install -y ca-certificates git unzip
+
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest EA JDK
+        run: tools/ci/get-latest-ea-jdk.sh $RUNNER_TEMP/jdk-ea-linux.tar.gz
+
+      - name: Setup EA JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: 99-ea
+          distribution: jdkfile
+          jdkFile: ${{ runner.temp }}/jdk-ea-linux.tar.gz
+
+      - name: Environment configuration
+        shell: bash
+        run: tools/ci/pre-show-env.sh
+
+      - name: Build both base & JMH bundles
+        shell: bash
+        run: tools/ci/build-both.sh
+
+      - name: Check JMH bundle
+        shell: bash
+        run: tools/ci/check-jmh.sh
+
+      - name: Run the suite
+        shell: bash
+        run: tools/ci/bench-base.sh
+
+      - name: Run the suite in standalone mode
+        shell: bash
+        run: tools/ci/bench-standalone.sh
+
+      - name: Run the suite with JMH
+        shell: bash
+        run: tools/ci/bench-jmh.sh
