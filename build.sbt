@@ -135,7 +135,7 @@ val jnaVersion = "5.10.0"
 val nettyVersion = "4.1.72.Final"
 val scalaCollectionCompatVersion = "2.6.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "1.7.33"
+val slf4jVersion = "1.7.36"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
