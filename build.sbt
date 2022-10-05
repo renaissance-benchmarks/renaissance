@@ -126,7 +126,6 @@ val generateManifestAttributesTask = Def.task {
 //
 
 val commonsIoVersion = "2.11.0"
-val commonsLoggingVersion = "1.2"
 val commonsCompressVersion = "1.21"
 val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.9"
@@ -222,6 +221,14 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.spark" %% "spark-sql" % sparkVersion,
       "org.apache.spark" %% "spark-mllib" % sparkVersion
     ),
+    // Exclude legacy logging libraries.
+    excludeDependencies ++= Seq(
+      // Replaced by the jcl-over-slf4j logging bridge.
+      ExclusionRule("commons-logging", "commons-logging"),
+      // Replaced by reload4j pulled in by recent slf4j-log4j12.
+      ExclusionRule("log4j", "log4j")
+    ),
+    // Override versions pulled in by dependencies.
     dependencyOverrides ++= Seq(
       // Force common (newer) Netty version.
       "io.netty" % "netty-all" % nettyVersion,
@@ -230,15 +237,17 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
-      "commons-logging" % "commons-logging" % commonsLoggingVersion,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      // Starting with version 1.7.36, slf4j-log4j12 pulls in slf4j-reload4j to replace log4j.
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
+      // Force newer reload4j version.
+      "ch.qos.reload4j" % "reload4j" % "1.2.24"
     )
   )
   .dependsOn(renaissanceCore % "provided")
