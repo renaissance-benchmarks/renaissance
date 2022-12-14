@@ -21,21 +21,21 @@ import io.jenetics.util.RandomRegistry;
 
 public final class JavaJenetics {
 
-  private double geneMinValue = -2000;
+  private final double geneMinValue;
 
-  private double geneMaxValue = 2000;
+  private final double geneMaxValue;
 
-  private int geneCount = 200;
+  private final int geneCount;
 
-  private int chromosomeCount = 50;
+  private final int chromosomeCount;
 
-  private int generationCount = 5000;
+  private final int generationCount;
 
   //
 
-  private int randomSeed = 7;
+  private final int randomSeed;
 
-  private int threadCount = 2;
+  private final int threadCount;
 
   private final ExecutorService executor = Executors.newWorkStealingPool();
 
