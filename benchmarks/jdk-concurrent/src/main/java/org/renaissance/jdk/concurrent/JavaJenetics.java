@@ -54,7 +54,7 @@ public final class JavaJenetics {
 
 
   public void setupBeforeAll() {
-    RandomRegistry.setRandom(new Random(randomSeed));
+    RandomRegistry.random(new Random(randomSeed));
   }
 
 
@@ -77,7 +77,7 @@ public final class JavaJenetics {
       ).reduce((f, g) -> f.thenCombine(g, this::average)).get();
 
     final Chromosome<DoubleGene> result = future.join();
-    System.out.println(result.getGene(0) + ", " + result.getGene(1));
+    System.out.println(result.get(0) + ", " + result.get(1));
     return result;
   }
 
@@ -93,14 +93,14 @@ public final class JavaJenetics {
     final Genotype<DoubleGene> result = engine.stream()
       .limit(generationCount).collect(EvolutionResult.toBestGenotype());
 
-    return result.getChromosome();
+    return result.chromosome();
   }
 
 
   private Double fitness(final Genotype<DoubleGene> g) {
-    final Chromosome<DoubleGene> c = g.getChromosome();
-    final double x = c.getGene(0).doubleValue() - 10;
-    final double y = c.getGene(1).doubleValue() - 15;
+    final Chromosome<DoubleGene> c = g.chromosome();
+    final double x = c.get(0).doubleValue() - 10;
+    final double y = c.get(1).doubleValue() - 15;
     return -x * x - y * y;
   }
 
@@ -110,7 +110,7 @@ public final class JavaJenetics {
   ) {
     return DoubleChromosome.of(
       IntStream.range(0, ca.length())
-        .mapToObj(i -> ca.getGene(i).mean(cb.getGene(i)))
+        .mapToObj(i -> ca.get(i).mean(cb.get(i)))
         .collect(MSeq.toMSeq())
     );
   }
