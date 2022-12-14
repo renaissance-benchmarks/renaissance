@@ -25,10 +25,10 @@ object Solver {
      * each variable Vi denoting whether the digit Vi was chosen for the
      * respective slot.
      */
-    require(sudoku.size == 9)
-    require(sudoku.forall(row => row.size == 9))
+    require(sudoku.length == 9)
+    require(sudoku.forall(row => row.length == 9))
 
-    val vars = sudoku.map(row => row.map(el => Array.fill(9)(propVar())))
+    val vars = sudoku.map(row => row.map(_ => Array.fill(9)(propVar())))
 
     /**
      * There should be at least one digit chosen for each sudoku slot.
@@ -73,11 +73,11 @@ object Solver {
      * Force entry with a possible number.
      */
     val forcedEntries =
-      for (r <- 0 to 8; c <- 0 to 8 if sudoku(r)(c) != None)
+      for (r <- 0 to 8; c <- 0 to 8 if sudoku(r)(c).isDefined)
         yield or(vars(r)(c)(sudoku(r)(c).get - 1))
 
     /**
-     * All constraints for a soduko problem.
+     * All constraints for a sudoku problem.
      */
     val allConstraints = onePerEntry ++ uniqueInColumns ++ uniqueInRows ++
       uniqueInGrid1 ++ uniqueInGrid2 ++ forcedEntries
@@ -105,7 +105,7 @@ final class ScalaDoku extends Benchmark {
    * An arbitrary solved sudoku puzzle. The puzzle is copied and some entries
    * are changed to have an unsolved version for the algorithm to solve it again.
    */
-  val SOLVED_PUZZLE = Array(
+  private val SOLVED_PUZZLE = Array(
     Array(6, 7, 9, 2, 8, 5, 3, 1, 4),
     Array(1, 4, 8, 9, 6, 3, 5, 2, 7),
     Array(2, 3, 5, 1, 7, 4, 8, 6, 9),
@@ -117,9 +117,9 @@ final class ScalaDoku extends Benchmark {
     Array(4, 9, 1, 6, 3, 2, 7, 8, 5)
   )
 
-  var puzzleWithAFewHoles: Array[Array[Option[Int]]] = _
+  private var puzzleWithAFewHoles: Array[Array[Option[Int]]] = _
 
-  var puzzleWithOneHole: Array[Array[Option[Int]]] = _
+  private var puzzleWithOneHole: Array[Array[Option[Int]]] = _
 
   private def preparePuzzleWithAFewHoles() = {
     val result = SOLVED_PUZZLE.map(row => row.map(i => Some(i): Option[Int]))
@@ -159,7 +159,7 @@ final class ScalaDoku extends Benchmark {
         val actualSlice = actual.get(index)
         if (!expectedSlice.sameElements(actualSlice)) {
           throw new ValidationException(
-            s"Result row ${index} does not match the expected solution: actual ${actualSlice.toSeq}, expected ${expectedSlice.toSeq}"
+            s"Result row $index does not match the expected solution: actual ${actualSlice.toSeq}, expected ${expectedSlice.toSeq}"
           )
         }
       }
