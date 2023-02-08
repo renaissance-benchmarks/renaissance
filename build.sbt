@@ -323,7 +323,8 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     commonSettingsScala212,
     libraryDependencies ++= Seq(
       // neo4j 4.4 does not support Scala 2.13 yet.
-      "org.neo4j" % "neo4j" % "4.4.2",
+      // neo4j 5.0 supports Scala 2.13 and requires JDK17
+      "org.neo4j" % "neo4j" % "4.4.25",
       "net.liftweb" %% "lift-json" % "3.5.0"
     ),
     dependencyOverrides ++= Seq(
