@@ -452,6 +452,8 @@ final class FinagleChirper extends Benchmark {
   private var userNames: Seq[String] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    FinagleUtil.setUpLoggers()
+
     requestCountParam = c.parameter("request_count").toPositiveInteger
     val userCountParam = c.parameter("user_count").toPositiveInteger
 

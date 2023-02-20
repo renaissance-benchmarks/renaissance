@@ -100,6 +100,8 @@ final class FinagleHttp extends Benchmark {
   var threadBarrier: CountDownLatch = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
+    FinagleUtil.setUpLoggers()
+
     requestCountParam = c.parameter("request_count").toPositiveInteger
     clientCountParam = c.parameter("client_count").toPositiveInteger
 
