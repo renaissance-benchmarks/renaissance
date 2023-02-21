@@ -1,7 +1,6 @@
 package org.renaissance.apache.spark
 
 import org.apache.log4j.Level
-import org.apache.log4j.LogManager
 import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -147,19 +146,6 @@ trait SparkUtil {
 
   def tearDownSparkContext(): Unit = {
     sparkSession.close()
-  }
-
-  // Used to find sources of log messages.
-  private def printCurrentLoggers() = {
-    import scala.jdk.CollectionConverters._
-
-    println(
-      LogManager.getCurrentLoggers.asScala
-        .map { case l: Logger => l.getName }
-        .toSeq
-        .sorted
-        .mkString("\n")
-    )
   }
 
   /**

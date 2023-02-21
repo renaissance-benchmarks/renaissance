@@ -126,7 +126,6 @@ val generateManifestAttributesTask = Def.task {
 //
 
 val commonsIoVersion = "2.11.0"
-val commonsLoggingVersion = "1.2"
 val commonsCompressVersion = "1.21"
 val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.9"
@@ -220,24 +219,35 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
-      "org.apache.spark" %% "spark-mllib" % sparkVersion,
-      // Force newer Netty version.
-      // Overrides versions pulled in by dependencies.
+      "org.apache.spark" %% "spark-mllib" % sparkVersion
+    ),
+    // Exclude legacy logging libraries.
+    excludeDependencies ++= Seq(
+      // Replaced by the jcl-over-slf4j logging bridge.
+      ExclusionRule("commons-logging", "commons-logging"),
+      // Replaced by reload4j pulled in by recent slf4j-log4j12.
+      ExclusionRule("log4j", "log4j")
+    ),
+    // Override versions pulled in by dependencies.
+    dependencyOverrides ++= Seq(
+      // Force common (newer) Netty version.
       "io.netty" % "netty-all" % nettyVersion,
       // Force newer Zookeeper version.
       "org.apache.zookeeper" % "zookeeper" % "3.6.3",
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
-      "commons-logging" % "commons-logging" % commonsLoggingVersion,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      // Starting with version 1.7.36, slf4j-log4j12 pulls in slf4j-reload4j to replace log4j.
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
+      // Force newer reload4j version.
+      "ch.qos.reload4j" % "reload4j" % "1.2.24"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -262,10 +272,12 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
         ExclusionRule("net.openhft", "chronicle-threads"),
         ExclusionRule("org.slf4j", "slf4j-api")
       ),
+      // Add simple binding to silence SLF4J warnings.
+      "org.slf4j" % "slf4j-simple" % slf4jVersion
+    ),
+    dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
-      // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion
@@ -298,11 +310,21 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     libraryDependencies ++= Seq(
       // neo4j 4.4 does not support Scala 2.13 yet.
       "org.neo4j" % "neo4j" % "4.4.2",
-      "net.liftweb" %% "lift-json" % "3.5.0",
+      "net.liftweb" %% "lift-json" % "3.5.0"
+    ),
+    dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
-      // Force common versions of other dependencies.
-      "io.netty" % "netty-all" % nettyVersion,
+      // Force common (newer) Netty version. We need to override specific
+      // packages because the project does not depend on netty-all.
+      "io.netty" % "netty-buffer" % nettyVersion,
+      "io.netty" % "netty-codec-http" % nettyVersion,
+      "io.netty" % "netty-common" % nettyVersion,
+      "io.netty" % "netty-handler" % nettyVersion,
+      "io.netty" % "netty-resolver" % nettyVersion,
+      "io.netty" % "netty-transport" % nettyVersion,
+      "io.netty" % "netty-transport-native-epoll" % nettyVersion,
+      "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
       "org.slf4j" % "slf4j-nop" % slf4jVersion
     )
   )
@@ -326,7 +348,9 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala3-compiler_3" % "3.0.2",
       // The following is required to compile the workload sources.
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value
+    ),
+    dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion
     )
@@ -378,9 +402,22 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "com.twitter" %% "util-core" % finagleVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jVersion,
-      // Force common versions of other dependencies.
-      "io.netty" % "netty-all" % nettyVersion,
+      "org.slf4j" % "slf4j-simple" % slf4jVersion
+    ),
+    dependencyOverrides ++= Seq(
+      // Force common (newer) Netty version. We need to override specific
+      // packages because the project does not depend on netty-all.
+      "io.netty" % "netty-buffer" % nettyVersion,
+      "io.netty" % "netty-codec" % nettyVersion,
+      "io.netty" % "netty-codec-http" % nettyVersion,
+      "io.netty" % "netty-codec-http2" % nettyVersion,
+      "io.netty" % "netty-common" % nettyVersion,
+      "io.netty" % "netty-handler" % nettyVersion,
+      "io.netty" % "netty-handler-proxy" % nettyVersion,
+      "io.netty" % "netty-resolver" % nettyVersion,
+      "io.netty" % "netty-transport" % nettyVersion,
+      "io.netty" % "netty-transport-native-epoll" % nettyVersion,
+      "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
