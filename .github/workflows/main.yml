@@ -13,6 +13,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
       - name: Cache SBT
         uses: actions/cache@v2
         with:
@@ -47,6 +51,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
         uses: actions/cache@v2
@@ -89,6 +97,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Fetch JDK 17
         run: |
@@ -138,6 +150,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
       - name: Fetch JDK 17
         run: |
           aria2c -d ${{ runner.temp }} -o openjdk-17_windows-x64_bin.zip https://download.java.net/java/GA/jdk17/0d483333a00540d886896bac774ff48b/35/GPL/openjdk-17_windows-x64_bin.zip
@@ -186,6 +202,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
         uses: actions/cache@v2
@@ -242,6 +262,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
       - name: Cache SBT
         uses: actions/cache@v2
         with:
@@ -289,6 +313,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
       - name: Setup correct Java version
         uses: actions/setup-java@v2
         with:
@@ -335,6 +363,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Setup correct Java version
         uses: actions/setup-java@v2
