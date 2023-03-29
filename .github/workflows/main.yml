@@ -249,7 +249,6 @@ jobs:
           - openjdk18
           - openjdk19
           - openjdk20
-          - openjdk21-ea
           - openj9-openjdk8
           - openj9-openjdk11
           - openj9-openjdk16
