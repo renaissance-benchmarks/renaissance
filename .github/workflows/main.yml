@@ -6,12 +6,16 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    container: "renaissancebench/buildenv:v1-openjdk8"
+    container: "renaissancebench/buildenv:v4-openjdk8"
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
         uses: actions/cache@v2
@@ -40,13 +44,17 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
-    container: "renaissancebench/buildenv:v1-openjdk17"
+    container: "renaissancebench/buildenv:v4-openjdk17"
     continue-on-error: true
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
         uses: actions/cache@v2
@@ -86,9 +94,13 @@ jobs:
     continue-on-error: true
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Fetch JDK 17
         run: |
@@ -134,9 +146,13 @@ jobs:
     continue-on-error: true
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Fetch JDK 17
         run: |
@@ -180,12 +196,16 @@ jobs:
   plugins:
     runs-on: ubuntu-latest
     needs: linux
-    container: "renaissancebench/buildenv:v1-openjdk8-with-ant-gcc"
+    container: "renaissancebench/buildenv:v4-openjdk8-with-ant-gcc"
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
         uses: actions/cache@v2
@@ -226,19 +246,24 @@ jobs:
           - openjdk14
           - openjdk15
           - openjdk16
-          - openjdk18-ea
-          - openjdk19-ea
+          - openjdk18
+          - openjdk19
+          - openjdk20
           - openj9-openjdk8
           - openj9-openjdk11
           - openj9-openjdk16
     runs-on: ubuntu-latest
     continue-on-error: true
-    container: "renaissancebench/buildenv:v1-${{ matrix.image }}"
+    container: "renaissancebench/buildenv:v4-${{ matrix.image }}"
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
         uses: actions/cache@v2
@@ -283,9 +308,13 @@ jobs:
     continue-on-error: true
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Setup correct Java version
         uses: actions/setup-java@v2
@@ -330,9 +359,13 @@ jobs:
     continue-on-error: true
     steps:
       - name: Git checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Setup correct Java version
         uses: actions/setup-java@v2
