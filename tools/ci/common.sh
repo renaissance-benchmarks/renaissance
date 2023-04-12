@@ -42,7 +42,7 @@ RENAISSANCE_JMH_JAR="${RENAISSANCE_JMH_DIR}/$RENAISSANCE_JMH_JAR_NAME"
 
 ci_sbt() {
 	local TRUST_STORE="$ROOT_DIR/tools/jks/cacerts"
-	$ROOT_DIR/tools/sbt/bin/sbt --debug "-J-Djavax.net.ssl.trustStore=$TRUST_STORE" "$@"
+	$ROOT_DIR/tools/sbt/bin/sbt --debug "-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1" "-J-Djavax.net.ssl.trustStore=$TRUST_STORE" "$@"
 }
 
 cp_reflink() {
