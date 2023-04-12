@@ -19,6 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Name("json-dom")
 @Group("json")
@@ -76,6 +77,19 @@ public final class JsonDomProcessing implements Benchmark {
 
 			for (int i = 0; i < count - 1; i++) {
 				tasks.add(task);
+			}
+		}
+	}
+
+	@Override
+	public void tearDownAfterAll(BenchmarkContext context) {
+		if (execService != null) {
+			execService.shutdown();
+
+			try {
+				execService.awaitTermination(1, TimeUnit.SECONDS);
+			} catch (final InterruptedException e) {
+				throw new RuntimeException(e);
 			}
 		}
 	}
