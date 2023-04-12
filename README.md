@@ -26,7 +26,7 @@ This allows you to execute the following `java` command:
 
 
 ```
-$ java -jar 'renaissance-gpl-0.14.2.jar' <benchmarks>
+$ java -jar 'renaissance-gpl-0.15.0.jar' <benchmarks>
 ```
 
 Above, `<benchmarks>` is the list of benchmarks that you wish to run.
@@ -142,6 +142,12 @@ The following is the complete list of benchmarks, separated into groups.
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams.
   \
   Default repetitions: 50; GPL2 license, GPL3 distribution; Supported JVM: 1.8 and later
+
+#### json
+
+- `json-dom` - Runs workload based on serialization of Java objects to JSON strings and back using the Jackson library.
+  \
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
 #### scala
 
@@ -268,7 +274,7 @@ arguments to that plugin (or policy).
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version 0.14.2
+Renaissance Benchmark Suite, version 0.15.0
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
@@ -315,7 +321,7 @@ $ tools/sbt/bin/sbt renaissanceJmhPackage
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.14.2.jar'
+$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.15.0.jar'
 ```
 
 

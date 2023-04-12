@@ -79,6 +79,22 @@ public interface BenchmarkResult {
       return () -> Assert.assertEquals(expected, actual, epsilon, name);
     }
 
+        /**
+     * Creates a simple {@link BenchmarkResult} which tests two
+     * {@code Object} values for equality using the {@code equals}
+     * implementation of the expected argument.
+     *
+     * @param name The name of the result (shown in the failure error message).
+     * @param expected The expected value.
+     * @param actual The actual value.
+     * @return New {@link BenchmarkResult} instance.
+     */
+    public static BenchmarkResult simple(
+      final String name, final Object expected, final Object actual
+    ) {
+      return () -> Assert.assertEquals(expected, actual, name);
+    }
+
     /**
      * Creates a simple hashing {@link BenchmarkResult} which computes the hash
      * of the string representation of all objects in the given {@link List} and

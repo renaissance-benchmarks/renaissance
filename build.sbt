@@ -423,6 +423,17 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
   )
   .dependsOn(renaissanceCore % "provided")
 
+lazy val jsonBenchmarks = (project in file("benchmarks/json"))
+  .settings(
+    commonSettingsNoScala,
+    name := "json",
+    libraryDependencies := Seq(
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.14.2",
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.14.2"
+    )
+  )
+  .dependsOn(renaissanceCore % "provided")
+
 //
 // Project collections.
 //
@@ -446,7 +457,8 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
   scalaSatBenchmarks,
   scalaStdlibBenchmarks,
   scalaStmBenchmarks,
-  twitterFinagleBenchmarks
+  twitterFinagleBenchmarks,
+  jsonBenchmarks
 )
 
 /**

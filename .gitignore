@@ -1,6 +1,9 @@
 target/
 .bsp/
 .idea/
+.bloop/
+.metals/
+.vscode/
 *.cfg
 *.iml
 tools/sbt/lib/local-preloaded/
