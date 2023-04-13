@@ -45,6 +45,7 @@ ci_sbt() {
 	if [ "$RENAISSANCE_JVM_MAJOR_VERSION" != 8 ]; then
 	   local RT_JAR="$( java -jar "$ROOT_DIR/tools/sbt/bin/sbt-launch.jar" --rt-ext-dir )/rt.jar"
 	   if ! [ -f "$RT_JAR" ]; then
+	       mkdir -p "$( dirname "$RT_JAR" )"
 	       java -jar "$ROOT_DIR/tools/sbt/bin/sbt-launch.jar" --export-rt "$RT_JAR"
 	   fi
 	fi
