@@ -42,6 +42,12 @@ RENAISSANCE_JMH_JAR="${RENAISSANCE_JMH_DIR}/$RENAISSANCE_JMH_JAR_NAME"
 
 ci_sbt() {
 	local TRUST_STORE="$ROOT_DIR/tools/jks/cacerts"
+	if [ "$RENAISSANCE_JVM_MAJOR_VERSION" != 8 ]; then
+	   local RT_JAR="$( java -jar "$ROOT_DIR/tools/sbt/bin/sbt-launch.jar" --rt-ext-dir )/rt.jar"
+	   if ! [ -f "$RT_JAR" ]; then
+	       java -jar "$ROOT_DIR/tools/sbt/bin/sbt-launch.jar" --export-rt "$RT_JAR"
+	   fi
+	fi
 	$ROOT_DIR/tools/sbt/bin/sbt --debug "-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1" "-J-Djavax.net.ssl.trustStore=$TRUST_STORE" "$@"
 }
 
