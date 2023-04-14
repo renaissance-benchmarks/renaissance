@@ -46,7 +46,8 @@ ci_sbt() {
 	   local RT_JAR="$( java -jar "$ROOT_DIR/tools/sbt/bin/sbt-launch.jar" --rt-ext-dir )/rt.jar"
 	   if ! [ -f "$RT_JAR" ]; then
 	       mkdir -p "$( dirname "$RT_JAR" )"
-	       java -jar "$ROOT_DIR/tools/sbt/bin/sbt-launch.jar" --export-rt "$RT_JAR"
+	       javac "$ROOT_DIR/tools/RtJarExtractor.java"
+	       java -cp "$ROOT_DIR/tools" RtJarExtractor "$RT_JAR"
 	   fi
 	fi
 	$ROOT_DIR/tools/sbt/bin/sbt --debug "-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1" "-J-Djavax.net.ssl.trustStore=$TRUST_STORE" "$@"
