@@ -45,6 +45,5 @@ public class RtJarExtractor {
         });
 
         rtJar.close();
-        jrtFilesystem.close();
     }
 }
