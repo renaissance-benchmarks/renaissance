@@ -19,6 +19,7 @@ import scala.util.Random
 @Group("apache-spark")
 @Summary("Computes a Gaussian mixture model using expectation-maximization.")
 @Licenses(Array(License.APACHE2))
+@SupportsJvm("20")
 @Repetitions(40)
 @Parameter(
   name = "spark_thread_limit",

@@ -20,6 +20,7 @@ import scala.util.Random
 @Group("apache-spark")
 @Summary("Runs the chi-square test from Spark MLlib.")
 @Licenses(Array(License.APACHE2))
+@SupportsJvm("20")
 @Repetitions(60)
 @Parameter(
   name = "spark_thread_limit",

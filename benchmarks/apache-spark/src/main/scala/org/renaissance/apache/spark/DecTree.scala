@@ -22,6 +22,7 @@ import java.nio.file.Path
 @Group("apache-spark")
 @Summary("Runs the Random Forest algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
+@SupportsJvm("20")
 @Repetitions(40)
 @Parameter(
   name = "spark_thread_limit",

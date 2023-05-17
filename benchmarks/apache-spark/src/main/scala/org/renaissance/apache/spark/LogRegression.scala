@@ -18,6 +18,7 @@ import java.nio.file.Path
 @Group("apache-spark")
 @Summary("Runs the Logistic Regression algorithm from the Spark ML library.")
 @Licenses(Array(License.APACHE2))
+@SupportsJvm("20")
 @Repetitions(20)
 @Parameter(
   name = "spark_thread_limit",

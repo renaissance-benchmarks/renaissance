@@ -37,6 +37,7 @@ import scala.collection._
 @Group("scala-dotty")
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
+@SupportsJvm("20")
 @Repetitions(50)
 @Configuration(name = "test")
 @Configuration(name = "jmh")

@@ -19,6 +19,7 @@ import scala.io.BufferedSource
 @Group("apache-spark")
 @Summary("Runs a number of PageRank iterations, using RDDs.")
 @Licenses(Array(License.APACHE2))
+@SupportsJvm("20")
 @Repetitions(20)
 @Parameter(
   name = "spark_thread_limit",

@@ -67,35 +67,35 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `als` - Runs the ALS algorithm from the Spark ML library.
   \
-  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `chi-square` - Runs the chi-square test from Spark MLlib.
   \
-  Default repetitions: 60; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 60; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `dec-tree` - Runs the Random Forest algorithm from the Spark ML library.
   \
-  Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `gauss-mix` - Computes a Gaussian mixture model using expectation-maximization.
   \
-  Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 40; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `log-regression` - Runs the Logistic Regression algorithm from the Spark ML library.
   \
-  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `movie-lens` - Recommends movies using the ALS algorithm.
   \
-  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `naive-bayes` - Runs the multinomial Naive Bayes algorithm from the Spark ML library.
   \
-  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `page-rank` - Runs a number of PageRank iterations, using RDDs.
   \
-  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 20
 
 #### concurrency
 
@@ -147,7 +147,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `dotty` - Runs the Dotty compiler on a set of source code files.
   \
-  Default repetitions: 50; BSD3 license, MIT distribution; Supported JVM: 1.8 and later
+  Default repetitions: 50; BSD3 license, MIT distribution; Supported JVM: 1.8 - 20
 
 - `philosophers` - Solves a variant of the dining philosophers problem using ScalaSTM.
   \

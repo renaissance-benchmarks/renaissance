@@ -22,6 +22,7 @@ import scala.collection.Map
 @Group("apache-spark")
 @Summary("Recommends movies using the ALS algorithm.")
 @Licenses(Array(License.APACHE2))
+@SupportsJvm("20")
 @Repetitions(20)
 @Parameter(
   name = "spark_thread_limit",
