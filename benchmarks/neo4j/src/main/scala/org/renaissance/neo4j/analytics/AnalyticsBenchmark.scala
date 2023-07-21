@@ -44,7 +44,7 @@ class AnalyticsBenchmark(
   ): Map[Integer, Long] = {
     val tx = db.beginTx()
     try {
-      implicit val defaultFormats = DefaultFormats
+      implicit val formats: Formats = DefaultFormats
 
       val mapping = mutable.Map[Integer, Long]()
       for (field <- vertices) try {
@@ -100,7 +100,7 @@ class AnalyticsBenchmark(
   ) = {
     val tx = db.beginTx()
     try {
-      implicit val formats = DefaultFormats
+      implicit val formats: Formats = DefaultFormats
 
       for (field <- edges) try {
         val edge = field.value
