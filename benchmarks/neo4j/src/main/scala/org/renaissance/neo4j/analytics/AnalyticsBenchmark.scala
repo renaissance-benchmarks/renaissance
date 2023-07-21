@@ -97,7 +97,7 @@ class AnalyticsBenchmark(
     db: GraphDatabaseService,
     edges: List[JField],
     vertices: Map[Integer, Long]
-  ) = {
+  ): Unit = {
     val tx = db.beginTx()
     try {
       implicit val formats: Formats = DefaultFormats
@@ -163,7 +163,7 @@ class AnalyticsBenchmark(
     }
   }
 
-  private def validate(msg: String, expected: Seq[Map[String, AnyRef]], r: Result) = {
+  private def validate(msg: String, expected: Seq[Map[String, AnyRef]], r: Result): Int = {
     def map(r: Result) = r.asScala.map(m => m.asScala.toMap).toSeq
 
     def threadPrintln(s: String) = {
@@ -181,30 +181,30 @@ class AnalyticsBenchmark(
     }
   }
 
-  private val mutatorQueries: Seq[(String, Map[String, AnyRef], (Result) => Int)] = Seq(
+  private val mutatorQueries: Seq[(String, Map[String, AnyRef], Result => Int)] = Seq(
     (
       """match (d: Director { name: $name })
         | set d.directorId = $directorId""".stripMargin,
       Map("name" -> "Jim Steel", "directorId" -> "m.03d5q13"),
-      (r: Result) => 1
+      (_: Result) => 1
     ),
     (
       """match (d: Director)
         | where d.name starts with $name
         | set d.directorId = 'f1:' + d.name""".stripMargin,
       Map("name" -> "Don"),
-      (r: Result) => 1
+      (_: Result) => 1
     ),
     (
       """match (f: Film)
         | where $from <= f.release_date < $to
         |  set f.rname = reverse(f.name)""".stripMargin,
       Map("from" -> "2014", "to" -> "2015"),
-      (r: Result) => 1
+      (_: Result) => 1
     )
   )
 
-  private val shortQueries: Seq[(String, Map[String, AnyRef], (Result) => Int)] = Seq(
+  private val shortQueries: Seq[(String, Map[String, AnyRef], Result => Int)] = Seq(
     (
       "match (d: Director) where d.name = $name return d.directorId",
       Map("name" -> "Jim Steel"),
@@ -251,7 +251,7 @@ class AnalyticsBenchmark(
     )
   )
 
-  private val longQueries: Seq[(String, Map[String, AnyRef], (Result) => Int)] = Seq(
+  private val longQueries: Seq[(String, Map[String, AnyRef], Result => Int)] = Seq(
     // Count the number of films.
     (
       "match (f: Film) return count(f)",
@@ -368,7 +368,7 @@ class AnalyticsBenchmark(
       .sum
   }
 
-  class QueriesThread extends Thread {
+  private class QueriesThread extends Thread {
     var numQueries = 0
   }
 
@@ -401,7 +401,7 @@ class AnalyticsBenchmark(
     offset: Int
   ): Int = {
     var numSuccessfulQueries = 0
-    for (i <- 0 until repeats) {
+    for (_ <- 0 until repeats) {
       for ((query, params, action) <- rotate(queries, offset)) {
         numSuccessfulQueries += runQuery(db, query, params, action)
       }

@@ -72,7 +72,7 @@ final class Neo4jAnalytics extends Benchmark {
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    shutdownDatabaseOnce
+    shutdownDatabaseOnce()
   }
 
   private def createGraphDatabase(graphDbDir: Path) = {
@@ -87,13 +87,13 @@ final class Neo4jAnalytics extends Benchmark {
     )
 
     Runtime.getRuntime.addShutdownHook(new Thread {
-      override def run(): Unit = shutdownDatabaseOnce
+      override def run(): Unit = shutdownDatabaseOnce()
     })
 
     dbms.get().database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME)
   }
 
-  private def shutdownDatabaseOnce: Unit = {
+  private def shutdownDatabaseOnce(): Unit = {
     Option(dbms.getAndSet(null)).foreach(_.shutdown())
   }
 
