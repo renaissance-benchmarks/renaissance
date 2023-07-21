@@ -38,11 +38,6 @@ class AnalyticsBenchmark(
     println(s"Database initialized with ${vertices.length} vertices and ${edges.length} edges.")
   }
 
-  implicit def string2Label(v: String): Label = Label.label(v.toString)
-
-  implicit def string2Relationship(v: String): RelationshipType =
-    RelationshipType.withName(v.toString)
-
   private def populateVertices(
     db: GraphDatabaseService,
     vertices: List[JField]
@@ -55,8 +50,8 @@ class AnalyticsBenchmark(
       for (field <- vertices) try {
         val id = field.name.toInt
         val vertex = field.value
-        val label = (vertex \ "label").extract[String]
-        val node = label match {
+        val label = Label.label((vertex \ "label").extract[String])
+        val node = label.name() match {
           case "Genre" =>
             val node = tx.createNode(label)
             node.setProperty("id", (vertex \ "id").extract[Int])
@@ -123,7 +118,7 @@ class AnalyticsBenchmark(
           sys.error("Null destination node for: " + destination)
         }
 
-        sourceNode.createRelationshipTo(destinationNode, label)
+        sourceNode.createRelationshipTo(destinationNode, RelationshipType.withName(label))
 
       } catch {
         case e: Exception =>
@@ -146,12 +141,12 @@ class AnalyticsBenchmark(
 
   private def createIndex(
     db: GraphDatabaseService,
-    label: Label,
+    label: String,
     property: String
   ): Unit = {
     val indexTx = db.beginTx()
     try {
-      val index = indexTx.schema().indexFor(label).on(property).create()
+      val index = indexTx.schema().indexFor(Label.label(label)).on(property).create()
       indexTx.commit()
 
       val queryTx = db.beginTx()
