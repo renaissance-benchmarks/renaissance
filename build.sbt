@@ -56,7 +56,7 @@ ThisBuild / git.useGitDescribe := true
 // Compilation settings
 //
 val javaRelease = "8"
-val scalaVersion212 = "2.12.15"
+val scalaVersion212 = "2.12.18"
 val scalaVersion213 = "2.13.8"
 val scalaVersion3 = "3.3.1"
 
