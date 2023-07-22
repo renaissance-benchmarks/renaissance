@@ -5,7 +5,7 @@ lazy val scalaCafeSAT = (project in file("."))
     name := "CafeSat",
     organization := "com.regblanc",
     scalaVersion := (parentProject / scalaVersion).value,
-    scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature"),
+    scalacOptions := (parentProject / scalacOptions).value ++ Seq("-unchecked", "-feature"),
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.4" % "test",
     Test / parallelExecution := true,
   )

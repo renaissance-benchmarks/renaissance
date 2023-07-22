@@ -27,8 +27,8 @@ def projectSettings(suffix: String) = {
     organization := "io.reactors",
     scalaVersion := (parentProject / scalaVersion).value,
     logBuffered := false,
-    scalacOptions ++= Seq(
-      "-deprecation", "-feature", "-no-specialization"
+    scalacOptions := (parentProject / scalacOptions).value ++ Seq(
+      "-feature", "-no-specialization"
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-implicits"
