@@ -45,51 +45,42 @@ final class Neo4jAnalytics extends Benchmark {
    * Methods for reading JSON data.
    */
   private def extractVertices(values: Iterable[JsValue]): Iterable[Vertex] = {
-    def stringValue(jsv: JsValue) = {
-      jsv
-        .asOpt[String]
-        .orElse(jsv.asOpt[Long])
-        .orElse(jsv.asOpt[Double])
-        .orElse(jsv.asOpt[Boolean])
-        .get
-        .toString
-    }
-
     implicit val givenGenreReads: Reads[Genre] = Json.reads[Genre]
-
     implicit val givenDirectorReads: Reads[Director] = Json.reads[Director]
-
-    implicit val givenFilmReads: Reads[Film] = (jsv: JsValue) =>
-      JsSuccess(
-        Film(
-          (jsv \ "id").as[VertexId],
-          (jsv \ "label").as[String],
-          (jsv \ "filmId").as[String],
-          // The "name" field is broken and can have different types.
-          stringValue((jsv \ "name").as[JsValue]),
-          (jsv \ "release_date").as[String]
-        )
-      )
+    implicit val givenFilmReads: Reads[Film] = Json.reads[Film]
 
     values.map { v =>
-      (v \ "label").as[String] match {
-        case "Genre" => v.as[Genre]
-        case "Film" => v.as[Film]
-        case "Director" => v.as[Director]
-        case _ => ???
+      try {
+        (v \ "label").as[String] match {
+          case "Genre" => v.as[Genre]
+          case "Film" => v.as[Film]
+          case "Director" => v.as[Director]
+          case _ => ???
+        }
+      } catch {
+        case _: JsResultException =>
+          sys.error(s"Failed to extract vertex from $v")
       }
     }
   }
 
   private def extractEdges(values: Iterable[JsValue]): Iterable[Edge] = {
     implicit val givenEdgeReads: Reads[Edge] = Json.reads[Edge]
-    values.map(v => v.as[Edge])
+
+    values.map { v =>
+      try {
+        v.as[Edge]
+      } catch {
+        case _: JsResultException =>
+          sys.error(s"Failed to extract edge from $v")
+      }
+    }
   }
 
   private def loadJsonResource(name: String): Iterable[JsValue] = {
     implicit val givenSourceCodec: Codec = Codec.UTF8
     val source = Source.createBufferedSource(getClass.getResourceAsStream(name))
-    Json.parse(source.mkString).as[JsObject].values
+    Json.parse(source.mkString).as[JsArray].value
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
