@@ -33,7 +33,7 @@ object Solver {
     /**
      * There should be at least one digit chosen for each sudoku slot.
      */
-    val onePerEntry = vars.flatMap(row => row.map(vs => or(vs: _*)))
+    val onePerEntry = vars.flatMap(row => row.map(vs => or(vs.toIndexedSeq: _*)))
 
     /**
      * There must be at most one any digit in each 3x3 table.
@@ -85,7 +85,7 @@ object Solver {
     /**
      * The whole grid should Satisfy all constraints.
      */
-    solveForSatisfiability(and(allConstraints: _*))
+    solveForSatisfiability(and(allConstraints.toIndexedSeq: _*))
       .map(model => vars.map(row => row.map(vs => vs.indexWhere(v => model(v)) + 1)))
   }
 
