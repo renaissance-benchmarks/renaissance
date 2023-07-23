@@ -58,6 +58,7 @@ ThisBuild / git.useGitDescribe := true
 val javaRelease = "8"
 val scalaVersion212 = "2.12.15"
 val scalaVersion213 = "2.13.8"
+val scalaVersion3 = "3.3.1"
 
 // Explicitly target a specific JDK release.
 ThisBuild / javacOptions ++= Seq("-source", javaRelease, "-target", javaRelease)
@@ -81,6 +82,10 @@ lazy val commonSettingsScala212 = Seq(
 
 lazy val commonSettingsScala213 = Seq(
   scalaVersion := scalaVersion213
+)
+
+lazy val commonSettingsScala3 = Seq(
+  scalaVersion := scalaVersion3
 )
 
 //
@@ -169,6 +174,14 @@ val renaissanceHarnessCommonSettings = Seq(
   Compile / mainClass := Some(harnessMainClass),
   Compile / packageBin / packageOptions += generateManifestAttributesTask.value
 )
+
+lazy val renaissanceHarness3 = (project in file("renaissance-harness"))
+  .settings(
+    name := "renaissance-harness_3",
+    commonSettingsScala3,
+    renaissanceHarnessCommonSettings
+  )
+  .dependsOn(renaissanceCore % "provided")
 
 lazy val renaissanceHarness213 = (project in file("renaissance-harness"))
   .settings(
@@ -473,7 +486,7 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
  * 'clean' task on the [[renaissance]] (root) project would break the build.
  */
 val aggregateProjects =
-  renaissanceBenchmarks :+ renaissanceHarness213 :+ renaissanceHarness212
+  renaissanceBenchmarks :+ renaissanceHarness3 :+ renaissanceHarness213 :+ renaissanceHarness212
 
 /**
  * The [[renaissanceModules]] collection contains projects that represent
