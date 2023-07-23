@@ -48,7 +48,7 @@ object FormulaBuilder {
     * @param b a Boolean literal to wrap into a formula
     * @return [[Formulas.True]] if input is `true` and [[Formulas.False]] if input is `false`
     */
-  implicit def bool2formula(b: Boolean) = if(b) True else False
+  implicit def bool2formula(b: Boolean): Formula = if(b) True else False
   implicit def boolList2formulaList(bs: List[Boolean]): List[Formula] = bs.map(b => if(b) True else False)
 
   /** Returns the formula representation of a propositional variable.
