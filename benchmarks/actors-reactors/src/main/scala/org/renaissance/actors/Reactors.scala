@@ -273,6 +273,7 @@ object Fibonacci {
     system.spawn(Reactor[Int] { self =>
       self.main.events.onEvent { x =>
         done.success(x)
+        self.main.seal()
       }
       fib(self.main.channel, sz)
     })
@@ -367,7 +368,7 @@ private object ForkJoinThroughput {
         })
       }).toArray
 
-    system.spawn(Reactor[String] { _ =>
+    system.spawn(Reactor[String] { self =>
       var j = 0
       while (j < sz) {
         var i = 0
@@ -377,6 +378,7 @@ private object ForkJoinThroughput {
         }
         j += 1
       }
+      self.main.seal()
     })
 
     var res: Int = 0
