@@ -281,7 +281,7 @@ Usage: renaissance [options] [benchmark-specification]
   --policy <class-path>!<class-name>
                            Use policy plugin to control repetition of measured operation execution.
   --plugin <class-path>[!<class-name>]
-                           Load external plugin. Can appear multiple times.
+                           Load external plugin. Can appear multiple times to load different plugins.
   --with-arg <value>       Adds an argument to the plugin or policy specified last. Can appear multiple times.
   --csv <csv-file>         Output results as CSV to <csv-file>.
   --json <json-file>       Output results as JSON to <json-file>.
