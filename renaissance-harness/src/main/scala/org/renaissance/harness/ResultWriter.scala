@@ -62,8 +62,27 @@ private abstract class ResultWriter
         Runtime.getRuntime.removeShutdownHook(storeHook)
       }
 
-      store(normalTermination)
+      // Sanity check to avoid simple cases of plugin misbehavior.
+      checkBenchmarkResults(resultsByBenchmarkName) match {
+        case Some(message) =>
+          Console.err.println(s"error: benchmark results failed sanity check: $message")
+          sys.exit(1)
+        case None =>
+          store(normalTermination)
+      }
     }
+
+  private def checkBenchmarkResults(
+    results: Iterable[(String, mutable.Map[String, mutable.Buffer[Long]])]
+  ) = {
+    // Ensure all metrics have the same number of measurements in all benchmarks.
+    val sizes = results.flatMap(_._2.values).map(_.size).toIndexedSeq
+    if (sizes.exists(_ != sizes.head)) {
+      Some("inconsistent number of measurements (check plugin configuration)")
+    } else {
+      None
+    }
+  }
 
   final override def beforeHarnessShutdown(): Unit = {
     storeResults(true)
