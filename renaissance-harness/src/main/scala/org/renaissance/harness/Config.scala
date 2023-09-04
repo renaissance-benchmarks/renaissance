@@ -33,11 +33,12 @@ private final class Config {
   }
 
   /**
-   * An ordered collection associating plugin specifiers with plugin
-   * arguments. The harness will load the plugins the plugins in the
-   * order given on the command line. At this point no checking is
-   * done to prevent the specifiers to refer to the same plugin class
-   * (implicitly and explicitly).
+   * An ordered collection associating plugin specifiers with plugin arguments.
+   * The harness will load the plugins in the order given on the command line.
+   *
+   * After parsing the command line, this collection may contain different plugin
+   * specifiers that ultimately represent the same plugin. The harness attempts to
+   * avoid creating multiple instances of the same plugin later on.
    */
   private val pluginArgs = mutable.LinkedHashMap[PluginSpecifier, mutable.Buffer[String]]()
 
