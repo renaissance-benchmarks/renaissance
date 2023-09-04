@@ -45,8 +45,7 @@ private final class Config {
    * Provides an ordered immutable sequence of plugin specifiers
    * along with their arguments.
    */
-  def pluginsWithArgs = {
-    // Provide an ordered sequence of plugins speci.
+  def pluginsWithArgs: Seq[(PluginSpecifier, Seq[String])] = {
     pluginArgs.iterator.map(kv => (kv._1, kv._2.toSeq)).toSeq
   }
 
