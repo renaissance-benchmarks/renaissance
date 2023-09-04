@@ -14,7 +14,6 @@ import org.renaissance.harness.ExecutionPolicies.FixedOpCount
 import org.renaissance.harness.ExecutionPolicies.FixedOpTime
 import org.renaissance.harness.ExecutionPolicies.FixedTime
 
-import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -23,6 +22,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.function.ToIntFunction
 import scala.collection._
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import scala.util.Success
@@ -93,9 +93,7 @@ object RenaissanceSuite {
       }
 
       // Load all plugins in given order (including external policy).
-      val externalPlugins = for ((specifier, args) <- config.pluginsWithArgs) yield {
-        specifier -> createPlugin(suite, specifier, args)
-      }
+      val externalPlugins = loadExternalPlugins(suite, config.pluginsWithArgs)
 
       //
       // Get effective execution policy (built-in or external) and if using
@@ -104,7 +102,7 @@ object RenaissanceSuite {
       //
       var plugins = externalPlugins.values.toSeq
 
-      val policy = getPolicy(config, benchmarks, externalPlugins)
+      val policy = getExecutionPolicy(config, benchmarks, externalPlugins)
       if (config.policyType != PolicyType.EXTERNAL) {
         plugins = policy +: plugins
       }
@@ -320,53 +318,78 @@ object RenaissanceSuite {
     builder.build()
   }
 
-  private def createPlugin[T](
+  private def loadExternalPlugins(
     suite: BenchmarkSuite,
-    specifier: String,
-    args: mutable.Seq[String]
+    plugins: Seq[(PluginSpecifier, Seq[String])]
   ) = {
-    def exitWithError(message: String) = {
-      Console.err.println(s"Error: failed to load plugin '$specifier': $message")
-      sys.exit(1)
+    //
+    // Make sure that the same plugin is not loaded multiple times. For
+    // some plugins, the name of the class to instantiate is determined
+    // by the value of a JAR manifest attribute and is unknown at this
+    // point. We therefore check for duplicate plugin instances after
+    // loading each plugin by checking the actual plugin class and the
+    // class path it was loaded from.
+    //
+    val pluginOrigins = mutable.Map[(Seq[String], String), PluginSpecifier]()
+
+    val loadedPlugins = for ((specifier, args) <- plugins) yield {
+      def exitWithError(message: String) = {
+        Console.err.println(s"error: failed to load plugin '$specifier': $message")
+        sys.exit(1)
+      }
+
+      loadExternalPlugin(suite, specifier, args) match {
+        case Right(plugin) =>
+          val qualifier = (specifier.paths, plugin.getClass.getName)
+          if (pluginOrigins.contains(qualifier)) {
+            val otherSpecifier = pluginOrigins(qualifier)
+            exitWithError(s"plugin was already loaded via '$otherSpecifier'")
+          }
+
+          pluginOrigins += qualifier -> specifier
+          specifier -> plugin
+
+        case Left(message) => exitWithError(message)
+      }
     }
 
-    // Only take the last '!' as a class name separator.
-    val splitIndex = specifier.lastIndexOf("!")
+    loadedPlugins.toMap
+  }
 
-    val className = specifier.substring(splitIndex + 1)
-
-    val classPathString =
-      if (splitIndex == -1) specifier else specifier.substring(0, splitIndex)
-    val classPath = classPathString.split(File.pathSeparator).map(Paths.get(_)).toList
-    classPath.filterNot(Files.isReadable).foreach { path =>
-      exitWithError(s"'$path' does not exist or is not readable")
+  private def loadExternalPlugin(
+    suite: BenchmarkSuite,
+    specifier: PluginSpecifier,
+    args: Seq[String]
+  ): Either[String, Plugin] = {
+    // Ensure that class path elements are readable (files or directories).
+    val paths = specifier.paths.map(Paths.get(_))
+    paths.filterNot(Files.isReadable).foreach { path =>
+      return Left(s"path element '$path' does not exist or is not readable")
     }
+
+    val classPath = paths.asJava
+    val superClass = classOf[Plugin]
+    val argsArray = args.toArray[String]
 
     try {
-      if (splitIndex != -1) {
-        suite.createExtension(
-          classPath.asJava,
-          className,
-          classOf[Plugin],
-          args.toArray[String]
-        )
-      } else {
-        suite.createDescribedExtension(
-          classPath.asJava,
-          "Renaissance-Plugin",
-          classOf[Plugin],
-          args.toArray[String]
-        )
+      val plugin = specifier.className match {
+        case Some(className) =>
+          suite.createExtension(classPath, className, superClass, argsArray)
+        case None =>
+          suite.createDescribedExtension(classPath, "Renaissance-Plugin", superClass, argsArray)
       }
+
+      Right(plugin)
+
     } catch {
-      case e: ExtensionException => exitWithError(e.getMessage)
+      case e: ExtensionException => Left(e.getMessage)
     }
   }
 
-  private def getPolicy(
+  private def getExecutionPolicy(
     config: Config,
     benchmarks: Seq[BenchmarkDescriptor],
-    plugins: Map[String, Plugin]
+    plugins: Map[PluginSpecifier, Plugin]
   ): ExecutionPolicy = {
     config.policyType match {
       case PolicyType.FIXED_OP_COUNT =>
@@ -400,7 +423,7 @@ object RenaissanceSuite {
     }
   }
 
-  def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
+  private def foldText(words: Seq[String], width: Int, indent: String): Seq[String] = {
     var column = 0
     val line = new StringBuffer
     val result = mutable.Buffer[String]()

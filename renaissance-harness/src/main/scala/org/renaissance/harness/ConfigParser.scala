@@ -51,7 +51,9 @@ private final class ConfigParser(tags: Map[String, String]) {
 
       opt[String]("plugin")
         .valueName("<class-path>[!<class-name>]")
-        .text("Load external plugin. Can appear multiple times.")
+        .text(
+          "Load external plugin. Can appear multiple times to load different plugins."
+        )
         .action((v, c) => c.withPlugin(v))
         .unbounded()
 

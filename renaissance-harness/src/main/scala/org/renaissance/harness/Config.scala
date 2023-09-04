@@ -1,5 +1,6 @@
 package org.renaissance.harness
 
+import java.io.File
 import java.net.URI
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -24,7 +25,7 @@ private final class Config {
    * being configured. A new instance is created whenever a --policy or
    * --plugin option appears on the command line.
    */
-  var extraArgs = mutable.ArrayBuffer[String]()
+  private var extraArgs = mutable.ArrayBuffer[String]()
 
   def withExtraArg(arg: String) = {
     this.extraArgs += arg
@@ -32,14 +33,35 @@ private final class Config {
   }
 
   /**
-   * A collection of plugins to be loaded by the harness and notified
-   * about different phases of benchmark execution.
+   * An ordered collection associating plugin specifiers with plugin arguments.
+   * The harness will load the plugins in the order given on the command line.
+   *
+   * After parsing the command line, this collection may contain different plugin
+   * specifiers that ultimately represent the same plugin. The harness attempts to
+   * avoid creating multiple instances of the same plugin later on.
    */
-  val pluginsWithArgs = mutable.LinkedHashMap[String, mutable.ArrayBuffer[String]]()
+  private val pluginArgs = mutable.LinkedHashMap[PluginSpecifier, mutable.Buffer[String]]()
 
-  def withPlugin(specifier: String) = {
+  /**
+   * Provides an ordered immutable sequence of plugin specifiers
+   * along with their arguments.
+   */
+  def pluginsWithArgs: Seq[(PluginSpecifier, Seq[String])] = {
+    pluginArgs.iterator.map(kv => (kv._1, kv._2.toSeq)).toSeq
+  }
+
+  def withPlugin(specifier: String): Config = {
+    withPlugin(PluginSpecifier(specifier))
+  }
+
+  def withPlugin(specifier: PluginSpecifier): Config = {
+    if (pluginArgs.contains(specifier)) {
+      Console.err.println(s"error: duplicate plugin specifier: $specifier")
+      sys.exit(1)
+    }
+
     extraArgs = mutable.ArrayBuffer()
-    pluginsWithArgs += (specifier -> extraArgs)
+    pluginArgs += (specifier -> extraArgs)
     this
   }
 
@@ -79,11 +101,11 @@ private final class Config {
   /**
    * External policy specifier. Valid only when policyType is EXTERNAL.
    */
-  var policyPlugin: String = _
+  var policyPlugin: PluginSpecifier = _
 
   def withPolicy(specifier: String) = {
     policyType = PolicyType.EXTERNAL
-    policyPlugin = specifier
+    policyPlugin = PluginSpecifier(specifier)
     withPlugin(specifier)
   }
 
@@ -244,4 +266,28 @@ private final class Config {
 private object PolicyType extends Enumeration {
   type PolicyType = Value
   val FIXED_OP_COUNT, FIXED_OP_TIME, FIXED_TIME, EXTERNAL = Value
+}
+
+/**
+ * An external plugin specifier. It only captures where to find
+ * the plugin code and (optionally) which class to instantiate.
+ */
+private final case class PluginSpecifier(paths: Seq[String], className: Option[String]) {
+
+  override def toString: String = {
+    val ps = paths.mkString(File.pathSeparator)
+    className.map(cn => s"$ps!$cn").getOrElse(ps)
+  }
+
+}
+
+private object PluginSpecifier {
+
+  def apply(specifier: String): PluginSpecifier = {
+    val splitIndex = specifier.lastIndexOf("!")
+    val className = if (splitIndex < 0) None else Some(specifier.substring(splitIndex + 1))
+    val codePaths = if (splitIndex < 0) specifier else specifier.substring(0, splitIndex)
+    PluginSpecifier(codePaths.split(File.pathSeparator).toSeq, className)
+  }
+
 }
