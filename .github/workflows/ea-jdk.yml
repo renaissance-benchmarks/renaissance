@@ -1,8 +1,5 @@
 name: EA JDK
-on:
-  push:
-  schedule:
-    - cron: "17 23 17 * *"
+on: workflow_dispatch
 
 jobs:
   linux-ea:
