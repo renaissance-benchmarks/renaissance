@@ -6,7 +6,7 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    container: "renaissancebench/buildenv:v4-openjdk8"
+    container: "renaissancebench/buildenv:v5-openjdk8"
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
@@ -44,7 +44,7 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
-    container: "renaissancebench/buildenv:v4-openjdk17"
+    container: "renaissancebench/buildenv:v5-openjdk17"
     continue-on-error: true
     steps:
       - name: Git checkout
@@ -196,7 +196,7 @@ jobs:
   plugins:
     runs-on: ubuntu-latest
     needs: linux
-    container: "renaissancebench/buildenv:v4-openjdk8-with-ant-gcc"
+    container: "renaissancebench/buildenv:v5-openjdk8-with-ant-gcc"
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
@@ -245,7 +245,7 @@ jobs:
           - openj9-openjdk16
     runs-on: ubuntu-latest
     continue-on-error: true
-    container: "renaissancebench/buildenv:v4-${{ matrix.image }}"
+    container: "renaissancebench/buildenv:v5-${{ matrix.image }}"
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
