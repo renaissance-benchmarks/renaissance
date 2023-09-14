@@ -18,7 +18,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.ivy2/cache
@@ -57,7 +57,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.ivy2/cache
@@ -208,7 +208,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.ivy2/cache
@@ -257,7 +257,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Cache SBT
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.ivy2/cache
