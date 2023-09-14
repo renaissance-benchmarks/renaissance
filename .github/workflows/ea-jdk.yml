@@ -19,7 +19,7 @@ jobs:
         run: tools/ci/get-latest-ea-jdk.sh $RUNNER_TEMP/jdk-ea-linux.tar.gz
 
       - name: Setup EA JDK
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           java-version: 99-ea
           distribution: jdkfile
