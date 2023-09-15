@@ -146,7 +146,7 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val commonsIoVersion = "2.11.0"
+val commonsIoVersion = "2.13.0"
 val commonsCompressVersion = "1.24.0"
 val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.10.0"
