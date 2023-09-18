@@ -367,8 +367,10 @@ object RenaissanceSuite {
   ): Either[String, Plugin] = {
     // Ensure that class path elements are readable (files or directories).
     val paths = specifier.paths.map(Paths.get(_))
-    paths.filterNot(Files.isReadable).foreach { path =>
-      return Left(s"path element '$path' does not exist or is not readable")
+    paths.find(!Files.isReadable(_)) match {
+      case Some(unreadablePath) =>
+        return Left(s"path element '${unreadablePath}' does not exist or is not readable")
+      case _ =>
     }
 
     val classPath = paths.asJava
