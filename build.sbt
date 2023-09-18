@@ -339,6 +339,10 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       "io.netty" % "netty-transport" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
       "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
+      // Force common versions of other dependencies.
+      "commons-io" % "commons-io" % commonsIoVersion,
+      "org.apache.commons" % "commons-compress" % commonsCompressVersion,
+      "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.slf4j" % "slf4j-nop" % slf4jVersion
     )
   )
