@@ -1,12 +1,40 @@
 package org.renaissance.neo4j.analytics
 
-import net.liftweb.json._
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType, Result}
+import org.renaissance.neo4j.analytics.AnalyticsBenchmark._
 
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
 import scala.collection.{Seq, _}
-import scala.io.BufferedSource
+
+/*
+ * Model of JSON data.
+ */
+object AnalyticsBenchmark {
+
+  type VertexId = Int
+
+  trait Vertex {
+    def id: VertexId
+
+    def label: String
+  }
+
+  case class Genre(id: VertexId, label: String, genreId: String, name: String) extends Vertex
+
+  case class Film(
+    id: VertexId,
+    label: String,
+    filmId: String,
+    name: String,
+    releaseDate: String
+  ) extends Vertex
+
+  case class Director(id: VertexId, label: String, directorId: String, name: String)
+    extends Vertex
+
+  case class Edge(source: VertexId, destination: VertexId, label: String)
+}
 
 class AnalyticsBenchmark(
   private val graphDb: GraphDatabaseService,
@@ -21,68 +49,49 @@ class AnalyticsBenchmark(
   /**
    * Populates the database with data. Must be called before `run()`.
    */
-  def populateDatabase(verticesSources: BufferedSource, edgesSource: BufferedSource): Unit = {
-    def parseAsJsonFields(source: BufferedSource) = {
-      parse(source.mkString).asInstanceOf[JObject].obj
-    }
-
+  def populateDatabase(vertices: Iterable[Vertex], edges: Iterable[Edge]): Unit = {
     println("Populating database...")
-    val vertices = parseAsJsonFields(verticesSources)
     val vertexNodeIds = populateVertices(graphDb, vertices)
-    val edges = parseAsJsonFields(edgesSource)
-    populateEdges(graphDb, edges, vertexNodeIds)
+    val edgeCount = populateEdges(graphDb, edges, vertexNodeIds)
 
     println("Creating indices...")
     createIndices(graphDb)
 
-    println(s"Database initialized with ${vertices.length} vertices and ${edges.length} edges.")
+    println(s"Database initialized with ${vertexNodeIds.size} vertices and $edgeCount edges.")
   }
 
   private def populateVertices(
     db: GraphDatabaseService,
-    vertices: List[JField]
-  ): Map[Integer, Long] = {
-    val tx = db.beginTx()
-    try {
-      implicit val formats: Formats = DefaultFormats
+    vertices: Iterable[Vertex]
+  ): Map[VertexId, Long] = {
+    val mapping = mutable.Map[VertexId, Long]()
 
-      val mapping = mutable.Map[Integer, Long]()
-      for (field <- vertices) try {
-        val id = field.name.toInt
-        val vertex = field.value
-        val label = Label.label((vertex \ "label").extract[String])
-        val node = label.name() match {
-          case "Genre" =>
-            val node = tx.createNode(label)
-            node.setProperty("id", (vertex \ "id").extract[Int])
-            node.setProperty("genreId", (vertex \ "genreId").extract[String])
-            node.setProperty("name", (vertex \ "name").extract[String])
-            node
-          case "Film" =>
-            val filmName = if ((vertex \ "name").toOpt.get.isInstanceOf[JBool]) {
-              (vertex \ "name").extract[Boolean].toString
-            } else {
-              (vertex \ "name").extract[String]
-            }
-            val node = tx.createNode(label)
-            node.setProperty("id", (vertex \ "id").extract[Int])
-            node.setProperty("filmId", (vertex \ "filmId").extract[String])
-            node.setProperty("name", filmName)
-            node.setProperty("release_date", (vertex \ "release_date").extract[String])
-            node
-          case "Director" =>
-            val node = tx.createNode(label)
-            node.setProperty("id", (vertex \ "id").extract[Int])
-            node.setProperty("directorId", (vertex \ "directorId").extract[String])
-            node.setProperty("name", (vertex \ "name").extract[String])
-            node
+    val tx = db.beginTx()
+
+    try {
+      for (vertex <- vertices) try {
+        val node = tx.createNode(Label.label(vertex.label))
+        node.setProperty("id", vertex.id)
+
+        vertex match {
+          case Genre(_, _, genreId, name) =>
+            node.setProperty("genreId", genreId)
+            node.setProperty("name", name)
+          case Film(_, _, filmId, name, releaseDate) =>
+            node.setProperty("filmId", filmId)
+            node.setProperty("name", name)
+            node.setProperty("release_date", releaseDate)
+          case Director(_, _, directorId, name) =>
+            node.setProperty("directorId", directorId)
+            node.setProperty("name", name)
           case _ =>
-            sys.error(s"Unknown $field.")
+            sys.error(s"Unknown $vertex.")
         }
-        mapping(id) = node.getId
+
+        mapping(vertex.id) = node.getId
       } catch {
         case e: Exception =>
-          throw new RuntimeException("Error in: " + field, e)
+          throw new RuntimeException(s"Error in: $vertex", e)
       }
 
       tx.commit()
@@ -95,37 +104,36 @@ class AnalyticsBenchmark(
 
   private def populateEdges(
     db: GraphDatabaseService,
-    edges: List[JField],
-    vertices: Map[Integer, Long]
-  ): Unit = {
+    edges: Iterable[Edge],
+    vertexNodeIds: Map[VertexId, Long]
+  ): Long = {
+    var edgeCount = 0
     val tx = db.beginTx()
+
     try {
-      implicit val formats: Formats = DefaultFormats
-
-      for (field <- edges) try {
-        val edge = field.value
-        val source = vertices((edge \ "source").extract[Int])
-        val destination = vertices((edge \ "destination").extract[Int])
-        val label = (edge \ "label").extract[String]
-
-        val sourceNode = tx.getNodeById(source)
+      for (edge <- edges) try {
+        val sourceNodeId = vertexNodeIds(edge.source)
+        val sourceNode = tx.getNodeById(sourceNodeId)
         if (sourceNode == null) {
-          sys.error("Null source node for: " + source)
+          sys.error("Null source node for: " + sourceNodeId)
         }
 
-        val destinationNode = tx.getNodeById(destination)
+        val destinationNodeId = vertexNodeIds(edge.destination)
+        val destinationNode = tx.getNodeById(destinationNodeId)
         if (destinationNode == null) {
-          sys.error("Null destination node for: " + destination)
+          sys.error("Null destination node for: " + destinationNodeId)
         }
 
-        sourceNode.createRelationshipTo(destinationNode, RelationshipType.withName(label))
+        sourceNode.createRelationshipTo(destinationNode, RelationshipType.withName(edge.label))
+        edgeCount += 1
 
       } catch {
         case e: Exception =>
-          throw new RuntimeException("Error in: " + field, e)
+          throw new RuntimeException(s"Error in: $edge", e)
       }
 
       tx.commit()
+      edgeCount
 
     } finally {
       tx.close()
