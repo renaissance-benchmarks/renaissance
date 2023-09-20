@@ -304,7 +304,9 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
     name := "jdk-concurrent",
     commonSettingsScala213,
     libraryDependencies ++= Seq(
-      // Jenetics 6.0.0 requires benchmark update.
+      // Jenetics 5.2.0 is the last to support Java 8.
+      // Jenetics 6.0.0 requires Java 11 and benchmark update.
+      // Jenetics 7.0.0 requires Java 17 and benchmark update.
       "io.jenetics" % "jenetics" % "5.2.0"
     )
   )
