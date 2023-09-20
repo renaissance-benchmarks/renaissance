@@ -211,31 +211,35 @@ object RenaissanceSuite {
 
     var nanosDiffMin = Long.MaxValue
     var streakLength = 0
-    do {
-      var nanosBefore = 0L
-      var currentMillis = 0L
+    while ({
+      {
+        var nanosBefore = 0L
+        var currentMillis = 0L
 
-      val lastMillis = System.currentTimeMillis()
-      var nanosAfter = System.nanoTime()
+        val lastMillis = System.currentTimeMillis()
+        var nanosAfter = System.nanoTime()
 
-      do {
-        nanosBefore = nanosAfter
-        currentMillis = System.currentTimeMillis()
-        nanosAfter = System.nanoTime()
-      } while (currentMillis == lastMillis)
+        while ({
+          {
+            nanosBefore = nanosAfter
+            currentMillis = System.currentTimeMillis()
+            nanosAfter = System.nanoTime()
+          }; currentMillis == lastMillis
+        }) ()
 
-      streakLength += 1
+        streakLength += 1
 
-      val nanosDiff = nanosAfter - nanosBefore
-      if (nanosDiff < nanosDiffMin) {
-        nanosDiffMin = nanosDiff
-        streakLength = 0
+        val nanosDiff = nanosAfter - nanosBefore
+        if (nanosDiff < nanosDiffMin) {
+          nanosDiffMin = nanosDiff
+          streakLength = 0
 
-        // Record the corresponding nanoTime() estimate.
-        syncNanos = (nanosBefore + nanosAfter) / 2
-        syncMillis = currentMillis
-      }
-    } while (streakLength < streakLengthMax)
+          // Record the corresponding nanoTime() estimate.
+          syncNanos = (nanosBefore + nanosAfter) / 2
+          syncMillis = currentMillis
+        }
+      }; streakLength < streakLengthMax
+    }) ()
 
     //
     // Approximate nanoTime() value at VM start based on the millisecond
@@ -363,8 +367,10 @@ object RenaissanceSuite {
   ): Either[String, Plugin] = {
     // Ensure that class path elements are readable (files or directories).
     val paths = specifier.paths.map(Paths.get(_))
-    paths.filterNot(Files.isReadable).foreach { path =>
-      return Left(s"path element '$path' does not exist or is not readable")
+    paths.find(!Files.isReadable(_)) match {
+      case Some(unreadablePath) =>
+        return Left(s"path element '${unreadablePath}' does not exist or is not readable")
+      case _ =>
     }
 
     val classPath = paths.asJava
@@ -395,11 +401,11 @@ object RenaissanceSuite {
       case PolicyType.FIXED_OP_COUNT =>
         val countProvider: ToIntFunction[String] = if (config.repetitions.isDefined) {
           // Global repetition count is set, overrides benchmark defaults
-          _: String =>
+          (_: String) =>
             config.repetitions.get
         } else {
           // Global repetition count is unset, get default value from benchmark
-          name: String =>
+          (name: String) =>
             benchmarks.find(info => info.name == name).get.repetitions()
         }
 

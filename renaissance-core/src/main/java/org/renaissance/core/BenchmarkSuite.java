@@ -215,7 +215,7 @@ public final class BenchmarkSuite {
   }
 
 
-  public final class SuiteBenchmarkContext implements BenchmarkContext {
+  public static final class SuiteBenchmarkContext implements BenchmarkContext {
     private final Path scratchDir;
     private final Configuration configuration;
 
