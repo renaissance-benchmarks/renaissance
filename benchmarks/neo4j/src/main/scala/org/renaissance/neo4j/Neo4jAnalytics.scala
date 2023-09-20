@@ -6,7 +6,9 @@ import org.neo4j.logging.Level
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
+import org.renaissance.neo4j.analytics.AnalyticsBenchmark._
 import org.renaissance.{Benchmark, BenchmarkContext, BenchmarkResult, License}
+import play.api.libs.json._
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.AtomicReference
@@ -39,11 +41,49 @@ final class Neo4jAnalytics extends Benchmark {
 
   private val dbms = new AtomicReference[DatabaseManagementService]()
 
-  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    def loadResource(name: String) = {
-      implicit val defaultCodec = Codec.UTF8
-      Source.createBufferedSource(getClass.getResourceAsStream(name))
+  /*
+   * Methods for reading JSON data.
+   */
+  private def extractVertices(values: Iterable[JsValue]): Iterable[Vertex] = {
+    implicit val givenGenreReads: Reads[Genre] = Json.reads[Genre]
+    implicit val givenDirectorReads: Reads[Director] = Json.reads[Director]
+    implicit val givenFilmReads: Reads[Film] = Json.reads[Film]
+
+    values.map { v =>
+      try {
+        (v \ "label").as[String] match {
+          case "Genre" => v.as[Genre]
+          case "Film" => v.as[Film]
+          case "Director" => v.as[Director]
+          case _ => ???
+        }
+      } catch {
+        case _: JsResultException =>
+          sys.error(s"Failed to extract vertex from $v")
+      }
     }
+  }
+
+  private def extractEdges(values: Iterable[JsValue]): Iterable[Edge] = {
+    implicit val givenEdgeReads: Reads[Edge] = Json.reads[Edge]
+
+    values.map { v =>
+      try {
+        v.as[Edge]
+      } catch {
+        case _: JsResultException =>
+          sys.error(s"Failed to extract edge from $v")
+      }
+    }
+  }
+
+  private def loadJsonResource(name: String): Iterable[JsValue] = {
+    implicit val givenSourceCodec: Codec = Codec.UTF8
+    val source = Source.createBufferedSource(getClass.getResourceAsStream(name))
+    Json.parse(source.mkString).as[JsArray].value
+  }
+
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
 
     val graphDbDir = c.scratchDirectory().resolve("graphdb").normalize()
     val graphDb = createGraphDatabase(graphDbDir)
@@ -58,10 +98,11 @@ final class Neo4jAnalytics extends Benchmark {
       c.parameter("mutator_query_repeats").toPositiveInteger
     )
 
-    benchmark.populateDatabase(
-      loadResource("/vertices.json"),
-      loadResource("/edges.json")
-    )
+    println("Loading resources...")
+    val vertices = extractVertices(loadJsonResource("/vertices.json"))
+    val edges = extractEdges(loadJsonResource("/edges.json"))
+
+    benchmark.populateDatabase(vertices, edges)
 
     expectedQueryCount = benchmark.totalQueryCount()
   }
@@ -72,7 +113,7 @@ final class Neo4jAnalytics extends Benchmark {
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
-    shutdownDatabaseOnce
+    shutdownDatabaseOnce()
   }
 
   private def createGraphDatabase(graphDbDir: Path) = {
@@ -87,13 +128,13 @@ final class Neo4jAnalytics extends Benchmark {
     )
 
     Runtime.getRuntime.addShutdownHook(new Thread {
-      override def run(): Unit = shutdownDatabaseOnce
+      override def run(): Unit = shutdownDatabaseOnce()
     })
 
     dbms.get().database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME)
   }
 
-  private def shutdownDatabaseOnce: Unit = {
+  private def shutdownDatabaseOnce(): Unit = {
     Option(dbms.getAndSet(null)).foreach(_.shutdown())
   }
 
