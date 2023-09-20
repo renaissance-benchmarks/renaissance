@@ -224,7 +224,7 @@ lazy val actorsReactorsBenchmarks = (project in file("benchmarks/actors-reactors
     ProjectRef(uri("benchmarks/actors-reactors/reactors"), "reactorsCoreJVM")
   )
 
-val sparkVersion = "3.2.0"
+val sparkVersion = "3.5.0"
 
 lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   .settings(
@@ -238,16 +238,12 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     // Exclude legacy logging libraries.
     excludeDependencies ++= Seq(
       // Replaced by the jcl-over-slf4j logging bridge.
-      ExclusionRule("commons-logging", "commons-logging"),
-      // Replaced by reload4j pulled in by recent slf4j-log4j12.
-      ExclusionRule("log4j", "log4j")
+      ExclusionRule("commons-logging", "commons-logging")
     ),
     // Override versions pulled in by dependencies.
     dependencyOverrides ++= Seq(
       // Force common (newer) Netty version.
       "io.netty" % "netty-all" % nettyVersion,
-      // Force newer Zookeeper version.
-      "org.apache.zookeeper" % "zookeeper" % "3.6.3",
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
@@ -255,13 +251,11 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
-      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
-      // Starting with version 1.7.36, slf4j-log4j12 pulls in slf4j-reload4j to replace log4j.
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-      "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
-      // Force newer reload4j version.
-      "ch.qos.reload4j" % "reload4j" % "1.2.24"
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion
+      // Delay forcing the common version of SLF4J until it is updated to 2.x.
+      // "org.slf4j" % "slf4j-api" % slf4jVersion,
+      // "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+      // "org.slf4j" % "jul-to-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
