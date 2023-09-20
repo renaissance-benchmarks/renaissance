@@ -405,7 +405,7 @@ lazy val scalaSatBenchmarks = (project in file("benchmarks/scala-sat"))
 lazy val scalaStdlibBenchmarks = (project in file("benchmarks/scala-stdlib"))
   .settings(
     name := "scala-stdlib",
-    commonSettingsScala213
+    commonSettingsScala3
   )
   .dependsOn(renaissanceCore % "provided")
 
