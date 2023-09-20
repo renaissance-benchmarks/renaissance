@@ -5,8 +5,9 @@ import sat.Solver.Results._
 import common.FixedIntStack
 import common.FixedIntDoublePriorityQueue
 import sat.Vector
-
 import util.Logger
+
+import scala.reflect.ClassTag
 
 /*
  * TODO: what should we do with multiple copy of the same literal with different id ?
@@ -36,11 +37,11 @@ class DPLLSolver[T <: TheoryComponent](nbVars: Int, val theory: T)(implicit val 
 
   import theory.{Solver => TheorySolver, Literal}
 
-  implicit val ev = theory.literalClassTag
+  implicit val ev: ClassTag[Literal] = theory.literalClassTag
 
   private val logger = context.logger
 
-  private[this] implicit val tag = new Logger.Tag("dpllt")
+  private[this] implicit val tag: Logger.Tag = Logger.Tag("dpllt")
 
   import DPLLSolver._
 

@@ -29,7 +29,7 @@ class Solver(nbVars: Int)(implicit context: Context) {
 
   private val logger = context.logger
 
-  private[this] implicit val tag = new Logger.Tag("native-sat")
+  private[this] implicit val tag: Logger.Tag = Logger.Tag("native-sat")
 
   import Solver._
 

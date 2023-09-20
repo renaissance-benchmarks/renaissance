@@ -61,7 +61,7 @@ trait Solver {
 object Solver {
 
   //should provide a way to configure in the API
-  private implicit val defaultContext = Context(DefaultStdErrLogger)
+  private implicit val defaultContext: Context = Context(DefaultStdErrLogger)
 
   /** The type returned on a satisfiable instance.  */
   type Model = Map[PropVar, Boolean]
