@@ -19,7 +19,7 @@ abstract class AkkaActor[MsgType] extends Actor {
   private val startTracker = new AtomicBoolean(false)
   private val exitTracker = new AtomicBoolean(false)
 
-  final def receive = {
+  final def receive: Receive = {
     case msg: StartAkkaActorMessage =>
       if (hasStarted()) {
         msg.resolve(value = false)
@@ -36,15 +36,15 @@ abstract class AkkaActor[MsgType] extends Actor {
 
   def process(msg: MsgType): Unit
 
-  def send(msg: MsgType) {
+  def send(msg: MsgType): Unit = {
     self ! msg
   }
 
-  final def hasStarted() = {
+  final def hasStarted(): Boolean = {
     startTracker.get()
   }
 
-  final def start() = {
+  final def start(): Unit = {
     if (!hasStarted()) {
       onPreStart()
 
@@ -56,18 +56,18 @@ abstract class AkkaActor[MsgType] extends Actor {
   /**
    * Convenience: specify code to be executed before actor is started
    */
-  protected def onPreStart() = {}
+  protected def onPreStart(): Unit = {}
 
   /**
    * Convenience: specify code to be executed after actor is started
    */
-  protected def onPostStart() = {}
+  protected def onPostStart(): Unit = {}
 
-  final def hasExited() = {
+  final def hasExited(): Boolean = {
     exitTracker.get()
   }
 
-  final def exit() = {
+  final def exit(): Unit = {
     val success = exitTracker.compareAndSet(false, true)
     if (success) {
       onPreExit()
@@ -80,21 +80,21 @@ abstract class AkkaActor[MsgType] extends Actor {
   /**
    * Convenience: specify code to be executed before actor is terminated
    */
-  protected def onPreExit() = {}
+  protected def onPreExit(): Unit = {}
 
   /**
    * Convenience: specify code to be executed after actor is terminated
    */
-  protected def onPostExit() = {}
+  protected def onPostExit(): Unit = {}
 }
 
 protected class StartAkkaActorMessage(promise: Promise[Boolean]) {
 
-  def await() {
+  def await(): Unit = {
     Await.result(promise.future, Duration.Inf)
   }
 
-  def resolve(value: Boolean) {
+  def resolve(value: Boolean): Unit = {
     promise.success(value)
   }
 }
@@ -124,9 +124,9 @@ object AkkaActorState {
   }
 
   private val mailboxTypeKey = "actors.mailboxType"
-  private var config: Config = null
+  private var config: Config = _
 
-  def setPriorityMailboxType(value: String) {
+  def setPriorityMailboxType(value: String): Unit = {
     System.setProperty(mailboxTypeKey, value)
   }
 
@@ -173,10 +173,9 @@ object AkkaActorState {
 
     getIntegerProp(propertyName) match {
       case Some(i) if i > 0 => i
-      case _ => {
+      case _ =>
         val byCores = rt.availableProcessors() * 2
         if (byCores > minNumThreads) byCores else minNumThreads
-      }
     }
   }
 
@@ -196,7 +195,7 @@ object AkkaActorState {
     ActorSystem(name, config)
   }
 
-  def startActor(actorRef: ActorRef) {
+  def startActor(actorRef: ActorRef): Unit = {
     AkkaActorState.actorLatch.countUp()
 
     val promise = Promise[Boolean]()
@@ -209,18 +208,17 @@ object AkkaActorState {
         if (!value) {
           AkkaActorState.actorLatch.countDown()
         }
-      case Failure(e) => e.printStackTrace
+      case Failure(e) => e.printStackTrace()
     }
   }
 
-  def awaitTermination(system: ActorSystem) {
+  def awaitTermination(system: ActorSystem): Unit = {
     try {
       actorLatch.await()
       system.terminate()
     } catch {
-      case ex: InterruptedException => {
+      case ex: InterruptedException =>
         ex.printStackTrace()
-      }
     }
   }
 }

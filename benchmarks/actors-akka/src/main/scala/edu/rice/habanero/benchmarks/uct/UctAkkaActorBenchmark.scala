@@ -14,13 +14,13 @@ object UctAkkaActorBenchmark {
 
   final class UctAkkaActorBenchmark extends Benchmark {
 
-    def initialize(args: Array[String]) {
+    def initialize(args: Array[String]): Unit = {
       UctConfig.parseArgs(args)
     }
 
-    def printArgInfo() {}
+    def printArgInfo(): Unit = {}
 
-    def runIteration() {
+    def runIteration(): Unit = {
 
       val system = AkkaActorState.newActorSystem("UCT")
 
@@ -31,7 +31,7 @@ object UctAkkaActorBenchmark {
       AkkaActorState.awaitTermination(system)
     }
 
-    def cleanupIteration(lastIteration: Boolean, execTimeMillis: Double) {}
+    def cleanupIteration(lastIteration: Boolean, execTimeMillis: Double): Unit = {}
   }
 
   /**
@@ -48,7 +48,7 @@ object UctAkkaActorBenchmark {
     private var traversed: Boolean = false
     private var finalSizePrinted: Boolean = false
 
-    override def process(theMsg: AnyRef) {
+    override def process(theMsg: AnyRef): Unit = {
       theMsg match {
         case _: UctConfig.GenerateTreeMessage =>
           generateTree()
@@ -68,7 +68,7 @@ object UctAkkaActorBenchmark {
     /**
      * This message is called externally to create the BINOMIAL_PARAM tree
      */
-    def generateTree() {
+    def generateTree(): Unit = {
       height += 1
       val computationSize: Int =
         getNextNormal(UctConfig.AVG_COMP_SIZE, UctConfig.STDEV_COMP_SIZE)
@@ -107,7 +107,7 @@ object UctAkkaActorBenchmark {
      * @param childName   The child name
      * @param childHeight The height of the child in the tree
      */
-    def checkGenerateChildrenRequest(childName: ActorRef, childHeight: Int) {
+    def checkGenerateChildrenRequest(childName: ActorRef, childHeight: Int): Unit = {
       if (size + UctConfig.BINOMIAL_PARAM <= UctConfig.MAX_NODES) {
         val moreChildren: Boolean = ran.nextBoolean
         if (moreChildren) {
@@ -161,14 +161,14 @@ object UctAkkaActorBenchmark {
     /**
      * This message is called by a child node to indicate that it has children
      */
-    def updateGrant(childId: Int) {
+    def updateGrant(childId: Int): Unit = {
       hasGrantChildren(childId) = true
     }
 
     /**
      * This is the method for traversing the tree
      */
-    def traverse() {
+    def traverse(): Unit = {
       var i: Int = 0
       while (i < UctConfig.BINOMIAL_PARAM) {
         children(i) ! TraverseMessage.ONLY
@@ -176,7 +176,7 @@ object UctAkkaActorBenchmark {
       }
     }
 
-    def printInfo() {
+    def printInfo(): Unit = {
       System.out.println("0 0 children starts 1")
       var i: Int = 0
       while (i < UctConfig.BINOMIAL_PARAM) {
@@ -187,7 +187,7 @@ object UctAkkaActorBenchmark {
 
     }
 
-    def terminateMe() {
+    def terminateMe(): Unit = {
       var i: Int = 0
       while (i < UctConfig.BINOMIAL_PARAM) {
         children(i) ! TerminateMessage.ONLY
@@ -236,7 +236,7 @@ object UctAkkaActorBenchmark {
     private final val children = new Array[ActorRef](UctConfig.BINOMIAL_PARAM)
     private final val hasGrantChildren = new Array[Boolean](UctConfig.BINOMIAL_PARAM)
 
-    override def process(theMsg: AnyRef) {
+    override def process(theMsg: AnyRef): Unit = {
       theMsg match {
         case _: UctConfig.TryGenerateChildrenMessage =>
           tryGenerateChildren()
@@ -268,11 +268,11 @@ object UctAkkaActorBenchmark {
      * This message is called by parent node, try to generate children of this node.
      * If the "getBoolean" message returns true, the node is allowed to generate BINOMIAL_PARAM children
      */
-    def tryGenerateChildren() {
+    def tryGenerateChildren(): Unit = {
       myRoot ! new UctConfig.ShouldGenerateChildrenMessage(self, myHeight)
     }
 
-    def generateChildren(currentId: Int, compSize: Int) {
+    def generateChildren(currentId: Int, compSize: Int): Unit = {
       val myArrayId: Int = myId % UctConfig.BINOMIAL_PARAM
       myParent ! new UctConfig.UpdateGrantMessage(myArrayId)
       val childrenHeight: Int = myHeight + 1
@@ -303,7 +303,7 @@ object UctAkkaActorBenchmark {
       }
     }
 
-    def generateUrgentChildren(urgentChildId: Int, currentId: Int, compSize: Int) {
+    def generateUrgentChildren(urgentChildId: Int, currentId: Int, compSize: Int): Unit = {
       val myArrayId: Int = myId % UctConfig.BINOMIAL_PARAM
       myParent ! new UctConfig.UpdateGrantMessage(myArrayId)
       val childrenHeight: Int = myHeight + 1
@@ -338,14 +338,14 @@ object UctAkkaActorBenchmark {
     /**
      * This message is called by a child node to indicate that it has children
      */
-    def updateGrant(childId: Int) {
+    def updateGrant(childId: Int): Unit = {
       hasGrantChildren(childId) = true
     }
 
     /**
      * This message is called by parent while doing a traverse
      */
-    def traverse() {
+    def traverse(): Unit = {
       if (hasChildren) {
 
         var i: Int = 0
@@ -360,7 +360,7 @@ object UctAkkaActorBenchmark {
     /**
      * This message is called by parent while doing traverse, if this node is an urgent node
      */
-    def urgentTraverse() {
+    def urgentTraverse(): Unit = {
       if (hasChildren) {
         if (urgentChild != -1) {
 
@@ -383,18 +383,18 @@ object UctAkkaActorBenchmark {
         }
       }
       if (isUrgent) {
-        System.out.println("urgent traverse node " + myId + " " + System.currentTimeMillis)
+        System.out.println(s"urgent traverse node $myId ${System.currentTimeMillis}")
       } else {
-        System.out.println(myId + " " + System.currentTimeMillis)
+        System.out.println(s"$myId ${System.currentTimeMillis()}")
       }
     }
 
-    def printInfo() {
+    def printInfo(): Unit = {
       if (isUrgent) {
         System.out.print("Urgent......")
       }
       if (hasChildren) {
-        System.out.println(myId + " " + myCompSize + "  children starts ")
+        System.out.println(s"$myId $myCompSize  children starts ")
 
         var i: Int = 0
         while (i < UctConfig.BINOMIAL_PARAM) {
@@ -402,7 +402,7 @@ object UctAkkaActorBenchmark {
           i += 1
         }
       } else {
-        System.out.println(myId + " " + myCompSize)
+        System.out.println(s"$myId $myCompSize")
       }
     }
 
@@ -410,7 +410,7 @@ object UctAkkaActorBenchmark {
       myId
     }
 
-    def terminateMe() {
+    def terminateMe(): Unit = {
       if (hasChildren) {
 
         var i: Int = 0
