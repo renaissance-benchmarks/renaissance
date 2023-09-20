@@ -155,7 +155,7 @@ val jnaVersion = "5.13.0"
 val nettyVersion = "4.1.97.Final"
 val scalaCollectionCompatVersion = "2.11.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "1.7.36"
+val slf4jVersion = "2.0.9"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -265,11 +265,10 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
-      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion
-      // Delay forcing the common version of SLF4J until it is updated to 2.x.
-      // "org.slf4j" % "slf4j-api" % slf4jVersion,
-      // "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-      // "org.slf4j" % "jul-to-slf4j" % slf4jVersion
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      "org.slf4j" % "slf4j-api" % slf4jVersion,
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
