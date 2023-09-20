@@ -118,8 +118,8 @@ trait KmeansUtilities {
 }
 
 @Name("scala-kmeans")
-@Group("scala")
 @Group("scala-stdlib")
+@Group("scala") // With Scala 3, the primary group goes last.
 @Summary("Runs the K-Means algorithm using Scala collections.")
 @Licenses(Array(License.MIT))
 @Repetitions(50)
