@@ -421,7 +421,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
     ) % "compile->compile;compile->test"
   )
 
-val finagleVersion = "21.12.0"
+val finagleVersion = "22.12.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .settings(
@@ -443,12 +443,14 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       // packages because the project does not depend on netty-all.
       "io.netty" % "netty-buffer" % nettyVersion,
       "io.netty" % "netty-codec" % nettyVersion,
+      "io.netty" % "netty-codec-dns" % nettyVersion,
       "io.netty" % "netty-codec-http" % nettyVersion,
       "io.netty" % "netty-codec-http2" % nettyVersion,
       "io.netty" % "netty-common" % nettyVersion,
       "io.netty" % "netty-handler" % nettyVersion,
       "io.netty" % "netty-handler-proxy" % nettyVersion,
       "io.netty" % "netty-resolver" % nettyVersion,
+      "io.netty" % "netty-resolver-dns" % nettyVersion,
       "io.netty" % "netty-transport" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
       "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
