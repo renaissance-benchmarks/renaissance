@@ -7,9 +7,12 @@ organization := "org.scala-stm"
 version := "0.8-SNAPSHOT"
 
 scalaVersion := (parentProject / scalaVersion).value
+scalacOptions := (parentProject / scalacOptions).value ++ Seq("-feature")
+
+// Silence warnings from test sources.
+Test / scalacOptions += "-Wconf:src=src/test/scala/.*:s"
 
 libraryDependencies += ("org.scalatest" %% "scalatest" % "3.0.4" % "test")
-
 libraryDependencies += ("junit" % "junit" % "4.12" % "test")
 
 // skip exhaustive tests

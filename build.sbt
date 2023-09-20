@@ -48,24 +48,23 @@ ThisBuild / nonGplOnly := false
 Global / cancelable := true
 
 //
-// Common settings
-//
-ThisBuild / organization := "org.renaissance"
-
-// Explicitly target JDK8 environment.
-ThisBuild / Compile / javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
-ThisBuild / Compile / scalacOptions += "-target:jvm-1.8"
-
 // Determine project version using 'git describe'.
+//
 ThisBuild / git.useGitDescribe := true
 
+//
+// Compilation settings
+//
+val javaRelease = "8"
 val scalaVersion212 = "2.12.15"
 val scalaVersion213 = "2.13.8"
 
-val modulesPropertiesName = "modules.properties"
-val benchmarksPropertiesName = "benchmarks.properties"
-val harnessMainClass = "org.renaissance.harness.RenaissanceSuite"
-val launcherMainClass = "org.renaissance.core.Launcher"
+// Explicitly target a specific JDK release.
+ThisBuild / javacOptions ++= Seq("-source", javaRelease, "-target", javaRelease)
+ThisBuild / scalacOptions ++= Seq("-release", javaRelease)
+
+// Use common organization name.
+ThisBuild / organization := "org.renaissance"
 
 lazy val commonSettingsNoScala = Seq(
   // Don't add Scala version to JAR name.
@@ -75,6 +74,23 @@ lazy val commonSettingsNoScala = Seq(
   // Override default Scala version to use Scala 2.13 harness.
   scalaVersion := scalaVersion213
 )
+
+lazy val commonSettingsScala212 = Seq(
+  scalaVersion := scalaVersion212
+)
+
+lazy val commonSettingsScala213 = Seq(
+  scalaVersion := scalaVersion213
+)
+
+//
+// Other common settings
+//
+
+val modulesPropertiesName = "modules.properties"
+val benchmarksPropertiesName = "benchmarks.properties"
+val harnessMainClass = "org.renaissance.harness.RenaissanceSuite"
+val launcherMainClass = "org.renaissance.core.Launcher"
 
 addCommandAlias(
   "renaissanceFormat",
@@ -138,8 +154,8 @@ val slf4jVersion = "1.7.36"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
-    commonSettingsNoScala,
     name := "renaissance-core",
+    commonSettingsNoScala,
     Compile / mainClass := Some(launcherMainClass)
   )
 
@@ -150,7 +166,6 @@ val renaissanceHarnessCommonSettings = Seq(
     "com.github.scopt" %% "scopt" % "4.0.1",
     "io.spray" %% "spray-json" % "1.3.6"
   ),
-  Compile / scalacOptions ++= Seq("-deprecation"),
   Compile / mainClass := Some(harnessMainClass),
   Compile / packageBin / packageOptions += generateManifestAttributesTask.value
 )
@@ -158,7 +173,7 @@ val renaissanceHarnessCommonSettings = Seq(
 lazy val renaissanceHarness213 = (project in file("renaissance-harness"))
   .settings(
     name := "renaissance-harness_2.13",
-    scalaVersion := scalaVersion213,
+    commonSettingsScala213,
     renaissanceHarnessCommonSettings
   )
   .dependsOn(renaissanceCore % "provided")
@@ -166,7 +181,7 @@ lazy val renaissanceHarness213 = (project in file("renaissance-harness"))
 lazy val renaissanceHarness212 = (project in file("renaissance-harness"))
   .settings(
     name := "renaissance-harness_2.12",
-    scalaVersion := scalaVersion212,
+    commonSettingsScala212,
     renaissanceHarnessCommonSettings,
     libraryDependencies ++= Seq(
       // Needed to compile Scala 2.13 collections with Scala 2.12.
@@ -182,15 +197,15 @@ lazy val renaissanceHarness212 = (project in file("renaissance-harness"))
 
 lazy val dummyBenchmarks = (project in file("benchmarks/dummy"))
   .settings(
-    commonSettingsNoScala,
-    name := "dummy"
+    name := "dummy",
+    commonSettingsNoScala
   )
   .dependsOn(renaissanceCore % "provided")
 
 lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
   .settings(
     name := "actors-akka",
-    scalaVersion := scalaVersion213,
+    commonSettingsScala213,
     libraryDependencies ++= Seq(
       // akka-actor 2.6.x supports Scala 2.12, 2.13
       "com.typesafe.akka" %% "akka-actor" % "2.6.18"
@@ -201,7 +216,7 @@ lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
 lazy val actorsReactorsBenchmarks = (project in file("benchmarks/actors-reactors"))
   .settings(
     name := "actors-reactors",
-    scalaVersion := scalaVersion212
+    commonSettingsScala212
   )
   .dependsOn(
     renaissanceCore % "provided",
@@ -214,8 +229,7 @@ val sparkVersion = "3.2.0"
 lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   .settings(
     name := "apache-spark",
-    scalaVersion := scalaVersion213,
-    scalacOptions ++= Seq("-deprecation"),
+    commonSettingsScala213,
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion,
       "org.apache.spark" %% "spark-sql" % sparkVersion,
@@ -255,7 +269,7 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
 lazy val databaseBenchmarks = (project in file("benchmarks/database"))
   .settings(
     name := "database",
-    scalaVersion := scalaVersion213,
+    commonSettingsScala213,
     libraryDependencies ++= Seq(
       "com.github.jnr" % "jnr-posix" % "3.0.29",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
@@ -288,7 +302,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
 lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent"))
   .settings(
     name := "jdk-concurrent",
-    scalaVersion := scalaVersion213,
+    commonSettingsScala213,
     libraryDependencies ++= Seq(
       // Jenetics 6.0.0 requires benchmark update.
       "io.jenetics" % "jenetics" % "5.2.0"
@@ -299,14 +313,14 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
 lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
   .settings(
     name := "jdk-streams",
-    scalaVersion := scalaVersion213
+    commonSettingsScala213
   )
   .dependsOn(renaissanceCore % "provided")
 
 lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
   .settings(
     name := "neo4j",
-    scalaVersion := scalaVersion212,
+    commonSettingsScala212,
     libraryDependencies ++= Seq(
       // neo4j 4.4 does not support Scala 2.13 yet.
       "org.neo4j" % "neo4j" % "4.4.2",
@@ -325,6 +339,10 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       "io.netty" % "netty-transport" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
       "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
+      // Force common versions of other dependencies.
+      "commons-io" % "commons-io" % commonsIoVersion,
+      "org.apache.commons" % "commons-compress" % commonsCompressVersion,
+      "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.slf4j" % "slf4j-nop" % slf4jVersion
     )
   )
@@ -333,7 +351,7 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
 lazy val rxBenchmarks = (project in file("benchmarks/rx"))
   .settings(
     name := "rx",
-    scalaVersion := scalaVersion213,
+    commonSettingsScala213,
     libraryDependencies ++= Seq(
       "io.reactivex" % "rxjava" % "1.3.8"
     )
@@ -343,7 +361,7 @@ lazy val rxBenchmarks = (project in file("benchmarks/rx"))
 lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
   .settings(
     name := "scala-dotty",
-    scalaVersion := scalaVersion213,
+    commonSettingsScala213,
     scalacOptions += "-Ytasty-reader",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala3-compiler_3" % "3.0.2",
@@ -360,7 +378,7 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
 lazy val scalaSatBenchmarks = (project in file("benchmarks/scala-sat"))
   .settings(
     name := "scala-sat",
-    scalaVersion := scalaVersion213
+    commonSettingsScala213
   )
   .dependsOn(
     renaissanceCore % "provided",
@@ -371,14 +389,14 @@ lazy val scalaSatBenchmarks = (project in file("benchmarks/scala-sat"))
 lazy val scalaStdlibBenchmarks = (project in file("benchmarks/scala-stdlib"))
   .settings(
     name := "scala-stdlib",
-    scalaVersion := scalaVersion213
+    commonSettingsScala213
   )
   .dependsOn(renaissanceCore % "provided")
 
 lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
   .settings(
     name := "scala-stm",
-    scalaVersion := scalaVersion212
+    commonSettingsScala212
   )
   .dependsOn(
     renaissanceCore % "provided",
@@ -392,8 +410,8 @@ val finagleVersion = "21.12.0"
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .settings(
     name := "twitter-finagle",
-    scalaVersion := scalaVersion213,
-    scalacOptions ++= Seq("-deprecation", "-feature"),
+    commonSettingsScala213,
+    scalacOptions += "-feature",
     libraryDependencies := Seq(
       "com.google.guava" % "guava" % guavaVersion,
       "com.twitter" %% "finagle-http" % finagleVersion,
@@ -807,7 +825,7 @@ lazy val renaissance = (project in file("."))
 // JMH support
 //
 
-val jmhVersion = "1.34"
+val jmhVersion = "1.37"
 
 //
 // Tasks related to generating JMH wrappers jars for benchmarks.
