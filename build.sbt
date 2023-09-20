@@ -218,7 +218,7 @@ lazy val dummyBenchmarks = (project in file("benchmarks/dummy"))
 lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
   .settings(
     name := "actors-akka",
-    commonSettingsScala213,
+    commonSettingsScala3,
     libraryDependencies ++= Seq(
       // akka-actor 2.6.17+ supports Scala 2.12, 2.13, and 3 under Apache 2.0 license
       // akka-actor 2.7.0+ supports Scala 2.12, 2.13, and 3 under Business Source 1.1 license
