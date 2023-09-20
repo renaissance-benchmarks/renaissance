@@ -378,12 +378,14 @@ lazy val rxBenchmarks = (project in file("benchmarks/rx"))
 lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
   .settings(
     name := "scala-dotty",
-    commonSettingsScala213,
-    scalacOptions += "-Ytasty-reader",
+    commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "org.scala-lang" % "scala3-compiler_3" % "3.0.2",
+      // Version 3.1.2 was the last to compile with Scala 2.13.11. Version 3.1.3-RC2
+      // broke compilation due to "Unsupported Scala 3 union in parameter value".
+      // Compiling with Scala 3.1.0+ avoids compatibility issues.
+      "org.scala-lang" % "scala3-compiler_3" % "3.3.1",
       // The following is required to compile the workload sources.
-      "org.scala-lang" % "scala-compiler" % scalaVersion.value
+      "org.scala-lang" % "scala-compiler" % scalaVersion213
     ),
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.

@@ -33,8 +33,8 @@ import java.util.zip.ZipInputStream
 import scala.collection._
 
 @Name("dotty")
-@Group("scala")
 @Group("scala-dotty")
+@Group("scala") // With Scala 3, the primary group goes last.
 @Summary("Runs the Dotty compiler on a set of source code files.")
 @Licenses(Array(License.BSD3))
 @Repetitions(50)
@@ -51,7 +51,7 @@ final class Dotty extends Benchmark {
    *
    * find . -type f -name '*.tasty'|egrep -v '(Classfile|ByteCode)\.tasty' | LC_ALL=C sort|xargs cat|md5sum
    */
-  private val expectedTastyHash: String = "af5ff4a3e1d189395c07c187167450ed"
+  private val expectedTastyHash: String = "cda4bf9f729d30c97ec7b793c54039d1"
 
   private val excludedTastyFiles = Seq("Classfile.tasty", "ByteCode.tasty")
 
