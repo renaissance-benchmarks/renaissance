@@ -85,7 +85,11 @@ lazy val commonSettingsScala213 = Seq(
 )
 
 lazy val commonSettingsScala3 = Seq(
-  scalaVersion := scalaVersion3
+  scalaVersion := scalaVersion3,
+  dependencyOverrides ++= Seq(
+    // Force common version of Scala 2.13 library.
+    "org.scala-lang" % "scala-library" % scalaVersion213
+  )
 )
 
 //
