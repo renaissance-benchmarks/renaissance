@@ -20,7 +20,7 @@ import scala.io.{Codec, Source}
 @Summary("Executes Neo4J graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
 @RequiresJvm("11")
-@SupportsJvm("15")
+@SupportsJvm("20")
 @Repetitions(20)
 @Parameter(name = "long_query_threads", defaultValue = "2")
 @Parameter(name = "long_query_repeats", defaultValue = "1")
