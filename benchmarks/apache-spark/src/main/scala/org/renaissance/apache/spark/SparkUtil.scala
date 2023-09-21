@@ -1,7 +1,5 @@
 package org.renaissance.apache.spark
 
-import org.apache.log4j.Level
-import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Dataset
@@ -48,49 +46,12 @@ trait SparkUtil {
     "hadoop.dll"
   )
 
-  /** Configures log levels of Spark components to mask (harmless) warnings. */
-  private val sparkLogLevels: Seq[(String, Level)] = Seq(
-    // Top-level defaults.
-    "org.apache.spark" -> Level.WARN,
-    "org.apache.hadoop" -> Level.WARN,
-    "org.sparkproject.jetty" -> Level.WARN,
-    "breeze.optimize" -> Level.WARN,
-    // Masks the following warning:
-    //   "Your hostname, <hostname> resolves to a loopback address: 127.0.0.1; "
-    //   "using <ip-address> instead (on interface <interface>)"
-    //   "Set SPARK_LOCAL_IP if you need to bind to another address"
-    "org.apache.spark.util.Utils" -> Level.ERROR,
-    // Masks the following warning:
-    //   "Unable to load native-hadoop library for your platform... using builtin-java classes where applicable"
-    "org.apache.hadoop.util.NativeCodeLoader" -> Level.ERROR,
-    // Masks the following warning:
-    //   "Note that spark.local.dir will be overridden by the value set by the cluster manager "
-    //   "(via SPARK_LOCAL_DIRS in mesos/standalone/kubernetes and LOCAL_DIRS in YARN)."
-    "org.apache.spark.SparkConf" -> Level.ERROR,
-    // Masks the following warnings:
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeSystemBLAS"
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeRefBLAS"
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeSystemLAPACK"
-    //   "Failed to load implementation from: com.github.fommil.netlib.NativeRefLAPACK"
-    "com.github.fommil.netlib" -> Level.ERROR,
-    // Masks the following warnings:
-    //   "Failed to load implementation from: dev.ludovic.netlib.blas.JNIBLAS"
-    //   "Failed to load implementation from: dev.ludovic.netlib.blas.ForeignLinkerBLAS"
-    //   "Failed to load implementation from: dev.ludovic.netlib.lapack.JNILAPACK"
-    "dev.ludovic.netlib" -> Level.ERROR,
-    // Masks the following warning:
-    //   "URL.setURLStreamHandlerFactory failed to set FsUrlStreamHandlerFactory"
-    "org.apache.spark.sql.internal.SharedState" -> Level.ERROR
-  )
-
   protected val dumpResultsBeforeTearDown = false
 
   protected var sparkSession: SparkSession = _
   protected def sparkContext: SparkContext = sparkSession.sparkContext
 
   def setUpSparkContext(bc: BenchmarkContext, useCheckpointDir: Boolean = false): Unit = {
-    setUpLoggers(sparkLogLevels)
-
     val scratchDir = bc.scratchDirectory()
     setUpHadoop(scratchDir.resolve("hadoop"))
 
@@ -195,12 +156,6 @@ trait SparkUtil {
       "Storage level should be NONE before calling ensureCached()"
     )
     ds.persist(StorageLevel.MEMORY_ONLY)
-  }
-
-  private def setUpLoggers(loggerLevels: Seq[(String, Level)]) = {
-    loggerLevels.foreach {
-      case (name: String, level: Level) => Logger.getLogger(name).setLevel(level)
-    }
   }
 
 }

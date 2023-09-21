@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Set status to "debug" or "trace" to troubleshoot logging configuration. -->
+<Configuration status="warn">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_ERR">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level [%thread] %logger{8} - %msg%n"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <!-- Everything is logged to the console. -->
+    <Root level="info">
+      <AppenderRef ref="Console"/>
+    </Root>
+
+
+    <!--
+      Spark defaults based on 'spark_core.jar:/org/apache/spark/log4j2-defaults.properties'.
+    -->
+
+    <!--
+      Settings to quiet third party logs that are too verbose.
+    -->
+    <Logger name="org.sparkproject.jetty" level="warn"/>
+    <Logger name="org.sparkproject.jetty.util.component.AbstractLifeCycle" level="error"/>
+    <Logger name="org.apache.spark.repl.SparkIMain$exprTyper" level="info"/>
+    <Logger name="org.apache.spark.repl.SparkILoop$SparkILoopInterpreter" level="info"/>
+    
+    <!--
+      SPARK-9183: Settings to avoid annoying messages when looking up nonexistent UDFs
+      in SparkSQL with Hive support.
+    -->
+    <Logger name="org.apache.hadoop.hive.metastore.RetryingHMSHandler" level="fatal"/>
+    <Logger name="org.apache.hadoop.hive.ql.exec.FunctionRegistry" level="error"/>
+
+    <!-- Parquet related logging. -->
+    <Logger name="org.apache.parquet.CorruptStatistics" level="error"/>
+    <Logger name="parquet.CorruptStatistics" level="error"/>
+
+
+    <!--
+      Renaissance settings to reduce general verbosity.
+    -->
+    <Logger name="org.apache.spark" level="warn"/>
+    <Logger name="org.apache.hadoop" level="warn"/>
+    <Logger name="breeze.optimize" level="warn"/>
+
+
+    <!--
+      Renaissance settings to mask (harmless) warnings from specific loggers.
+    -->
+
+    <!--
+      Your hostname, <hostname> resolves to a loopback address: 127.0.0.1; using <ip-address> instead (on interface <interface>)
+      Set SPARK_LOCAL_IP if you need to bind to another address
+    -->
+    <Logger name="org.apache.spark.util.Utils" level="error"/>
+
+    <!--
+      Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+    -->
+    <Logger name="org.apache.hadoop.util.NativeCodeLoader" level="error"/>
+
+    <!-- 
+      Note that spark.local.dir will be overridden by the value set by the cluster manager
+      (via SPARK_LOCAL_DIRS in mesos/standalone/kubernetes and LOCAL_DIRS in YARN).
+    -->
+    <Logger name="org.apache.spark.SparkConf" level="error"/>
+
+    <!--
+      URL.setURLStreamHandlerFactory failed to set FsUrlStreamHandlerFactory
+    -->
+    <Logger name="org.apache.spark.sql.internal.SharedState" level="error"/>
+
+    <!--
+      Failed to load implementation from: dev.ludovic.netlib.blas.JNIBLAS
+    -->
+    <Logger name="dev.ludovic.netlib.blas.InstanceBuilder" level="error"/>
+
+    <!--
+      Failed to load implementation from: dev.ludovic.netlib.lapack.JNILAPACK
+    -->
+    <Logger name="dev.ludovic.netlib.lapack.InstanceBuilder" level="error"/>
+  </Loggers>
+</Configuration>
