@@ -12,7 +12,8 @@ import java.util.jar.Attributes.Name
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
-import scala.collection._
+import scala.collection.Seq
+import scala.collection.immutable.ListSet
 
 enablePlugins(GitVersioning)
 enablePlugins(GitBranchPrompt)
@@ -56,8 +57,8 @@ ThisBuild / git.useGitDescribe := true
 // Compilation settings
 //
 val javaRelease = "8"
-val scalaVersion212 = "2.12.15"
-val scalaVersion213 = "2.13.8"
+val scalaVersion212 = "2.12.18"
+val scalaVersion213 = "2.13.12"
 val scalaVersion3 = "3.3.1"
 
 // Explicitly target a specific JDK release.
@@ -85,7 +86,11 @@ lazy val commonSettingsScala213 = Seq(
 )
 
 lazy val commonSettingsScala3 = Seq(
-  scalaVersion := scalaVersion3
+  scalaVersion := scalaVersion3,
+  dependencyOverrides ++= Seq(
+    // Force common version of Scala 2.13 library.
+    "org.scala-lang" % "scala-library" % scalaVersion213
+  )
 )
 
 //
@@ -377,8 +382,8 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
       // broke compilation due to "Unsupported Scala 3 union in parameter value".
       // Compiling with Scala 3.1.0+ avoids compatibility issues.
       "org.scala-lang" % "scala3-compiler_3" % "3.3.1",
-      // The following is required to compile the workload sources.
-      "org.scala-lang" % "scala-compiler" % scalaVersion213
+      // The following is required to compile the workload sources. Keep it last!
+      "org.scala-lang" % "scala-compiler" % scalaVersion213 % Runtime
     ),
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
@@ -716,8 +721,8 @@ renaissance / generateStandaloneJars := {
       s"renaissance-harness_${bench.scalaVersion}"
     ) ++ modulesWithDeps("renaissance-core")
 
-    // Paths in the manifest are unix-style.
-    val jars = deps.map { case (_, entry) => s"../$entry" }.toSet
+    // Paths in the manifest are unix-style. Preserve insertion order!
+    val jars = deps.map { case (_, entry) => s"../$entry" }.to[ListSet]
 
     //
     // Copy manifest attributes and override the 'Main-Class' attribute to
