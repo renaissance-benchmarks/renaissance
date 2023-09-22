@@ -12,7 +12,8 @@ import java.util.jar.Attributes.Name
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
-import scala.collection._
+import scala.collection.Seq
+import scala.collection.immutable.ListSet
 
 enablePlugins(GitVersioning)
 enablePlugins(GitBranchPrompt)
@@ -382,8 +383,8 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
       // broke compilation due to "Unsupported Scala 3 union in parameter value".
       // Compiling with Scala 3.1.0+ avoids compatibility issues.
       "org.scala-lang" % "scala3-compiler_3" % "3.3.1",
-      // The following is required to compile the workload sources.
-      "org.scala-lang" % "scala-compiler" % scalaVersion213
+      // The following is required to compile the workload sources. Keep it last!
+      "org.scala-lang" % "scala-compiler" % scalaVersion213 % Runtime
     ),
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
@@ -721,8 +722,8 @@ renaissance / generateStandaloneJars := {
       s"renaissance-harness_${bench.scalaVersion}"
     ) ++ modulesWithDeps("renaissance-core")
 
-    // Paths in the manifest are unix-style.
-    val jars = deps.map { case (_, entry) => s"../$entry" }.toSet
+    // Paths in the manifest are unix-style. Preserve insertion order!
+    val jars = deps.map { case (_, entry) => s"../$entry" }.to[ListSet]
 
     //
     // Copy manifest attributes and override the 'Main-Class' attribute to
