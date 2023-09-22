@@ -306,6 +306,18 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+lazy val eclipseBenchmarks = (project in file("benchmarks/eclipse"))
+  .settings(
+    name := "eclipse",
+    commonSettingsScala213,
+    libraryDependencies ++= Seq(
+      "commons-io" % "commons-io" % commonsIoVersion,
+      "org.eclipse.jdt.core.compiler" % "ecj" % "4.6.1",
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion
+    )
+  )
+  .dependsOn(renaissanceCore % "provided")
+
 lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent"))
   .settings(
     name := "jdk-concurrent",
@@ -470,6 +482,7 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
   actorsReactorsBenchmarks,
   apacheSparkBenchmarks,
   databaseBenchmarks,
+  eclipseBenchmarks,
   jdkConcurrentBenchmarks,
   jdkStreamsBenchmarks,
   neo4jBenchmarks,

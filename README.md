@@ -121,6 +121,12 @@ The following is the complete list of benchmarks, separated into groups.
   \
   Default repetitions: 20; GPL3 license, GPL3 distribution; Supported JVM: 11 - 20
 
+#### eclipse
+
+- `jdt-compiler` - Runs the Eclipse JDT compiler on a set of source code files.
+  \
+  Default repetitions: 60; EPL1 license, GPL3 distribution; Supported JVM: 1.8 and later
+
 #### functional
 
 - `future-genetic` - Runs a genetic algorithm using the Jenetics library and futures.
