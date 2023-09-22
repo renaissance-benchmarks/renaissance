@@ -146,16 +146,16 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val commonsIoVersion = "2.11.0"
-val commonsCompressVersion = "1.21"
+val commonsIoVersion = "2.13.0"
+val commonsCompressVersion = "1.24.0"
 val commonsMath3Version = "3.6.1"
-val commonsTextVersion = "1.9"
-val guavaVersion = "23.0"
-val jnaVersion = "5.12.1"
-val nettyVersion = "4.1.72.Final"
-val scalaCollectionCompatVersion = "2.6.0"
+val commonsTextVersion = "1.10.0"
+val guavaVersion = "32.1.2-jre"
+val jnaVersion = "5.13.0"
+val nettyVersion = "4.1.97.Final"
+val scalaCollectionCompatVersion = "2.11.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "1.7.36"
+val slf4jVersion = "2.0.9"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -265,11 +265,10 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
-      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion
-      // Delay forcing the common version of SLF4J until it is updated to 2.x.
-      // "org.slf4j" % "slf4j-api" % slf4jVersion,
-      // "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-      // "org.slf4j" % "jul-to-slf4j" % slf4jVersion
+      "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      "org.slf4j" % "slf4j-api" % slf4jVersion,
+      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
