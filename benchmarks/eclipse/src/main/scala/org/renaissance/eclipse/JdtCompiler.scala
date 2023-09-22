@@ -15,32 +15,23 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.collection._
+import scala.collection.parallel.CollectionConverters._
 
-@Name("ecj")
+@Name("jdt-compiler")
 @Group("eclipse")
 @Summary("Runs the Eclipse JDT compiler on a set of source code files.")
 @Licenses(Array(License.EPL1))
 @Repetitions(60)
-// Work around @Repeatable annotations not working in this Scala version.
-@Parameters(
-  Array(
-    new Parameter(name = "recompilation_count", defaultValue = "1"),
-    new Parameter(name = "batch_size", defaultValue = "8")
-  )
-)
-@Configurations(
-  Array(
-    new Configuration(name = "test", settings = Array("recompilation_count = 1", "batch_size = 50")),
-    new Configuration(name = "no-batch", settings = Array("recompilation_count = 1", "batch_size = 1")),
-    new Configuration(name = "large", settings = Array("recompilation_count = 2", "batch_size = 4")),
-    new Configuration(name = "jmh")
-  )
-)
+@Parameter(name = "recompilation_count", defaultValue = "1")
+@Parameter(name = "batch_size", defaultValue = "8")
+@Configuration(name = "test", settings = Array("recompilation_count = 1", "batch_size = 50"))
+@Configuration(name = "no-batch", settings = Array("recompilation_count = 1", "batch_size = 1"))
+@Configuration(name = "large", settings = Array("recompilation_count = 2", "batch_size = 4"))
+@Configuration(name = "jmh")
 final class JdtCompiler extends Benchmark {
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-
 
   private var recompilationCountParam: Int = _
 
@@ -84,12 +75,13 @@ final class JdtCompiler extends Benchmark {
   }
 
   private def setUpSourcePaths(): Unit = {
-    sourcePaths = sources.map(f => sourceCodePath.resolve(f).toString).filter(f => f.endsWith(".java"))
+    sourcePaths =
+      sources.map(f => sourceCodePath.resolve(f).toString).filter(f => f.endsWith(".java"))
   }
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    recompilationCountParam = c.intParameter("recompilation_count")
-    batchSizeParam = c.intParameter("batch_size")
+    recompilationCountParam = c.parameter("recompilation_count").toPositiveInteger
+    batchSizeParam = c.parameter("batch_size").toPositiveInteger
 
     outputPath.toFile.mkdirs()
     unzipSources()
@@ -136,9 +128,9 @@ final class JdtCompiler extends Benchmark {
 
   private val ECJ_ARG_TARGET = "-target"
 
-  private val ECJ_ARG_TARGET_VERSION = "1.9"
+  private val ECJ_ARG_TARGET_VERSION = "1.8"
 
-  private val ECJ_ARG_COMPLIANCE_LEVEL = "-1.9"
+  private val ECJ_ARG_COMPLIANCE_LEVEL = "-1.8"
 
   private val ECJ_ARG_CLASS_PATH = "-classpath"
 
@@ -152,31 +144,37 @@ final class JdtCompiler extends Benchmark {
 
     val batches = sourcePaths.grouped(batchSizeParam).toList
 
-    val successCount = if (parallelizationLevel > 1)
-      batches.par.map(fileSet => {
-        BatchCompiler.compile(
-          ecjArgs(dumpClassFiles).toArray ++ fileSet,
-          new PrintWriter(stdout),
-          new PrintWriter(stderr),
-          null
-        )
-      }).seq.count(_ == true)
-    else
-      batches.map(fileSet => {
-        BatchCompiler.compile(
-          ecjArgs(dumpClassFiles).toArray ++ fileSet,
-          new PrintWriter(stdout),
-          new PrintWriter(stderr),
-          null
-        )
-      }).count(_ == true)
+    val successCount =
+      if (parallelizationLevel > 1)
+        batches.par
+          .map(fileSet => {
+            BatchCompiler.compile(
+              ecjArgs(dumpClassFiles).toArray ++ fileSet,
+              new PrintWriter(stdout),
+              new PrintWriter(stderr),
+              null
+            )
+          })
+          .seq
+          .count(_ == true)
+      else
+        batches
+          .map(fileSet => {
+            BatchCompiler.compile(
+              ecjArgs(dumpClassFiles).toArray ++ fileSet,
+              new PrintWriter(stdout),
+              new PrintWriter(stderr),
+              null
+            )
+          })
+          .count(_ == true)
 
-      if (successCount < batches.size || stderr.toString.length > 0) {
-        println("stdout :")
-        println(stdout.toString)
-        println("stderr :")
-        println(stderr.toString)
-      }
+    if (successCount < batches.size || stderr.toString.length > 0) {
+      println("stdout :")
+      println(stdout.toString)
+      println("stderr :")
+      println(stderr.toString)
+    }
     Validators.compound(
       Validators.simple("ECJ compilations must all succeed", batches.size, successCount),
       Validators.simple("Standard error must be of size zero", 0, stderr.toString.length)
