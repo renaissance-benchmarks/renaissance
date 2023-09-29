@@ -8,8 +8,8 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("future-genetic")
-@Group("functional")
 @Group("jdk-concurrent")
+@Group("functional") // With Scala 3, the primary group goes last.
 @Summary("Runs a genetic algorithm using the Jenetics library and futures.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(50)

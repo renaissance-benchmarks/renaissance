@@ -73,8 +73,8 @@ lazy val commonSettingsNoScala = Seq(
   crossPaths := false,
   // Don't include Scala library as dependency.
   autoScalaLibrary := false,
-  // Override default Scala version to use Scala 2.13 harness.
-  scalaVersion := scalaVersion213
+  // Override default Scala version to use Scala 3 harness.
+  scalaVersion := scalaVersion3
 )
 
 lazy val commonSettingsScala212 = Seq(
@@ -282,7 +282,7 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
 lazy val databaseBenchmarks = (project in file("benchmarks/database"))
   .settings(
     name := "database",
-    commonSettingsScala213,
+    commonSettingsScala3,
     libraryDependencies ++= Seq(
       "com.github.jnr" % "jnr-posix" % "3.1.15",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
@@ -308,7 +308,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
 lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent"))
   .settings(
     name := "jdk-concurrent",
-    commonSettingsScala213,
+    commonSettingsScala3,
     libraryDependencies ++= Seq(
       // Jenetics 5.2.0 is the last to support Java 8.
       // Jenetics 6.0.0 requires Java 11 and benchmark update.
@@ -321,7 +321,7 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
 lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
   .settings(
     name := "jdk-streams",
-    commonSettingsScala213
+    commonSettingsScala3
   )
   .dependsOn(renaissanceCore % "provided")
 
@@ -360,7 +360,7 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
 lazy val rxBenchmarks = (project in file("benchmarks/rx"))
   .settings(
     name := "rx",
-    commonSettingsScala213,
+    commonSettingsScala3,
     libraryDependencies ++= Seq(
       "io.reactivex" % "rxjava" % "1.3.8"
     )

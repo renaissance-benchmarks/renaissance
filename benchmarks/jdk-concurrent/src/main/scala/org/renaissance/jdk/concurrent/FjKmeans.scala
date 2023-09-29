@@ -8,8 +8,8 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("fj-kmeans")
-@Group("concurrency")
 @Group("jdk-concurrent")
+@Group("concurrency") // With Scala 3, the primary group goes last.
 @Summary("Runs the k-means algorithm using the fork/join framework.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)

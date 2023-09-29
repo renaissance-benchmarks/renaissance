@@ -10,8 +10,8 @@ import org.renaissance.License
 import scala.jdk.CollectionConverters._
 
 @Name("scrabble")
-@Group("functional")
 @Group("jdk-streams")
+@Group("functional") // With Scala 3, the primary group goes last.
 @Summary("Solves the Scrabble puzzle using JDK Streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(50)
