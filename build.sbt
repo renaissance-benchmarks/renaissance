@@ -298,7 +298,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
-      "org.slf4j" % "jcl-over-slf4j" % slf4jVersion
+      "org.slf4j" % "slf4j-api" % slf4jVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
