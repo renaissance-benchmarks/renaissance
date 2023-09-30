@@ -283,9 +283,9 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     name := "database",
     commonSettingsScala213,
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-posix" % "3.0.29",
+      "com.github.jnr" % "jnr-posix" % "3.1.15",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
-      "org.agrona" % "agrona" % "0.9.7",
+      "org.agrona" % "agrona" % "1.17.1",
       // Database libraries.
       "org.mapdb" % "mapdb" % "3.0.1",
       "com.h2database" % "h2-mvstore" % "1.4.192",
@@ -296,6 +296,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
+      "net.java.dev.jna" % "jna" % jnaVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion
