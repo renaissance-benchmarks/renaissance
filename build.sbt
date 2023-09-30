@@ -129,6 +129,7 @@ val generateManifestAttributesTask = Def.task {
   val addOpensPackages = Seq(
     "java.base/java.lang",
     "java.base/java.lang.invoke",
+    "java.base/java.lang.reflect",
     "java.base/java.util",
     "java.base/java.nio",
     "java.base/sun.nio.ch",
@@ -287,9 +288,9 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.agrona" % "agrona" % "1.17.1",
       // Database libraries.
-      "org.mapdb" % "mapdb" % "3.0.1",
-      "com.h2database" % "h2-mvstore" % "1.4.192",
-      "net.openhft" % "chronicle-map" % "3.17.0",
+      "org.mapdb" % "mapdb" % "3.0.10",
+      "com.h2database" % "h2-mvstore" % "2.1.214",
+      "net.openhft" % "chronicle-map" % "3.22.9",
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion
     ),
