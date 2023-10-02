@@ -14,7 +14,7 @@ import org.renaissance.License
 @Group("database")
 @Summary("Executes a shootout test using several in-memory databases.")
 @Licenses(Array(License.APACHE2))
-@SupportsJvm("11")
+@SupportsJvm("18")
 @Repetitions(16)
 @Parameter(name = "rw_entry_count", defaultValue = "500000")
 @Configuration(name = "test", settings = Array("rw_entry_count = 10000"))
