@@ -22,7 +22,7 @@ public final class Launcher {
 
   private static final String MARKDOWN_GENERATOR = "org.renaissance.harness.MarkdownGenerator";
   private static final String HARNESS_MAIN_CLASS = "org.renaissance.harness.RenaissanceSuite";
-  private static final String HARNESS_MODULE_NAME = "renaissance-harness_2.13";
+  private static final String HARNESS_MODULE_NAME = "renaissance-harness_3";
 
   private static final URI moduleMetadataUri = URI.create("resource:/modules.properties");
 
