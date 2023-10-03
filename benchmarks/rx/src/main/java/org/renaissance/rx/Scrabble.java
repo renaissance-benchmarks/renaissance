@@ -14,49 +14,6 @@ import static java.util.stream.Collectors.toSet;
 
 public class Scrabble {
 
-  static class MutableLong {
-    long value;
-
-    long get() {
-      return value;
-    }
-
-    MutableLong set(long l) {
-      value = l;
-      return this;
-    }
-
-    MutableLong incAndSet() {
-      value++;
-      return this;
-    }
-
-    MutableLong add(MutableLong other) {
-      value += other.value;
-      return this;
-    }
-  }
-
-  interface Wrapper<T> {
-    T get();
-
-    default Wrapper<T> set(T t) {
-      return () -> t;
-    }
-  }
-
-  interface IntWrapper {
-    int get();
-
-    default IntWrapper set(int i) {
-      return () -> i;
-    }
-
-    default IntWrapper incAndSet() {
-      return () -> get() + 1;
-    }
-  }
-
   interface LongWrapper {
     long get();
 
