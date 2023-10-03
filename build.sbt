@@ -174,7 +174,7 @@ val renaissanceHarnessCommonSettings = Seq(
   target := baseDirectory.value / "target" / name.value,
   moduleName := "renaissance-harness",
   libraryDependencies ++= Seq(
-    "com.github.scopt" %% "scopt" % "4.0.1",
+    "com.github.scopt" %% "scopt" % "4.1.0",
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / mainClass := Some(harnessMainClass),
