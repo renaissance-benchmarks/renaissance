@@ -55,7 +55,7 @@ public class RxScrabbleImplementation extends Scrabble {
         );
 
     Func1<String, Observable<Integer>> toIntegerObservable =
-      string -> Observable.from(IterableSpliterator.of(string.chars().boxed().spliterator()));
+      string -> Observable.from(() -> string.chars().boxed().iterator());
 
     // Histogram of the letters in a given word
     Func1<String, Observable<HashMap<Integer, LongWrapper>>> histoOfLetters =
@@ -100,11 +100,9 @@ public class RxScrabbleImplementation extends Scrabble {
     // Placing the word on the board
     // Building the streams of first and last letters
     Func1<String, Observable<Integer>> first3 =
-      word -> Observable.from(
-        IterableSpliterator.of(word.chars().boxed().limit(3).spliterator()));
+      word -> Observable.from(() -> word.chars().limit(3).boxed().iterator());
     Func1<String, Observable<Integer>> last3 =
-      word -> Observable.from(
-        IterableSpliterator.of(word.chars().boxed().skip(3).spliterator()));
+      word -> Observable.from(() -> word.chars().skip(3).boxed().iterator());
 
 
     // Stream to be maxed
