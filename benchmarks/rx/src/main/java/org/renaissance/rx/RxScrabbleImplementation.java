@@ -61,7 +61,7 @@ public class RxScrabbleImplementation extends Scrabble {
     Func1<String, Observable<HashMap<Integer, LongWrapper>>> histoOfLetters =
       word -> toIntegerObservable.call(word)
         .collect(
-          () -> new HashMap<>(),
+          HashMap::new,
           (HashMap<Integer, LongWrapper> map, Integer value) ->
             map.merge(value, () -> 0L, (prev, cur) -> prev.incAndSet())
         );
@@ -128,8 +128,8 @@ public class RxScrabbleImplementation extends Scrabble {
           bonusForDoubleLetter.call(word),
           Observable.just(word.length() == 7 ? 50 : 0)
         )
-          .flatMap(observable -> observable)
-          .reduce(Integer::sum);
+        .flatMap(observable -> observable)
+        .reduce(Integer::sum);
 
     Func1<
       Func1<String, Observable<Integer>>, Observable<TreeMap<Integer, List<String>>>
@@ -143,14 +143,10 @@ public class RxScrabbleImplementation extends Scrabble {
             .filter(word -> checkBlanks.call(word).toBlocking().first())
         )
         .collect(
-          () -> new TreeMap<Integer, List<String>>(Comparator.reverseOrder()),
+          () -> new TreeMap<>(Comparator.reverseOrder()),
           (TreeMap<Integer, List<String>> map, String word) -> {
             Integer key = score.call(word).toBlocking().first();
-            List<String> list = map.get(key);
-            if (list == null) {
-              list = new ArrayList<>();
-              map.put(key, list);
-            }
+            List<String> list = map.computeIfAbsent(key, k -> new ArrayList<>());
             list.add(word);
           });
 
@@ -160,9 +156,8 @@ public class RxScrabbleImplementation extends Scrabble {
         .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
         .collect(
           () -> new ArrayList<Entry<Integer, List<String>>>(),
-          (list, entry) -> {
-            list.add(entry);
-          })
+          ArrayList::add
+        )
         .toBlocking()
         .first();
 
@@ -180,7 +175,7 @@ public class RxScrabbleImplementation extends Scrabble {
   }
 
   private static List<String> sortedUniqueWords(List<String> words) {
-    return new ArrayList<String>(new TreeSet<String>(words));
+    return new ArrayList<>(new TreeSet<>(words));
   }
 
 }
