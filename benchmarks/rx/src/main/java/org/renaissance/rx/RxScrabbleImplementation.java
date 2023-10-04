@@ -63,7 +63,7 @@ public class RxScrabbleImplementation extends Scrabble {
         .collect(
           HashMap::new,
           (HashMap<Integer, LongWrapper> map, Integer value) ->
-            map.merge(value, () -> 0L, (prev, cur) -> prev.incAndSet())
+            map.merge(value, () -> 0L, (prev, cur) -> prev.inc())
         );
 
     // number of blanks for a given letter

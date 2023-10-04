@@ -17,7 +17,7 @@ public class Scrabble {
   interface LongWrapper {
     long get();
 
-    default LongWrapper incAndSet() {
+    default LongWrapper inc() {
       return () -> get() + 1L;
     }
   }
