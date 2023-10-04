@@ -80,7 +80,7 @@ public class RxScrabbleImplementation extends Scrabble {
     // number of blanks for a given word
     Func1<String, Observable<Long>> nBlanks =
       word -> histoOfLetters.call(word)
-        .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
+        .flatMap(map -> Observable.from(map.entrySet()))
         .flatMap(blank)
         .reduce(Long::sum);
 
@@ -93,7 +93,7 @@ public class RxScrabbleImplementation extends Scrabble {
     // score taking blanks into account letterScore1
     Func1<String, Observable<Integer>> score2 =
       word -> histoOfLetters.call(word)
-        .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
+        .flatMap(map -> Observable.from(map.entrySet()))
         .flatMap(letterScore)
         .reduce(Integer::sum);
 
@@ -130,7 +130,7 @@ public class RxScrabbleImplementation extends Scrabble {
     Func1<
       Func1<String, Observable<Integer>>, Observable<TreeMap<Integer, List<String>>>
       > buildHistoOnScore =
-      score -> Observable.from(() -> shakespeareWords.iterator())
+      score -> Observable.from(shakespeareWords)
         .buffer(1024)
         .flatMap(buffer ->
           Observable.from(buffer)
@@ -149,7 +149,7 @@ public class RxScrabbleImplementation extends Scrabble {
     // best key / value pairs
     List<Entry<Integer, List<String>>> finalList2 =
       buildHistoOnScore.call(score3)
-        .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
+        .flatMap(map -> Observable.from(map.entrySet()))
         .collect(
           () -> new ArrayList<Entry<Integer, List<String>>>(),
           ArrayList::add
