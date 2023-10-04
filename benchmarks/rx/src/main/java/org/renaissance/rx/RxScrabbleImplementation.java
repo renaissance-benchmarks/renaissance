@@ -107,8 +107,7 @@ public class RxScrabbleImplementation extends Scrabble {
 
     // Stream to be maxed
     Func1<String, Observable<Integer>> toBeMaxed =
-      word -> Observable.just(first3.call(word), last3.call(word))
-        .flatMap(observable -> observable);
+      word -> Observable.concat(first3.call(word), last3.call(word));
 
     // Bonus for double letter
     Func1<String, Observable<Integer>> bonusForDoubleLetter =
@@ -119,14 +118,13 @@ public class RxScrabbleImplementation extends Scrabble {
     // score of the word put on the board
     Func1<String, Observable<Integer>> score3 =
       word ->
-        Observable.just(
+        Observable.concat(
           score2.call(word),
           score2.call(word),
           bonusForDoubleLetter.call(word),
           bonusForDoubleLetter.call(word),
           Observable.just(word.length() == 7 ? 50 : 0)
         )
-        .flatMap(observable -> observable)
         .reduce(Integer::sum);
 
     Func1<
