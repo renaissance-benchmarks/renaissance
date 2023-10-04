@@ -8,8 +8,8 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("mnemonics")
-@Group("functional")
 @Group("jdk-streams")
+@Group("functional") // With Scala 3, the primary group goes last.
 @Summary("Solves the phone mnemonics problem using JDK streams.")
 @Licenses(Array(License.MIT))
 @Repetitions(16)

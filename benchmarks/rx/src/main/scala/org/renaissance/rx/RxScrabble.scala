@@ -8,8 +8,8 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("rx-scrabble")
-@Group("functional")
 @Group("rx")
+@Group("functional") // With Scala 3, the primary group goes last.
 @Summary("Solves the Scrabble puzzle using the Rx streams.")
 @Licenses(Array(License.GPL2))
 @Repetitions(80)
