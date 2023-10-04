@@ -362,7 +362,7 @@ lazy val rxBenchmarks = (project in file("benchmarks/rx"))
     name := "rx",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "io.reactivex" % "rxjava" % "1.3.8"
+      "io.reactivex.rxjava3" % "rxjava" % "3.1.8"
     )
   )
   .dependsOn(renaissanceCore % "provided")
