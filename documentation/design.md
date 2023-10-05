@@ -12,7 +12,7 @@ The *core* project is written in pure Java, and it contains the basic benchmark 
 Its most important elements are the `Benchmark` interface,
 which must be implemented by each benchmark, and the annotations in the
 `Benchmark` interface name space, which are used to provide
-benchmark meta data, such as a summary or a detailed description.
+benchmark metadata, such as a summary or a detailed description.
 Consequently, each *subproject* depends on the *core* project.
 The *core* project also provides APIs that a benchmark needs to work with,
 such as the runtime configuration or the policy.

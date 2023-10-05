@@ -9,7 +9,7 @@ every release :-)
 To make a release, you first need to put on your wordsmith hat:
 
 - [ ] Create a draft release on GitHub.
-  - Can be more terse than the web site release announcement.
+  - Can be more terse than the website release announcement.
   - Usually highlights and links to important pull requests.
 - [ ] Write an announcement for the web.
   - Bit more verbose/less technical than the GitHub release announcement.
@@ -48,7 +48,7 @@ making a release. These can be eventually automated:
 At this point, the release is marked in the code base and from now on, the
 automatic version numbers will be relative to the latest version tag. Now
 is the time to build the artifacts that will be attached to the GitHub release
-and publish the releases on GitHub and on the Renaissance web site.
+and publish the releases on GitHub and on the Renaissance website.
 
 - [ ] Make sure you are using JDK8 to build the artifacts.
   - Even though we currently support LTS releases up to and including JDK17,
@@ -92,7 +92,7 @@ build the artifacts, proceed as follows:
     **Protect matching branches** section.
   - `git push --tags origin master`
 - [ ] Preferably wait until CI finishes playing with the `master` branch,
-  hoping the badges on the main page of the web site stay green.
+  hoping the badges on the main page of the website stay green.
 - [ ] Select tag in the GitHub release draft and publish the release.
 - [ ] Merge the release announcement PR to the `master` branch
-  of the web site repository to publish it.
+  of the website repository to publish it.

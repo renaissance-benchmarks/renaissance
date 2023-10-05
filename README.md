@@ -103,7 +103,7 @@ The following is the complete list of benchmarks, separated into groups.
   \
   Default repetitions: 24; MIT license, MIT distribution; Supported JVM: 1.8 and later
 
-- `fj-kmeans` - Runs the k-means algorithm using the fork/join framework.
+- `fj-kmeans` - Runs the K-Means algorithm using the fork/join framework.
   \
   Default repetitions: 30; APACHE2 license, MIT distribution; Supported JVM: 1.8 and later
 
@@ -117,7 +117,7 @@ The following is the complete list of benchmarks, separated into groups.
   \
   Default repetitions: 16; APACHE2 license, MIT distribution; Supported JVM: 1.8 - 18
 
-- `neo4j-analytics` - Executes Neo4J graph queries against a movie database.
+- `neo4j-analytics` - Executes Neo4j graph queries against a movie database.
   \
   Default repetitions: 20; GPL3 license, GPL3 distribution; Supported JVM: 11 - 20
 
