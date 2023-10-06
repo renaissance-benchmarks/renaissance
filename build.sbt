@@ -284,12 +284,12 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     name := "database",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-posix" % "3.1.15",
+      "com.github.jnr" % "jnr-posix" % "3.1.18",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
-      "org.agrona" % "agrona" % "1.17.1",
+      "org.agrona" % "agrona" % "1.19.2",
       // Database libraries.
       "org.mapdb" % "mapdb" % "3.0.10",
-      "com.h2database" % "h2-mvstore" % "2.1.214",
+      "com.h2database" % "h2-mvstore" % "2.2.224",
       "net.openhft" % "chronicle-map" % "3.22.9",
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion
