@@ -152,13 +152,13 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val commonsIoVersion = "2.13.0"
+val commonsIoVersion = "2.14.0"
 val commonsCompressVersion = "1.24.0"
 val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.10.0"
 val guavaVersion = "32.1.2-jre"
 val jnaVersion = "5.13.0"
-val nettyVersion = "4.1.97.Final"
+val nettyVersion = "4.1.99.Final"
 val scalaCollectionCompatVersion = "2.11.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val slf4jVersion = "2.0.9"
@@ -174,7 +174,7 @@ val renaissanceHarnessCommonSettings = Seq(
   target := baseDirectory.value / "target" / name.value,
   moduleName := "renaissance-harness",
   libraryDependencies ++= Seq(
-    "com.github.scopt" %% "scopt" % "4.0.1",
+    "com.github.scopt" %% "scopt" % "4.1.0",
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / mainClass := Some(harnessMainClass),
