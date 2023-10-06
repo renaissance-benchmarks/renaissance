@@ -327,7 +327,7 @@ public final class JavaKMeans {
 
     private double[] average(final List<Double[]> elements) {
       final VectorSumTask sumTask = new VectorSumTask(elements);
-      final double[] vectorSums = getPool().invoke(sumTask);
+      final double[] vectorSums = sumTask.invoke();
       return div(vectorSums, elements.size());
     }
 
