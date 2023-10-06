@@ -19,14 +19,17 @@ package org.renaissance.rx;
 
 
 
-import rx.Observable;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.functions.Function;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -38,15 +41,15 @@ public class RxScrabbleImplementation extends Scrabble {
     super(scrabblePath, shakespearePath);
   }
 
-  public List<Entry<Integer, List<String>>> runScrabble() throws InterruptedException {
+  public List<Entry<Integer, List<String>>> runScrabble() throws Throwable {
     // Function to compute the score of a given word
-    Func1<Integer, Observable<Integer>> scoreOfALetter =
-      letter -> Observable.just(letterScores[letter - 'a']);
+    Function<Integer, Single<Integer>> scoreOfALetter =
+      letter -> Single.just(letterScores[letter - 'a']);
 
     // score of the same letters in a word
-    Func1<Entry<Integer, LongWrapper>, Observable<Integer>> letterScore =
+    Function<Entry<Integer, LongWrapper>, Single<Integer>> letterScore =
       entry ->
-        Observable.just(
+        Single.just(
           letterScores[entry.getKey() - 'a'] *
             Integer.min(
               (int) entry.getValue().get(),
@@ -54,22 +57,22 @@ public class RxScrabbleImplementation extends Scrabble {
             )
         );
 
-    Func1<String, Observable<Integer>> toIntegerObservable =
-      string -> Observable.from(IterableSpliterator.of(string.chars().boxed().spliterator()));
+    Function<String, Observable<Integer>> toIntegerObservable =
+      string -> Observable.fromIterable(() -> string.chars().boxed().iterator());
 
     // Histogram of the letters in a given word
-    Func1<String, Observable<HashMap<Integer, LongWrapper>>> histoOfLetters =
-      word -> toIntegerObservable.call(word)
+    Function<String, Single<HashMap<Integer, LongWrapper>>> histoOfLetters =
+      word -> toIntegerObservable.apply(word)
         .collect(
-          () -> new HashMap<>(),
+          HashMap::new,
           (HashMap<Integer, LongWrapper> map, Integer value) ->
-            map.merge(value, () -> 0L, (prev, cur) -> prev.incAndSet())
+            map.merge(value, () -> 0L, (prev, cur) -> prev.inc())
         );
 
     // number of blanks for a given letter
-    Func1<Entry<Integer, LongWrapper>, Observable<Long>> blank =
+    Function<Entry<Integer, LongWrapper>, Single<Long>> blank =
       entry ->
-        Observable.just(
+        Single.just(
           Long.max(
             0L,
             entry.getValue().get() -
@@ -78,93 +81,83 @@ public class RxScrabbleImplementation extends Scrabble {
         );
 
     // number of blanks for a given word
-    Func1<String, Observable<Long>> nBlanks =
-      word -> histoOfLetters.call(word)
-        .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
-        .flatMap(blank)
+    Function<String, Maybe<Long>> nBlanks =
+      word -> histoOfLetters.apply(word)
+        .flattenAsObservable(Map::entrySet)
+        .flatMapSingle(blank)
         .reduce(Long::sum);
 
 
     // can a word be written with 2 blanks?
-    Func1<String, Observable<Boolean>> checkBlanks =
-      word -> nBlanks.call(word)
-        .flatMap(l -> Observable.just(l <= 2L));
+    Function<String, Maybe<Boolean>> checkBlanks =
+      word -> nBlanks.apply(word)
+        .flatMap(l -> Maybe.just(l <= 2L));
 
     // score taking blanks into account letterScore1
-    Func1<String, Observable<Integer>> score2 =
-      word -> histoOfLetters.call(word)
-        .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
-        .flatMap(letterScore)
+    Function<String, Maybe<Integer>> score2 =
+      word -> histoOfLetters.apply(word)
+        .flattenAsObservable(Map::entrySet)
+        .flatMapSingle(letterScore)
         .reduce(Integer::sum);
 
     // Placing the word on the board
     // Building the streams of first and last letters
-    Func1<String, Observable<Integer>> first3 =
-      word -> Observable.from(
-        IterableSpliterator.of(word.chars().boxed().limit(3).spliterator()));
-    Func1<String, Observable<Integer>> last3 =
-      word -> Observable.from(
-        IterableSpliterator.of(word.chars().boxed().skip(3).spliterator()));
+    Function<String, Observable<Integer>> first3 =
+      word -> Observable.fromIterable(() -> word.chars().limit(3).boxed().iterator());
+    Function<String, Observable<Integer>> last3 =
+      word -> Observable.fromIterable(() -> word.chars().skip(3).boxed().iterator());
 
 
     // Stream to be maxed
-    Func1<String, Observable<Integer>> toBeMaxed =
-      word -> Observable.just(first3.call(word), last3.call(word))
-        .flatMap(observable -> observable);
+    Function<String, Observable<Integer>> toBeMaxed =
+      word -> Observable.concat(first3.apply(word), last3.apply(word));
 
     // Bonus for double letter
-    Func1<String, Observable<Integer>> bonusForDoubleLetter =
-      word -> toBeMaxed.call(word)
-        .flatMap(scoreOfALetter)
+    Function<String, Maybe<Integer>> bonusForDoubleLetter =
+      word -> toBeMaxed.apply(word)
+        .flatMapSingle(scoreOfALetter)
         .reduce(Integer::max);
 
     // score of the word put on the board
-    Func1<String, Observable<Integer>> score3 =
+    Function<String, Maybe<Integer>> score3 =
       word ->
-        Observable.just(
-          score2.call(word),
-          score2.call(word),
-          bonusForDoubleLetter.call(word),
-          bonusForDoubleLetter.call(word),
-          Observable.just(word.length() == 7 ? 50 : 0)
+        Maybe.concatArray(
+          score2.apply(word),
+          score2.apply(word),
+          bonusForDoubleLetter.apply(word),
+          bonusForDoubleLetter.apply(word),
+          Maybe.just(word.length() == 7 ? 50 : 0)
         )
-          .flatMap(observable -> observable)
-          .reduce(Integer::sum);
+        .reduce(Integer::sum);
 
-    Func1<
-      Func1<String, Observable<Integer>>, Observable<TreeMap<Integer, List<String>>>
+    Function<
+      Function<String, Maybe<Integer>>, Single<TreeMap<Integer, List<String>>>
       > buildHistoOnScore =
-      score -> Observable.from(() -> shakespeareWords.iterator())
+      score -> Observable.fromIterable(shakespeareWords)
         .buffer(1024)
         .flatMap(buffer ->
-          Observable.from(buffer)
+          Observable.fromIterable(buffer)
             .subscribeOn(Schedulers.computation())
             .filter(scrabbleWords::contains)
-            .filter(word -> checkBlanks.call(word).toBlocking().first())
+            .filter(word -> checkBlanks.apply(word).blockingGet())
         )
         .collect(
-          () -> new TreeMap<Integer, List<String>>(Comparator.reverseOrder()),
+          () -> new TreeMap<>(Comparator.reverseOrder()),
           (TreeMap<Integer, List<String>> map, String word) -> {
-            Integer key = score.call(word).toBlocking().first();
-            List<String> list = map.get(key);
-            if (list == null) {
-              list = new ArrayList<>();
-              map.put(key, list);
-            }
+            Integer key = score.apply(word).blockingGet();
+            List<String> list = map.computeIfAbsent(key, k -> new ArrayList<>());
             list.add(word);
           });
 
     // best key / value pairs
     List<Entry<Integer, List<String>>> finalList2 =
-      buildHistoOnScore.call(score3)
-        .flatMap(map -> Observable.from(() -> map.entrySet().iterator()))
+      buildHistoOnScore.apply(score3)
+        .flattenAsObservable(Map::entrySet)
         .collect(
           () -> new ArrayList<Entry<Integer, List<String>>>(),
-          (list, entry) -> {
-            list.add(entry);
-          })
-        .toBlocking()
-        .first();
+          ArrayList::add
+        )
+        .blockingGet();
 
     return finalList2;
   }
@@ -180,7 +173,7 @@ public class RxScrabbleImplementation extends Scrabble {
   }
 
   private static List<String> sortedUniqueWords(List<String> words) {
-    return new ArrayList<String>(new TreeSet<String>(words));
+    return new ArrayList<>(new TreeSet<>(words));
   }
 
 }
