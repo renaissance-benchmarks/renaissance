@@ -47,17 +47,20 @@ public final class JavaKMeans {
   public List<Double[]> run(
     final int clusterCount, final List <Double[]> data, final int iterationCount
   ) throws InterruptedException, ExecutionException {
-    List<Double[]> centroids = randomSample(clusterCount, data, new Random(100));
-    for (int iteration = 0; iteration < iterationCount; iteration++) {
-      final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
-      final UpdateTask updateTask = new UpdateTask(forkJoin.invoke(assignmentTask));
-      final Map<Double[], List<Double[]>> clusters = forkJoin.invoke(updateTask);
+    // Submit the k-means computation as a task to the fork-join pool to
+    // ensure that forked tasks are executed by worker threads from the pool.
+    return forkJoin.submit(() -> {
+      List<Double[]> centroids = randomSample(clusterCount, data, new Random(100));
+      for (int iteration = 0; iteration < iterationCount; iteration++) {
+        final AssignmentTask assignmentTask = new AssignmentTask(data, centroids);
+        final UpdateTask updateTask = new UpdateTask(assignmentTask.invoke());
+        final Map<Double[], List<Double[]>> clusters = updateTask.invoke();
 
-      centroids = new ArrayList<>(clusters.keySet());
-    }
+        centroids = new ArrayList<>(clusters.keySet());
+      }
 
-    forkJoin.awaitQuiescence(1, TimeUnit.SECONDS);
-    return centroids;
+      return centroids;
+    }).get();
   }
 
 
