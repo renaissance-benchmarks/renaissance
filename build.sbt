@@ -152,13 +152,13 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val commonsIoVersion = "2.13.0"
+val commonsIoVersion = "2.14.0"
 val commonsCompressVersion = "1.24.0"
 val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.10.0"
 val guavaVersion = "32.1.2-jre"
 val jnaVersion = "5.13.0"
-val nettyVersion = "4.1.97.Final"
+val nettyVersion = "4.1.99.Final"
 val scalaCollectionCompatVersion = "2.11.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val slf4jVersion = "2.0.9"
@@ -174,7 +174,7 @@ val renaissanceHarnessCommonSettings = Seq(
   target := baseDirectory.value / "target" / name.value,
   moduleName := "renaissance-harness",
   libraryDependencies ++= Seq(
-    "com.github.scopt" %% "scopt" % "4.0.1",
+    "com.github.scopt" %% "scopt" % "4.1.0",
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / mainClass := Some(harnessMainClass),
@@ -284,12 +284,12 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     name := "database",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-posix" % "3.1.15",
+      "com.github.jnr" % "jnr-posix" % "3.1.18",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
-      "org.agrona" % "agrona" % "1.17.1",
+      "org.agrona" % "agrona" % "1.19.2",
       // Database libraries.
       "org.mapdb" % "mapdb" % "3.0.10",
-      "com.h2database" % "h2-mvstore" % "2.1.214",
+      "com.h2database" % "h2-mvstore" % "2.2.224",
       "net.openhft" % "chronicle-map" % "3.22.9",
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion
@@ -332,8 +332,8 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     libraryDependencies ++= Seq(
       // neo4j 4.4 does not support Scala 2.13 yet.
       // neo4j 5.0 supports Scala 2.13 and requires JDK17
-      "org.neo4j" % "neo4j" % "4.4.25",
-      "com.typesafe.play" %% "play-json" % "2.9.4"
+      "org.neo4j" % "neo4j" % "4.4.26",
+      "com.typesafe.play" %% "play-json" % "2.10.1"
     ),
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
