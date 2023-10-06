@@ -44,7 +44,7 @@ loops (i.e., outside of the measured operation).
           "jmx_memory_young_collection_delta": 6,
           "jmx_memory_young_collection_time_ms": 11,
           "jmx_memory_young_collection_total_ms": 254,
-          "jmx_memory_old_collection_count": 2
+          "jmx_memory_old_collection_count": 2,
           "jmx_memory_old_collection_delta": 0,
           "jmx_memory_old_collection_time_ms": 0,
           "jmx_memory_old_collection_total_ms": 93,

@@ -10,7 +10,7 @@ import org.renaissance.License
 @Name("fj-kmeans")
 @Group("jdk-concurrent")
 @Group("concurrency") // With Scala 3, the primary group goes last.
-@Summary("Runs the k-means algorithm using the fork/join framework.")
+@Summary("Runs the K-Means algorithm using the fork/join framework.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(30)
 @Parameter(name = "thread_count", defaultValue = "$cpu.count")

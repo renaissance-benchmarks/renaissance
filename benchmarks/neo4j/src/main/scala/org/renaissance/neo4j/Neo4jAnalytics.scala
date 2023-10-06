@@ -17,7 +17,7 @@ import scala.io.{Codec, Source}
 @Name("neo4j-analytics")
 @Group("database")
 @Group("neo4j")
-@Summary("Executes Neo4J graph queries against a movie database.")
+@Summary("Executes Neo4j graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
 @RequiresJvm("11")
 @SupportsJvm("20")
