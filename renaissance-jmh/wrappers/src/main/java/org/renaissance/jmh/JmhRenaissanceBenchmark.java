@@ -111,12 +111,12 @@ public abstract class JmhRenaissanceBenchmark {
   //
 
   @Setup(Level.Trial)
-  public final void setUpBenchmark() {
+  public final void setUpBeforeAll() {
     benchmark.setUpBeforeAll(context);
   }
 
   @Setup(Level.Iteration)
-  public final void setUpOperation() {
+  public final void setUpBeforeEach() {
     benchmark.setUpBeforeEach(context);
   }
 
@@ -124,12 +124,12 @@ public abstract class JmhRenaissanceBenchmark {
   @BenchmarkMode(Mode.SingleShotTime)
   @OutputTimeUnit(MILLISECONDS)
   @Measurement(timeUnit = MILLISECONDS)
-  public final void runOperation() {
+  public final void run() {
     result = benchmark.run(context);
   }
 
   @TearDown(Level.Iteration)
-  public final void tearDownOperation() throws ValidationException {
+  public final void tearDownAfterEach() throws ValidationException {
     benchmark.tearDownAfterEach(context);
 
     result.validate();
@@ -137,7 +137,7 @@ public abstract class JmhRenaissanceBenchmark {
   }
 
   @TearDown(Level.Trial)
-  public final void defaultTearBenchmark() {
+  public final void tearDownAfterAll() {
     benchmark.tearDownAfterAll(context);
   }
 
