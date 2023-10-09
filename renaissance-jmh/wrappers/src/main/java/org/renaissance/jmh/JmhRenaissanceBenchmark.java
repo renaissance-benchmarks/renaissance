@@ -115,7 +115,7 @@ public abstract class JmhRenaissanceBenchmark {
     benchmark.setUpBeforeAll(context);
   }
 
-  @Setup(Level.Iteration)
+  @Setup(Level.Invocation)
   public final void setUpBeforeEach() {
     benchmark.setUpBeforeEach(context);
   }
@@ -128,7 +128,7 @@ public abstract class JmhRenaissanceBenchmark {
     result = benchmark.run(context);
   }
 
-  @TearDown(Level.Iteration)
+  @TearDown(Level.Invocation)
   public final void tearDownAfterEach() throws ValidationException {
     benchmark.tearDownAfterEach(context);
 
