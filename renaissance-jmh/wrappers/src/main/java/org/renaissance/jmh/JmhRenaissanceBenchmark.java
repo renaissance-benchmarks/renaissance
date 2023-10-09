@@ -51,9 +51,17 @@ public abstract class JmhRenaissanceBenchmark {
     "org.renaissance.jmh.configuration", "jmh"
   );
 
-  private final org.renaissance.Benchmark benchmark;
-  private final BenchmarkContext context;
+  /*
+   * Wrappers for Benchmark interface methods. The wrappers set the correct
+   * context class loader for the current thread before invoking the method.
+   */
+  private final Callable<RuntimeException> wrappedSetupBeforeAll;
+  private final Callable<RuntimeException> wrappedSetupBeforeEach;
+  private final Callable<RuntimeException> wrappedRun;
+  private final Callable<ValidationException> wrappedTearDownAfterEach;
+  private final Callable<RuntimeException> wrappedTearDownAfterAll;
 
+  /** Keeps benchmark result for deferred validation. */
   private BenchmarkResult result;
 
   protected JmhRenaissanceBenchmark(final String name) {
@@ -80,9 +88,34 @@ public abstract class JmhRenaissanceBenchmark {
       );
     }
 
-    // Load the benchmark.
-    benchmark = suite.createBenchmark(bd);
-    context = suite.createBenchmarkContext(bd);
+    // Load the benchmark and create the benchmark method wrappers.
+    final org.renaissance.Benchmark benchmark = suite.createBenchmark(bd);
+    final BenchmarkContext benchmarkContext = suite.createBenchmarkContext(bd);
+    final ClassLoader benchmarkClassLoader = benchmark.getClass().getClassLoader();
+
+    wrappedSetupBeforeAll = callWithContextClassLoader(
+      benchmarkClassLoader, () -> benchmark.setUpBeforeAll(benchmarkContext)
+    );
+
+    wrappedSetupBeforeEach = callWithContextClassLoader(
+      benchmarkClassLoader, () -> benchmark.setUpBeforeEach(benchmarkContext)
+    );
+
+    wrappedRun = callWithContextClassLoader(
+      benchmarkClassLoader, () -> result = benchmark.run(benchmarkContext)
+    );
+
+    wrappedTearDownAfterEach = callWithContextClassLoader(
+      benchmarkClassLoader, () -> {
+        benchmark.tearDownAfterEach(benchmarkContext);
+        result.validate();
+        result = null;
+      }
+    );
+
+    wrappedTearDownAfterAll = callWithContextClassLoader(
+      benchmarkClassLoader, () -> benchmark.tearDownAfterAll(benchmarkContext)
+    );
   }
 
   private Path createScratchRoot() {
@@ -108,16 +141,35 @@ public abstract class JmhRenaissanceBenchmark {
     }
   }
 
+  @FunctionalInterface
+  public interface Callable<E extends Throwable> {
+    void call() throws E;
+  }
+
+  private static <E extends Throwable> Callable<E> callWithContextClassLoader(
+    final ClassLoader classLoader, final Callable<E> method
+  ) {
+    return () -> {
+      final ClassLoader savedClassLoader = Thread.currentThread().getContextClassLoader();
+      Thread.currentThread().setContextClassLoader(classLoader);
+      try {
+        method.call();
+      } finally {
+        Thread.currentThread().setContextClassLoader(savedClassLoader);
+      }
+    };
+  }
+
   //
 
   @Setup(Level.Trial)
   public final void setUpBeforeAll() {
-    benchmark.setUpBeforeAll(context);
+    wrappedSetupBeforeAll.call();
   }
 
   @Setup(Level.Invocation)
   public final void setUpBeforeEach() {
-    benchmark.setUpBeforeEach(context);
+    wrappedSetupBeforeEach.call();
   }
 
   @Benchmark
@@ -125,20 +177,17 @@ public abstract class JmhRenaissanceBenchmark {
   @OutputTimeUnit(MILLISECONDS)
   @Measurement(timeUnit = MILLISECONDS)
   public final void run() {
-    result = benchmark.run(context);
+    wrappedRun.call();
   }
 
   @TearDown(Level.Invocation)
   public final void tearDownAfterEach() throws ValidationException {
-    benchmark.tearDownAfterEach(context);
-
-    result.validate();
-    result = null;
+    wrappedTearDownAfterEach.call();
   }
 
   @TearDown(Level.Trial)
   public final void tearDownAfterAll() {
-    benchmark.tearDownAfterAll(context);
+    wrappedTearDownAfterAll.call();
   }
 
 }
