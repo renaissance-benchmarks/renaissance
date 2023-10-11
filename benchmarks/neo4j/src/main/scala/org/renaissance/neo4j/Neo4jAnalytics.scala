@@ -2,7 +2,7 @@ package org.renaissance.neo4j
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.dbms.api.{DatabaseManagementService, DatabaseManagementServiceBuilder}
-import org.neo4j.logging.Level
+import org.neo4j.io.ByteUnit
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark
@@ -19,8 +19,7 @@ import scala.io.{Codec, Source}
 @Group("neo4j")
 @Summary("Executes Neo4j graph queries against a movie database.")
 @Licenses(Array(License.GPL3))
-@RequiresJvm("11")
-@SupportsJvm("20")
+@RequiresJvm("17")
 @Repetitions(20)
 @Parameter(name = "long_query_threads", defaultValue = "2")
 @Parameter(name = "long_query_repeats", defaultValue = "1")
@@ -122,8 +121,7 @@ final class Neo4jAnalytics extends Benchmark {
 
     dbms.set(
       new DatabaseManagementServiceBuilder(graphDbDir)
-        .setConfig(GraphDatabaseSettings.pagecache_memory, "500M")
-        .setConfig(GraphDatabaseSettings.store_internal_log_level, Level.WARN)
+        .setConfig(GraphDatabaseSettings.pagecache_memory, Long.box(ByteUnit.mebiBytes(512)))
         .build()
     )
 

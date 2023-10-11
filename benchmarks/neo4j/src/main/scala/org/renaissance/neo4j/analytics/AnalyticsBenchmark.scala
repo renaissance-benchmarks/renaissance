@@ -4,7 +4,7 @@ import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType, Result}
 import org.renaissance.neo4j.analytics.AnalyticsBenchmark._
 
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.{Seq, _}
 
 /*
@@ -12,7 +12,7 @@ import scala.collection.{Seq, _}
  */
 object AnalyticsBenchmark {
 
-  type VertexId = Int
+  private type VertexId = Int
 
   trait Vertex {
     def id: VertexId
@@ -63,8 +63,8 @@ class AnalyticsBenchmark(
   private def populateVertices(
     db: GraphDatabaseService,
     vertices: Iterable[Vertex]
-  ): Map[VertexId, Long] = {
-    val mapping = mutable.Map[VertexId, Long]()
+  ): Map[VertexId, String] = {
+    val mapping = mutable.Map[VertexId, String]()
 
     val tx = db.beginTx()
 
@@ -88,7 +88,7 @@ class AnalyticsBenchmark(
             sys.error(s"Unknown $vertex.")
         }
 
-        mapping(vertex.id) = node.getId
+        mapping(vertex.id) = node.getElementId
       } catch {
         case e: Exception =>
           throw new RuntimeException(s"Error in: $vertex", e)
@@ -105,7 +105,7 @@ class AnalyticsBenchmark(
   private def populateEdges(
     db: GraphDatabaseService,
     edges: Iterable[Edge],
-    vertexNodeIds: Map[VertexId, Long]
+    vertexNodeIds: Map[VertexId, String]
   ): Long = {
     var edgeCount = 0
     val tx = db.beginTx()
@@ -113,13 +113,13 @@ class AnalyticsBenchmark(
     try {
       for (edge <- edges) try {
         val sourceNodeId = vertexNodeIds(edge.source)
-        val sourceNode = tx.getNodeById(sourceNodeId)
+        val sourceNode = tx.getNodeByElementId(sourceNodeId)
         if (sourceNode == null) {
           sys.error("Null source node for: " + sourceNodeId)
         }
 
         val destinationNodeId = vertexNodeIds(edge.destination)
-        val destinationNode = tx.getNodeById(destinationNodeId)
+        val destinationNode = tx.getNodeByElementId(destinationNodeId)
         if (destinationNode == null) {
           sys.error("Null destination node for: " + destinationNodeId)
         }
@@ -275,7 +275,7 @@ class AnalyticsBenchmark(
     // Find how many directors directed at least 3 movies.
     (
       """match (d: Director)
-        |with d, size((d)-[: FILMS]->()) as c
+        |with d, count { (d)-[: FILMS]->() } as c
         |where c > $c
         |return count(d)""".stripMargin,
       Map("c" -> Long.box(3)),
@@ -296,7 +296,7 @@ class AnalyticsBenchmark(
     // Find the genre with the most movies.
     (
       """match (g: Genre)
-        |with g, size(()-[: GENRE]->(g)) as filmCount
+        |with g, count { ()-[: GENRE]->(g) } as filmCount
         |order by filmCount desc
         |limit 1
         |return g.name, filmCount""".stripMargin,

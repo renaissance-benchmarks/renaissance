@@ -119,7 +119,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `neo4j-analytics` - Executes Neo4j graph queries against a movie database.
   \
-  Default repetitions: 20; GPL3 license, GPL3 distribution; Supported JVM: 11 - 20
+  Default repetitions: 20; GPL3 license, GPL3 distribution; Supported JVM: 17 and later
 
 #### functional
 

@@ -328,11 +328,11 @@ lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
 lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
   .settings(
     name := "neo4j",
-    commonSettingsScala212,
+    commonSettingsScala213,
     libraryDependencies ++= Seq(
-      // neo4j 4.4 does not support Scala 2.13 yet.
-      // neo4j 5.0 supports Scala 2.13 and requires JDK17
-      "org.neo4j" % "neo4j" % "4.4.26",
+      // neo4j 4.4 supports Scala 2.12 and requires JDK11.
+      // neo4j 5.x supports Scala 2.13 and requires JDK17.
+      "org.neo4j" % "neo4j" % "5.12.0",
       "com.typesafe.play" %% "play-json" % "2.10.1"
     ),
     dependencyOverrides ++= Seq(
