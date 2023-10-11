@@ -152,16 +152,22 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val commonsIoVersion = "2.14.0"
+val asmVersion = "9.6"
 val commonsCompressVersion = "1.24.0"
+val commonsIoVersion = "2.14.0"
+val commonsLang3Version = "3.13.0"
 val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.10.0"
+val eclipseCollectionsVersion = "11.1.0"
 val guavaVersion = "32.1.2-jre"
+val jacksonVersion = "2.15.2"
+val jerseyVersion = "2.40"
 val jnaVersion = "5.13.0"
 val nettyVersion = "4.1.99.Final"
 val scalaCollectionCompatVersion = "2.11.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val slf4jVersion = "2.0.9"
+val zstdJniVersion = "1.5.5-6"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -262,12 +268,21 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     ),
     // Override versions pulled in by dependencies.
     dependencyOverrides ++= Seq(
-      // Force common (newer) Netty version.
+      // Force common (newer) version of Netty packages.
       "io.netty" % "netty-all" % nettyVersion,
+      // Force common (newer) version of Jackson packages.
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      // Force common (newer) version of Jersey packages.
+      "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
+      "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
+      "org.glassfish.jersey.inject" % "jersey-hk2" % jerseyVersion,
       // Force common versions of other dependencies.
+      "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
+      "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
@@ -297,7 +312,11 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
-      "net.java.dev.jna" % "jna" % jnaVersion,
+      // Force common (newer) version of ASM packages.
+      "org.ow2.asm" % "asm-commons" % asmVersion,
+      "org.ow2.asm" % "asm-util" % asmVersion,
+      // Force common (newer) version of Eclipse collection packages.
+      "org.eclipse.collections" % "eclipse-collections-forkjoin" % eclipseCollectionsVersion,
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion
@@ -336,21 +355,31 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // play-json 2.10.x requires SBT running on JDK11 to compile.
       "com.typesafe.play" %% "play-json" % "2.9.4"
     ),
+    excludeDependencies ++= Seq(
+      // Drop dependencies that are not really used by the benchmark.
+      ExclusionRule("com.fasterxml.jackson.datatype", "jackson-datatype-jdk8")
+    ),
     dependencyOverrides ++= Seq(
+      // Force common (newer) version of Jackson packages.
+      "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
-      // Force common (newer) Netty version. We need to override specific
-      // packages because the project does not depend on netty-all.
-      "io.netty" % "netty-buffer" % nettyVersion,
+      // Force common (newer) version of Netty packages.
       "io.netty" % "netty-codec-http" % nettyVersion,
-      "io.netty" % "netty-common" % nettyVersion,
-      "io.netty" % "netty-handler" % nettyVersion,
-      "io.netty" % "netty-resolver" % nettyVersion,
-      "io.netty" % "netty-transport" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
-      "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
+      "io.netty" % "netty-transport-native-kqueue" % nettyVersion,
+      // Force common (newer) version of Eclipse collection packages.
+      "org.eclipse.collections" % "eclipse-collections" % eclipseCollectionsVersion,
+      // Force common (newer) version of Jersey packages.
+      "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
+      "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
+      "org.glassfish.jersey.inject" % "jersey-hk2" % jerseyVersion,
+      // Force common (newer) version of ASM packages.
+      "org.ow2.asm" % "asm-util" % asmVersion,
       // Force common versions of other dependencies.
+      "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
+      "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.slf4j" % "slf4j-nop" % slf4jVersion
@@ -380,9 +409,13 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
       // The following is required to compile the workload sources. Keep it last!
       "org.scala-lang" % "scala-compiler" % scalaVersion213 % Runtime
     ),
-    dependencyOverrides ++= Seq(
-      // Force newer JNA to support more platforms/architectures.
-      "net.java.dev.jna" % "jna" % jnaVersion
+    excludeDependencies ++= Seq(
+      // Drop dependencies that are not really used by the benchmark.
+      ExclusionRule("org.jline", "jline"),
+      ExclusionRule("org.jline", "jline-reader"),
+      ExclusionRule("org.jline", "jline-terminal"),
+      ExclusionRule("org.jline", "jline-terminal-jna"),
+      ExclusionRule("org.scala-sbt", "compiler-interface")
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -435,21 +468,15 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "org.slf4j" % "slf4j-simple" % slf4jVersion
     ),
     dependencyOverrides ++= Seq(
-      // Force common (newer) Netty version. We need to override specific
-      // packages because the project does not depend on netty-all.
-      "io.netty" % "netty-buffer" % nettyVersion,
-      "io.netty" % "netty-codec" % nettyVersion,
-      "io.netty" % "netty-codec-dns" % nettyVersion,
-      "io.netty" % "netty-codec-http" % nettyVersion,
+      // Force common (newer) version of Netty packages.
       "io.netty" % "netty-codec-http2" % nettyVersion,
-      "io.netty" % "netty-common" % nettyVersion,
-      "io.netty" % "netty-handler" % nettyVersion,
       "io.netty" % "netty-handler-proxy" % nettyVersion,
-      "io.netty" % "netty-resolver" % nettyVersion,
       "io.netty" % "netty-resolver-dns" % nettyVersion,
-      "io.netty" % "netty-transport" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
-      "io.netty" % "netty-transport-native-unix-common" % nettyVersion,
+      // Force common (newer) version of Jackson packages.
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      // Force common versions of other dependencies.
+      "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
     )
   )
