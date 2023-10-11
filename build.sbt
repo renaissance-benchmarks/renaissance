@@ -333,7 +333,8 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // neo4j 4.4 supports Scala 2.12 and requires JDK11.
       // neo4j 5.x supports Scala 2.13 and requires JDK17.
       "org.neo4j" % "neo4j" % "5.12.0",
-      "com.typesafe.play" %% "play-json" % "2.10.1"
+      // play-json 2.10.x requires SBT running on JDK11 to compile.
+      "com.typesafe.play" %% "play-json" % "2.9.4"
     ),
     dependencyOverrides ++= Seq(
       // Force newer JNA to support more platforms/architectures.
