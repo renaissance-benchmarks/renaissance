@@ -14,15 +14,14 @@ the community.
 
 ### Setting up your environment
 
-Renaissance Benchmark Suite is built via SBT and is written in both
-Java and Scala.
+Renaissance Benchmark Suite is built via SBT and is written in both Java and Scala.
 Several tips on how to setup your IDE are in `documentation/ide.md`.
 
 
 ### Building the suite
 
-To build the suite and create the so-called fat JAR (or super JAR), you only
-need to run `sbt` build tool as follows:
+To build the suite and create the so-called fat JAR (or super JAR), you need to have
+a JDK (at least version 11) installed and run the `sbt` build tool as follows:
 
 ```
 $ tools/sbt/bin/sbt renaissancePackage
@@ -30,7 +29,6 @@ $ tools/sbt/bin/sbt renaissancePackage
 
 This will retrieve all the dependencies, compile all the benchmark projects and the harness,
 bundle the JARs and create the final JAR under the `target` directory.
-
 
 ### Making a contribution
 
