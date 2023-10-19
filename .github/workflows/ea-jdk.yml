@@ -1,33 +1,31 @@
 name: EA JDK
 on: workflow_dispatch
-
+env:
+  COURSIER_CACHE: ${{ github.workspace }}/.cache/coursier
 jobs:
   linux-ea:
     runs-on: ubuntu-latest
-    container: "fedora:34"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-openjdk22-ea"
     steps:
-      - name: Install base requirements
-        shell: bash
-        run: dnf install -y ca-certificates git unzip
-
       - name: Git checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Fetch latest EA JDK
-        run: tools/ci/get-latest-ea-jdk.sh $RUNNER_TEMP/jdk-ea-linux.tar.gz
-
-      - name: Setup EA JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: 99-ea
-          distribution: jdkfile
-          jdkFile: ${{ runner.temp }}/jdk-ea-linux.tar.gz
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Environment configuration
         shell: bash
         run: tools/ci/pre-show-env.sh
+
+      - name: Coursier downloads cache
+        uses: actions/cache@v3
+        with:
+          enableCrossOsArchive: true
+          key: coursier_cache-${{ hashFiles('build.sbt') }}
+          path: ${{ env.COURSIER_CACHE }}
 
       - name: Build both base & JMH bundles
         shell: bash
