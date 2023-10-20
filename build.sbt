@@ -861,7 +861,8 @@ lazy val renaissance = (project in file("."))
   .settings(
     aggregate := false,
     clean / aggregate := true,
-    scalafmt / aggregate := true
+    scalafmt / aggregate := true,
+    update / aggregate := true
   )
 
 //
