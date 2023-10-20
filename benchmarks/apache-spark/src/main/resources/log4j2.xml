@@ -61,11 +61,17 @@
     -->
     <Logger name="org.apache.hadoop.util.NativeCodeLoader" level="error"/>
 
-    <!-- 
+    <!--
       Note that spark.local.dir will be overridden by the value set by the cluster manager
       (via SPARK_LOCAL_DIRS in mesos/standalone/kubernetes and LOCAL_DIRS in YARN).
     -->
     <Logger name="org.apache.spark.SparkConf" level="error"/>
+
+    <!--
+      To enable non-built-in garbage collector(s) List(...), users should configure it(them) to
+      spark.eventLog.gcMetrics.youngGenerationGarbageCollectors or spark.eventLog.gcMetrics.oldGenerationGarbageCollectors
+    -->
+    <Logger name="org.apache.spark.metrics.GarbageCollectionMetrics" level="error"/>
 
     <!--
       URL.setURLStreamHandlerFactory failed to set FsUrlStreamHandlerFactory
