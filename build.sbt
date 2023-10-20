@@ -268,6 +268,8 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     ),
     // Override versions pulled in by dependencies.
     dependencyOverrides ++= Seq(
+      // Force newer version of Hadoop (compatibility with IBM Semeru JDK builds).
+      "org.apache.hadoop" % "hadoop-client-runtime" % "3.3.6",
       // Force common (newer) version of Netty packages.
       "io.netty" % "netty-all" % nettyVersion,
       // Force common (newer) version of Jackson packages.
