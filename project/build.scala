@@ -16,6 +16,11 @@ class BenchmarkInfo(
   val scalaVersion: String
 ) {
 
+  /**
+   * Default minimal JVM version for benchmarks that do not specify it explicitly.
+   */
+  private val JVM_VERSION_MIN_DEFAULT = "11"
+
   private def kebabCase(s: String): String = {
     val camelCaseName = if (s.last == '$') s.init else s
     val pattern = Pattern.compile("([A-Za-z])([A-Z])")
@@ -133,8 +138,8 @@ class BenchmarkInfo(
   }
 
   def jvmVersionMin: String = {
-    // Require at least JVM 1.8 where unspecified.
-    getAnnotation(classOf[RequiresJvm]).map(_.value()).getOrElse("1.8")
+    // When unspecified, require the default minimum version.
+    getAnnotation(classOf[RequiresJvm]).map(_.value()).getOrElse(JVM_VERSION_MIN_DEFAULT)
   }
 
   def jvmVersionMax: String = {

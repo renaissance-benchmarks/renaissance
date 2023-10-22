@@ -127,7 +127,12 @@ object RenaissanceSuite {
       val dispatcher = createEventDispatcher(plugins, writers)
 
       // Note: no access to Config beyond this point.
-      runBenchmarks(suite, benchmarks, policy, dispatcher)
+      val failedBenchmarks = runBenchmarks(suite, benchmarks, policy, dispatcher)
+      if (failedBenchmarks.nonEmpty) {
+        val failedBenchmarksList = failedBenchmarks.map(_.name()).mkString(", ")
+        println(s"The following benchmarks failed: $failedBenchmarksList")
+        sys.exit(1)
+      }
     }
   }
 
@@ -144,7 +149,7 @@ object RenaissanceSuite {
     benchmarks: Seq[BenchmarkDescriptor],
     policy: ExecutionPolicy,
     dispatcher: EventDispatcher
-  ): Unit = {
+  ): Seq[BenchmarkDescriptor] = {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = mutable.Buffer[BenchmarkDescriptor]()
 
@@ -153,42 +158,56 @@ object RenaissanceSuite {
     // Notify observers that the suite is set up.
     dispatcher.notifyAfterHarnessInit()
 
-    try {
-      for (descriptor <- benchmarks) {
-        val driver = ExecutionDriver.create(suite, descriptor, dispatcher, policy, vmStartNanos)
+    for (descriptor <- benchmarks) {
+      try {
+        val driver = ExecutionDriver.create(
+          suite,
+          descriptor,
+          dispatcher,
+          policy,
+          vmStartNanos
+        )
 
         try {
           driver.executeBenchmark()
 
         } catch {
-          case t: Throwable =>
-            // Notify observers that a benchmark failed.
+          case cause: Throwable =>
+            // Notify observers that a benchmark failed, because they
+            // have been notified about the benchmark setup phase.
             dispatcher.notifyOnBenchmarkFailure(descriptor.name)
             failedBenchmarks += descriptor
 
-            t match {
+            cause match {
               case _: ValidationException =>
                 Console.err.println(
-                  s"Benchmark '${descriptor.name()}' failed result validation:\n${t.getMessage}"
+                  s"Benchmark '${descriptor.name()}' failed result validation:\n${cause.getMessage}"
                 )
 
               case _ =>
-                Console.err.println(s"Benchmark '${descriptor.name()}' failed with exception:")
-                t.printStackTrace(Console.err)
+                Console.err.println(
+                  s"Benchmark '${descriptor.name()}' failed with exception:"
+                )
+                cause.printStackTrace(Console.err)
             }
         }
-      }
 
-    } finally {
-      // Notify listeners that the suite is shutting down.
-      dispatcher.notifyBeforeHarnessShutdown()
+      } catch {
+        case cause: Throwable =>
+          // Observers are not notified if a benchmark failed to load,
+          // because they do not know about the benchmark at all.
+          failedBenchmarks += descriptor
 
-      if (failedBenchmarks.nonEmpty) {
-        val failedBenchmarksList = failedBenchmarks.map(_.name()).mkString(", ")
-        println(s"The following benchmarks failed: $failedBenchmarksList")
-        sys.exit(1)
+          Console.err.println(
+            s"Failed to load benchmark '${descriptor.name()}': ${cause.getMessage}"
+          )
       }
     }
+
+    // Notify listeners that the suite is shutting down.
+    dispatcher.notifyBeforeHarnessShutdown()
+
+    failedBenchmarks.toSeq
   }
 
   private def getVmStartNanos = {

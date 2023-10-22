@@ -236,16 +236,16 @@ from <https://renaissance.dev/download>.
 If you wish to build it yourself, please, consult [CONTRIBUTING.md](CONTRIBUTING.md)
 for instructions on building.
 
-To run a Renaissance benchmark, you need to have a JRE installed.
-This allows you to execute the following `java` command:
-
+To run a Renaissance benchmark, you need to have a JRE version 11 (or later)
+installed and execute the following `java` command:
 
 ```
 $$ java -jar 'renaissance-gpl-${tags("renaissanceVersion")}.jar' <benchmarks>
 ```
 
-Above, `<benchmarks>` is the list of benchmarks that you wish to run.
-For example, you can specify `scala-kmeans` as the benchmark.
+In the above command, `<benchmarks>` is the list of benchmarks that you want to run.
+You can refer to individual benchmarks, e.g., `scala-kmeans`, or a group of benchmarks,
+e.g., `apache-spark`.
 
 The suite generally executes the benchmark's measured operation multiple times. By default,
 the suite executes each benchmark operation for a specific number of times. The benchmark-specific

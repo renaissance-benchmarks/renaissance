@@ -33,7 +33,6 @@ Global / onLoad := {
   previousOnLoad.andThen(state => "setupPrePush" :: state)
 }
 
-//
 // Support for distributions with different licenses.
 //
 val nonGplOnly = SettingKey[Boolean](
@@ -56,14 +55,13 @@ ThisBuild / git.useGitDescribe := true
 //
 // Compilation settings
 //
-val javaRelease = "8"
+val javaRelease = "11"
 val scalaVersion212 = "2.12.18"
 val scalaVersion213 = "2.13.12"
 val scalaVersion3 = "3.3.1"
 
 // Explicitly target a specific JDK release.
-ThisBuild / javacOptions ++= Seq("-source", javaRelease, "-target", javaRelease)
-ThisBuild / scalacOptions ++= Seq("-release", javaRelease)
+ThisBuild / javacOptions ++= Seq("--release", javaRelease)
 
 // Use common organization name.
 ThisBuild / organization := "org.renaissance"
@@ -78,15 +76,19 @@ lazy val commonSettingsNoScala = Seq(
 )
 
 lazy val commonSettingsScala212 = Seq(
-  scalaVersion := scalaVersion212
+  scalaVersion := scalaVersion212,
+  // Scala 2.12 can only emit valid Java 8 classes.
+  scalacOptions ++= Seq(s"-release:$javaRelease")
 )
 
 lazy val commonSettingsScala213 = Seq(
-  scalaVersion := scalaVersion213
+  scalaVersion := scalaVersion213,
+  scalacOptions ++= Seq(s"-release:$javaRelease")
 )
 
 lazy val commonSettingsScala3 = Seq(
   scalaVersion := scalaVersion3,
+  scalacOptions ++= Seq("-java-output-version", javaRelease),
   dependencyOverrides ++= Seq(
     // Force common version of Scala 2.13 library.
     "org.scala-lang" % "scala-library" % scalaVersion213
@@ -173,7 +175,8 @@ lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
     name := "renaissance-core",
     commonSettingsNoScala,
-    Compile / mainClass := Some(launcherMainClass)
+    Compile / mainClass := Some(launcherMainClass),
+    Compile / javacOptions := Seq("--release", "8")
   )
 
 val renaissanceHarnessCommonSettings = Seq(
@@ -184,6 +187,7 @@ val renaissanceHarnessCommonSettings = Seq(
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / mainClass := Some(harnessMainClass),
+  Compile / javacOptions := Seq("--release", "8"),
   Compile / packageBin / packageOptions += generateManifestAttributesTask.value
 )
 
@@ -191,7 +195,8 @@ lazy val renaissanceHarness3 = (project in file("renaissance-harness"))
   .settings(
     name := "renaissance-harness_3",
     commonSettingsScala3,
-    renaissanceHarnessCommonSettings
+    renaissanceHarnessCommonSettings,
+    scalacOptions := Seq("-java-output-version", "8")
   )
   .dependsOn(renaissanceCore % "provided")
 
@@ -199,7 +204,8 @@ lazy val renaissanceHarness213 = (project in file("renaissance-harness"))
   .settings(
     name := "renaissance-harness_2.13",
     commonSettingsScala213,
-    renaissanceHarnessCommonSettings
+    renaissanceHarnessCommonSettings,
+    scalacOptions := Seq("-release:8")
   )
   .dependsOn(renaissanceCore % "provided")
 
@@ -208,6 +214,7 @@ lazy val renaissanceHarness212 = (project in file("renaissance-harness"))
     name := "renaissance-harness_2.12",
     commonSettingsScala212,
     renaissanceHarnessCommonSettings,
+    scalacOptions := Seq("-release:8"),
     libraryDependencies ++= Seq(
       // Needed to compile Scala 2.13 collections with Scala 2.12.
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
@@ -355,7 +362,7 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // neo4j 5.x supports Scala 2.13 and requires JDK17.
       "org.neo4j" % "neo4j" % "5.12.0",
       // play-json 2.10.x requires SBT running on JDK11 to compile.
-      "com.typesafe.play" %% "play-json" % "2.9.4"
+      "com.typesafe.play" %% "play-json" % "2.10.1"
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not really used by the benchmark.

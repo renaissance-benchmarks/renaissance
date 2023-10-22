@@ -14,6 +14,7 @@ def projectSettings(suffix: String) = {
     scalacOptions := (parentProject / scalacOptions).value ++ Seq(
       "-feature", "-no-specialization"
     ),
+    javacOptions := (parentProject / javacOptions).value,
     Compile / unmanagedSourceDirectories := Seq(
       baseDirectory.value / "jvm" / "src" / "main" / "java",
       baseDirectory.value / "jvm" / "src" / "main" / "scala",
