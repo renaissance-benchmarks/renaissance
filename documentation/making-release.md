@@ -50,24 +50,24 @@ automatic version numbers will be relative to the latest version tag. Now
 is the time to build the artifacts that will be attached to the GitHub release
 and publish the releases on GitHub and on the Renaissance website.
 
-- [ ] Make sure you are using JDK8 to build the artifacts.
-  - Even though we currently support LTS releases up to and including JDK17,
+- [ ] Make sure you are using JDK11 to build the artifacts.
+  - Even though we currently support LTS releases up to and including JDK21,
     using the lowest supported version ensures that nothing in the build chain
     decides to target a newer JDK.
 - [ ] Make sure to clean the repository and recreate useful symlinks.
   - `git clean -dxf`
   - `ln -s tools/sbt/bin/sbt sbt`
-- [ ] Build both the GPL and MIT bundles.
-  - `./sbt 'renaissancePackage; set nonGplOnly := true; renaissancePackage'`
+- [ ] Build both the GPL (with the JMH variant) and MIT bundles.
+  - `./sbt 'renaissancePackage; renaissanceJmhPackage; set nonGplOnly := true; renaissancePackage'`
   - If everything went well, you should end up with the following files:
     - `target/renaissance-gpl-<version>.jar`
     - `target/renaissance-mit-<version>.jar`
 - [ ] Build the plugins to make them a bit more accessible to people. Because
   SBT does not support `-C` alà `make`, you can use the following commands
   (assuming you have a `sbt` symlink in the project root).
-  - `pushd plugins/jmx-memory && { ../../sbt assembly; popd; }`
-  - `pushd plugins/jmx-timers && { ../../sbt assembly; popd; }`
-  - `pushd plugins/ubench-agent && { ./build-ubench-agent.sh && ../../sbt assembly; popd; }`
+  - `(cd plugins/jmx-memory && { ../../sbt assembly)`
+  - `(cd plugins/jmx-timers && { ../../sbt assembly)`
+  - `(cd plugins/ubench-agent && { ./build-ubench-agent.sh && ../../sbt assembly)`
   - If everything went well, you should end up with the following files
     with plugin-specific version numbers:
     - `plugins/jmx-memory/target/plugin-jmxmemory-assembly-<ver>.jar`
