@@ -24,7 +24,7 @@ fi
 
 msg "Building agent..."
 pushd "$UBENCH_AGENT_DIR"
-ant lib
+ant -Dant.build.javac.source=1.8 -Dant.build.javac.target=1.8 lib
 msg "Build succeeded."
 popd
 
