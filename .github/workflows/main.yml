@@ -103,7 +103,7 @@ jobs:
           aria2c -d ${{ runner.temp }} -o openjdk-21_macos-x64_bin.tar.gz https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/openjdk-21.0.1_macos-x64_bin.tar.gz
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: jdkfile
@@ -161,7 +161,7 @@ jobs:
           aria2c -d ${{ runner.temp }} -o openjdk-21_windows-x64_bin.zip https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/openjdk-21.0.1_windows-x64_bin.zip
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: jdkfile
@@ -308,7 +308,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Setup correct Java version
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: adopt
           java-version: ${{ matrix.java }}
@@ -365,7 +365,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Setup correct Java version
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: adopt
           java-version: ${{ matrix.java }}
