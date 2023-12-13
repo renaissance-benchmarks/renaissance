@@ -8,8 +8,6 @@ import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
 
-import java.{lang => jl, util => ju}
-
 @Name("fj-kmeans")
 @Group("jdk-concurrent")
 @Group("concurrency") // With Scala 3, the primary group goes last.
@@ -61,14 +59,14 @@ final class FjKmeans extends Benchmark {
 
   private var benchmark: JavaKMeans = _
 
-  private var data: ju.List[Array[jl.Double]] = _
+  private var data: java.util.List[Array[java.lang.Double]] = _
 
   private var expectedPoints: Seq[Array[Double]] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     import scala.jdk.CollectionConverters.ListHasAsScala
 
-    def rowToArray(row: ju.Map[String, String]): Array[Double] = {
+    def rowToArray(row: java.util.Map[String, String]): Array[Double] = {
       (0 until row.size()).map(i => row.get(s"coordinate$i").toDouble).toArray
     }
 
@@ -82,7 +80,7 @@ final class FjKmeans extends Benchmark {
 
   private def assertEqualCenters(
     expected: Array[Double],
-    actual: Array[jl.Double],
+    actual: Array[java.lang.Double],
     epsilon: Double,
     subject: String
   ): Unit = {
@@ -102,7 +100,7 @@ final class FjKmeans extends Benchmark {
 
   private def validate(
     expected: Seq[Array[Double]],
-    results: IndexedSeq[ju.List[Array[jl.Double]]]
+    results: IndexedSeq[java.util.List[Array[java.lang.Double]]]
   ): Unit = {
     import scala.jdk.CollectionConverters.ListHasAsScala
 
