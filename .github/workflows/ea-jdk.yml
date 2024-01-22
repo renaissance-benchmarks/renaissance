@@ -21,7 +21,7 @@ jobs:
         run: tools/ci/pre-show-env.sh
 
       - name: Coursier downloads cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           enableCrossOsArchive: true
           key: coursier_cache-${{ hashFiles('build.sbt') }}
