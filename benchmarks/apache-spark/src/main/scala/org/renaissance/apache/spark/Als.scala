@@ -31,9 +31,9 @@ import scala.util.Random
   summary = "Number of users giving ratings."
 )
 @Parameter(
-  name = "product_count",
+  name = "item_count",
   defaultValue = "100",
-  summary = "Number of products rated by each user."
+  summary = "Number of items rated by each user."
 )
 @Parameter(name = "als_rank", defaultValue = "10")
 @Parameter(name = "als_lambda", defaultValue = "0.01")
@@ -88,7 +88,7 @@ final class Als extends Benchmark with SparkUtil {
 
   private var alsUserCount: Int = _
 
-  private var alsProductCount: Int = _
+  private var alsItemCount: Int = _
 
   private var expectedUserFactorsSummary: FactorsSummary = _
 
@@ -98,11 +98,11 @@ final class Als extends Benchmark with SparkUtil {
 
   private type Rating = ALS.Rating[Int]
 
-  private def generateRatings(userCount: Int, productCount: Int): Seq[Rating] = {
+  private def generateRatings(userCount: Int, itemCount: Int): Seq[Rating] = {
     // TODO: Use a Renaissance-provided random generator.
     val rand = new Random(randomSeed)
 
-    for (userId <- 0 until userCount; itemId <- 0 until productCount) yield {
+    for (userId <- 0 until userCount; itemId <- 0 until itemCount) yield {
       val rating = 1 + rand.nextInt(3) + rand.nextInt(3)
       Rating[Int](userId, itemId, rating.toFloat)
     }
@@ -131,7 +131,7 @@ final class Als extends Benchmark with SparkUtil {
     alsLambdaParam = bc.parameter("als_lambda").toDouble
     alsIterationsParam = bc.parameter("als_iterations").toPositiveInteger
     alsUserCount = bc.parameter("user_count").toPositiveInteger
-    alsProductCount = bc.parameter("product_count").toPositiveInteger
+    alsItemCount = bc.parameter("item_count").toPositiveInteger
 
     // Validation parameters.
     expectedUserFactorsSummary = FactorsSummary(
@@ -145,12 +145,12 @@ final class Als extends Benchmark with SparkUtil {
       bc.parameter("expected_item_factors_sum").toDouble,
       bc.parameter("expected_item_factors_sum_squares").toDouble,
       ClosedInterval(alsRankParam),
-      alsProductCount
+      alsItemCount
     )
 
     // Store generated ratings as a single file.
     val ratingsCsv = storeRatings(
-      generateRatings(alsUserCount, alsProductCount),
+      generateRatings(alsUserCount, alsItemCount),
       bc.scratchDirectory().resolve("ratings.csv")
     )
 
