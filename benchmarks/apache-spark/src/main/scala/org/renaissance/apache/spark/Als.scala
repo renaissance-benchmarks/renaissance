@@ -8,7 +8,7 @@ import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.License
 
 import java.nio.file.Files
@@ -38,9 +38,42 @@ import scala.util.Random
 @Parameter(name = "als_rank", defaultValue = "10")
 @Parameter(name = "als_lambda", defaultValue = "0.01")
 @Parameter(name = "als_iterations", defaultValue = "10")
-@Configuration(name = "test", settings = Array("user_count = 500"))
+@Parameter(name = "expected_user_factors_sum", defaultValue = "-9596.627819650528")
+@Parameter(name = "expected_user_factors_sum_squares", defaultValue = "788656.1993662444")
+@Parameter(name = "expected_item_factors_sum", defaultValue = "-3.6123005696281325")
+@Parameter(name = "expected_item_factors_sum_squares", defaultValue = "121.76721351321395")
+@Configuration(
+  name = "test",
+  settings = Array(
+    "user_count = 500",
+    "expected_user_factors_sum = -599.6017655955875",
+    "expected_user_factors_sum_squares = 5474.245809443889",
+    "expected_item_factors_sum = -32.74099353258498",
+    "expected_item_factors_sum_squares = 212.4680732798157"
+  )
+)
 @Configuration(name = "jmh")
 final class Als extends Benchmark with SparkUtil {
+
+  // Utility classes for validation.
+
+  private case class ClosedInterval(start: Int, end: Int) {
+
+    def expand(other: ClosedInterval): ClosedInterval = {
+      ClosedInterval(start.min(other.start), end.max(other.end))
+    }
+  }
+
+  private object ClosedInterval {
+    def apply(value: Int): ClosedInterval = ClosedInterval(value, value)
+  }
+
+  private case class FactorsSummary(
+    sum: Double,
+    sumSquares: Double,
+    matrixWidthInterval: ClosedInterval,
+    matrixHeight: Int
+  )
 
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
@@ -53,9 +86,15 @@ final class Als extends Benchmark with SparkUtil {
 
   private var alsIterationsParam: Int = _
 
-  private var inputRatings: DataFrame = _
+  private var alsUserCount: Int = _
 
-  private var outputAlsModel: ALSModel = _
+  private var alsProductCount: Int = _
+
+  private var expectedUserFactorsSummary: FactorsSummary = _
+
+  private var expectedItemFactorsSummary: FactorsSummary = _
+
+  private var inputRatings: DataFrame = _
 
   private type Rating = ALS.Rating[Int]
 
@@ -79,7 +118,7 @@ final class Als extends Benchmark with SparkUtil {
 
   private def loadRatings(file: Path) = {
     sparkSession.read
-      .option("header", true)
+      .option("header", value = true)
       .schema("user INT, item INT, rating FLOAT")
       .csv(file.toString)
   }
@@ -91,13 +130,27 @@ final class Als extends Benchmark with SparkUtil {
     alsRankParam = bc.parameter("als_rank").toPositiveInteger
     alsLambdaParam = bc.parameter("als_lambda").toDouble
     alsIterationsParam = bc.parameter("als_iterations").toPositiveInteger
+    alsUserCount = bc.parameter("user_count").toPositiveInteger
+    alsProductCount = bc.parameter("product_count").toPositiveInteger
+
+    // Validation parameters.
+    expectedUserFactorsSummary = FactorsSummary(
+      bc.parameter("expected_user_factors_sum").toDouble,
+      bc.parameter("expected_user_factors_sum_squares").toDouble,
+      ClosedInterval(alsRankParam),
+      alsUserCount
+    )
+
+    expectedItemFactorsSummary = FactorsSummary(
+      bc.parameter("expected_item_factors_sum").toDouble,
+      bc.parameter("expected_item_factors_sum_squares").toDouble,
+      ClosedInterval(alsRankParam),
+      alsProductCount
+    )
 
     // Store generated ratings as a single file.
     val ratingsCsv = storeRatings(
-      generateRatings(
-        bc.parameter("user_count").toPositiveInteger,
-        bc.parameter("product_count").toPositiveInteger
-      ),
+      generateRatings(alsUserCount, alsProductCount),
       bc.scratchDirectory().resolve("ratings.csv")
     )
 
@@ -106,34 +159,84 @@ final class Als extends Benchmark with SparkUtil {
   }
 
   override def run(bc: BenchmarkContext): BenchmarkResult = {
-    def trainModel(ratings: DataFrame) = {
-      new ALS()
-        .setIntermediateStorageLevel("MEMORY_ONLY")
-        .setFinalStorageLevel("MEMORY_ONLY")
-        .setMaxIter(alsIterationsParam)
-        .setRegParam(alsLambdaParam)
-        .setRank(alsRankParam)
-        .setSeed(randomSeed)
-        .fit(ratings)
-    }
+    val als = new ALS()
+      .setIntermediateStorageLevel("MEMORY_ONLY")
+      .setFinalStorageLevel("MEMORY_ONLY")
+      .setMaxIter(alsIterationsParam)
+      .setRegParam(alsLambdaParam)
+      .setRank(alsRankParam)
+      .setSeed(randomSeed)
 
-    outputAlsModel = trainModel(inputRatings)
+    val alsModel = als.fit(inputRatings)
+    () => validate(alsModel)
+  }
 
-    // TODO: add proper validation of the generated model
-    Validators.dummy(outputAlsModel)
+  private def validate(result: ALSModel): Unit = {
+    val actualUserFactorsSummary = summarizeFactors(result.userFactors)
+    validateSummary("user", expectedUserFactorsSummary, actualUserFactorsSummary, 0.01)
+
+    val actualItemFactorsSummary = summarizeFactors(result.itemFactors)
+    validateSummary("item", expectedItemFactorsSummary, actualItemFactorsSummary, 0.000001)
+  }
+
+  private def summarizeFactors(factors: DataFrame): FactorsSummary = {
+    import scala.collection.mutable
+
+    val collectedFactors = factors
+      .collect()
+      .map(row => row.getAs("features").asInstanceOf[mutable.Seq[Float]].map(_.toDouble))
+
+    val flatFactors = collectedFactors.flatten
+
+    val matrixWidthRange: ClosedInterval = collectedFactors
+      .map(row => ClosedInterval(row.length))
+      .reduce((range1, range2) => range1.expand(range2))
+
+    FactorsSummary(
+      flatFactors.sum,
+      flatFactors.map(v => v * v).sum,
+      matrixWidthRange,
+      collectedFactors.length
+    )
+  }
+
+  private def validateSummary(
+    kind: String,
+    expected: FactorsSummary,
+    actual: FactorsSummary,
+    tolerance: Double
+  ): Unit = {
+    // Validate factors matrix content.
+    Assert.assertEquals(expected.sum, actual.sum, tolerance, s"sum of $kind factors")
+
+    Assert.assertEquals(
+      expected.sumSquares,
+      actual.sumSquares,
+      tolerance,
+      s"sum of squares of $kind factors"
+    )
+
+    // Validate factors matrix shape.
+    Assert.assertEquals(
+      expected.matrixWidthInterval.start,
+      actual.matrixWidthInterval.start,
+      s"$kind features matrix width"
+    )
+
+    Assert.assertEquals(
+      expected.matrixWidthInterval.end,
+      actual.matrixWidthInterval.end,
+      s"$kind features matrix width"
+    )
+
+    Assert.assertEquals(
+      expected.matrixHeight,
+      actual.matrixHeight,
+      s"$kind features matrix height"
+    )
   }
 
   override def tearDownAfterAll(bc: BenchmarkContext): Unit = {
-    if (dumpResultsBeforeTearDown && outputAlsModel != null) {
-      val outputPath = bc.scratchDirectory().resolve("output")
-      dumpResult(outputAlsModel, outputPath)
-    }
-
     tearDownSparkContext()
-  }
-
-  private def dumpResult(am: ALSModel, outputPath: Path): Unit = {
-    val outputFile = outputPath.resolve("users").toString
-    am.userFactors.coalesce(1).write.json(outputFile)
   }
 }
