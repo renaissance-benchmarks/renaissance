@@ -24,7 +24,7 @@ To build the suite and create the so-called fat JAR (or super JAR), you need to 
 a JDK (at least version 11) installed and run the `sbt` build tool as follows:
 
 ```
-$ tools/sbt/bin/sbt renaissancePackage
+tools/sbt/bin/sbt renaissancePackage
 ```
 
 This will retrieve all the dependencies, compile all the benchmark projects and the harness,
