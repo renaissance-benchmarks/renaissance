@@ -85,7 +85,7 @@ object RealityShowPhilosophers {
       }
   }
 
-  def time(philosopherCount: Int, meals: Int): Long = {
+  def eatenMeals(philosopherCount: Int, meals: Int): Array[Int] = {
     val names = for (i <- 0 until philosopherCount) yield {
       s"philosopher-$i"
     }
@@ -96,16 +96,18 @@ object RealityShowPhilosophers {
       new PhilosopherThread(names(i), meals, forks(i), forks((i + 1) % forks.length))
     }
     val camera = new CameraThread(1000 / 60, forks, pthreads)
-    val start = System.currentTimeMillis
     camera.start()
     for (t <- pthreads) t.start()
     for (t <- pthreads) t.join()
-    val elapsed = System.currentTimeMillis - start
     camera.join()
-    elapsed
+    atomic { implicit txn =>
+      pthreads.map { p =>
+        p.mealsEaten.get(txn)
+      }
+    }
   }
 
   def run(meals: Int, philosopherCount: Int) = {
-    time(philosopherCount, meals)
+    eatenMeals(philosopherCount, meals)
   }
 }
