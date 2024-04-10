@@ -1,5 +1,6 @@
 package org.renaissance.scala.stm
 
+import scala.collection.JavaConverters._
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
@@ -33,17 +34,21 @@ final class Philosophers extends Benchmark {
    */
   private var mealCountParam: Int = _
 
+  private var expectedHash: String = _
+
   override def setUpBeforeAll(c: BenchmarkContext) = {
     threadCountParam = c.parameter("thread_count").toPositiveInteger
     mealCountParam = c.parameter("meal_count").toPositiveInteger
+    val expectedOutput = Array.fill(threadCountParam)(mealCountParam).toSeq.asJava;
+    expectedHash = Validators.computeHash(expectedOutput);
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    // TODO: Return something useful, not elapsed time
-    RealityShowPhilosophers.run(mealCountParam, threadCountParam)
+    val mealsEaten = RealityShowPhilosophers.run(mealCountParam, threadCountParam)
 
-    // TODO: add proper validation
-    Validators.dummy()
+    () => {
+      Validators.hashing(expectedHash, mealsEaten.toSeq.asJava).validate()
+    }
   }
 
 }
