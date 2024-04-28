@@ -464,6 +464,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
 val finagleVersion = "22.12.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "twitter-finagle",
     commonSettingsScala213,
