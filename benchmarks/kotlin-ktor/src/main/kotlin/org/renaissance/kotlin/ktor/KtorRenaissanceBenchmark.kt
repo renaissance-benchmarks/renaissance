@@ -75,7 +75,7 @@ class KtorRenaissanceBenchmark() : Benchmark {
     val randomSeed = context.parameter("random_seed").toPositiveInteger()
 
     application = ChatApplication(numberOfChats)
-    server = embeddedServer(io.ktor.server.cio.CIO, host = "127.0.0.1", port = port) {
+    server = embeddedServer(io.ktor.server.cio.CIO, host = "localhost", port = port) {
       application.apply {
         main()
       }
