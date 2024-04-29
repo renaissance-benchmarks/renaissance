@@ -9,7 +9,7 @@ import kotlinx.coroutines.awaitAll
 import kotlin.random.Random
 
 /**
- * A **probabilistic** client manager, which set's up the appropriate amount of clients, performing a specified number and kind of tasks
+ * A **probabilistic** client manager, which sets up the appropriate number of clients, performing a specified number and kind of tasks
  */
 class ClientManager(
   private val port: Int,
