@@ -18,7 +18,7 @@ import kotlin.math.min
 @Licenses(License.MIT)
 @Parameter(
   name = "port",
-  defaultValue = "8080",
+  defaultValue = "9496",
   summary = "Port to run the server on."
 )
 @Parameter(
