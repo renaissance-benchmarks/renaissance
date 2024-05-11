@@ -154,22 +154,22 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val asmVersion = "9.6"
-val commonsCompressVersion = "1.24.0"
-val commonsIoVersion = "2.14.0"
-val commonsLang3Version = "3.13.0"
+val asmVersion = "9.7"
+val commonsCompressVersion = "1.26.1"
+val commonsIoVersion = "2.16.1"
+val commonsLang3Version = "3.14.0"
 val commonsMath3Version = "3.6.1"
-val commonsTextVersion = "1.10.0"
+val commonsTextVersion = "1.11.0"
 val eclipseCollectionsVersion = "11.1.0"
-val guavaVersion = "32.1.2-jre"
-val jacksonVersion = "2.15.2"
-val jerseyVersion = "2.40"
-val jnaVersion = "5.13.0"
-val nettyVersion = "4.1.99.Final"
-val scalaCollectionCompatVersion = "2.11.0"
+val guavaVersion = "33.2.0-jre"
+val jacksonVersion = "2.17.1"
+val jersey2Version = "2.43"
+val jnaVersion = "5.14.0"
+val nettyVersion = "4.1.109.Final"
+val scalaCollectionCompatVersion = "2.12.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "2.0.9"
-val zstdJniVersion = "1.5.5-6"
+val slf4jVersion = "2.0.13"
+val zstdJniVersion = "1.5.6-3"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -257,7 +257,7 @@ lazy val actorsReactorsBenchmarks = (project in file("benchmarks/actors-reactors
     ProjectRef(uri("benchmarks/actors-reactors/reactors"), "reactorsCoreJVM")
   )
 
-val sparkVersion = "3.5.0"
+val sparkVersion = "3.5.1"
 
 lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   .settings(
@@ -276,16 +276,16 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     // Override versions pulled in by dependencies.
     dependencyOverrides ++= Seq(
       // Force newer version of Hadoop (compatibility with IBM Semeru JDK builds).
-      "org.apache.hadoop" % "hadoop-client-runtime" % "3.3.6",
+      "org.apache.hadoop" % "hadoop-client-runtime" % "3.4.0",
       // Force common (newer) version of Netty packages.
       "io.netty" % "netty-all" % nettyVersion,
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
       // Force common (newer) version of Jersey packages.
-      "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
-      "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
-      "org.glassfish.jersey.inject" % "jersey-hk2" % jerseyVersion,
+      "org.glassfish.jersey.containers" % "jersey-container-servlet" % jersey2Version,
+      "org.glassfish.jersey.core" % "jersey-server" % jersey2Version,
+      "org.glassfish.jersey.inject" % "jersey-hk2" % jersey2Version,
       // Force common versions of other dependencies.
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "com.google.guava" % "guava" % guavaVersion,
@@ -308,13 +308,14 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     name := "database",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-posix" % "3.1.18",
+      "com.github.jnr" % "jnr-posix" % "3.1.19",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
-      "org.agrona" % "agrona" % "1.19.2",
+      "org.agrona" % "agrona" % "1.21.1",
       // Database libraries.
-      "org.mapdb" % "mapdb" % "3.0.10",
+      "org.mapdb" % "mapdb" % "3.1.0",
       "com.h2database" % "h2-mvstore" % "2.2.224",
-      "net.openhft" % "chronicle-map" % "3.22.9",
+      "net.openhft" % "chronicle-map" % "3.23.5",
+      "net.openhft" % "affinity" % "3.23.3", // required by chronicle-map 3.23.5
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion
     ),
@@ -322,6 +323,7 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
       // Force common (newer) version of ASM packages.
+      // ASM 9.7+ requires Java 11
       "org.ow2.asm" % "asm-commons" % asmVersion,
       "org.ow2.asm" % "asm-util" % asmVersion,
       // Force common (newer) version of Eclipse collection packages.
@@ -341,6 +343,7 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
       // Jenetics 5.2.0 is the last to support Java 8.
       // Jenetics 6.0.0 requires Java 11 and benchmark update.
       // Jenetics 7.0.0 requires Java 17 and benchmark update.
+      // Jenetics 8.0.0 requires Java 21 and benchmark update.
       "io.jenetics" % "jenetics" % "5.2.0"
     )
   )
@@ -360,9 +363,9 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     libraryDependencies ++= Seq(
       // neo4j 4.4 supports Scala 2.12 and requires JDK11.
       // neo4j 5.x supports Scala 2.13 and requires JDK17.
-      "org.neo4j" % "neo4j" % "5.12.0",
+      "org.neo4j" % "neo4j" % "5.19.0",
       // play-json 2.10.x requires SBT running on JDK11 to compile.
-      "com.typesafe.play" %% "play-json" % "2.10.1"
+      "com.typesafe.play" %% "play-json" % "2.10.5"
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not really used by the benchmark.
@@ -380,9 +383,9 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // Force common (newer) version of Eclipse collection packages.
       "org.eclipse.collections" % "eclipse-collections" % eclipseCollectionsVersion,
       // Force common (newer) version of Jersey packages.
-      "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
-      "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
-      "org.glassfish.jersey.inject" % "jersey-hk2" % jerseyVersion,
+      "org.glassfish.jersey.containers" % "jersey-container-servlet" % jersey2Version,
+      "org.glassfish.jersey.core" % "jersey-server" % jersey2Version,
+      "org.glassfish.jersey.inject" % "jersey-hk2" % jersey2Version,
       // Force common (newer) version of ASM packages.
       "org.ow2.asm" % "asm-util" % asmVersion,
       // Force common versions of other dependencies.
@@ -414,6 +417,9 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
       // Version 3.1.2 was the last to compile with Scala 2.13.11. Version 3.1.3-RC2
       // broke compilation due to "Unsupported Scala 3 union in parameter value".
       // Compiling with Scala 3.1.0+ avoids compatibility issues.
+      // scala3-compiler_3 3.3.1 is the last dotty version to support JDK 21
+      // https://bugs.openjdk.org/browse/JDK-8308050
+      // https://github.com/scala/scala3/commit/f77069a74c4df65c7f69a6476aeb6b52fa8acb48
       "org.scala-lang" % "scala3-compiler_3" % "3.3.1",
       // The following is required to compile the workload sources. Keep it last!
       "org.scala-lang" % "scala-compiler" % scalaVersion213 % Runtime
@@ -459,7 +465,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
     ) % "compile->compile;compile->test"
   )
 
-val finagleVersion = "22.12.0"
+val finagleVersion = "24.2.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .settings(
