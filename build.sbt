@@ -1003,6 +1003,7 @@ def mapJarContentsToAssemblyTask(classpath: Classpath) =
  * compiled wrappers are used by the [[renaissanceJmh]] project below.
  */
 lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "renaissance-jmh-wrappers",
     commonSettingsNoScala,
@@ -1022,6 +1023,7 @@ lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
  * its dependencies), along with the benchmark dependencies as JAR files.
  */
 lazy val renaissanceJmh = (project in file("renaissance-jmh"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "renaissance-jmh",
     commonSettingsNoScala,
