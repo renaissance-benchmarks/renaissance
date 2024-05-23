@@ -166,6 +166,8 @@ val jacksonVersion = "2.15.2"
 val jerseyVersion = "2.40"
 val jnaVersion = "5.13.0"
 val nettyVersion = "4.1.99.Final"
+val ktorVersion = "2.3.8"
+val logbackVersion = "1.4.11"
 val scalaCollectionCompatVersion = "2.11.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val slf4jVersion = "2.0.9"
@@ -462,6 +464,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
 val finagleVersion = "22.12.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "twitter-finagle",
     commonSettingsScala213,
@@ -491,6 +494,31 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
   )
   .dependsOn(renaissanceCore % "provided")
 
+lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
+  .enablePlugins(KotlinPlugin)
+  .settings(
+    name := "kotlin-ktor",
+    commonSettingsNoScala,
+    kotlinLib("stdlib"),
+    kotlinPlugin("serialization-compiler-plugin-embeddable"),
+    kotlinVersion := "1.9.20",
+    kotlincJvmTarget := "11",
+    libraryDependencies ++= Seq(
+      "io.ktor" % "ktor-server-core-jvm" % ktorVersion,
+      "io.ktor" % "ktor-server-cio-jvm" % ktorVersion,
+      "io.ktor" % "ktor-server-tests-jvm" % ktorVersion,
+      "io.ktor" % "ktor-server-call-logging" % ktorVersion,
+      "io.ktor" % "ktor-serialization-kotlinx-json-jvm" % ktorVersion,
+      "io.ktor" % "ktor-server-auth-jvm" % ktorVersion,
+      "org.jetbrains.kotlinx" % "kotlinx-serialization-json" % "1.6.2",
+      "ch.qos.logback" % "logback-classic" % logbackVersion
+    ),
+    dependencyOverrides ++= Seq(
+      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.8.0-RC"
+    )
+  )
+  .dependsOn(renaissanceCore % "provided")
+
 //
 // Project collections.
 //
@@ -514,7 +542,8 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
   scalaSatBenchmarks,
   scalaStdlibBenchmarks,
   scalaStmBenchmarks,
-  twitterFinagleBenchmarks
+  twitterFinagleBenchmarks,
+  kotlinKtorBenchmarks
 )
 
 /**
@@ -974,6 +1003,7 @@ def mapJarContentsToAssemblyTask(classpath: Classpath) =
  * compiled wrappers are used by the [[renaissanceJmh]] project below.
  */
 lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "renaissance-jmh-wrappers",
     commonSettingsNoScala,
@@ -993,6 +1023,7 @@ lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
  * its dependencies), along with the benchmark dependencies as JAR files.
  */
 lazy val renaissanceJmh = (project in file("renaissance-jmh"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "renaissance-jmh",
     commonSettingsNoScala,
