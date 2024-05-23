@@ -52,6 +52,13 @@ import kotlin.math.min
   defaultValue = "32",
   summary = "Random seed to use for client tasks setup."
 )
+@Configuration(
+  name = "test",
+  settings = [
+    "iterations_count = 100",
+  ]
+)
+@Configuration(name = "jmh")
 class KtorRenaissanceBenchmark() : Benchmark {
   private var port: Int = 0
   private var clientCount: Int = 0
