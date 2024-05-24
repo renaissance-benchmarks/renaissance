@@ -450,13 +450,14 @@ lazy val scalaStdlibBenchmarks = (project in file("benchmarks/scala-stdlib"))
 lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
   .settings(
     name := "scala-stm",
-    commonSettingsScala212
+    commonSettingsScala212,
+    libraryDependencies := Seq(
+      "org.scala-stm" %% "scala-stm" % "0.8"
+    )
   )
   .dependsOn(
     renaissanceCore % "provided",
-    RootProject(
-      uri("benchmarks/scala-stm/scala-stm-library")
-    ) % "compile->compile;compile->test"
+    RootProject(uri("benchmarks/scala-stm/stmbench7"))
   )
 
 val finagleVersion = "22.12.0"
