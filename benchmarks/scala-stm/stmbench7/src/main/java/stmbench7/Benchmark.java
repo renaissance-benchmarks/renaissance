@@ -13,6 +13,7 @@ import stmbench7.correctness.invariants.CheckInvariantsOperation;
 import stmbench7.correctness.opacity.SequentialReplayThread;
 import stmbench7.correctness.opacity.StructureComparisonOperation;
 import stmbench7.impl.NoSynchronizationInitializer;
+import stmbench7.ThreadRandom.Phase;
 
 /**
  * STMBench7 benchmark, the main program. 
@@ -44,6 +45,7 @@ public class Benchmark {
 	
     public static void main(String[] args) throws InterruptedException {
     	Benchmark benchmark = null;
+      ThreadRandom.phase = Phase.INIT;
 
     	try {
     		benchmark = new Benchmark(args);
@@ -69,7 +71,8 @@ public class Benchmark {
     private Thread[] threads;
     private Setup setup, setupClone;
     private double elapsedTime;
-    
+    private int countOfOperations;
+
     private Benchmark(String[] args) throws BenchmarkParametersException, InterruptedException {
     	printHeader();
     	
@@ -100,10 +103,10 @@ public class Benchmark {
 	private void parseCommandLineParameters(String[] args) throws BenchmarkParametersException {
     	int argNumber = 0;
    		String workload = null, synchType = null, stmInitializerClassName = null;
-   	 
+
    		while(argNumber < args.length) {
     		String currentArg = args[argNumber++];
-    		
+
     		try {
     			if(currentArg.equals("--help") || currentArg.equals("-h")) {
     				printSyntax();
@@ -127,6 +130,7 @@ public class Benchmark {
     				else if(currentArg.equals("-w")) workload = optionValue;
     				else if(currentArg.equals("-g")) synchType = optionValue;
     				else if(currentArg.equals("-s")) stmInitializerClassName = optionValue;
+					else if(currentArg.equals("-c")) countOfOperations = Integer.parseInt(optionValue);
     				else throw new BenchmarkParametersException("Invalid option: " + currentArg);
     			}
     		}
@@ -259,6 +263,7 @@ public class Benchmark {
     	operationsRatio /= sumRatios;
     	structuralModificationsRatio /= sumRatios;
     	
+		for (OperationType type : OperationType.values()) type.count = 0;
     	OperationId[] operations = OperationId.values();
     	for(OperationId operation : operations) operation.getType().count++;
     	
@@ -296,6 +301,7 @@ public class Benchmark {
     		prevProbValue = operationCDF[opNum];
     	}
     	operationCDF[operations.length - 1] = 1.0; // to avoid rounding errors
+		// System.out.println(Arrays.stream(operationCDF).boxed().collect(java.util.stream.Collectors.toList()));
     }
     
     private void setupStructures() throws InterruptedException {
@@ -306,7 +312,7 @@ public class Benchmark {
     	threads = new Thread[Parameters.numThreads];
     	for(short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
     		benchThreads[threadNum] = 
-    			new BenchThread(setup, operationCDF, threadNum);
+    			new BenchThread(setup, operationCDF, threadNum, countOfOperations);
     		threads[threadNum] = ThreadFactory.instance.createThread(benchThreads[threadNum]);
     	}
     	System.err.println("Setup completed.");
@@ -346,9 +352,10 @@ public class Benchmark {
 
     	for(Thread thread : threads) thread.start();
 
-   		Thread.sleep(Parameters.numSeconds * 1000);
+			// Renaissance: we require the threads to execute the specified number of operations.
+   		// Thread.sleep(Parameters.numSeconds * 1000);
+   		// for(BenchThread thread : benchThreads) thread.stopThread();
 
-   		for(BenchThread thread : benchThreads) thread.stopThread();
    		for(Thread thread : threads) thread.join();
 
     	long endTime = System.currentTimeMillis();
@@ -509,6 +516,7 @@ public class Benchmark {
     		"Options:\n" +
     		"\t-t numThreads -- set the number of threads (default: 1)\n" +
     		"\t-l length     -- set the length of the benchmark, in seconds (default: 10)\n" +
+    		"\t-c count      -- set the length of the benchmark, in operations\n" +
     		"\t-w r|rw|w     -- set the workload: r = read-dominated, w = write-dominated\n" +
     		"\t                                   rw = read-write (default: read-dominated)\n" +
     		"\t-g coarse|medium|fine|none|stm -- set synchronization method (default: coarse)\n" +

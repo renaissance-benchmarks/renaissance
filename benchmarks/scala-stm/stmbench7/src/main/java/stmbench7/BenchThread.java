@@ -20,6 +20,7 @@ public class BenchThread implements Runnable {
 	protected double[] operationCDF;
 	protected OperationExecutor[] operations;
 	protected final short myThreadNum;
+	protected final int countOfOperations;
 
 	public int[] successfulOperations, failedOperations;
 	public int[][] operationsTTC, operationsHighTTCLog;
@@ -46,7 +47,7 @@ public class BenchThread implements Runnable {
 
 	public ArrayList<ReplayLogEntry> replayLog;
 
-	public BenchThread(Setup setup, double[] operationCDF, short myThreadNum) {
+	public BenchThread(Setup setup, double[] operationCDF, short myThreadNum, int countOfOperations) {
 		this.operationCDF = operationCDF;
 
 		int numOfOperations = OperationId.values().length;
@@ -56,6 +57,7 @@ public class BenchThread implements Runnable {
 		failedOperations = new int[numOfOperations];
 		operations = new OperationExecutor[numOfOperations];
 		this.myThreadNum = myThreadNum;
+		this.countOfOperations = countOfOperations;
 
 		createOperations(setup);
 
@@ -68,15 +70,17 @@ public class BenchThread implements Runnable {
 		operations = new OperationExecutor[OperationId.values().length];
 		createOperations(setup);
 		myThreadNum = 0;
+		throw new RuntimeException("This ctor is no longer allowed.");
 	}
 
 	public void run() {
-		int i = 0;
-		while (!stop) {
+		int opIndex = 0;
+		while (!stop && opIndex < countOfOperations) {
+			opIndex++;
 			//if (i++ > 55) continue;
-			int operationNumber = getNextOperationNumber();
+			int operationNumber = getNextOperationNumber(opIndex);
 
-			OperationType type = OperationId.values()[operationNumber].getType();
+			// OperationType type = OperationId.values()[operationNumber].getType();
 			//if( (type != OperationType.SHORT_TRAVERSAL) ) continue;
 			//		(type != OperationType.SHORT_TRAVERSAL_RO) &&
 			//		(type != OperationType.OPERATION) )
@@ -110,7 +114,6 @@ public class BenchThread implements Runnable {
 					operationsHighTTCLog[operationNumber][intLogHighTtc]++;
 				}
 			} catch (OperationFailedException e) {
-				//System.out.println("failed");
 				failedOperations[operationNumber]++;
 				failed = true;
 			}
@@ -156,8 +159,9 @@ public class BenchThread implements Runnable {
 		}
 	}
 
-	protected int getNextOperationNumber() {
-		double whichOperation = ThreadRandom.nextDouble();
+	protected int getNextOperationNumber(int iteration) {
+		// double whichOperation = ThreadRandom.nextDouble();
+		double whichOperation = (iteration % 20) / 20.0;
 		int operationNumber = 0;
 		while (whichOperation >= operationCDF[operationNumber])
 			operationNumber++;

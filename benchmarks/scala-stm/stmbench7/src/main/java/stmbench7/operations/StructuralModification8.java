@@ -23,13 +23,13 @@ public class StructuralModification8 extends StructuralModification7 {
 	public int performOperation() throws OperationFailedException {
 		int complexAssemblyId = ThreadRandom.nextInt(Parameters.MaxComplexAssemblies) + 1;
 		ComplexAssembly complexAssembly = complexAssemblyIdIndex.get(complexAssemblyId);
-		if(complexAssembly == null) throw new OperationFailedException();
+		if(complexAssembly == null) throw new OperationFailedException("Complex assembly: " + complexAssembly);
 
 		// We want the tree of BAs/CAs to keep its form 
 		// so that each CA has always at least one child sub-assembly
 		ComplexAssembly superAssembly = complexAssembly.getSuperAssembly();
 		if(superAssembly == null || superAssembly.getSubAssemblies().size() == 1)
-			throw new OperationFailedException();
+			throw new OperationFailedException("Super assembly: " + superAssembly);
 		
 		assemblyBuilder.unregisterAndRecycleComplexAssembly(complexAssembly);
 		

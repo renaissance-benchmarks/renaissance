@@ -32,7 +32,8 @@ public class SetupDataStructure implements Operation {
     	CompositePartBuilder compositePartBuilder = setup.getCompositePartBuilder();
     	
     	for(int i = 0; i < Parameters.InitialTotalCompParts; i++) {
-    	    System.err.print("Component " + (i+1) + " of " + Parameters.InitialTotalCompParts + "\r");
+			// Renaissance: Removed, because of too much output.
+    	    // System.err.print("Component " + (i+1) + " of " + Parameters.InitialTotalCompParts + "\r");
     	    try {
     	    	designLibrary[i] = compositePartBuilder.createAndRegisterCompositePart();
     	    }
@@ -52,7 +53,8 @@ public class SetupDataStructure implements Operation {
     	
     	int i = 1;
     	for(BaseAssembly baseAssembly : setup.getBaseAssemblyIdIndex()) {
-    		System.err.print("Base Assembly " + (i++) + " of " + Parameters.InitialTotalBaseAssemblies + "\r");
+			// Renaissance: Removed, because of too much output.
+    		// System.err.print("Base Assembly " + (i++) + " of " + Parameters.InitialTotalBaseAssemblies + "\r");
     		
     		for(int connections = 0; connections < Parameters.NumCompPerAssm; connections++) {
     			int compositePartNum = ThreadRandom.nextInt(designLibrary.length);

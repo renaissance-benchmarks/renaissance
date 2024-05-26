@@ -16,7 +16,7 @@ import stmbench7.core.RuntimeError;
 @Immutable
 public class ThreadRandom {
 
-	private static enum Phase {
+	public static enum Phase {
 		INIT,
 		CONCURRENT,
 		SEQUENTIAL_REPLAY
@@ -57,7 +57,7 @@ public class ThreadRandom {
 		}
 	}
 	
-	private static Phase phase = Phase.INIT;
+	public static Phase phase = Phase.INIT;
 	private static RandomState initRandom = new RandomState();
 	private static short currentVirtualThreadNumber;
 	private static RandomState[] virtualRandom;
@@ -87,8 +87,10 @@ public class ThreadRandom {
 	}
 
 	public static void reset() {
-		if(phase != Phase.INIT) 
+		if(phase != Phase.INIT) {
+			System.out.println("Warning, cannot reset!");
 			throw new RuntimeError("Cannot reset ThreadRandom after the initialization phase");
+		}
 		initRandom = new RandomState();
 	}
 	

@@ -27,19 +27,19 @@ public class SequentialReplayThread extends BenchThread {
 	}
 	
 	public void run() {
-		int i = 0;
+		// int i = 0;
 		//for(ReplayLogEntry entry : replayLog)
 		//	System.out.println(i++ + " @ " + OperationId.values()[entry.opNum] + " -- " + entry.timestamp);
-		i=0;
-		int opNum = 1, numOfOps = replayLog.size();
+		int opIndex = 1, opCount = replayLog.size();
 		for(ReplayLogEntry entry : replayLog) {
-			System.err.print("Operation " + (opNum++) + " out of " + numOfOps + "\r");
+			System.err.print("Operation " + opIndex + " out of " + opCount + "\r");
 			short threadNum = entry.threadNum;
 			ThreadRandom.setVirtualThreadNumber(threadNum);
 			
 			//System.out.println(++i);
-			int operationNumber = getNextOperationNumber();
-			
+			int operationNumber = getNextOperationNumber(opIndex);
+			opIndex++;
+
 			//System.out.println(entry.threadNum + " -- " + OperationId.values()[entry.opNum] +
 			//	" / " + OperationId.values()[operationNumber]);
 			if(operationNumber != entry.opNum)
