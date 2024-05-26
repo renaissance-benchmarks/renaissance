@@ -2,22 +2,29 @@
 
 package stmbench7.scalastm
 
-import scala.concurrent.stm._
-import stmbench7.core._
+import scala.concurrent.stm.Ref
+
 import stmbench7.backend.BackendFactory
+import stmbench7.backend.LargeSet
+import stmbench7.core.AtomicPart
+import stmbench7.core.BaseAssembly
+import stmbench7.core.CompositePart
+import stmbench7.core.Document
 
 class CompositePartImpl(id: Int, typ: String, buildDate: Int, documentation0: Document)
   extends DesignObjImpl(id, typ, buildDate)
   with CompositePart {
-  val documentation = Ref(documentation0).single
-  val usedIn = Ref(List.empty[BaseAssembly]).single
-  val parts = Ref(BackendFactory.instance.createLargeSet[AtomicPart]).single
-  val rootPart = Ref(null: AtomicPart).single
+
+  private val documentation = Ref(documentation0).single
+  private val usedIn = Ref(List.empty[BaseAssembly]).single
+  private val parts = Ref(BackendFactory.instance.createLargeSet[AtomicPart]).single
+  private val rootPart = Ref(null: AtomicPart).single
+
   documentation0.setPart(this)
 
-  def addAssembly(assembly: BaseAssembly) { usedIn.transform(assembly :: _) }
+  override def addAssembly(assembly: BaseAssembly): Unit = { usedIn.transform(assembly :: _) }
 
-  def addPart(part: AtomicPart) = {
+  override def addPart(part: AtomicPart): Boolean = {
     val f = parts().add(part)
     if (f) {
       part.setCompositePart(this)
@@ -26,20 +33,20 @@ class CompositePartImpl(id: Int, typ: String, buildDate: Int, documentation0: Do
     f
   }
 
-  def getRootPart = rootPart()
-  def setRootPart(part: AtomicPart) { rootPart() = part }
+  override def getRootPart: AtomicPart = rootPart()
+  override def setRootPart(part: AtomicPart): Unit = { rootPart() = part }
 
-  def getDocumentation = documentation()
+  override def getDocumentation: Document = documentation()
 
-  def getParts = parts()
+  override def getParts: LargeSet[AtomicPart] = parts()
 
-  def removeAssembly(assembly: BaseAssembly) {
+  override def removeAssembly(assembly: BaseAssembly): Unit = {
     usedIn.transform { _.filterNot(_ == assembly) }
   }
 
-  def getUsedIn = new ImmutableSeqImpl[BaseAssembly](usedIn())
+  override def getUsedIn = new ImmutableSeqImpl[BaseAssembly](usedIn())
 
-  def clearPointers() {
+  override def clearPointers(): Unit = {
     documentation() = null
     parts() = null
     usedIn() = null

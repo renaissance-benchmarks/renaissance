@@ -2,8 +2,12 @@
 
 package stmbench7.scalastm
 
-import scala.concurrent.stm._
-import stmbench7.core._
+import scala.concurrent.stm.Ref
+
+import stmbench7.core.BaseAssembly
+import stmbench7.core.ComplexAssembly
+import stmbench7.core.CompositePart
+import stmbench7.core.Module
 
 class BaseAssemblyImpl(
   id: Int,
@@ -14,15 +18,15 @@ class BaseAssemblyImpl(
 ) extends AssemblyImpl(id, typ, buildDate, module, superAssembly)
   with BaseAssembly {
 
-  val components =
+  private val components =
     Ref(List.empty[CompositePart]).single // the original BagImpl was just an ArrayList
 
-  def addComponent(component: CompositePart) {
+  override def addComponent(component: CompositePart): Unit = {
     components.transform(component :: _)
     component.addAssembly(this)
   }
 
-  def removeComponent(component: CompositePart) = {
+  override def removeComponent(component: CompositePart): Boolean = {
     val f = components transformIfDefined {
       case x if x contains component => x filterNot { _ == component }
     }
@@ -30,9 +34,9 @@ class BaseAssemblyImpl(
     f
   }
 
-  def getComponents = new ImmutableSeqImpl[CompositePart](components())
+  override def getComponents = new ImmutableSeqImpl[CompositePart](components())
 
-  override def clearPointers() {
+  override def clearPointers(): Unit = {
     super.clearPointers()
     components() = null
   }

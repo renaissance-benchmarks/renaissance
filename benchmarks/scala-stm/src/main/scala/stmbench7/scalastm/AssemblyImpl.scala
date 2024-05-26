@@ -2,8 +2,11 @@
 
 package stmbench7.scalastm
 
-import scala.concurrent.stm._
-import stmbench7.core._
+import scala.concurrent.stm.Ref
+
+import stmbench7.core.Assembly
+import stmbench7.core.ComplexAssembly
+import stmbench7.core.Module
 
 abstract class AssemblyImpl(
   id: Int,
@@ -17,10 +20,10 @@ abstract class AssemblyImpl(
   private val module = Ref(module0).single
   private val superAssembly = Ref(superAssembly0).single
 
-  def getSuperAssembly = superAssembly()
-  def getModule = module()
+  override def getSuperAssembly: ComplexAssembly = superAssembly()
+  override def getModule: Module = module()
 
-  def clearPointers() {
+  override def clearPointers(): Unit = {
     superAssembly() = null
     module() = null
   }

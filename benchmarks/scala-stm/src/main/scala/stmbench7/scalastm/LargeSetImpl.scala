@@ -3,17 +3,19 @@
 package stmbench7.scalastm
 
 import scala.collection.JavaConversions
-import scala.concurrent.stm._
+
+import scala.concurrent.stm.TMap
+
 import stmbench7.backend.LargeSet
 
-// LargeSetImpl
-
 class LargeSetImpl[A <: Comparable[A]] extends LargeSet[A] {
-  val underlying = TMap.empty[A, Unit].single
+  private val underlying = TMap.empty[A, Unit].single
 
-  def add(e: A) = underlying.put(e, ()).isEmpty
-  def remove(e: A) = !underlying.remove(e).isEmpty
-  def contains(e: A) = underlying.contains(e)
-  def size = underlying.size
-  def iterator = JavaConversions.asJavaIterator(underlying.keysIterator)
+  override def add(e: A): Boolean = underlying.put(e, ()).isEmpty
+  override def remove(e: A): Boolean = underlying.remove(e).isDefined
+  override def contains(e: A): Boolean = underlying.contains(e)
+  override def size: Int = underlying.size
+
+  override def iterator: java.util.Iterator[A] =
+    JavaConversions.asJavaIterator(underlying.keysIterator)
 }

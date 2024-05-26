@@ -2,22 +2,37 @@
 
 package stmbench7.scalastm
 
-import scala.concurrent.stm._
-import stmbench7.backend._
-import stmbench7.core._
+import scala.concurrent.stm.atomic
+import scala.concurrent.stm.Ref
+
+import stmbench7.OperationExecutor
+import stmbench7.OperationExecutorFactory
+import stmbench7.Parameters
+import stmbench7.SynchMethodInitializer
+import stmbench7.ThreadFactory
+import stmbench7.backend.BackendFactory
+import stmbench7.backend.IdPool
+import stmbench7.backend.Index
+import stmbench7.backend.LargeSet
+import stmbench7.core.AtomicPart
+import stmbench7.core.ComplexAssembly
+import stmbench7.core.DesignObjFactory
+import stmbench7.core.Document
+import stmbench7.core.Manual
+import stmbench7.core.Module
+import stmbench7.core.Operation
 import stmbench7.impl.core.ConnectionImpl
-import stmbench7._
 
 class ScalaSTMInitializer extends SynchMethodInitializer {
 
-  def createOperationExecutorFactory() =
+  def createOperationExecutorFactory(): OperationExecutorFactory =
     new OperationExecutorFactory {
 
-      val timestamp = Ref(0)
+      private val timestamp = Ref(0)
 
-      def createOperationExecutor(op: Operation) =
+      def createOperationExecutor(op: Operation): OperationExecutor =
         new OperationExecutor {
-          var lastTS = 0
+          private var lastTS = 0
 
           def execute(): Int = {
             atomic { implicit t =>
@@ -30,11 +45,11 @@ class ScalaSTMInitializer extends SynchMethodInitializer {
             }
           }
 
-          def getLastOperationTimestamp = lastTS
+          def getLastOperationTimestamp: Int = lastTS
         }
     }
 
-  def createBackendFactory() =
+  def createBackendFactory(): BackendFactory =
     new BackendFactory {
 
       // a couple hundred, not ordered, except for huge numbers of discarded
@@ -47,7 +62,7 @@ class ScalaSTMInitializer extends SynchMethodInitializer {
       def createIdPool(maxNumberOfIds: Int): IdPool = new IdPoolImpl.BoxedList(maxNumberOfIds)
     }
 
-  def createDesignObjFactory() =
+  def createDesignObjFactory(): DesignObjFactory =
     new DesignObjFactory {
 
       def createAtomicPart(id: Int, typ: String, bd: Int, x: Int, y: Int) =
@@ -87,8 +102,6 @@ class ScalaSTMInitializer extends SynchMethodInitializer {
         new ModuleImpl(id, typ, buildDate, man)
     }
 
-  def createThreadFactory() =
-    new stmbench7.ThreadFactory {
-      def createThread(body: Runnable) = new Thread(body)
-    }
+  def createThreadFactory(): ThreadFactory =
+    (body: Runnable) => new Thread(body)
 }

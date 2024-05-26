@@ -2,9 +2,14 @@
 
 package stmbench7.scalastm
 
-import scala.concurrent.stm._
-import stmbench7.core._
+import scala.concurrent.stm.TSet
+
 import stmbench7.Parameters
+import stmbench7.core.Assembly
+import stmbench7.core.BaseAssembly
+import stmbench7.core.ComplexAssembly
+import stmbench7.core.Module
+import stmbench7.core.RuntimeError
 
 class ComplexAssemblyImpl(
   id: Int,
@@ -15,25 +20,25 @@ class ComplexAssemblyImpl(
 ) extends AssemblyImpl(id, typ, buildDate, module, superAssembly)
   with ComplexAssembly {
 
-  val subAssemblies = TSet.empty[Assembly].single
+  private val subAssemblies = TSet.empty[Assembly].single
 
-  val level =
+  private val level =
     if (superAssembly == null) Parameters.NumAssmLevels else superAssembly.getLevel - 1
 
-  def addSubAssembly(assembly: Assembly) = {
+  override def addSubAssembly(assembly: Assembly): Boolean = {
     if (assembly.isInstanceOf[BaseAssembly] && level != 2)
       throw new RuntimeError("ComplexAssembly.addAssembly: BaseAssembly at wrong level!");
 
     subAssemblies.add(assembly)
   }
 
-  def removeSubAssembly(assembly: Assembly) = subAssemblies.remove(assembly)
+  override def removeSubAssembly(assembly: Assembly): Boolean = subAssemblies.remove(assembly)
 
-  def getSubAssemblies = new ImmutableSetImpl[Assembly](subAssemblies)
+  override def getSubAssemblies = new ImmutableSetImpl[Assembly](subAssemblies)
 
-  def getLevel = level.asInstanceOf[Short]
+  override def getLevel: Short = level.asInstanceOf[Short]
 
-  override def clearPointers() {
+  override def clearPointers(): Unit = {
     super.clearPointers()
     subAssemblies.clear()
   }
