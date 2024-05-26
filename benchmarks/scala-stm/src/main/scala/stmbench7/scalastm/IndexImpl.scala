@@ -2,8 +2,9 @@
 
 package stmbench7.scalastm
 
-import scala.collection.JavaConversions
 import scala.collection.immutable.TreeMap
+import scala.jdk.CollectionConverters.SetHasAsJava
+import scala.jdk.CollectionConverters.IteratorHasAsJava
 
 import scala.concurrent.stm.Ref
 
@@ -34,8 +35,7 @@ object IndexImpl {
 
     override def iterator: java.util.Iterator[V] = makeValuesIterator(underlying())
 
-    override def getKeys: java.lang.Iterable[K] =
-      JavaConversions.setAsJavaSet(underlying().keySet)
+    override def getKeys: java.lang.Iterable[K] = underlying().keySet.asJava
 
     override def getRange(minKey: K, maxKey: K): java.lang.Iterable[V] =
       new java.lang.Iterable[V] {
@@ -44,7 +44,7 @@ object IndexImpl {
       }
 
     private def makeValuesIterator(m: TreeMap[K, V]) = {
-      JavaConversions.asJavaIterator(m.values.iterator)
+      m.values.iterator.asJava
     }
   }
 }
