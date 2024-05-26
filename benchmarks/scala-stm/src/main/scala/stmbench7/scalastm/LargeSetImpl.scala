@@ -2,7 +2,7 @@
 
 package stmbench7.scalastm
 
-import scala.collection.JavaConversions
+import scala.jdk.CollectionConverters.IteratorHasAsJava
 
 import scala.concurrent.stm.TMap
 
@@ -15,7 +15,5 @@ class LargeSetImpl[A <: Comparable[A]] extends LargeSet[A] {
   override def remove(e: A): Boolean = underlying.remove(e).isDefined
   override def contains(e: A): Boolean = underlying.contains(e)
   override def size: Int = underlying.size
-
-  override def iterator: java.util.Iterator[A] =
-    JavaConversions.asJavaIterator(underlying.keysIterator)
+  override def iterator: java.util.Iterator[A] = underlying.keysIterator.asJava
 }
