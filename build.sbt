@@ -452,7 +452,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
     name := "scala-stm",
     commonSettingsScala212,
     libraryDependencies := Seq(
-      "org.scala-stm" %% "scala-stm" % "0.8"
+      "org.scala-stm" %% "scala-stm" % "0.11.1"
     )
   )
   .dependsOn(
