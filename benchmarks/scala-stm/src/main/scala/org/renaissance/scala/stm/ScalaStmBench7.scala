@@ -8,8 +8,8 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 @Name("scala-stm-bench7")
-@Group("scala")
 @Group("scala-stm")
+@Group("scala") // With Scala 3, the primary group goes last.
 @Summary("Runs the stmbench7 benchmark using ScalaSTM.")
 @Licenses(Array(License.BSD3, License.GPL2))
 @Repetitions(60)
