@@ -5,10 +5,17 @@ package stmbench7.scalastm
 import scala.concurrent.stm._
 import stmbench7.core._
 
-class BaseAssemblyImpl(id: Int, typ: String, buildDate: Int, module: Module, superAssembly: ComplexAssembly
-        ) extends AssemblyImpl(id, typ, buildDate, module, superAssembly) with BaseAssembly {
+class BaseAssemblyImpl(
+  id: Int,
+  typ: String,
+  buildDate: Int,
+  module: Module,
+  superAssembly: ComplexAssembly
+) extends AssemblyImpl(id, typ, buildDate, module, superAssembly)
+  with BaseAssembly {
 
-  val components = Ref(List.empty[CompositePart]).single // the original BagImpl was just an ArrayList
+  val components =
+    Ref(List.empty[CompositePart]).single // the original BagImpl was just an ArrayList
 
   def addComponent(component: CompositePart) {
     components.transform(component :: _)
@@ -28,5 +35,5 @@ class BaseAssemblyImpl(id: Int, typ: String, buildDate: Int, module: Module, sup
   override def clearPointers() {
     super.clearPointers()
     components() = null
-   }
+  }
 }

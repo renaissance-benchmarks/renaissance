@@ -9,7 +9,7 @@ import stmbench7.backend.LargeSet
 // LargeSetImpl
 
 class LargeSetImpl[A <: Comparable[A]] extends LargeSet[A] {
-  val underlying = TMap.empty[A,Unit].single
+  val underlying = TMap.empty[A, Unit].single
 
   def add(e: A) = underlying.put(e, ()).isEmpty
   def remove(e: A) = !underlying.remove(e).isEmpty

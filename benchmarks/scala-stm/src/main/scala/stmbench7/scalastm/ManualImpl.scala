@@ -10,7 +10,7 @@ import stmbench7.core._
 class ManualImpl(id: Int, title0: String, text0: String) extends Manual {
   val title = Ref(title0).single
   val text = Ref(text0).single
-  val module = Ref(null : Module).single
+  val module = Ref(null: Module).single
 
   def getId = id
   def getTitle = title()
@@ -21,6 +21,7 @@ class ManualImpl(id: Int, title0: String, text0: String) extends Manual {
 
   def countOccurences(ch: Char): Int = countOccurrences(ch)
   def countOccurrences(ch: Char): Int = countOccurrences(text(), ch, 0, 0)
+
   @tailrec private def countOccurrences(s: String, c: Char, pos: Int, n: Int): Int = {
     val i = s.indexOf(c, pos)
     if (i < 0) n else countOccurrences(s, c, i + 1, n + 1)

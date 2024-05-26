@@ -6,12 +6,13 @@ import scala.concurrent.stm._
 import stmbench7.core._
 import stmbench7.backend.BackendFactory
 
-class CompositePartImpl(id: Int, typ: String, buildDate: Int, documentation0: Document
-        ) extends DesignObjImpl(id, typ, buildDate) with CompositePart {
+class CompositePartImpl(id: Int, typ: String, buildDate: Int, documentation0: Document)
+  extends DesignObjImpl(id, typ, buildDate)
+  with CompositePart {
   val documentation = Ref(documentation0).single
   val usedIn = Ref(List.empty[BaseAssembly]).single
   val parts = Ref(BackendFactory.instance.createLargeSet[AtomicPart]).single
-  val rootPart = Ref(null : AtomicPart).single
+  val rootPart = Ref(null: AtomicPart).single
   documentation0.setPart(this)
 
   def addAssembly(assembly: BaseAssembly) { usedIn.transform(assembly :: _) }
@@ -20,19 +21,19 @@ class CompositePartImpl(id: Int, typ: String, buildDate: Int, documentation0: Do
     val f = parts().add(part)
     if (f) {
       part.setCompositePart(this)
-      if(rootPart() == null) rootPart() = part
+      if (rootPart() == null) rootPart() = part
     }
     f
   }
 
   def getRootPart = rootPart()
-	def setRootPart(part: AtomicPart) { rootPart() = part }
+  def setRootPart(part: AtomicPart) { rootPart() = part }
 
   def getDocumentation = documentation()
 
   def getParts = parts()
 
-  def removeAssembly(assembly: BaseAssembly ) {
+  def removeAssembly(assembly: BaseAssembly) {
     usedIn.transform { _.filterNot(_ == assembly) }
   }
 

@@ -8,7 +8,7 @@ import stmbench7.core._
 
 class DocumentImpl(id: Int, title: String, text0: String) extends Document {
   val text = Ref(text0).single
-  val part = Ref(null : CompositePart).single
+  val part = Ref(null: CompositePart).single
 
   def getDocumentId = id
   def getTitle = title
@@ -20,10 +20,12 @@ class DocumentImpl(id: Int, title: String, text0: String) extends Document {
 
   def getText = text()
   def searchText(symbol: Char): Int = searchText(text(), symbol, 0, 0)
+
   @tailrec private def searchText(s: String, c: Char, pos: Int, n: Int): Int = {
     val i = s.indexOf(c, pos)
     if (i < 0) n else searchText(s, c, i + 1, n + 1)
   }
+
   def replaceText(from: String, to: String) = {
     val f = text transformIfDefined {
       case s if s.startsWith(from) => s.replaceFirst(from, to)

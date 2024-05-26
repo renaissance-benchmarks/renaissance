@@ -6,10 +6,12 @@ import scala.concurrent.stm._
 import stmbench7.core._
 import stmbench7.impl.core.ConnectionImpl
 
-class AtomicPartImpl(id0: Int, typ0: String, bd0: Int, x0: Int, y0: Int) extends DesignObjImpl(id0, typ0, bd0) with AtomicPart {
+class AtomicPartImpl(id0: Int, typ0: String, bd0: Int, x0: Int, y0: Int)
+  extends DesignObjImpl(id0, typ0, bd0)
+  with AtomicPart {
   val x = Ref(x0)
   val y = Ref(y0)
-  val partOf = Ref(null : CompositePart).single
+  val partOf = Ref(null: CompositePart).single
   val from = TSet.empty[Connection].single // this is the equivant of SmallSetImpl
   val to = TSet.empty[Connection].single
 
@@ -24,6 +26,7 @@ class AtomicPartImpl(id0: Int, typ0: String, bd0: Int, x0: Int, y0: Int) extends
   def getToConnections = new ImmutableSetImpl[Connection](to)
   def getFromConnections = new ImmutableSetImpl[Connection](from)
   def getPartOf = partOf()
+
   def swapXY() {
     atomic { implicit t =>
       y() = x.swap(y())
@@ -31,6 +34,7 @@ class AtomicPartImpl(id0: Int, typ0: String, bd0: Int, x0: Int, y0: Int) extends
   }
   def getX = x.single()
   def getY = y.single()
+
   def clearPointers() {
     atomic { implicit t =>
       x() = 0
@@ -42,5 +46,6 @@ class AtomicPartImpl(id0: Int, typ0: String, bd0: Int, x0: Int, y0: Int) extends
   }
 
   // Comparable[AtomicPart]
-  def compareTo(rhs: AtomicPart) = getId - rhs.getId // subtraction is faithful to reference impl
+  def compareTo(rhs: AtomicPart) =
+    getId - rhs.getId // subtraction is faithful to reference impl
 }
