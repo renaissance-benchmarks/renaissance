@@ -1,6 +1,7 @@
 package org.renaissance.scala.stm
 
-import scala.annotation.tailrec
+import java.util.concurrent.LinkedBlockingDeque
+
 import scala.collection.mutable
 import scala.concurrent.stm.atomic
 import scala.concurrent.stm.retry
@@ -12,6 +13,48 @@ import scala.concurrent.stm.Ref
  */
 object RealityShowPhilosophers {
 
+  /**
+   * Issues quasi-periodic requests to snapshot the state of the system.
+   * Instead of regular wall-clock intervals, the requests are triggered
+   * when certain progress has been made (measured with coarse granularity).
+   *
+   * The requests are queued to prevent potential loss of wake-ups due to
+   * increasing rate of progress (with decreasing contention). This also
+   * ensures a constant number of "camera scans" in the workload.
+   */
+  private class CameraController(blockDivider: Int) {
+    private val blockMask = (1 << 12) - 1
+    private val blockCount = Ref(0)
+    private val requests = new LinkedBlockingDeque[Option[Thread]]
+
+    def reportProgress(mealsEaten: Int): Unit = {
+      if ((mealsEaten & blockMask) != 0) {
+        return
+      }
+
+      // Determine whether to issue a request.
+      val issueRequest = atomic { implicit txn =>
+        val newBlockCount = blockCount.transformAndGet(_ + 1)
+        (newBlockCount % blockDivider) == 0
+      }
+
+      // Issue the request if necessary.
+      if (issueRequest) {
+        requests.put(Some(Thread.currentThread()))
+      }
+    }
+
+    def shutdown(): Unit = {
+      // Issue an empty request to signal shutdown.
+      requests.put(None)
+    }
+
+    def awaitRequest(): Option[Thread] = {
+      // Dequeue a request from the queue.
+      requests.take()
+    }
+  }
+
   private class Fork(val name: String) {
     private[stm] val owner = Ref(None: Option[String])
   }
@@ -20,7 +63,8 @@ object RealityShowPhilosophers {
     val name: String,
     val meals: Int,
     left: Fork,
-    right: Fork
+    right: Fork,
+    controller: CameraController
   ) extends Thread {
     private[stm] val mealsEaten = Ref(0)
 
@@ -30,46 +74,45 @@ object RealityShowPhilosophers {
       for (_ <- 0 until meals) {
         // Thinking.
         atomic { implicit txn =>
-          if (!(left.owner().isEmpty && right.owner().isEmpty))
+          if (!(left.owner().isEmpty && right.owner().isEmpty)) {
             retry
+          }
 
           left.owner() = self
           right.owner() = self
         }
 
         // Eating.
-        atomic { implicit txn =>
-          mealsEaten += 1
-
+        val newMealsEaten = atomic { implicit txn =>
           left.owner() = None
           right.owner() = None
+          mealsEaten.transformAndGet(_ + 1)
         }
+
+        controller.reportProgress(newMealsEaten)
       }
     }
   }
 
   private class CameraThread(
-    intervalMilli: Int,
     forks: Seq[Fork],
-    philosophers: Seq[PhilosopherThread]
+    philosophers: Seq[PhilosopherThread],
+    controller: CameraController
   ) extends Thread {
     private[stm] val images = mutable.Buffer[String]()
 
-    @tailrec final override def run(): Unit = {
-      Thread.sleep(intervalMilli)
-
-      // Separate state snapshot from rendering.
-      val (forkOwners, mealsEaten) = stateSnapshot
-      images += renderImage(forkOwners, mealsEaten)
-
-      // Check completion to get exactly one image of final state.
-      if (!showIsOver(mealsEaten)) {
-        run()
-      } else {
-        // TODO Consistent way of handling stdout.
-        //  See https://github.com/D-iii-S/renaissance-benchmarks/issues/20
-        println(s"Camera thread performed ${images.length} scans.")
+    final override def run(): Unit = {
+      // Captures "image" of the show's state when requested.
+      // Finish execution upon receiving an empty request.
+      while (controller.awaitRequest().isDefined) {
+        // Separate state snapshot from rendering.
+        val (forkOwners, mealsEaten) = stateSnapshot
+        images += renderImage(forkOwners, mealsEaten)
       }
+
+      // TODO Consistent way of handling stdout.
+      //  See https://github.com/D-iii-S/renaissance-benchmarks/issues/20
+      println(s"Camera thread performed ${images.length} scans.")
     }
 
     def stateSnapshot: (Seq[Option[String]], Seq[Int]) =
@@ -94,28 +137,29 @@ object RealityShowPhilosophers {
 
       image.toString()
     }
-
-    private def showIsOver(mealsEaten: Seq[Int]): Boolean =
-      philosophers.zip(mealsEaten).forall { case (p, eaten) => p.meals == eaten }
-
   }
 
   def run(mealCount: Int, philosopherCount: Int): (Seq[Option[String]], Seq[Int]) = {
     val forks = Array.tabulate(philosopherCount) { i => new Fork(s"fork-$i") }
+    val controller = new CameraController(philosopherCount)
     val philosophers = Array.tabulate(philosopherCount) { i =>
       new PhilosopherThread(
         s"philosopher-$i",
         mealCount,
         forks(i),
-        forks((i + 1) % forks.length)
+        forks((i + 1) % forks.length),
+        controller
       )
     }
 
-    val camera = new CameraThread(1000 / 60, forks, philosophers)
+    val camera = new CameraThread(forks, philosophers, controller)
 
     camera.start()
     philosophers.foreach(_.start())
     philosophers.foreach(_.join())
+
+    // Signal shutdown to the camera after the philosophers finish.
+    controller.shutdown()
     camera.join()
 
     // Collect fork owners and meals eaten for validation.
