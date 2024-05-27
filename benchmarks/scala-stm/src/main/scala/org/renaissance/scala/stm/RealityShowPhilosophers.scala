@@ -25,14 +25,16 @@ object RealityShowPhilosophers {
     private[stm] val mealsEaten = Ref(0)
 
     override def run(): Unit = {
+      val self = Some(name)
+
       for (_ <- 0 until meals) {
         // Thinking.
         atomic { implicit txn =>
           if (!(left.owner().isEmpty && right.owner().isEmpty))
             retry
 
-          left.owner() = Some(name)
-          right.owner() = Some(name)
+          left.owner() = self
+          right.owner() = self
         }
 
         // Eating.
@@ -44,8 +46,6 @@ object RealityShowPhilosophers {
         }
       }
     }
-
-    def done: Boolean = mealsEaten.single() == meals
   }
 
   private class CameraThread(
@@ -57,9 +57,13 @@ object RealityShowPhilosophers {
 
     @tailrec final override def run(): Unit = {
       Thread.sleep(intervalMilli)
-      val (image, done) = captureImage
-      images += image
-      if (!done) {
+
+      // Separate state snapshot from rendering.
+      val (forkOwners, mealsEaten) = stateSnapshot
+      images += renderImage(forkOwners, mealsEaten)
+
+      // Check completion to get exactly one image of final state.
+      if (!showIsOver(mealsEaten)) {
         run()
       } else {
         // TODO Consistent way of handling stdout.
@@ -68,25 +72,32 @@ object RealityShowPhilosophers {
       }
     }
 
-    private def captureImage: (String, Boolean) =
-      //
-      // We want to capture exactly one image of the final state, so we
-      // check completion at the same time as building the image.
-      //
+    def stateSnapshot: (Seq[Option[String]], Seq[Int]) =
       atomic { implicit txn =>
-        val image = new StringBuilder
-        for (f <- forks)
-          image ++= "%s is owned by %s\n".format(f.name, f.owner.single())
-
-        var done = true
-        for (p <- philosophers) {
-          val progress = p.mealsEaten.single() * 100.0 / p.meals
-          image ++= "%s is %5.2f%% done\n".format(p.name, progress)
-          done &&= p.done
-        }
-
-        (image.toString, done)
+        val forkOwners = forks.map(_.owner.get)
+        val mealsEaten = philosophers.map(_.mealsEaten.get)
+        (forkOwners, mealsEaten)
       }
+
+    private def renderImage(forkOwners: Seq[Option[String]], mealsEaten: Seq[Int]): String = {
+      val image = new StringBuilder
+
+      forks.zip(forkOwners).foreach {
+        case (f, owner) =>
+          image ++= "%s is owned by %s\n".format(f.name, owner)
+      }
+
+      philosophers.zip(mealsEaten).foreach {
+        case (p, eaten) =>
+          image ++= "%s is %5.2f%% done\n".format(p.name, eaten * 100.0 / p.meals)
+      }
+
+      image.toString()
+    }
+
+    private def showIsOver(mealsEaten: Seq[Int]): Boolean =
+      philosophers.zip(mealsEaten).forall { case (p, eaten) => p.meals == eaten }
+
   }
 
   def run(mealCount: Int, philosopherCount: Int): (Seq[Option[String]], Seq[Int]) = {
@@ -108,8 +119,6 @@ object RealityShowPhilosophers {
     camera.join()
 
     // Collect fork owners and meals eaten for validation.
-    atomic { implicit txn =>
-      (forks.map(_.owner.get), philosophers.map(_.mealsEaten.get))
-    }
+    camera.stateSnapshot
   }
 }
