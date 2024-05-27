@@ -1,11 +1,10 @@
 package org.renaissance.scala.stm
 
-import scala.collection.JavaConverters._
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
-import org.renaissance.BenchmarkResult.Validators
+import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.License
 
 @Name("philosophers")
@@ -34,20 +33,28 @@ final class Philosophers extends Benchmark {
    */
   private var mealCountParam: Int = _
 
-  private var expectedHash: String = _
-
-  override def setUpBeforeAll(c: BenchmarkContext) = {
+  override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     threadCountParam = c.parameter("thread_count").toPositiveInteger
     mealCountParam = c.parameter("meal_count").toPositiveInteger
-    val expectedOutput = Array.fill(threadCountParam)(mealCountParam).toSeq.asJava;
-    expectedHash = Validators.computeHash(expectedOutput);
+  }
+
+  private def validate(forkOwners: Seq[Option[String]], mealsEaten: Seq[Int]): Unit = {
+    // All forks should be available, i.e., not owned by anyone.
+    for (i <- 0 until threadCountParam) {
+      Assert.assertEquals(None, forkOwners(i), s"owner of fork %i")
+    }
+
+    // All philosophers should have eaten the expected number of meals.
+    for (i <- 0 until threadCountParam) {
+      Assert.assertEquals(mealCountParam, mealsEaten(i), s"meals eaten by philosopher $i")
+    }
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val mealsEaten = RealityShowPhilosophers.run(mealCountParam, threadCountParam)
+    val (forkOwners, mealsEaten) = RealityShowPhilosophers.run(mealCountParam, threadCountParam)
 
     () => {
-      Validators.hashing(expectedHash, mealsEaten.toSeq.asJava).validate()
+      validate(forkOwners, mealsEaten)
     }
   }
 
