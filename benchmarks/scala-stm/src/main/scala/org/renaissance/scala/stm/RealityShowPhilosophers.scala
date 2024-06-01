@@ -160,9 +160,13 @@ object RealityShowPhilosophers {
     }
   }
 
-  def run(mealCount: Int, philosopherCount: Int): (Seq[Option[String]], Seq[Int]) = {
+  def run(
+    mealCount: Int,
+    philosopherCount: Int,
+    blockMealCount: Int
+  ): (Seq[Option[String]], Seq[Int], Int) = {
     val forks = Array.tabulate(philosopherCount) { i => new Fork(s"fork-$i") }
-    val controller = new CameraController(philosopherCount, 1 << 12)
+    val controller = new CameraController(philosopherCount, blockMealCount)
     val philosophers = Array.tabulate(philosopherCount) { i =>
       new PhilosopherThread(
         s"philosopher-$i",
@@ -184,6 +188,7 @@ object RealityShowPhilosophers {
     camera.join()
 
     // Collect fork owners and meals eaten for validation.
-    camera.stateSnapshot
+    val (forkOwners, mealsEaten) = camera.stateSnapshot
+    (forkOwners, mealsEaten, camera.images.length)
   }
 }
