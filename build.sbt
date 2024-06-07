@@ -450,9 +450,13 @@ lazy val scalaStdlibBenchmarks = (project in file("benchmarks/scala-stdlib"))
 lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
   .settings(
     name := "scala-stm",
-    commonSettingsScala212,
+    commonSettingsScala3,
     libraryDependencies := Seq(
       "org.scala-stm" %% "scala-stm" % "0.11.1"
+    ),
+    dependencyOverrides ++= Seq(
+      // Force common version of Scala 3 library.
+      "org.scala-lang" %% "scala3-library" % scalaVersion3
     )
   )
   .dependsOn(
