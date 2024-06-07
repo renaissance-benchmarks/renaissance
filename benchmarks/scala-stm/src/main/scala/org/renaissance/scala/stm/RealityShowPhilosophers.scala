@@ -1,7 +1,7 @@
 package org.renaissance.scala.stm
 
 import scala.annotation.tailrec
-import scala.collection._
+import scala.collection.mutable
 import scala.concurrent.stm._
 
 /**
@@ -85,7 +85,7 @@ object RealityShowPhilosophers {
       }
   }
 
-  def time(philosopherCount: Int, meals: Int): Long = {
+  def run(mealCount: Int, philosopherCount: Int): (Seq[Option[String]], Seq[Int]) = {
     val names = for (i <- 0 until philosopherCount) yield {
       s"philosopher-$i"
     }
@@ -93,19 +93,15 @@ object RealityShowPhilosophers {
       new Fork
     }
     val pthreads = Array.tabulate(names.size) { i =>
-      new PhilosopherThread(names(i), meals, forks(i), forks((i + 1) % forks.length))
+      new PhilosopherThread(names(i), mealCount, forks(i), forks((i + 1) % forks.length))
     }
     val camera = new CameraThread(1000 / 60, forks, pthreads)
-    val start = System.currentTimeMillis
     camera.start()
     for (t <- pthreads) t.start()
     for (t <- pthreads) t.join()
-    val elapsed = System.currentTimeMillis - start
     camera.join()
-    elapsed
-  }
-
-  def run(meals: Int, philosopherCount: Int) = {
-    time(philosopherCount, meals)
+    atomic { implicit txn =>
+      (forks.map(_.owner.get), pthreads.map(_.mealsEaten.get))
+    }
   }
 }
