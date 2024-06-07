@@ -130,7 +130,7 @@ public class Benchmark {
     				else if(currentArg.equals("-w")) workload = optionValue;
     				else if(currentArg.equals("-g")) synchType = optionValue;
     				else if(currentArg.equals("-s")) stmInitializerClassName = optionValue;
-					else if(currentArg.equals("-c")) countOfOperations = Integer.parseInt(optionValue);
+    				else if(currentArg.equals("-c")) countOfOperations = Integer.parseInt(optionValue);
     				else throw new BenchmarkParametersException("Invalid option: " + currentArg);
     			}
     		}
@@ -201,8 +201,8 @@ public class Benchmark {
     		break;
     	}
 		try {
-			synchMethodInitializer = 
-				synchMethodInitializerClass.newInstance();
+			synchMethodInitializer =
+				synchMethodInitializerClass.getDeclaredConstructor().newInstance();
 		}
 		catch(Exception e) {
 			throw new BenchmarkParametersException("Error instantiating STM initializer class", e);
