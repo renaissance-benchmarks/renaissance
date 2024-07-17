@@ -2,6 +2,8 @@
 
 package stmbench7.scalastm
 
+import scala.annotation.unused
+
 import scala.concurrent.stm.atomic
 import scala.concurrent.stm.Ref
 
@@ -23,6 +25,7 @@ import stmbench7.core.Module
 import stmbench7.core.Operation
 import stmbench7.impl.core.ConnectionImpl
 
+@unused("Referenced via string name")
 class ScalaSTMInitializer extends SynchMethodInitializer {
 
   def createOperationExecutorFactory(): OperationExecutorFactory =
