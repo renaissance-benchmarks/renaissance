@@ -44,7 +44,6 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-openjdk21"
-    continue-on-error: true
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -87,7 +86,6 @@ jobs:
 
   macos:
     runs-on: macos-latest
-    continue-on-error: true
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -145,7 +143,6 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -240,6 +237,7 @@ jobs:
   linux-jdks:
     needs: linux
     strategy:
+      fail-fast: false
       matrix:
         image:
           - openjdk11
@@ -247,7 +245,6 @@ jobs:
           - openj9-openjdk11
           - openj9-openjdk17
     runs-on: ubuntu-latest
-    continue-on-error: true
     container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-${{ matrix.image }}"
     steps:
       - name: Git checkout
@@ -293,10 +290,10 @@ jobs:
   windows-legacy:
     needs: windows
     strategy:
+      fail-fast: false
       matrix:
         java: [ '11', '17' ]
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -350,10 +347,10 @@ jobs:
   macos-legacy:
     needs: macos
     strategy:
+      fail-fast: false
       matrix:
         java: [ '11', '17' ]
     runs-on: macos-latest
-    continue-on-error: true
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
