@@ -8,7 +8,7 @@ env:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-openjdk21"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v10-openjdk22"
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-openjdk21"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v10-openjdk22"
     continue-on-error: true
     steps:
       - name: Git checkout
@@ -98,16 +98,11 @@ jobs:
         shell: bash
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - name: Fetch JDK 21
-        run: |
-          aria2c -d ${{ runner.temp }} -o openjdk-21_macos-x64_bin.tar.gz https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/openjdk-21.0.1_macos-x64_bin.tar.gz
-
-      - name: Setup JDK 21
+      - name: Setup JDK 22
         uses: actions/setup-java@v4
         with:
-          java-version: 21
-          distribution: jdkfile
-          jdkFile: ${{ runner.temp }}/openjdk-21_macos-x64_bin.tar.gz
+          java-version: 22
+          distribution: temurin
 
       - name: Environment configuration
         shell: bash
@@ -156,16 +151,11 @@ jobs:
         shell: bash
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
-      - name: Fetch JDK 21
-        run: |
-          aria2c -d ${{ runner.temp }} -o openjdk-21_windows-x64_bin.zip https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/openjdk-21.0.1_windows-x64_bin.zip
-
-      - name: Setup JDK 21
+      - name: Setup Java JDK 22
         uses: actions/setup-java@v4
         with:
-          java-version: 21
-          distribution: jdkfile
-          jdkFile: ${{ runner.temp }}/openjdk-21_windows-x64_bin.zip
+          java-version: 22
+          distribution: temurin
 
       - name: Environment configuration
         shell: bash
@@ -204,7 +194,7 @@ jobs:
   plugins:
     runs-on: ubuntu-latest
     needs: linux
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-openjdk11-with-ant-gcc"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v10-openjdk11-with-ant-gcc"
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -244,11 +234,13 @@ jobs:
         image:
           - openjdk11
           - openjdk17
+          - openjdk21
           - openj9-openjdk11
           - openj9-openjdk17
+          - openj9-openjdk21
     runs-on: ubuntu-latest
     continue-on-error: true
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v7-${{ matrix.image }}"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v10-${{ matrix.image }}"
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -294,7 +286,7 @@ jobs:
     needs: windows
     strategy:
       matrix:
-        java: [ '11', '17' ]
+        java: [ '11', '17', '21' ]
     runs-on: windows-latest
     continue-on-error: true
     steps:
@@ -310,7 +302,7 @@ jobs:
       - name: Setup correct Java version
         uses: actions/setup-java@v4
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Environment configuration
@@ -351,7 +343,7 @@ jobs:
     needs: macos
     strategy:
       matrix:
-        java: [ '11', '17' ]
+        java: [ '11', '17', '21' ]
     runs-on: macos-latest
     continue-on-error: true
     steps:
@@ -367,7 +359,7 @@ jobs:
       - name: Setup correct Java version
         uses: actions/setup-java@v4
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: ${{ matrix.java }}
 
       - name: Environment configuration
