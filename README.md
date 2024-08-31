@@ -25,7 +25,7 @@ To run a Renaissance benchmark, you need to have a JRE version 11 (or later)
 installed and execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-gpl-0.15.0.jar' <benchmarks>
+$ java -jar 'renaissance-gpl-0.16.0.jar' <benchmarks>
 ```
 
 In the above command, `<benchmarks>` is the list of benchmarks that you want to run.
@@ -142,6 +142,12 @@ The following is the complete list of benchmarks, separated into groups.
 - `scrabble` - Solves the Scrabble puzzle using JDK Streams.
   \
   Default repetitions: 50; GPL2 license, GPL3 distribution; Supported JVM: 11 and later
+
+#### kotlin
+
+- `http4k` - Runs the http4k server and tests the throughput of the server by sending requests to the server.
+  \
+  Default repetitions: 10; APACHE2 license, MIT distribution; Supported JVM: 11 and later
 
 #### scala
 
@@ -268,7 +274,7 @@ arguments to that plugin (or policy).
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version 0.15.0
+Renaissance Benchmark Suite, version 0.16.0
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
@@ -315,7 +321,7 @@ $ tools/sbt/bin/sbt renaissanceJmhPackage
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.15.0.jar'
+$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.16.0.jar'
 ```
 
 
