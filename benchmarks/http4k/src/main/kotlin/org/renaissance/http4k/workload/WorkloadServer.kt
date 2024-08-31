@@ -18,7 +18,7 @@ internal class WorkloadServer(private val port: Int) : Http4kServer {
     private val products: MutableMap<String, Product> = ConcurrentHashMap<String, Product>()
 
     private fun app(): HttpHandler = routes(
-        "/product" bind Method.GET to { Product.productsLens(products.values.toList(), Response(Status.OK)) },
+        "/product" bind Method.GET to { Product.productsLens(products.values.toTypedArray(), Response(Status.OK)) },
         "/product/{id}" bind Method.GET to {
             when (val id = it.path("id")) {
                 null -> Response(Status.BAD_REQUEST)
@@ -36,7 +36,7 @@ internal class WorkloadServer(private val port: Int) : Http4kServer {
         }
     )
 
-    override fun port(): Int  = port
+    override fun port(): Int = port
 
     override fun start(): Http4kServer {
         server.start()
@@ -45,6 +45,7 @@ internal class WorkloadServer(private val port: Int) : Http4kServer {
 
     override fun stop(): Http4kServer {
         server.stop()
+        products.clear()
         return this
     }
 }

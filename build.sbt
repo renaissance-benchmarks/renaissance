@@ -366,6 +366,7 @@ lazy val http4kBenchmarks = (project in file("benchmarks/http4k"))
       "org.http4k" % "http4k-server-undertow" % "5.29.0.0",
       "org.http4k" % "http4k-client-okhttp" % "5.29.0.0",
       "org.http4k" % "http4k-format-moshi" % "5.29.0.0",
+      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.9.0-RC.2"
     )
   )
   .dependsOn(renaissanceCore % "provided")

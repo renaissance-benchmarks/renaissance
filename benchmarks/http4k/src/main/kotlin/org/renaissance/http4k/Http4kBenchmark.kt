@@ -1,5 +1,6 @@
 package org.renaissance.http4k
 
+import kotlinx.coroutines.runBlocking
 import org.http4k.client.OkHttp
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark.*
@@ -16,7 +17,7 @@ import org.renaissance.http4k.workload.WorkloadServer
 @Summary("Runs the http4k server and tests the throughput of the server by sending requests to the server.")
 @SupportsJvm("21")
 @Licenses(License.APACHE2)
-@Repetitions(10)
+@Repetitions(20)
 @Parameter(
     name = "host",
     defaultValue = "localhost",
@@ -29,22 +30,22 @@ import org.renaissance.http4k.workload.WorkloadServer
 )
 @Parameter(
     name = "read_workload_repeat_count",
-    defaultValue = "100",
+    defaultValue = "5",
     summary = "Number of read requests to generate."
 )
 @Parameter(
     name = "write_workload_repeat_count",
-    defaultValue = "100",
+    defaultValue = "5",
     summary = "Number of write requests to generate."
 )
 @Parameter(
     name = "ddos_workload_repeat_count",
-    defaultValue = "100",
+    defaultValue = "5",
     summary = "Number of ddos requests to generate."
 )
 @Parameter(
     name = "mixed_workload_repeat_count",
-    defaultValue = "100",
+    defaultValue = "5",
     summary = "Number of mixed requests to generate."
 )
 @Parameter(
@@ -54,26 +55,27 @@ import org.renaissance.http4k.workload.WorkloadServer
 )
 @Parameter(
     name = "max_threads",
-    defaultValue = "8",
+    defaultValue = "16",
     summary = "Maximum number of threads to use for the executor of the requests."
 )
 @Parameter(
     name = "workload_selector_seed",
-    defaultValue = "0",
+    defaultValue = "42",
     summary = "Seed used to generate random workloads."
 )
 @Configuration(name = "jmh")
 class Http4kBenchmark : Benchmark {
     private lateinit var server: WorkloadServer
     private lateinit var client: WorkloadClient
+    private lateinit var configuration: WorkloadConfiguration
 
-    override fun run(context: BenchmarkContext): BenchmarkResult {
-        client.workload()
-        return Validators.simple("Expected validation", 0, 0)
+    override fun run(context: BenchmarkContext): BenchmarkResult = runBlocking {
+        val workloadSummary = client.workload()
+        Validators.simple("Workload count", configuration.workloadCount.toLong(), workloadSummary.workloadCount)
     }
 
     override fun setUpBeforeEach(context: BenchmarkContext) {
-        val configuration = context.toWorkloadConfiguration()
+        configuration = context.toWorkloadConfiguration()
         server = configuration.toWorkloadServer()
         client = configuration.toWorkloadClient()
         server.start()
