@@ -147,7 +147,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `http4k` - Runs the http4k server and tests the throughput of the server by sending requests to the server.
   \
-  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 11 - 21
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 11 and later
 
 #### scala
 

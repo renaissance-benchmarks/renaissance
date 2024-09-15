@@ -13,7 +13,7 @@ import org.http4k.server.asServer
 import org.renaissance.http4k.model.Product
 import java.util.concurrent.ConcurrentHashMap
 
-internal class WorkloadServer(private val port: Int) : Http4kServer {
+internal class WorkloadServer(port: Int) : Http4kServer {
     private val server = app().asServer(Undertow(port))
     private val products: MutableMap<String, Product> = ConcurrentHashMap<String, Product>()
 
@@ -36,7 +36,7 @@ internal class WorkloadServer(private val port: Int) : Http4kServer {
         }
     )
 
-    override fun port(): Int = port
+    override fun port(): Int = server.port()
 
     override fun start(): Http4kServer {
         server.start()

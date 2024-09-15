@@ -15,7 +15,6 @@ import org.renaissance.http4k.workload.WorkloadServer
 @Name("http4k")
 @Group("kotlin")
 @Summary("Runs the http4k server and tests the throughput of the server by sending requests to the server.")
-@SupportsJvm("21")
 @Licenses(License.APACHE2)
 @Repetitions(20)
 @Parameter(
@@ -25,7 +24,7 @@ import org.renaissance.http4k.workload.WorkloadServer
 )
 @Parameter(
     name = "port",
-    defaultValue = "8000",
+    defaultValue = "0",
     summary = "Port of the server."
 )
 @Parameter(
@@ -50,12 +49,12 @@ import org.renaissance.http4k.workload.WorkloadServer
 )
 @Parameter(
     name = "workload_count",
-    defaultValue = "100",
+    defaultValue = "450",
     summary = "Number of workloads to generate. Each workload consists of read, write, ddos and mixed requests."
 )
 @Parameter(
     name = "max_threads",
-    defaultValue = "16",
+    defaultValue = "\$cpu.count",
     summary = "Maximum number of threads to use for the executor of the requests."
 )
 @Parameter(
@@ -77,8 +76,11 @@ class Http4kBenchmark : Benchmark {
     override fun setUpBeforeEach(context: BenchmarkContext) {
         configuration = context.toWorkloadConfiguration()
         server = configuration.toWorkloadServer()
-        client = configuration.toWorkloadClient()
         server.start()
+
+        // If port value is 0, server allocates an empty port which has to be saved to allow client requests.
+        configuration = configuration.copy(port = server.port())
+        client = configuration.toWorkloadClient()
     }
 
     override fun tearDownAfterEach(context: BenchmarkContext) {
@@ -93,7 +95,7 @@ class Http4kBenchmark : Benchmark {
         ddosWorkloadRepeatCount = parameter("ddos_workload_repeat_count").value().toInt(),
         mixedWorkloadRepeatCount = parameter("mixed_workload_repeat_count").value().toInt(),
         workloadCount = parameter("workload_count").value().toInt(),
-        maxThreads = parameter("max_threads").value().toInt(),
+        maxThreads = parameter("max_threads").value().toInt().also { println("hoggigi $it") },
         workloadSelectorSeed = parameter("workload_selector_seed").value().toLong()
     )
 

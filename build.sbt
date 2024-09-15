@@ -360,13 +360,13 @@ lazy val http4kBenchmarks = (project in file("benchmarks/http4k"))
     name := "http4k",
     commonSettingsNoScala,
     kotlinVersion := "2.0.0",
-    kotlincJvmTarget := "21",
+    kotlincJvmTarget := "1.8",
     libraryDependencies ++= Seq(
       "org.http4k" % "http4k-core" % "5.29.0.0",
       "org.http4k" % "http4k-server-undertow" % "5.29.0.0",
       "org.http4k" % "http4k-client-okhttp" % "5.29.0.0",
       "org.http4k" % "http4k-format-moshi" % "5.29.0.0",
-      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.9.0-RC.2"
+      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.9.0"
     )
   )
   .dependsOn(renaissanceCore % "provided")
