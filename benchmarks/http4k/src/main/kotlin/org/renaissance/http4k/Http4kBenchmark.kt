@@ -95,7 +95,7 @@ class Http4kBenchmark : Benchmark {
         ddosWorkloadRepeatCount = parameter("ddos_workload_repeat_count").value().toInt(),
         mixedWorkloadRepeatCount = parameter("mixed_workload_repeat_count").value().toInt(),
         workloadCount = parameter("workload_count").value().toInt(),
-        maxThreads = parameter("max_threads").value().toInt().also { println("hoggigi $it") },
+        maxThreads = parameter("max_threads").value().toInt(),
         workloadSelectorSeed = parameter("workload_selector_seed").value().toLong()
     )
 
