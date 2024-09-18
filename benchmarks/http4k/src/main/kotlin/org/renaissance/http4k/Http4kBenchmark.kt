@@ -58,9 +58,16 @@ import org.renaissance.http4k.workload.WorkloadServer
     summary = "Maximum number of threads to use for the executor of the requests."
 )
 @Parameter(
-    name = "workload_selector_seed",
+    name = "workload_selection_seed",
     defaultValue = "42",
     summary = "Seed used to generate random workloads."
+)
+@Configuration(
+    name = "test",
+    settings = [
+        "max_threads = 2",
+        "workload_count = 100",
+    ]
 )
 @Configuration(name = "jmh")
 class Http4kBenchmark : Benchmark {
@@ -96,7 +103,7 @@ class Http4kBenchmark : Benchmark {
         mixedWorkloadRepeatCount = parameter("mixed_workload_repeat_count").value().toInt(),
         workloadCount = parameter("workload_count").value().toInt(),
         maxThreads = parameter("max_threads").value().toInt(),
-        workloadSelectorSeed = parameter("workload_selector_seed").value().toLong()
+        workloadSelectionSeed = parameter("workload_selection_seed").value().toLong()
     )
 
     private fun WorkloadConfiguration.toWorkloadClient(): WorkloadClient =

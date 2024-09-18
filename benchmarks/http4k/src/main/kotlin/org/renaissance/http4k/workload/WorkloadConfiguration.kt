@@ -9,5 +9,5 @@ internal data class WorkloadConfiguration(
     val mixedWorkloadRepeatCount: Int,
     val workloadCount: Int,
     val maxThreads: Int,
-    val workloadSelectorSeed: Long,
+    val workloadSelectionSeed: Long,
 )

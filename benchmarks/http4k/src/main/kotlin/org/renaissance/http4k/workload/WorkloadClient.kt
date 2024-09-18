@@ -36,11 +36,11 @@ internal class WorkloadClient(
      * Each workload consists of read, write, ddos and mixed requests.
      * The number of workloads is determined by [WorkloadConfiguration.workloadCount].
      * The number of requests for each workload type is determined by the corresponding configuration value.
-     * Random workload is generated for each iteration based on the seed in [WorkloadConfiguration.workloadSelectorSeed].
+     * Random workload is generated for each iteration based on the seed in [WorkloadConfiguration.workloadSelectionSeed].
      * @return WorkloadResult containing number of requests per type used for validation.
      */
     suspend fun workload(): WorkloadSummary = coroutineScope {
-        val random = Random(configuration.workloadSelectorSeed)
+        val random = Random(configuration.workloadSelectionSeed)
         withContext(dispatcher) {
             range(configuration.workloadCount).flatMap {
                 when (random.nextWorkload()) {
