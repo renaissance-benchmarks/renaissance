@@ -6,6 +6,7 @@ import sbt.io.RegularFileFilter
 import sbt.io.Using
 
 import java.io.OutputStream
+import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 import java.util.Properties
 import java.util.jar.Attributes.Name
@@ -703,9 +704,36 @@ def mapModuleJarsToAssemblyEntries(modulesDetails: Seq[(String, Seq[File], Strin
 
 def mapModuleDependencyJarsToAssemblyTask(modules: Seq[Project]) =
   Def.task[Seq[(File, String)]] {
+    val log = sLog.value
+    val targetDir = (Compile / target).value
+
     val modulesDetails = collectModulesDetailsTask(modules).value
-    mapModuleJarsToAssemblyEntries(modulesDetails).flatMap(_._2).distinct
+    mapModuleJarsToAssemblyEntries(modulesDetails).flatMap(_._2).distinct.map { entry =>
+      // Use patched "hadoop-client-api" to allow running on Java 23+.
+      if (entry._1.name.startsWith("hadoop-client-api")) {
+        remapHadoopClientApiJarEntry(entry, targetDir, log)
+      } else {
+        entry
+      }
+    }
   }
+
+def remapHadoopClientApiJarEntry(entry: (File, String), targetDir: File, log: Logger) = {
+  val originalJar = entry._1
+  val patchedJar = targetDir / "patched" / originalJar.name
+
+  if (patchedJar.exists()) {
+    log.info(s"Remapping Hadoop Client API to patched jar in $patchedJar")
+    (patchedJar, entry._2)
+  } else {
+    log.error(s"Could not find patched Hadoop Client API jar in $patchedJar")
+
+    // Throw an exception here to stop the build. This is necessary, because
+    // the SBT assembly task does not check if the source files exist when
+    // producing the final JAR file.
+    throw new NoSuchFileException(patchedJar.toString)
+  }
+}
 
 /**
  * Generates assembly mappings for all class files on the given classpath.
@@ -727,6 +755,45 @@ def mapClassesToAssemblyTask(classpath: Classpath) =
       }
     }
   }
+
+//
+// Tasks related to generating patched Hadoop Client API jar.
+//
+
+lazy val generatePatchedHadoopClientApiJar = taskKey[Seq[File]](
+  "Generates a patched Hadoop Client API jar which modifies the 'UserGroupInformation' class " +
+    "to avoid calling deprecated Java Security API. This allows using Spark with Java 23+ " +
+    "without having to specify the -Djava.security.manager=allow on the command line, which " +
+    "allows running with GraalVM Native Image."
+)
+
+renaissance / generatePatchedHadoopClientApiJar :=
+  Def.task {
+    val log = sLog.value
+    val targetDir = (Compile / target).value / "patched"
+
+    val dependencyJars = (apacheSparkBenchmarks / Runtime / dependencyClasspathAsJars).value
+    dependencyJars.map(_.data).filter(f => f.name.startsWith("hadoop-client-api")).map {
+      originalJar =>
+        val patchedJar = targetDir / originalJar.name
+        if (!patchedJar.exists()) {
+          log.info(s"Creating patched Hadoop Client API jar in $patchedJar")
+          IO.createDirectory(targetDir)
+
+          val temporaryJar = patchedJar.getParentFile / (patchedJar.name + ".tmp")
+          if (Hadoop.patchClientApiJar(originalJar, temporaryJar, log)) {
+            IO.move(temporaryJar, patchedJar)
+            patchedJar
+          } else {
+            log.error(s"Failed to create patched Hadoop Client API jar in $patchedJar")
+            null
+          }
+        } else {
+          log.info(s"Found patched Hadoop Client API jar in $patchedJar")
+          patchedJar
+        }
+    }
+  }.value
 
 //
 // Tasks related to generating metadata-only jars for benchmarks.
@@ -860,9 +927,15 @@ lazy val renaissance = (project in file("."))
           mapClassesToAssemblyTask(classpath)
         }.value,
         // Include dependency JAR files in the output JAR.
+        //
+        // Also remaps the Hadoop Client API jar to a patched version. We use task dependency
+        // to ensure that the patched jar is produced before the mappings. Resource generators
+        // are useless, because they run concurrently with the mapping tasks. This would not
+        // be a problem if the mapping source files were actually checked for existence when
+        // creating the final JAR.
         packageBin / mappings ++= mapModuleDependencyJarsToAssemblyTask(
           renaissanceModules
-        ).value
+        ).dependsOn(generatePatchedHadoopClientApiJar).value
       )
     )
   )
