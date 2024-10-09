@@ -767,7 +767,7 @@ lazy val generatePatchedHadoopClientApiJar = taskKey[Seq[File]](
     "allows running with GraalVM Native Image."
 )
 
-renaissance / generatePatchedHadoopClientApiJar :=
+def generatePatchedHadoopClientApiJarTask = {
   Def.task {
     val log = sLog.value
     val targetDir = (Compile / target).value / "patched"
@@ -793,7 +793,8 @@ renaissance / generatePatchedHadoopClientApiJar :=
           patchedJar
         }
     }
-  }.value
+  }
+}
 
 //
 // Tasks related to generating metadata-only jars for benchmarks.
@@ -909,6 +910,7 @@ lazy val renaissance = (project in file("."))
     name := "renaissance",
     // Reflect the distribution license in the package name.
     moduleName := name.value + "-" + (if (nonGplOnly.value) "mit" else "gpl"),
+    generatePatchedHadoopClientApiJar := generatePatchedHadoopClientApiJarTask.value,
     inConfig(Compile)(
       Seq(
         // The main class for the JAR is the Launcher from the core package.
@@ -1078,6 +1080,7 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
       "org.openjdk.jmh" % "jmh-generator-bytecode" % jmhVersion,
       "org.openjdk.jmh" % "jmh-generator-reflection" % jmhVersion
     ),
+    generatePatchedHadoopClientApiJar := generatePatchedHadoopClientApiJarTask.value,
     inConfig(Compile)(
       Seq(
         // Split result from the JMH generator task between sources and resources.
@@ -1104,7 +1107,7 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
         // Include benchmark dependency JAR files in the output JAR.
         packageBin / mappings ++= mapModuleDependencyJarsToAssemblyTask(
           renaissanceModules
-        ).value
+        ).dependsOn(generatePatchedHadoopClientApiJar).value
       )
     )
   )
