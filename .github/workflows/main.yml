@@ -8,7 +8,7 @@ env:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v11-openjdk22"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-openjdk23"
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
 
   linux:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v11-openjdk22"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-openjdk23"
     continue-on-error: true
     steps:
       - name: Git checkout
@@ -194,7 +194,7 @@ jobs:
   plugins:
     runs-on: ubuntu-latest
     needs: linux
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v11-openjdk11-with-ant-gcc"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-openjdk11-with-ant-gcc"
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -235,12 +235,15 @@ jobs:
           - openjdk11
           - openjdk17
           - openjdk21
+          - openjdk22
+          - openjdk23
+          - openjdk24-ea
           - openj9-openjdk11
           - openj9-openjdk17
           - openj9-openjdk21
     runs-on: ubuntu-latest
     continue-on-error: true
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v11-${{ matrix.image }}"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-${{ matrix.image }}"
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
