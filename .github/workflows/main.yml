@@ -93,68 +93,56 @@ jobs:
           path: renaissance-jmh/target/renaissance-*.jar
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
-
-  run-linux:
+  run:
     needs: build
     strategy:
       fail-fast: false
+
       matrix:
-        image:
-          - openjdk11
-          - openjdk17
-          - openjdk21
-          - openjdk23
-          - openj9-openjdk11
-          - openj9-openjdk17
-          - openj9-openjdk21
-    runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-${{ matrix.image }}"
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        include:
+          - os: linux
+            image: openjdk11
+          - os: linux
+            image: openjdk17
+          - os: linux
+            image: openjdk21
+          - os: linux
+            image: openjdk23
+          - os: linux
+            image: openj9-openjdk11
+          - os: linux
+            image: openj9-openjdk17
+          - os: linux
+            image: openj9-openjdk21
 
-      - name: Fix Git safe directory
-        shell: bash
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+          - os: windows
+            image: null
+            java: 11
+          - os: windows
+            image: null
+            java: 17
+          - os: windows
+            image: null
+            java: 21
+          - os: windows
+            image: null
+            java: 23
 
-      - name: Environment configuration
-        shell: bash
-        run: tools/ci/pre-show-env.sh
+          - os: macos
+            image: null
+            java: 11
+          - os: macos
+            image: null
+            java: 17
+          - os: macos
+            image: null
+            java: 21
+          - os: macos
+            image: null
+            java: 23
 
-      - name: Fetch pre-built main JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: main-jar
-          path: target
-
-      - name: Fetch pre-built JMH JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: jmh-jar
-          path: renaissance-jmh/target
-
-      - name: Run the suite
-        shell: bash
-        run: tools/ci/bench-base.sh
-
-      - name: Run the suite in standalone mode
-        shell: bash
-        run: tools/ci/bench-standalone.sh
-
-      - name: Run the suite with JMH
-        shell: bash
-        run: tools/ci/bench-jmh.sh
-
-
-  run-macos:
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ '11', '17', '21', '23' ]
-    runs-on: macos-latest
+    runs-on: ${{ (matrix.os == 'linux') && 'ubuntu' || matrix.os }}-latest
+    container: ${{ (matrix.os == 'linux') && format('ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-{0}', matrix.image) || null }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -170,6 +158,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
+        if: ${{ matrix.os != 'linux' }}
 
       - name: Environment configuration
         shell: bash
@@ -199,56 +188,6 @@ jobs:
         shell: bash
         run: tools/ci/bench-jmh.sh
 
-  run-windows:
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        java: [ '11', '17', '21', '23' ]
-    runs-on: windows-latest
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fix Git safe directory
-        shell: bash
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-
-      - name: Setup correct Java version
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-
-      - name: Environment configuration
-        shell: bash
-        run: tools/ci/pre-show-env.sh
-
-      - name: Fetch pre-built main JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: main-jar
-          path: target
-
-      - name: Fetch pre-built JMH JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: jmh-jar
-          path: renaissance-jmh/target
-
-      - name: Run the suite
-        shell: bash
-        run: tools/ci/bench-base.sh
-
-      - name: Run the suite in standalone mode
-        shell: bash
-        run: tools/ci/bench-standalone.sh
-
-      - name: Run the suite with JMH
-        shell: bash
-        run: tools/ci/bench-jmh.sh
 
   plugins:
     runs-on: ubuntu-latest
