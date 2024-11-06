@@ -6,6 +6,10 @@ on:
 env:
   COURSIER_CACHE: ${{ github.workspace }}/.cache/coursier
 
+  # Retention period of the generated artifacts (main and JMH Renaissance JARs)
+  # (Using the pseudo-ternary operator here, the retention can be 1 to 90 days)
+  ARTIFACT_RETENTION_DAYS: ${{ ((github.event_name == 'push') && (github.ref == 'refs/heads/master')) && 30 || 4 }}
+
 jobs:
 
   checks:
@@ -80,14 +84,14 @@ jobs:
         with:
           name: main-jar
           path: target/renaissance-*.jar
-          retention-days: 1
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload JMH JAR
         uses: actions/upload-artifact@v4
         with:
           name: jmh-jar
           path: renaissance-jmh/target/renaissance-*.jar
-          retention-days: 1
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
 
   run-linux:
