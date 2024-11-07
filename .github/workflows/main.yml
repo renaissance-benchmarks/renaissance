@@ -213,9 +213,11 @@ jobs:
           key: coursier_cache-${{ runner.os }}-${{ hashFiles('build.sbt') }}
           path: ${{ env.COURSIER_CACHE }}
 
-      - name: Build base
-        shell: bash
-        run: tools/ci/build-base.sh
+      - name: Fetch pre-built main JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: main-jar
+          path: target
 
       - name: Build plugins
         shell: bash
