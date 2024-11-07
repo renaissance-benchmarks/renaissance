@@ -12,7 +12,7 @@ env:
 
 jobs:
 
-  checks:
+  style:
     runs-on: ubuntu-latest
     container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-openjdk23"
     # We rarely build for more than 3 minutes
@@ -40,14 +40,6 @@ jobs:
       - name: Check source code formatting
         shell: bash
         run: tools/ci/check-formatting.sh
-
-      - name: Build the base bundle
-        shell: bash
-        run: tools/ci/build-base.sh
-
-      - name: Check generated files are up-to-date
-        shell: bash
-        run: tools/ci/check-markdown.sh
 
 
   build:
@@ -96,6 +88,34 @@ jobs:
           name: jmh-jar
           path: renaissance-jmh/target/renaissance-*.jar
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+
+  readme:
+    needs: build
+    runs-on: ubuntu-latest
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-openjdk23"
+    # We rarely build for more than 3 minutes
+    timeout-minutes: 10
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fix Git safe directory
+        shell: bash
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Fetch pre-built main JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: main-jar
+          path: target
+
+      - name: Check generated files are up-to-date
+        shell: bash
+        run: tools/ci/check-markdown.sh
+
 
   run:
     needs: build
