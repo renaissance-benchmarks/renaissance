@@ -145,6 +145,10 @@ jobs:
             image: null
             java: 23
 
+    # The following two lines are a bit of a hack:
+    #  - We use only short OS name in the matrix to have short build names.
+    #  - We need to set container to null on Windows and Mac as containers are
+    #    supported on Linux only
     runs-on: ${{ (matrix.os == 'linux') && 'ubuntu' || matrix.os }}-latest
     container: ${{ (matrix.os == 'linux') && format('ghcr.io/renaissance-benchmarks/renaissance-buildenv:v12-{0}', matrix.image) || null }}
 
