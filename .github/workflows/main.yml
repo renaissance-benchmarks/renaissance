@@ -140,29 +140,21 @@ jobs:
             image: openj9-openjdk21
 
           - os: windows
-            image: null
             java: 11
           - os: windows
-            image: null
             java: 17
           - os: windows
-            image: null
             java: 21
           - os: windows
-            image: null
             java: 23
 
           - os: macos
-            image: null
             java: 11
           - os: macos
-            image: null
             java: 17
           - os: macos
-            image: null
             java: 21
           - os: macos
-            image: null
             java: 23
 
     # The following two lines are a bit of a hack:
