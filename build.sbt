@@ -57,9 +57,9 @@ ThisBuild / git.useGitDescribe := true
 // Compilation settings
 //
 val javaRelease = "11"
-val scalaVersion212 = "2.12.18"
-val scalaVersion213 = "2.13.12"
-val scalaVersion3 = "3.3.1"
+val scalaVersion212 = "2.12.20"
+val scalaVersion213 = "2.13.15"
+val scalaVersion3 = "3.3.4"
 
 // Explicitly target a specific JDK release.
 ThisBuild / javacOptions ++= Seq("--release", javaRelease)
