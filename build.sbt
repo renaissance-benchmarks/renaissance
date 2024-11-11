@@ -428,12 +428,13 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
       // Version 3.1.2 was the last to compile with Scala 2.13.11. Version 3.1.3-RC2
       // broke compilation due to "Unsupported Scala 3 union in parameter value".
       // Compiling with Scala 3.1.0+ avoids compatibility issues.
-      "org.scala-lang" % "scala3-compiler_3" % "3.3.1",
+      "org.scala-lang" % "scala3-compiler_3" % "3.3.4",
       // The following is required to compile the workload sources. Keep it last!
       "org.scala-lang" % "scala-compiler" % scalaVersion213 % Runtime
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not really used by the benchmark.
+      ExclusionRule("net.java.dev.jna", "jna"),
       ExclusionRule("org.jline", "jline"),
       ExclusionRule("org.jline", "jline-reader"),
       ExclusionRule("org.jline", "jline-terminal"),
