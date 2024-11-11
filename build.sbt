@@ -354,6 +354,8 @@ lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+val grpcVersion = "1.68.1"
+
 lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
   .settings(
     name := "neo4j",
@@ -361,9 +363,9 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     libraryDependencies ++= Seq(
       // neo4j 4.4 supports Scala 2.12 and requires JDK11.
       // neo4j 5.x supports Scala 2.13 and requires JDK17.
-      "org.neo4j" % "neo4j" % "5.12.0",
+      "org.neo4j" % "neo4j" % "5.25.1",
       // play-json 2.10.x requires SBT running on JDK11 to compile.
-      "com.typesafe.play" %% "play-json" % "2.10.1"
+      "com.typesafe.play" %% "play-json" % "2.10.6"
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not really used by the benchmark.
@@ -372,12 +374,19 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     dependencyOverrides ++= Seq(
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
+      "com.fasterxml.jackson.jaxrs" % "jackson-jaxrs-json-provider" % jacksonVersion,
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
+      // Force newer version of gRPC packages.
+      "io.grpc" % "grpc-netty" % grpcVersion,
+      "io.grpc" % "grpc-protobuf" % grpcVersion,
+      "io.grpc" % "grpc-stub" % grpcVersion,
       // Force common (newer) version of Netty packages.
-      "io.netty" % "netty-codec-http" % nettyVersion,
+      "io.netty" % "netty-codec-http2" % nettyVersion,
+      "io.netty" % "netty-handler-proxy" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
       "io.netty" % "netty-transport-native-kqueue" % nettyVersion,
+      "io.netty" % "netty-tcnative-classes" % nettyTomcatNativeVersion,
       // Force common (newer) version of Eclipse collection packages.
       "org.eclipse.collections" % "eclipse-collections" % eclipseCollectionsVersion,
       // Force common (newer) version of Jersey packages.
@@ -488,6 +497,7 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "io.netty" % "netty-handler-proxy" % nettyVersion,
       "io.netty" % "netty-resolver-dns" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
+      "io.netty" % "netty-tcnative-boringssl-static" % nettyTomcatNativeVersion,
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
       // Force common versions of other dependencies.
