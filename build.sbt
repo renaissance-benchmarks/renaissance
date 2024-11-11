@@ -160,22 +160,23 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val asmVersion = "9.6"
-val commonsCompressVersion = "1.24.0"
-val commonsIoVersion = "2.14.0"
-val commonsLang3Version = "3.13.0"
+// ASM 9.7+ requires Java 11.
+val asmVersion = "9.7.1"
+val commonsCompressVersion = "1.27.1"
+val commonsIoVersion = "2.17.0"
+val commonsLang3Version = "3.17.0"
 val commonsMath3Version = "3.6.1"
-val commonsTextVersion = "1.10.0"
+val commonsTextVersion = "1.12.0"
 val eclipseCollectionsVersion = "11.1.0"
-val guavaVersion = "32.1.2-jre"
-val jacksonVersion = "2.15.2"
-val jerseyVersion = "2.40"
-val jnaVersion = "5.13.0"
-val nettyVersion = "4.1.99.Final"
-val scalaCollectionCompatVersion = "2.11.0"
+val guavaVersion = "33.3.1-jre"
+val jacksonVersion = "2.18.1"
+val jerseyVersion = "2.45"
+val jnaVersion = "5.15.0"
+val nettyVersion = "4.1.114.Final"
+val scalaCollectionCompatVersion = "2.12.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "2.0.9"
-val zstdJniVersion = "1.5.5-6"
+val slf4jVersion = "2.0.16"
+val zstdJniVersion = "1.5.6-7"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
