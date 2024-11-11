@@ -258,7 +258,7 @@ lazy val actorsReactorsBenchmarks = (project in file("benchmarks/actors-reactors
     ProjectRef(uri("benchmarks/actors-reactors/reactors"), "reactorsCoreJVM")
   )
 
-val sparkVersion = "3.5.0"
+val sparkVersion = "3.5.3"
 
 lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   .settings(
