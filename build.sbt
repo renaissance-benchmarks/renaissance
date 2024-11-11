@@ -160,8 +160,11 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
+val arrowVersion = "18.0.0"
 // ASM 9.7+ requires Java 11.
 val asmVersion = "9.7.1"
+// Caffeine 3.0+ requires Java 11.
+val caffeineVersion = "3.1.8"
 val commonsCompressVersion = "1.27.1"
 val commonsIoVersion = "2.17.0"
 val commonsLang3Version = "3.17.0"
@@ -170,11 +173,15 @@ val commonsTextVersion = "1.12.0"
 val eclipseCollectionsVersion = "11.1.0"
 val guavaVersion = "33.3.1-jre"
 val jacksonVersion = "2.18.1"
+val jakartaXmlBindVersion = "2.3.3"
 val jerseyVersion = "2.45"
 val jnaVersion = "5.15.0"
+val nettyTomcatNativeVersion = "2.0.69.Final"
 val nettyVersion = "4.1.114.Final"
+val parquetVersion = "1.14.3"
 val scalaCollectionCompatVersion = "2.12.0"
 val scalaParallelCollectionsVersion = "1.0.4"
+val scalaParserCombinatorsVersion = "2.4.0"
 val slf4jVersion = "2.0.16"
 val zstdJniVersion = "1.5.6-7"
 
@@ -293,6 +300,11 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      // Force common (newer) version of Arrow packages.
+      "org.apache.arrow" % "arrow-vector" % arrowVersion,
+      "org.apache.arrow" % "arrow-memory-netty" % arrowVersion,
+      // Force common (newer) version of Parquet packages.
+      "org.apache.parquet" % "parquet-hadoop" % parquetVersion,
       // Force common (newer) version of Jersey packages.
       "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
       "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
@@ -301,12 +313,14 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
+      "jakarta.xml.bind" % "jakarta.xml.bind-api" % jakartaXmlBindVersion,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
       "org.slf4j" % "jul-to-slf4j" % slf4jVersion
@@ -410,6 +424,10 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       "io.netty" % "netty-tcnative-classes" % nettyTomcatNativeVersion,
       // Force common (newer) version of Eclipse collection packages.
       "org.eclipse.collections" % "eclipse-collections" % eclipseCollectionsVersion,
+      // Force common (newer) version of Arrow packages.
+      "org.apache.arrow" % "flight-core" % arrowVersion,
+      // Force common (newer) version of Parquet packages.
+      "org.apache.parquet" % "parquet-hadoop" % parquetVersion,
       // Force common (newer) version of Jersey packages.
       "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
       "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
@@ -417,8 +435,10 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // Force common (newer) version of ASM packages.
       "org.ow2.asm" % "asm-util" % asmVersion,
       // Force common versions of other dependencies.
+      "com.github.ben-manes.caffeine" % "caffeine" % caffeineVersion,
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
+      "jakarta.xml.bind" % "jakarta.xml.bind-api" % jakartaXmlBindVersion,
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
@@ -523,8 +543,10 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
       // Force common versions of other dependencies.
+      "com.github.ben-manes.caffeine" % "caffeine" % caffeineVersion,
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
+      "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
