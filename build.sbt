@@ -465,7 +465,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
     RootProject(uri("benchmarks/scala-stm/stmbench7"))
   )
 
-val finagleVersion = "22.12.0"
+val finagleVersion = "24.2.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .settings(
