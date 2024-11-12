@@ -313,17 +313,24 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     name := "database",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-posix" % "3.1.18",
+      "com.github.jnr" % "jnr-posix" % "3.1.20",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
-      "org.agrona" % "agrona" % "1.19.2",
+      // Agrona 1.23+ requires Java 17.
+      "org.agrona" % "agrona" % "1.22.0",
       // Database libraries.
-      "org.mapdb" % "mapdb" % "3.0.10",
-      "com.h2database" % "h2-mvstore" % "2.2.224",
-      "net.openhft" % "chronicle-map" % "3.22.9",
+      "org.mapdb" % "mapdb" % "3.1.0",
+      "com.h2database" % "h2-mvstore" % "2.3.232",
+      // Chronicle Map 3.25+ supports Java 21.
+      "net.openhft" % "chronicle-map" % "3.26ea4",
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jVersion
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
+      // Replacement for excluded "net.jpountz.lz4" % "lz4".
+      "org.lz4" % "lz4-java" % "1.8.0"
     ),
     dependencyOverrides ++= Seq(
+      // Force newer version of Chronicle modules.
+      "net.openhft" % "chronicle-wire" % "2.26ea10",
+      "net.openhft" % "posix" % "2.26ea3",
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
       // Force common (newer) version of ASM packages.
@@ -334,6 +341,10 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion
+    ),
+    excludeDependencies ++= Seq(
+      // Replaced by the "org.lz4" % "lz4-java".
+      ExclusionRule("net.jpountz.lz4", "lz4")
     )
   )
   .dependsOn(renaissanceCore % "provided")
