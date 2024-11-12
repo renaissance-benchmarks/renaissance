@@ -73,7 +73,7 @@ private object ResourceUtil {
   def duplicateLinesFromUrl(url: URL, copyCount: Int, outputFile: Path): Path = {
     import scala.jdk.CollectionConverters._
 
-    val lines = linesFromUrl(url).asJava
+    val lines = linesFromSource(Source.fromURL(url)).asJava
 
     for (_ <- 0 until copyCount) {
       Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
@@ -83,18 +83,28 @@ private object ResourceUtil {
   }
 
   /**
-   * Loads a file from the given [[URL]] as a sequence of lines.
+   * Loads the contents of a [[Source]] as a sequence of lines and closes the source.
    *
-   * @param url input file [[URL]]
+   * @param source input [[Source]]
    * @return a sequence of lines
    */
-  def linesFromUrl(url: URL): Seq[String] = {
-    val source = Source.fromURL(url)
+  def linesFromSource(source: Source): Seq[String] = {
     try {
       source.getLines().toSeq
     } finally {
       source.close()
     }
+  }
+
+  /**
+   * Creates a [[Source]] from a resource associated with the [[ResourceUtil]] class.
+   *
+   * @param resourceName path to the resource
+   * @return a [[Source]] for the given resource
+   */
+  def sourceFromResource(resourceName: String): BufferedSource = {
+    // Use an explicit codec to avoid influence of the environment.
+    Source.fromURL(getClass.getResource(resourceName))(scala.io.Codec.UTF8)
   }
 
   /**
