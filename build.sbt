@@ -138,7 +138,10 @@ val generateManifestAttributesTask = Def.task {
     "java.base/sun.nio.ch",
     "java.management/sun.management",
     "java.management/sun.management.counter",
-    "java.management/sun.management.counter.perf"
+    "java.management/sun.management.counter.perf",
+    // Required by Chronicle Map.
+    "java.base/jdk.internal.ref",
+    "jdk.compiler/com.sun.tools.javac.file"
   )
 
   Package.ManifestAttributes(
@@ -147,7 +150,9 @@ val generateManifestAttributesTask = Def.task {
     ("Git-Head-Commit", git.gitHeadCommit.value.getOrElse("unknown")),
     ("Git-Head-Commit-Date", git.gitHeadCommitDate.value.getOrElse("unknown")),
     ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString),
-    ("Add-Opens", addOpensPackages.mkString(" "))
+    ("Add-Opens", addOpensPackages.mkString(" ")),
+    // Required by "org.lz4" % "lz4-java".
+    ("Enable-Native-Access", "ALL-UNNAMED")
   )
 }
 
