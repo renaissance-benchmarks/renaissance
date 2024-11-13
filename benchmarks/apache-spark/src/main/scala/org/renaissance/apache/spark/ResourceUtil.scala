@@ -6,33 +6,12 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.{StandardCopyOption => CopyOption}
 import java.nio.file.{StandardOpenOption => OpenOption}
 import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
 
 private object ResourceUtil {
-
-  /**
-   * Writes the resource associated with the [[ResourceUtil]] class
-   * to a file, replacing an existing file.
-   *
-   * @param resourceName path to the resource
-   * @param file path the output file
-   * @return [[Path]] to the output file
-   */
-  def writeResourceToFile(resourceName: String, file: Path) = {
-    val resourceStream = getResourceStream(resourceName)
-    try {
-      Files.copy(resourceStream, file, CopyOption.REPLACE_EXISTING)
-    } finally {
-      // This may mask a try-block exception, but at least it will fail anyway.
-      resourceStream.close()
-    }
-
-    file
-  }
 
   /**
    * Writes the resource associated with the [[ResourceUtil]] class
