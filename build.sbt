@@ -1,3 +1,4 @@
+import kotlin.Keys.{kotlinVersion, kotlincJvmTarget}
 import org.renaissance.License
 import sbt.Def
 import sbt.Package
@@ -354,6 +355,23 @@ lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+lazy val http4kBenchmarks = (project in file("benchmarks/http4k"))
+  .enablePlugins(KotlinPlugin)
+  .settings(
+    name := "http4k",
+    commonSettingsNoScala,
+    kotlinVersion := "2.0.0",
+    kotlincJvmTarget := "1.8",
+    libraryDependencies ++= Seq(
+      "org.http4k" % "http4k-core" % "5.29.0.0",
+      "org.http4k" % "http4k-server-undertow" % "5.29.0.0",
+      "org.http4k" % "http4k-client-okhttp" % "5.29.0.0",
+      "org.http4k" % "http4k-format-moshi" % "5.29.0.0",
+      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.9.0"
+    )
+  )
+  .dependsOn(renaissanceCore % "provided")
+
 lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
   .settings(
     name := "neo4j",
@@ -514,6 +532,7 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
   databaseBenchmarks,
   jdkConcurrentBenchmarks,
   jdkStreamsBenchmarks,
+  http4kBenchmarks,
   neo4jBenchmarks,
   rxBenchmarks,
   scalaDottyBenchmarks,
