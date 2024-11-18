@@ -58,7 +58,9 @@ get_jvm_workaround_args() {
             echo "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
             echo "--add-opens=java.base/java.util=ALL-UNNAMED"
             echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
+            echo "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
             echo "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+            echo "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED"
             ;;
         *)
             ;;
