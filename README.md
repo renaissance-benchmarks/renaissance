@@ -115,7 +115,7 @@ The following is the complete list of benchmarks, separated into groups.
 
 - `db-shootout` - Executes a shootout test using several in-memory databases.
   \
-  Default repetitions: 16; APACHE2 license, MIT distribution; Supported JVM: 11 - 22
+  Default repetitions: 16; APACHE2 license, MIT distribution; Supported JVM: 11 and later
 
 - `neo4j-analytics` - Executes Neo4j graph queries against a movie database.
   \
