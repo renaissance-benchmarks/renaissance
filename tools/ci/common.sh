@@ -67,6 +67,23 @@ get_jvm_workaround_args() {
     esac
 }
 
+if command -v timeout >/dev/null; then
+    TIMEOUT_IMPL=timeout_with_thread_dump_real
+else
+    TIMEOUT_IMPL=timeout_with_thread_dump_fake
+fi
+
+timeout_with_thread_dump_real() {
+    timeout --signal=3 --kill-after=5s "$@"
+}
+timeout_with_thread_dump_fake() {
+    shift
+    "$@"
+}
+timeout_with_thread_dump() {
+    "$TIMEOUT_IMPL" "$@"
+}
+
 
 # Make sure we are in the top-level directory so that we can use
 # relative paths when referring to files within the project.
