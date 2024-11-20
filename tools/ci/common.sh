@@ -67,6 +67,10 @@ get_jvm_workaround_args() {
     esac
 }
 
+timeout_with_thread_dump() {
+    timeout --signal=3 --kill-after=5s "$@"
+}
+
 
 # Make sure we are in the top-level directory so that we can use
 # relative paths when referring to files within the project.
