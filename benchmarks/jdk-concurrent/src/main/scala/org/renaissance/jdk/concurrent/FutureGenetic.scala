@@ -19,14 +19,14 @@ import java.util.concurrent.TimeUnit
 @Summary("Runs a genetic algorithm using the Jenetics library and futures.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(50)
-@Parameter(name = "chromosome_count", defaultValue = "50")
+@Parameter(name = "population_size", defaultValue = "50")
 @Parameter(name = "generation_count", defaultValue = "5000")
 @Parameter(name = "expected_sum", defaultValue = "-10975.2462578835")
 @Parameter(name = "expected_sum_squares", defaultValue = "130336964.45529507")
 @Configuration(
   name = "test",
   settings = Array(
-    "chromosome_count = 10",
+    "population_size = 10",
     "generation_count = 200",
     "expected_sum = -1857.224767254019",
     "expected_sum_squares = 135348190.4555571"
@@ -38,7 +38,7 @@ final class FutureGenetic extends Benchmark {
   // TODO: Consolidate benchmark parameters across the suite.
   //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
 
-  private var chromosomeCountParam: Int = _
+  private var populationSizeParam: Int = _
 
   private var generationCountParam: Int = _
 
@@ -64,7 +64,7 @@ final class FutureGenetic extends Benchmark {
   private var benchmark: JavaJenetics = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    chromosomeCountParam = c.parameter("chromosome_count").toPositiveInteger
+    populationSizeParam = c.parameter("population_size").toPositiveInteger
     generationCountParam = c.parameter("generation_count").toPositiveInteger
     expectedSum = c.parameter("expected_sum").toDouble
     expectedSumSquares = c.parameter("expected_sum_squares").toDouble
@@ -75,7 +75,7 @@ final class FutureGenetic extends Benchmark {
       GENE_MIN_VALUE,
       GENE_MAX_VALUE,
       GENE_COUNT,
-      chromosomeCountParam,
+      populationSizeParam,
       generationCountParam,
       THREAD_COUNT,
       RANDOM_SEED
