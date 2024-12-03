@@ -6,7 +6,7 @@ msg() {
     echo "[build-ubench-agent]:" "$@" >&2
 }
 
-UBENCH_AGENT_COMMIT="fa106447be4b174824055ff801b113ce2194f3d1"
+UBENCH_AGENT_COMMIT="7b315c99b2bb6d32ce436d5b471172850e0803d8"
 UBENCH_AGENT_TARBALL="java-ubench-agent-$UBENCH_AGENT_COMMIT.tar.gz"
 UBENCH_AGENT_TARBALL_URL="https://github.com/D-iii-S/java-ubench-agent/archive/$UBENCH_AGENT_COMMIT.tar.gz"
 UBENCH_AGENT_DIR="java-ubench-agent-$UBENCH_AGENT_COMMIT"
