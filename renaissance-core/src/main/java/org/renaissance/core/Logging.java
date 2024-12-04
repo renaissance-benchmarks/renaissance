@@ -1,8 +1,8 @@
 package org.renaissance.core;
 
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import java.util.logging.StreamHandler;
 
 public final class Logging {
@@ -30,8 +30,8 @@ public final class Logging {
       System.setProperty(FORMAT_PROPERTY, DEFAULT_FORMAT);
     }
 
-    // Create SimpleFormatter AFTER setting the system property.
-    return new StreamHandler(System.err, new SimpleFormatter());
+    // Creates SimpleFormatter AFTER setting the system property.
+    return new ConsoleHandler();
   }
 
   private Logging() {}
