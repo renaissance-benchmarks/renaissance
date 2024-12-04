@@ -158,7 +158,7 @@ public final class ModuleLoader {
           name, filePaths.size(), makeClassPath(filePaths)
         ));
 
-        return new URLClassLoader(urls, thisClass.getClassLoader());
+        return Cleaner.closeOnExit(new URLClassLoader(urls, thisClass.getClassLoader()));
 
       } catch (IOException e) {
         // Just wrap the underlying IOException.
