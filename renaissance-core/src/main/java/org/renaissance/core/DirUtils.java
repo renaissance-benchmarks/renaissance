@@ -39,7 +39,7 @@ public final class DirUtils {
         if (deleteRoot || !rootDir.equals(dir)) {
           if (exc != null) {
             // There was an earlier failure with one of the children, which means
-            // that we will not be able do delete this directory anyway.
+            // that we will not be able to delete this directory anyway.
             throw exc;
           }
 
