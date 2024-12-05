@@ -37,6 +37,12 @@ public final class DirUtils {
       @Override
       public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
         if (deleteRoot || !rootDir.equals(dir)) {
+          if (exc != null) {
+            // There was an earlier failure with one of the children, which means
+            // that we will not be able to delete this directory anyway.
+            throw exc;
+          }
+
           Files.delete(dir);
         }
 
@@ -52,24 +58,10 @@ public final class DirUtils {
 
     Path scratchDir = createTempDirectory(base, tsPrefix).normalize();
     if (!keepOnExit) {
-      Runtime.getRuntime().addShutdownHook(new Thread (() -> {
-        logger.fine(() -> "Deleting scratch directory: " + printable(scratchDir));
-        try {
-          deleteRecursively(scratchDir);
-        } catch (IOException e) {
-          // Just a notification. This should be rare and is not critical.
-          logger.warning(String.format(
-            "Error deleting scratch directory %s: %s", printable(scratchDir), e.getMessage()
-          ));
-        }
-      }));
+      Cleaner.deleteOnExit(scratchDir);
     }
 
     return scratchDir;
-  }
-
-  private static Path printable(Path path) {
-    return path.toAbsolutePath().normalize();
   }
 
 }

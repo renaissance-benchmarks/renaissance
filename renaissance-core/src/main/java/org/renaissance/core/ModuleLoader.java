@@ -158,7 +158,15 @@ public final class ModuleLoader {
           name, filePaths.size(), makeClassPath(filePaths)
         ));
 
-        return new URLClassLoader(urls, thisClass.getClassLoader());
+        //
+        // Make sure to explicitly close this URLClassLoader on exit, because it operates
+        // on files created by the harness in the scratch directory hierarchy that need to
+        // be deleted on exit. Leaving the class loader open keeps the library JAR files
+        // open, preventing removal of the scratch directories. This is because on NFS,
+        // deleting an open file produces a NFS temporary file in the same directory, and
+        // on Windows, an open file cannot be deleted at all.
+        //
+        return Cleaner.closeOnExit(new URLClassLoader(urls, thisClass.getClassLoader()));
 
       } catch (IOException e) {
         // Just wrap the underlying IOException.
