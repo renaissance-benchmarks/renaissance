@@ -107,7 +107,7 @@ object MarkdownGenerator {
     tags: mutable.Map[String, String]
   ) = {
     val githubUrl = "https://github.com/renaissance-benchmarks/renaissance/"
-    tags("logoUrl") = githubUrl + "raw/master/website/resources/images/mona-lisa-round.png"
+    tags("logoUrl") = githubUrl + "raw/master/logo.png"
     tags("codeOfConductUrl") = githubUrl + "blob/master/CODE-OF-CONDUCT.md"
 
     tags("jmhTargetPath") = "renaissance-jmh/target"
