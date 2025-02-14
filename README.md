@@ -2,7 +2,7 @@
 ## Renaissance Benchmark Suite
 
 <p align="center">
-  <img height="180px" src="https://github.com/renaissance-benchmarks/renaissance/raw/master/website/resources/images/mona-lisa-round.png"/>
+  <img height="180px" src="https://github.com/renaissance-benchmarks/renaissance/raw/master/logo.png"/>
 </p>
 
 
