@@ -16,9 +16,9 @@ import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
-import scala.util.Try
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 /**
  * Provides common functionality for JSON and CSV result writers.
@@ -207,15 +207,22 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
       "available_processors" -> os.getAvailableProcessors.toJson
     )
 
+    // Platforms such as the Native Image have been observed to throw an
+    // "unsupported feature" exception when calling methods on the more
+    // specific MXBean classes. We wrap the calls to avoid crashes and
+    // indicate it by producing a `null` literal in the JSON output.
+    def tryGetJson(getter: () => Long) = {
+      Try(getter()).toOption.toJson
+    }
+
     os match {
       case extOs: com.sun.management.OperatingSystemMXBean =>
-        // Gag possible exceptions.
         result ++= Seq(
-          "phys_mem_total" -> Try(extOs.getTotalPhysicalMemorySize).toOption.toJson,
-          "phys_mem_free" -> Try(extOs.getFreePhysicalMemorySize).toOption.toJson,
-          "virt_mem_committed" -> Try(extOs.getCommittedVirtualMemorySize).toOption.toJson,
-          "swap_space_total" -> Try(extOs.getTotalSwapSpaceSize).toOption.toJson,
-          "swap_space_free" -> Try(extOs.getFreeSwapSpaceSize).toOption.toJson
+          "phys_mem_total" -> tryGetJson(extOs.getTotalPhysicalMemorySize),
+          "phys_mem_free" -> tryGetJson(extOs.getFreePhysicalMemorySize),
+          "virt_mem_committed" -> tryGetJson(extOs.getCommittedVirtualMemorySize),
+          "swap_space_total" -> tryGetJson(extOs.getTotalSwapSpaceSize),
+          "swap_space_free" -> tryGetJson(extOs.getFreeSwapSpaceSize)
         )
 
       case _ =>
@@ -223,10 +230,9 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
     os match {
       case unixOs: com.sun.management.UnixOperatingSystemMXBean =>
-        // Gag possible exceptions.
         result ++= Seq(
-          "max_fd_count" -> Try(unixOs.getMaxFileDescriptorCount).toOption.toJson,
-          "open_fd_count" -> Try(unixOs.getOpenFileDescriptorCount).toOption.toJson
+          "max_fd_count" -> tryGetJson(unixOs.getMaxFileDescriptorCount),
+          "open_fd_count" -> tryGetJson(unixOs.getOpenFileDescriptorCount)
         )
 
       // No extra information to collect on non-Unix systems.
