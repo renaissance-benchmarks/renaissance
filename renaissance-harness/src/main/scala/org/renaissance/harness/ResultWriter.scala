@@ -141,7 +141,7 @@ private abstract class ResultWriter
   protected def store(normalTermination: Boolean): Unit
 }
 
-private final class CsvWriter(val csvFile: Path) extends ResultWriter {
+private final class CsvWriter(val csvFile: Path, val vmStartNanos: Long) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuilder
@@ -154,8 +154,9 @@ private final class CsvWriter(val csvFile: Path) extends ResultWriter {
   }
 
   private def formatHeader(metricNames: Seq[String], csv: StringBuilder): Unit = {
-    // There will always be at least one column after "benchmark".
-    csv.append("benchmark,").append(metricNames.mkString(",")).append(",vm_start_unix_ms\n")
+    csv.append("benchmark")
+    metricNames.foreach { name => csv.append(",").append(name) }
+    csv.append(",vm_start_unix_ms,vm_start_ns\n")
   }
 
   private def formatResults(metricNames: Seq[String], csv: StringBuilder): Unit = {
@@ -170,14 +171,14 @@ private final class CsvWriter(val csvFile: Path) extends ResultWriter {
           csv.append(",").append(stringValue)
         }
 
-        csv.append(",").append(vmStartTime).append("\n")
+        csv.append(",").append(vmStartTime).append(",").append(vmStartNanos).append("\n")
       }
     }
   }
 
 }
 
-private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
+private final class JsonWriter(val jsonFile: Path, vmStartNanos: Long) extends ResultWriter {
 
   private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
@@ -257,6 +258,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
       "args" -> runtime.getInputArguments.asScala.toList.toJson,
       "termination" -> (if (normalTermination) "normal" else "forced").toJson,
       "start_unix_ms" -> runtime.getStartTime.toJson,
+      "start_ns" -> vmStartNanos.toJson,
       "start_iso" -> unixTimeAsIso(runtime.getStartTime).toJson,
       "uptime_ms" -> runtime.getUptime.toJson,
       "collectors" -> getCollectorInfo.toJson,
@@ -404,7 +406,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
     val result = Map(
-      "format_version" -> 5.toJson,
+      "format_version" -> 6.toJson,
       "benchmarks" -> getBenchmarkNames.toJson,
       "environment" -> getEnvironment(normalTermination).toJson,
       "suite" -> getSuiteInfo.toJson,
