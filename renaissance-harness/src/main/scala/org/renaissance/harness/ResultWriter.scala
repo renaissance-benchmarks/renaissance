@@ -1,6 +1,5 @@
 package org.renaissance.harness
 
-import com.sun.management.UnixOperatingSystemMXBean
 import org.renaissance.Benchmark
 import org.renaissance.Plugin.BeforeHarnessShutdownListener
 import org.renaissance.Plugin.BenchmarkFailureListener
@@ -209,14 +208,23 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
     )
 
     os match {
-      case unixOs: UnixOperatingSystemMXBean =>
+      case extOs: com.sun.management.OperatingSystemMXBean =>
         // Gag possible exceptions.
         result ++= Seq(
-          "phys_mem_total" -> Try(unixOs.getTotalPhysicalMemorySize).toOption.toJson,
-          "phys_mem_free" -> Try(unixOs.getFreePhysicalMemorySize).toOption.toJson,
-          "virt_mem_committed" -> Try(unixOs.getCommittedVirtualMemorySize).toOption.toJson,
-          "swap_space_total" -> Try(unixOs.getTotalSwapSpaceSize).toOption.toJson,
-          "swap_space_free" -> Try(unixOs.getFreeSwapSpaceSize).toOption.toJson,
+          "phys_mem_total" -> Try(extOs.getTotalPhysicalMemorySize).toOption.toJson,
+          "phys_mem_free" -> Try(extOs.getFreePhysicalMemorySize).toOption.toJson,
+          "virt_mem_committed" -> Try(extOs.getCommittedVirtualMemorySize).toOption.toJson,
+          "swap_space_total" -> Try(extOs.getTotalSwapSpaceSize).toOption.toJson,
+          "swap_space_free" -> Try(extOs.getFreeSwapSpaceSize).toOption.toJson
+        )
+
+      case _ =>
+    }
+
+    os match {
+      case unixOs: com.sun.management.UnixOperatingSystemMXBean =>
+        // Gag possible exceptions.
+        result ++= Seq(
           "max_fd_count" -> Try(unixOs.getMaxFileDescriptorCount).toOption.toJson,
           "open_fd_count" -> Try(unixOs.getOpenFileDescriptorCount).toOption.toJson
         )
