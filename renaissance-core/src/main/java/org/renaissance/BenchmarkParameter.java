@@ -84,15 +84,15 @@ public interface BenchmarkParameter {
   List<Map<String, String>> toCsvRows();
 
   /**
-   * Interprets the value as a CSV-like table with rows separated by
-   * semicolons, columns separated by commas, and a header row with
-   * column names.
+   * Interprets the value as a CSV-like table and produces a {@link List}
+   * of objects obtained by applying a user-defined mapping function on
+   * each row. Each row is represented as a {@link Map} of column values
+   * (strings) keyed by column names. The CSV-like input has a header row
+   * with column names, the rows are separated by semicolons, and columns are
+   * separated by commas.
    *
-   * @param parser Function to parse a row from a {@link Map} containing
-   * column values keyed by column names.
-   *
-   * @return A {@link List} of rows represented by a {@link Map} of column
-   * names to string values, with rows and columns preserving iteration order.
+   * @param mapper Function that converts a CSV row to the result type.
+   * @return A {@link List} of objects obtained from CSV rows.
    */
   <R> List<R> toCsvRows(Function<Map<String, String>, R> parser);
 
