@@ -117,17 +117,19 @@ object RenaissanceSuite {
         plugins = new ExecutionPlugins.ForceGcPlugin() +: plugins
       }
 
-      // Initialize result writers (if any).
+      // Determine VM start in terms of nanoTime() and
+      // initialize the result writers (if any) with the metric.
+      val vmStartNanos = getVmStartNanos
       val writers = Seq(
-        config.csvOutput.map(f => new CsvWriter(f)),
-        config.jsonOutput.map(f => new JsonWriter(f))
+        config.csvOutput.map(f => new CsvWriter(f, vmStartNanos)),
+        config.jsonOutput.map(f => new JsonWriter(f, vmStartNanos))
       ).flatten
 
       // Register plugins and result writers for harness events.
       val dispatcher = createEventDispatcher(plugins, writers)
 
       // Note: no access to Config beyond this point.
-      val failedBenchmarks = runBenchmarks(suite, benchmarks, policy, dispatcher)
+      val failedBenchmarks = runBenchmarks(suite, benchmarks, policy, dispatcher, vmStartNanos)
       if (failedBenchmarks.nonEmpty) {
         val failedBenchmarksList = failedBenchmarks.map(_.name()).mkString(", ")
         println(s"The following benchmarks failed: $failedBenchmarksList")
@@ -148,12 +150,11 @@ object RenaissanceSuite {
     suite: BenchmarkSuite,
     benchmarks: Seq[BenchmarkDescriptor],
     policy: ExecutionPolicy,
-    dispatcher: EventDispatcher
+    dispatcher: EventDispatcher,
+    vmStartNanos: Long
   ): Seq[BenchmarkDescriptor] = {
     // TODO: Why collect failing benchmarks instead of just quitting whenever one fails?
     val failedBenchmarks = mutable.Buffer[BenchmarkDescriptor]()
-
-    val vmStartNanos = getVmStartNanos
 
     // Notify observers that the suite is set up.
     dispatcher.notifyAfterHarnessInit()
