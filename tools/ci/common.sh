@@ -52,17 +52,36 @@ cp_reflink() {
 
 get_jvm_workaround_args() {
     case "$RENAISSANCE_JVM_MAJOR_VERSION" in
-        16|17|18|19|20|21|22-ea)
+        16|17|18|19|20|21|22|23|24-ea|24)
             echo "--add-opens=java.base/java.lang=ALL-UNNAMED"
             echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
             echo "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
             echo "--add-opens=java.base/java.util=ALL-UNNAMED"
             echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
+            echo "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
             echo "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+            echo "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED"
             ;;
         *)
             ;;
     esac
+}
+
+if command -v timeout >/dev/null; then
+    TIMEOUT_IMPL=timeout_with_thread_dump_real
+else
+    TIMEOUT_IMPL=timeout_with_thread_dump_fake
+fi
+
+timeout_with_thread_dump_real() {
+    timeout --signal=3 --kill-after=5s "$@"
+}
+timeout_with_thread_dump_fake() {
+    shift
+    "$@"
+}
+timeout_with_thread_dump() {
+    "$TIMEOUT_IMPL" "$@"
 }
 
 

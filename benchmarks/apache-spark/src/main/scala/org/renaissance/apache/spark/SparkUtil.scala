@@ -90,21 +90,6 @@ trait SparkUtil {
     )
   }
 
-  def createRddFromCsv[T: ClassTag](
-    lines: RDD[String],
-    hasHeader: Boolean,
-    delimiter: String,
-    mapper: Array[String] => T
-  ) = {
-    val linesWithoutHeader = if (hasHeader) dropFirstLine(lines) else lines
-    linesWithoutHeader.map(_.split(delimiter)).map(mapper).filter(_ != null)
-  }
-
-  private def dropFirstLine(lines: RDD[String]): RDD[String] = {
-    val first = lines.first()
-    lines.filter { line => line != first }
-  }
-
   def tearDownSparkContext(): Unit = {
     sparkSession.close()
   }

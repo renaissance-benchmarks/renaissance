@@ -6,33 +6,12 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.{StandardCopyOption => CopyOption}
 import java.nio.file.{StandardOpenOption => OpenOption}
 import java.util.zip.ZipInputStream
 import scala.io.BufferedSource
 import scala.io.Source
 
 private object ResourceUtil {
-
-  /**
-   * Writes the resource associated with the [[ResourceUtil]] class
-   * to a file, replacing an existing file.
-   *
-   * @param resourceName path to the resource
-   * @param file path the output file
-   * @return [[Path]] to the output file
-   */
-  def writeResourceToFile(resourceName: String, file: Path) = {
-    val resourceStream = getResourceStream(resourceName)
-    try {
-      Files.copy(resourceStream, file, CopyOption.REPLACE_EXISTING)
-    } finally {
-      // This may mask a try-block exception, but at least it will fail anyway.
-      resourceStream.close()
-    }
-
-    file
-  }
 
   /**
    * Writes the resource associated with the [[ResourceUtil]] class
@@ -73,7 +52,7 @@ private object ResourceUtil {
   def duplicateLinesFromUrl(url: URL, copyCount: Int, outputFile: Path): Path = {
     import scala.jdk.CollectionConverters._
 
-    val lines = linesFromUrl(url).asJava
+    val lines = linesFromSource(Source.fromURL(url)).asJava
 
     for (_ <- 0 until copyCount) {
       Files.write(outputFile, lines, OpenOption.CREATE, OpenOption.APPEND)
@@ -83,18 +62,28 @@ private object ResourceUtil {
   }
 
   /**
-   * Loads a file from the given [[URL]] as a sequence of lines.
+   * Loads the contents of a [[Source]] as a sequence of lines and closes the source.
    *
-   * @param url input file [[URL]]
+   * @param source input [[Source]]
    * @return a sequence of lines
    */
-  def linesFromUrl(url: URL): Seq[String] = {
-    val source = Source.fromURL(url)
+  def linesFromSource(source: Source): Seq[String] = {
     try {
       source.getLines().toSeq
     } finally {
       source.close()
     }
+  }
+
+  /**
+   * Creates a [[Source]] from a resource associated with the [[ResourceUtil]] class.
+   *
+   * @param resourceName path to the resource
+   * @return a [[Source]] for the given resource
+   */
+  def sourceFromResource(resourceName: String): BufferedSource = {
+    // Use an explicit codec to avoid influence of the environment.
+    Source.fromURL(getClass.getResource(resourceName))(scala.io.Codec.UTF8)
   }
 
   /**

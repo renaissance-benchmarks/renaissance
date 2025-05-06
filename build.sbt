@@ -1,3 +1,4 @@
+import kotlin.Keys.{kotlinLib, kotlinPlugin, kotlinVersion, kotlincJvmTarget}
 import org.renaissance.License
 import sbt.Def
 import sbt.Package
@@ -6,6 +7,7 @@ import sbt.io.RegularFileFilter
 import sbt.io.Using
 
 import java.io.OutputStream
+import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 import java.util.Properties
 import java.util.jar.Attributes.Name
@@ -56,9 +58,9 @@ ThisBuild / git.useGitDescribe := true
 // Compilation settings
 //
 val javaRelease = "11"
-val scalaVersion212 = "2.12.18"
-val scalaVersion213 = "2.13.12"
-val scalaVersion3 = "3.3.1"
+val scalaVersion212 = "2.12.20"
+val scalaVersion213 = "2.13.15"
+val scalaVersion3 = "3.3.4"
 
 // Explicitly target a specific JDK release.
 ThisBuild / javacOptions ++= Seq("--release", javaRelease)
@@ -137,7 +139,10 @@ val generateManifestAttributesTask = Def.task {
     "java.base/sun.nio.ch",
     "java.management/sun.management",
     "java.management/sun.management.counter",
-    "java.management/sun.management.counter.perf"
+    "java.management/sun.management.counter.perf",
+    // Required by Chronicle Map.
+    "java.base/jdk.internal.ref",
+    "jdk.compiler/com.sun.tools.javac.file"
   )
 
   Package.ManifestAttributes(
@@ -146,7 +151,9 @@ val generateManifestAttributesTask = Def.task {
     ("Git-Head-Commit", git.gitHeadCommit.value.getOrElse("unknown")),
     ("Git-Head-Commit-Date", git.gitHeadCommitDate.value.getOrElse("unknown")),
     ("Git-Uncommitted-Changes", git.gitUncommittedChanges.value.toString),
-    ("Add-Opens", addOpensPackages.mkString(" "))
+    ("Add-Opens", addOpensPackages.mkString(" ")),
+    // Required by "org.lz4" % "lz4-java".
+    ("Enable-Native-Access", "ALL-UNNAMED")
   )
 }
 
@@ -154,24 +161,32 @@ val generateManifestAttributesTask = Def.task {
 // Subprojects
 //
 
-val asmVersion = "9.6"
-val commonsCompressVersion = "1.24.0"
-val commonsIoVersion = "2.14.0"
-val commonsLang3Version = "3.13.0"
+val arrowVersion = "18.0.0"
+// ASM 9.7+ requires Java 11.
+val asmVersion = "9.7.1"
+// Caffeine 3.0+ requires Java 11.
+val caffeineVersion = "3.1.8"
+val commonsCompressVersion = "1.27.1"
+val commonsIoVersion = "2.17.0"
+val commonsLang3Version = "3.17.0"
 val commonsMath3Version = "3.6.1"
-val commonsTextVersion = "1.10.0"
+val commonsTextVersion = "1.12.0"
 val eclipseCollectionsVersion = "11.1.0"
-val guavaVersion = "32.1.2-jre"
-val jacksonVersion = "2.15.2"
-val jerseyVersion = "2.40"
-val jnaVersion = "5.13.0"
-val nettyVersion = "4.1.99.Final"
+val guavaVersion = "33.3.1-jre"
+val jacksonVersion = "2.18.1"
+val jakartaXmlBindVersion = "2.3.3"
+val jerseyVersion = "2.45"
+val jnaVersion = "5.15.0"
+val nettyTomcatNativeVersion = "2.0.69.Final"
+val nettyVersion = "4.1.114.Final"
+val parquetVersion = "1.14.3"
 val ktorVersion = "2.3.8"
 val logbackVersion = "1.4.11"
-val scalaCollectionCompatVersion = "2.11.0"
+val scalaCollectionCompatVersion = "2.12.0"
 val scalaParallelCollectionsVersion = "1.0.4"
-val slf4jVersion = "2.0.9"
-val zstdJniVersion = "1.5.5-6"
+val scalaParserCombinatorsVersion = "2.4.0"
+val slf4jVersion = "2.0.16"
+val zstdJniVersion = "1.5.6-7"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
   .settings(
@@ -244,6 +259,10 @@ lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
       // akka-actor 2.6.17+ supports Scala 2.12, 2.13, and 3 under Apache 2.0 license
       // akka-actor 2.7.0+ supports Scala 2.12, 2.13, and 3 under Business Source 1.1 license
       "com.typesafe.akka" %% "akka-actor" % "2.6.21"
+    ),
+    excludeDependencies ++= Seq(
+      // Drop dependencies that are not needed for running on Java 11+.
+      ExclusionRule("org.scala-lang.modules", "scala-java8-compat_3")
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -259,7 +278,7 @@ lazy val actorsReactorsBenchmarks = (project in file("benchmarks/actors-reactors
     ProjectRef(uri("benchmarks/actors-reactors/reactors"), "reactorsCoreJVM")
   )
 
-val sparkVersion = "3.5.0"
+val sparkVersion = "3.5.3"
 
 lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   .settings(
@@ -284,6 +303,11 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
+      // Force common (newer) version of Arrow packages.
+      "org.apache.arrow" % "arrow-vector" % arrowVersion,
+      "org.apache.arrow" % "arrow-memory-netty" % arrowVersion,
+      // Force common (newer) version of Parquet packages.
+      "org.apache.parquet" % "parquet-hadoop" % parquetVersion,
       // Force common (newer) version of Jersey packages.
       "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
       "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
@@ -292,12 +316,14 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "com.google.guava" % "guava" % guavaVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
+      "jakarta.xml.bind" % "jakarta.xml.bind-api" % jakartaXmlBindVersion,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
       "org.scala-lang.modules" %% "scala-parallel-collections" % scalaParallelCollectionsVersion,
+      "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
       "org.slf4j" % "jul-to-slf4j" % slf4jVersion
@@ -310,17 +336,24 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
     name := "database",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "com.github.jnr" % "jnr-posix" % "3.1.18",
+      "com.github.jnr" % "jnr-posix" % "3.1.20",
       "org.apache.commons" % "commons-math3" % commonsMath3Version,
-      "org.agrona" % "agrona" % "1.19.2",
+      // Agrona 1.23+ requires Java 17.
+      "org.agrona" % "agrona" % "1.22.0",
       // Database libraries.
-      "org.mapdb" % "mapdb" % "3.0.10",
-      "com.h2database" % "h2-mvstore" % "2.2.224",
-      "net.openhft" % "chronicle-map" % "3.22.9",
+      "org.mapdb" % "mapdb" % "3.1.0",
+      "com.h2database" % "h2-mvstore" % "2.3.232",
+      // Chronicle Map 3.25+ supports Java 21.
+      "net.openhft" % "chronicle-map" % "3.26ea4",
       // Add simple binding to silence SLF4J warnings.
-      "org.slf4j" % "slf4j-simple" % slf4jVersion
+      "org.slf4j" % "slf4j-simple" % slf4jVersion,
+      // Replacement for excluded "net.jpountz.lz4" % "lz4".
+      "org.lz4" % "lz4-java" % "1.8.0"
     ),
     dependencyOverrides ++= Seq(
+      // Force newer version of Chronicle modules.
+      "net.openhft" % "chronicle-wire" % "2.26ea10",
+      "net.openhft" % "posix" % "2.26ea3",
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna-platform" % jnaVersion,
       // Force common (newer) version of ASM packages.
@@ -331,6 +364,10 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       // Force common versions of other dependencies.
       "com.google.guava" % "guava" % guavaVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion
+    ),
+    excludeDependencies ++= Seq(
+      // Replaced by the "org.lz4" % "lz4-java".
+      ExclusionRule("net.jpountz.lz4", "lz4")
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -340,10 +377,10 @@ lazy val jdkConcurrentBenchmarks = (project in file("benchmarks/jdk-concurrent")
     name := "jdk-concurrent",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      // Jenetics 5.2.0 is the last to support Java 8.
-      // Jenetics 6.0.0 requires Java 11 and benchmark update.
+      // Jenetics 6.3.0 is the last to support Java 11.
       // Jenetics 7.0.0 requires Java 17 and benchmark update.
-      "io.jenetics" % "jenetics" % "5.2.0"
+      // Jenetics 8.0.0 requires Java 21 and benchmark update.
+      "io.jenetics" % "jenetics" % "6.3.0"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -355,6 +392,8 @@ lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+val grpcVersion = "1.68.1"
+
 lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
   .settings(
     name := "neo4j",
@@ -362,9 +401,9 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     libraryDependencies ++= Seq(
       // neo4j 4.4 supports Scala 2.12 and requires JDK11.
       // neo4j 5.x supports Scala 2.13 and requires JDK17.
-      "org.neo4j" % "neo4j" % "5.12.0",
+      "org.neo4j" % "neo4j" % "5.25.1",
       // play-json 2.10.x requires SBT running on JDK11 to compile.
-      "com.typesafe.play" %% "play-json" % "2.10.1"
+      "com.typesafe.play" %% "play-json" % "2.10.6"
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not really used by the benchmark.
@@ -373,14 +412,25 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
     dependencyOverrides ++= Seq(
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion,
+      "com.fasterxml.jackson.jaxrs" % "jackson-jaxrs-json-provider" % jacksonVersion,
       // Force newer JNA to support more platforms/architectures.
       "net.java.dev.jna" % "jna" % jnaVersion,
+      // Force newer version of gRPC packages.
+      "io.grpc" % "grpc-netty" % grpcVersion,
+      "io.grpc" % "grpc-protobuf" % grpcVersion,
+      "io.grpc" % "grpc-stub" % grpcVersion,
       // Force common (newer) version of Netty packages.
-      "io.netty" % "netty-codec-http" % nettyVersion,
+      "io.netty" % "netty-codec-http2" % nettyVersion,
+      "io.netty" % "netty-handler-proxy" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
       "io.netty" % "netty-transport-native-kqueue" % nettyVersion,
+      "io.netty" % "netty-tcnative-classes" % nettyTomcatNativeVersion,
       // Force common (newer) version of Eclipse collection packages.
       "org.eclipse.collections" % "eclipse-collections" % eclipseCollectionsVersion,
+      // Force common (newer) version of Arrow packages.
+      "org.apache.arrow" % "flight-core" % arrowVersion,
+      // Force common (newer) version of Parquet packages.
+      "org.apache.parquet" % "parquet-hadoop" % parquetVersion,
       // Force common (newer) version of Jersey packages.
       "org.glassfish.jersey.containers" % "jersey-container-servlet" % jerseyVersion,
       "org.glassfish.jersey.core" % "jersey-server" % jerseyVersion,
@@ -388,8 +438,10 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       // Force common (newer) version of ASM packages.
       "org.ow2.asm" % "asm-util" % asmVersion,
       // Force common versions of other dependencies.
+      "com.github.ben-manes.caffeine" % "caffeine" % caffeineVersion,
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
       "commons-io" % "commons-io" % commonsIoVersion,
+      "jakarta.xml.bind" % "jakarta.xml.bind-api" % jakartaXmlBindVersion,
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
@@ -403,7 +455,7 @@ lazy val rxBenchmarks = (project in file("benchmarks/rx"))
     name := "rx",
     commonSettingsScala3,
     libraryDependencies ++= Seq(
-      "io.reactivex.rxjava3" % "rxjava" % "3.1.8"
+      "io.reactivex.rxjava3" % "rxjava" % "3.1.9"
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -416,12 +468,13 @@ lazy val scalaDottyBenchmarks = (project in file("benchmarks/scala-dotty"))
       // Version 3.1.2 was the last to compile with Scala 2.13.11. Version 3.1.3-RC2
       // broke compilation due to "Unsupported Scala 3 union in parameter value".
       // Compiling with Scala 3.1.0+ avoids compatibility issues.
-      "org.scala-lang" % "scala3-compiler_3" % "3.3.1",
+      "org.scala-lang" % "scala3-compiler_3" % "3.3.4",
       // The following is required to compile the workload sources. Keep it last!
       "org.scala-lang" % "scala-compiler" % scalaVersion213 % Runtime
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not really used by the benchmark.
+      ExclusionRule("net.java.dev.jna", "jna"),
       ExclusionRule("org.jline", "jline"),
       ExclusionRule("org.jline", "jline-reader"),
       ExclusionRule("org.jline", "jline-terminal"),
@@ -452,16 +505,21 @@ lazy val scalaStdlibBenchmarks = (project in file("benchmarks/scala-stdlib"))
 lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
   .settings(
     name := "scala-stm",
-    commonSettingsScala212
+    commonSettingsScala3,
+    libraryDependencies := Seq(
+      "org.scala-stm" %% "scala-stm" % "0.11.1"
+    ),
+    dependencyOverrides ++= Seq(
+      // Force common version of Scala 3 library.
+      "org.scala-lang" %% "scala3-library" % scalaVersion3
+    )
   )
   .dependsOn(
     renaissanceCore % "provided",
-    RootProject(
-      uri("benchmarks/scala-stm/scala-stm-library")
-    ) % "compile->compile;compile->test"
+    RootProject(uri("benchmarks/scala-stm/stmbench7"))
   )
 
-val finagleVersion = "22.12.0"
+val finagleVersion = "24.2.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
   .disablePlugins(KotlinPlugin)
@@ -485,11 +543,14 @@ lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle
       "io.netty" % "netty-handler-proxy" % nettyVersion,
       "io.netty" % "netty-resolver-dns" % nettyVersion,
       "io.netty" % "netty-transport-native-epoll" % nettyVersion,
+      "io.netty" % "netty-tcnative-boringssl-static" % nettyTomcatNativeVersion,
       // Force common (newer) version of Jackson packages.
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
       // Force common versions of other dependencies.
+      "com.github.ben-manes.caffeine" % "caffeine" % caffeineVersion,
       "com.github.luben" % "zstd-jni" % zstdJniVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
+      "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
+      "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -501,7 +562,7 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
     commonSettingsNoScala,
     kotlinLib("stdlib"),
     kotlinPlugin("serialization-compiler-plugin-embeddable"),
-    kotlinVersion := "1.9.20",
+    kotlinVersion := "2.1.20",
     kotlincJvmTarget := "11",
     libraryDependencies ++= Seq(
       "io.ktor" % "ktor-server-core-jvm" % ktorVersion,
@@ -727,9 +788,36 @@ def mapModuleJarsToAssemblyEntries(modulesDetails: Seq[(String, Seq[File], Strin
 
 def mapModuleDependencyJarsToAssemblyTask(modules: Seq[Project]) =
   Def.task[Seq[(File, String)]] {
+    val log = sLog.value
+    val targetDir = (Compile / target).value
+
     val modulesDetails = collectModulesDetailsTask(modules).value
-    mapModuleJarsToAssemblyEntries(modulesDetails).flatMap(_._2).distinct
+    mapModuleJarsToAssemblyEntries(modulesDetails).flatMap(_._2).distinct.map { entry =>
+      // Use patched "hadoop-client-api" to allow running on Java 23+.
+      if (entry._1.name.startsWith("hadoop-client-api")) {
+        remapHadoopClientApiJarEntry(entry, targetDir, log)
+      } else {
+        entry
+      }
+    }
   }
+
+def remapHadoopClientApiJarEntry(entry: (File, String), targetDir: File, log: Logger) = {
+  val originalJar = entry._1
+  val patchedJar = targetDir / "patched" / originalJar.name
+
+  if (patchedJar.exists()) {
+    log.info(s"Remapping Hadoop Client API to patched jar in $patchedJar")
+    (patchedJar, entry._2)
+  } else {
+    log.error(s"Could not find patched Hadoop Client API jar in $patchedJar")
+
+    // Throw an exception here to stop the build. This is necessary, because
+    // the SBT assembly task does not check if the source files exist when
+    // producing the final JAR file.
+    throw new NoSuchFileException(patchedJar.toString)
+  }
+}
 
 /**
  * Generates assembly mappings for all class files on the given classpath.
@@ -751,6 +839,46 @@ def mapClassesToAssemblyTask(classpath: Classpath) =
       }
     }
   }
+
+//
+// Tasks related to generating patched Hadoop Client API jar.
+//
+
+lazy val generatePatchedHadoopClientApiJar = taskKey[Seq[File]](
+  "Generates a patched Hadoop Client API jar which modifies the 'UserGroupInformation' class " +
+    "to avoid calling deprecated Java Security API. This allows using Spark with Java 23+ " +
+    "without having to specify the -Djava.security.manager=allow on the command line, which " +
+    "allows running with GraalVM Native Image."
+)
+
+def generatePatchedHadoopClientApiJarTask = {
+  Def.task {
+    val log = sLog.value
+    val targetDir = (Compile / target).value / "patched"
+
+    val dependencyJars = (apacheSparkBenchmarks / Runtime / dependencyClasspathAsJars).value
+    dependencyJars.map(_.data).filter(f => f.name.startsWith("hadoop-client-api")).map {
+      originalJar =>
+        val patchedJar = targetDir / originalJar.name
+        if (!patchedJar.exists()) {
+          log.info(s"Creating patched Hadoop Client API jar in $patchedJar")
+          IO.createDirectory(targetDir)
+
+          val temporaryJar = patchedJar.getParentFile / (patchedJar.name + ".tmp")
+          if (Hadoop.patchClientApiJar(originalJar, temporaryJar, log)) {
+            IO.move(temporaryJar, patchedJar)
+            patchedJar
+          } else {
+            log.error(s"Failed to create patched Hadoop Client API jar in $patchedJar")
+            null
+          }
+        } else {
+          log.info(s"Found patched Hadoop Client API jar in $patchedJar")
+          patchedJar
+        }
+    }
+  }
+}
 
 //
 // Tasks related to generating metadata-only jars for benchmarks.
@@ -866,6 +994,7 @@ lazy val renaissance = (project in file("."))
     name := "renaissance",
     // Reflect the distribution license in the package name.
     moduleName := name.value + "-" + (if (nonGplOnly.value) "mit" else "gpl"),
+    generatePatchedHadoopClientApiJar := generatePatchedHadoopClientApiJarTask.value,
     inConfig(Compile)(
       Seq(
         // The main class for the JAR is the Launcher from the core package.
@@ -884,9 +1013,15 @@ lazy val renaissance = (project in file("."))
           mapClassesToAssemblyTask(classpath)
         }.value,
         // Include dependency JAR files in the output JAR.
+        //
+        // Also remaps the Hadoop Client API jar to a patched version. We use task dependency
+        // to ensure that the patched jar is produced before the mappings. Resource generators
+        // are useless, because they run concurrently with the mapping tasks. This would not
+        // be a problem if the mapping source files were actually checked for existence when
+        // creating the final JAR.
         packageBin / mappings ++= mapModuleDependencyJarsToAssemblyTask(
           renaissanceModules
-        ).value
+        ).dependsOn(generatePatchedHadoopClientApiJar).value
       )
     )
   )
@@ -1031,6 +1166,7 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
       "org.openjdk.jmh" % "jmh-generator-bytecode" % jmhVersion,
       "org.openjdk.jmh" % "jmh-generator-reflection" % jmhVersion
     ),
+    generatePatchedHadoopClientApiJar := generatePatchedHadoopClientApiJarTask.value,
     inConfig(Compile)(
       Seq(
         // Split result from the JMH generator task between sources and resources.
@@ -1057,7 +1193,7 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
         // Include benchmark dependency JAR files in the output JAR.
         packageBin / mappings ++= mapModuleDependencyJarsToAssemblyTask(
           renaissanceModules
-        ).value
+        ).dependsOn(generatePatchedHadoopClientApiJar).value
       )
     )
   )

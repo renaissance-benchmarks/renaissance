@@ -283,6 +283,10 @@ public final class BenchmarkSuite {
       throw new ExtensionException("malformed URL(s) in classpath specification");
     }
 
+    //
+    // No need to explicitly close this URLClassLoader on exit, because it does not
+    // operate on files created by the harness that need to be deleted on exit.
+    //
     ClassLoader parent = ModuleLoader.class.getClassLoader();
     return new URLClassLoader(classPathUrls, parent);
   }

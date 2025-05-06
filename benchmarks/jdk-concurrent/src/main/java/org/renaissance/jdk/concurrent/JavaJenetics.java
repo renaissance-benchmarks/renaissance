@@ -29,7 +29,7 @@ public final class JavaJenetics {
 
   private final int geneCount;
 
-  private final int chromosomeCount;
+  private final int populationSize;
 
   private final int generationCount;
 
@@ -45,13 +45,13 @@ public final class JavaJenetics {
   //
 
   public JavaJenetics(
-    int geneMinValue, int geneMaxValue, int geneCount, int chromosomeCount,
+    int geneMinValue, int geneMaxValue, int geneCount, int populationSize,
     int generationCount, int threadCount, int randomSeed
   ) {
     this.geneMinValue = geneMinValue;
     this.geneMaxValue = geneMaxValue;
     this.geneCount = geneCount;
-    this.chromosomeCount = chromosomeCount;
+    this.populationSize = populationSize;
     this.generationCount = generationCount;
     this.randomSeed = randomSeed;
     this.threadCount = threadCount;
@@ -82,9 +82,9 @@ public final class JavaJenetics {
     //
     final long seed = initialSeed.getAndIncrement();
 
-    final Random chromosomeRandom = new Random(seed);
+    final Random genotypeRandom = new Random(seed);
     Genotype<DoubleGene> genotype = Genotype.of(DoubleChromosome.of(geneMinValue, geneMaxValue, geneCount));
-    Factory<Genotype<DoubleGene>> factory = () -> RandomRegistry.with(chromosomeRandom, r -> genotype.newInstance());
+    Factory<Genotype<DoubleGene>> factory = () -> RandomRegistry.with(genotypeRandom, r -> genotype.newInstance());
 
     final Random altererRandom = new Random(seed + 15);
     Alterer<DoubleGene, Double> singlePointCrossover = new SinglePointCrossover<DoubleGene, Double>(0.2);
@@ -110,7 +110,7 @@ public final class JavaJenetics {
       .alterers(alterer)
       .offspringSelector(offSpringSelector)
       .survivorsSelector(survivorsSelector)
-      .populationSize(chromosomeCount)
+      .populationSize(populationSize)
       .build();
 
     final Genotype<DoubleGene> result = engine.stream()

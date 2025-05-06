@@ -1,6 +1,5 @@
 package org.renaissance.harness
 
-import com.sun.management.UnixOperatingSystemMXBean
 import org.renaissance.Benchmark
 import org.renaissance.Plugin.BeforeHarnessShutdownListener
 import org.renaissance.Plugin.BenchmarkFailureListener
@@ -17,9 +16,9 @@ import java.nio.file.StandardOpenOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
-import scala.util.Try
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 /**
  * Provides common functionality for JSON and CSV result writers.
@@ -142,7 +141,7 @@ private abstract class ResultWriter
   protected def store(normalTermination: Boolean): Unit
 }
 
-private final class CsvWriter(val csvFile: Path) extends ResultWriter {
+private final class CsvWriter(val csvFile: Path, val vmStartNanos: Long) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
     val csv = new StringBuilder
@@ -155,8 +154,9 @@ private final class CsvWriter(val csvFile: Path) extends ResultWriter {
   }
 
   private def formatHeader(metricNames: Seq[String], csv: StringBuilder): Unit = {
-    // There will always be at least one column after "benchmark".
-    csv.append("benchmark,").append(metricNames.mkString(",")).append(",vm_start_unix_ms\n")
+    csv.append("benchmark")
+    metricNames.foreach { name => csv.append(",").append(name) }
+    csv.append(",vm_start_unix_ms,vm_start_ns\n")
   }
 
   private def formatResults(metricNames: Seq[String], csv: StringBuilder): Unit = {
@@ -171,14 +171,14 @@ private final class CsvWriter(val csvFile: Path) extends ResultWriter {
           csv.append(",").append(stringValue)
         }
 
-        csv.append(",").append(vmStartTime).append("\n")
+        csv.append(",").append(vmStartTime).append(",").append(vmStartNanos).append("\n")
       }
     }
   }
 
 }
 
-private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
+private final class JsonWriter(val jsonFile: Path, vmStartNanos: Long) extends ResultWriter {
 
   private def systemPropertyAsJson(name: String) = Option(System.getProperty(name)).toJson
 
@@ -208,17 +208,32 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
       "available_processors" -> os.getAvailableProcessors.toJson
     )
 
+    // Platforms such as the Native Image have been observed to throw an
+    // "unsupported feature" exception when calling methods on the more
+    // specific MXBean classes. We wrap the calls to avoid crashes and
+    // indicate it by producing a `null` literal in the JSON output.
+    def tryGetJson(getter: () => Long) = {
+      Try(getter()).toOption.toJson
+    }
+
     os match {
-      case unixOs: UnixOperatingSystemMXBean =>
-        // Gag possible exceptions.
+      case extOs: com.sun.management.OperatingSystemMXBean =>
         result ++= Seq(
-          "phys_mem_total" -> Try(unixOs.getTotalPhysicalMemorySize).toOption.toJson,
-          "phys_mem_free" -> Try(unixOs.getFreePhysicalMemorySize).toOption.toJson,
-          "virt_mem_committed" -> Try(unixOs.getCommittedVirtualMemorySize).toOption.toJson,
-          "swap_space_total" -> Try(unixOs.getTotalSwapSpaceSize).toOption.toJson,
-          "swap_space_free" -> Try(unixOs.getFreeSwapSpaceSize).toOption.toJson,
-          "max_fd_count" -> Try(unixOs.getMaxFileDescriptorCount).toOption.toJson,
-          "open_fd_count" -> Try(unixOs.getOpenFileDescriptorCount).toOption.toJson
+          "phys_mem_total" -> tryGetJson(extOs.getTotalPhysicalMemorySize),
+          "phys_mem_free" -> tryGetJson(extOs.getFreePhysicalMemorySize),
+          "virt_mem_committed" -> tryGetJson(extOs.getCommittedVirtualMemorySize),
+          "swap_space_total" -> tryGetJson(extOs.getTotalSwapSpaceSize),
+          "swap_space_free" -> tryGetJson(extOs.getFreeSwapSpaceSize)
+        )
+
+      case _ =>
+    }
+
+    os match {
+      case unixOs: com.sun.management.UnixOperatingSystemMXBean =>
+        result ++= Seq(
+          "max_fd_count" -> tryGetJson(unixOs.getMaxFileDescriptorCount),
+          "open_fd_count" -> tryGetJson(unixOs.getOpenFileDescriptorCount)
         )
 
       // No extra information to collect on non-Unix systems.
@@ -243,6 +258,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
       "args" -> runtime.getInputArguments.asScala.toList.toJson,
       "termination" -> (if (normalTermination) "normal" else "forced").toJson,
       "start_unix_ms" -> runtime.getStartTime.toJson,
+      "start_ns" -> vmStartNanos.toJson,
       "start_iso" -> unixTimeAsIso(runtime.getStartTime).toJson,
       "uptime_ms" -> runtime.getUptime.toJson,
       "collectors" -> getCollectorInfo.toJson,
@@ -390,7 +406,7 @@ private final class JsonWriter(val jsonFile: Path) extends ResultWriter {
 
   override def store(normalTermination: Boolean): Unit = {
     val result = Map(
-      "format_version" -> 5.toJson,
+      "format_version" -> 6.toJson,
       "benchmarks" -> getBenchmarkNames.toJson,
       "environment" -> getEnvironment(normalTermination).toJson,
       "suite" -> getSuiteInfo.toJson,
