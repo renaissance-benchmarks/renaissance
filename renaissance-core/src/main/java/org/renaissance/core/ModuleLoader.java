@@ -265,7 +265,8 @@ public final class ModuleLoader {
 
   private static URL makeUrl(String spec) {
     try {
-      return new URL(spec);
+      // Avoid URL constructor deprecated since Java 20.
+      return URI.create(spec).toURL();
     } catch (MalformedURLException e) {
       logger.warning(String.format("Failed to convert '%s' to URL", spec));
       return null;

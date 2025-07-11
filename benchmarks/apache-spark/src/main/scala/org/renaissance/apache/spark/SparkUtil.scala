@@ -10,7 +10,6 @@ import org.renaissance.BenchmarkContext
 
 import java.nio.file.Files
 import java.nio.file.Path
-import scala.reflect.ClassTag
 
 /**
  * A common trait for all Spark benchmarks. Provides shared Spark
@@ -88,10 +87,17 @@ trait SparkUtil {
     println(
       s"NOTE: '$benchmarkName' benchmark uses Spark local executor with $threadCount (out of $cpuCount) threads."
     )
+
+    // Trigger early loading of the 'UserGroupInformation.RealUser' class to
+    // avoid failures in a Hadoop shutdown hook on Renaissance exit. The hook
+    // references the class after the benchmark module class loader is closed
+    // and the dependency JAR files deleted.
+    val ugi = org.apache.hadoop.security.UserGroupInformation.getCurrentUser.getRealUser
   }
 
   def tearDownSparkContext(): Unit = {
     sparkSession.close()
+    sparkSession = null
   }
 
   /**
