@@ -217,6 +217,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v16-openjdk11-with-ant-gcc"
+    env:
+      JAVA_HOME: "/opt/jdk-11.0.2/"
     # We rarely run over 10 minutes anyway.
     timeout-minutes: 30
     steps:
