@@ -8,7 +8,7 @@ jobs:
     container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk25-ea"
     steps:
       - name: Git checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
