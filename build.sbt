@@ -290,12 +290,8 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     // Patch selected dependency jars and remap class path to the patched version.
     // We use task dependency to ensure that the patched jars are produced first.
     Runtime / dependencyClasspathAsJars := Patcher.remapPatchedJarFilesTask
-      .dependsOn(
-        Patcher.generatePatchedJarTask("hadoop-client-api", Patcher.patchHadoopClientApiJar _)
-      )
-      .dependsOn(
-        Patcher.generatePatchedJarTask("spark-unsafe", Patcher.patchSparkUnsafeJar _)
-      )
+      .dependsOn(Patcher.HadoopClientApiPatcherTask("hadoop-client-api"))
+      .dependsOn(Patcher.SparkUnsafePatcherTask("spark-unsafe"))
       .value,
     // Exclude legacy logging libraries.
     excludeDependencies ++= Seq(
