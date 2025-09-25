@@ -14,7 +14,7 @@ jobs:
 
   style:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk24"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk25"
     # We rarely build for more than 3 minutes
     timeout-minutes: 10
     steps:
@@ -44,7 +44,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk11-with-ant-gcc"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk21"
     # We rarely build for more than 3 minutes
     timeout-minutes: 10
     steps:
@@ -93,7 +93,7 @@ jobs:
   readme:
     needs: build
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk24"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk25"
     # We rarely build for more than 3 minutes
     timeout-minutes: 10
     steps:
