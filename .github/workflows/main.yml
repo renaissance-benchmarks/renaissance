@@ -10,11 +10,32 @@ env:
   # (Using the pseudo-ternary operator here, the retention can be 1 to 90 days)
   ARTIFACT_RETENTION_DAYS: ${{ ((github.event_name == 'push') && (github.ref == 'refs/heads/master')) && 30 || 4 }}
 
+  BUILDENV_IMAGE_BASE: ghcr.io/renaissance-benchmarks/renaissance-buildenv
+  BUILDENV_IMAGE_VERSION: v17
+
 jobs:
 
-  style:
+  # Hack: this job exposes selected 'env' variables as job outputs so that other
+  # jobs can use them in job-level keys, such as 'container', where access to
+  # the 'env' context is prohibited. We cannot use the external 'vars' context,
+  # because we need the values of the common 'env' variables to be versioned.
+  setup:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk25"
+    outputs:
+      BUILDENV_IMAGE_BASE: ${{ steps.vars.outputs.BUILDENV_IMAGE_BASE }}
+      BUILDENV_IMAGE_VERSION: ${{ steps.vars.outputs.BUILDENV_IMAGE_VERSION }}
+    steps:
+      - name: Expose specific variables as outputs
+        id: vars
+        # Expose common values from the 'env' context inside the 'run' key.
+        run: |
+          echo "BUILDENV_IMAGE_BASE=${{ env.BUILDENV_IMAGE_BASE }}" >> "$GITHUB_OUTPUT"
+          echo "BUILDENV_IMAGE_VERSION=${{ env.BUILDENV_IMAGE_VERSION }}" >> "$GITHUB_OUTPUT"
+
+  style:
+    needs: setup
+    runs-on: ubuntu-latest
+    container: ${{ format('{0}:{1}-openjdk25', needs.setup.outputs.BUILDENV_IMAGE_BASE, needs.setup.outputs.BUILDENV_IMAGE_VERSION) }}
     # We rarely build for more than 3 minutes
     timeout-minutes: 10
     steps:
@@ -43,8 +64,9 @@ jobs:
 
 
   build:
+    needs: setup
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk21"
+    container: ${{ format('{0}:{1}-openjdk21', needs.setup.outputs.BUILDENV_IMAGE_BASE, needs.setup.outputs.BUILDENV_IMAGE_VERSION) }}
     # We rarely build for more than 3 minutes
     timeout-minutes: 10
     steps:
@@ -91,9 +113,9 @@ jobs:
 
 
   readme:
-    needs: build
+    needs: [setup, build]
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk25"
+    container: ${{ format('{0}:{1}-openjdk25', needs.setup.outputs.BUILDENV_IMAGE_BASE, needs.setup.outputs.BUILDENV_IMAGE_VERSION) }}
     # We rarely build for more than 3 minutes
     timeout-minutes: 10
     steps:
@@ -118,7 +140,7 @@ jobs:
 
 
   run:
-    needs: build
+    needs: [setup, build]
     strategy:
       fail-fast: false
 
@@ -131,7 +153,7 @@ jobs:
           - os: linux
             image: openjdk21
           - os: linux
-            image: openjdk24
+            image: openjdk25
           - os: linux
             image: openj9-openjdk11
           - os: linux
@@ -146,7 +168,7 @@ jobs:
           - os: windows
             java: 21
           - os: windows
-            java: 24
+            java: 25
 
           - os: macos
             java: 11
@@ -155,14 +177,22 @@ jobs:
           - os: macos
             java: 21
           - os: macos
-            java: 24
+            java: 25
 
-    # The following two lines are a bit of a hack:
+    # The following two settings are a bit of a hack:
     #  - We use only short OS name in the matrix to have short build names.
-    #  - We need to set container to null on Windows and Mac as containers are
-    #    supported on Linux only
+    #  - We need to set container to null on Windows and Mac as containers
+    #    are only supported on Linux.
+    #  - Workaround: avoid newer images (with Fedora 42) for JDK 11.
     runs-on: ${{ (matrix.os == 'linux') && 'ubuntu' || matrix.os }}-latest
-    container: ${{ (matrix.os == 'linux') && format('ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-{0}', matrix.image) || null }}
+    container: >-
+      ${{
+        (matrix.os == 'linux') && format(
+          '{0}:{1}-{2}', needs.setup.outputs.BUILDENV_IMAGE_BASE,
+          (matrix.image == 'openjdk11' && 'v15') || needs.setup.outputs.BUILDENV_IMAGE_VERSION,
+          matrix.image
+        ) || null
+      }}
 
     # We rarely run over 17 minutes but a runaway JMH can loop forever.
     timeout-minutes: 30
@@ -214,9 +244,9 @@ jobs:
 
 
   plugins:
+    needs: [setup, build]
     runs-on: ubuntu-latest
-    needs: build
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk11-with-ant-gcc"
+    container: ${{ format('{0}:{1}-openjdk11-with-ant-gcc', needs.setup.outputs.BUILDENV_IMAGE_BASE, 'v15') }}
     # We rarely run over 10 minutes anyway.
     timeout-minutes: 30
     steps:
