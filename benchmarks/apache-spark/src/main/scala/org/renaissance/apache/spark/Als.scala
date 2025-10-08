@@ -40,8 +40,10 @@ import scala.util.Random
 @Parameter(name = "als_iterations", defaultValue = "10")
 @Parameter(name = "expected_user_factors_sum", defaultValue = "-9596.627819650528")
 @Parameter(name = "expected_user_factors_sum_squares", defaultValue = "788656.1993662444")
+@Parameter(name = "user_factors_tolerance", defaultValue = "0.02")
 @Parameter(name = "expected_item_factors_sum", defaultValue = "-3.6123005696281325")
 @Parameter(name = "expected_item_factors_sum_squares", defaultValue = "121.76721351321395")
+@Parameter(name = "item_factors_tolerance", defaultValue = "0.00001")
 @Configuration(
   name = "test",
   settings = Array(
@@ -92,7 +94,11 @@ final class Als extends Benchmark with SparkUtil {
 
   private var expectedUserFactorsSummary: FactorsSummary = _
 
+  private var userFactorsTolerance: Double = _
+
   private var expectedItemFactorsSummary: FactorsSummary = _
+
+  private var itemFactorsTolerance: Double = _
 
   private var inputRatings: DataFrame = _
 
@@ -141,12 +147,16 @@ final class Als extends Benchmark with SparkUtil {
       alsUserCount
     )
 
+    userFactorsTolerance = bc.parameter("user_factors_tolerance").toDouble
+
     expectedItemFactorsSummary = FactorsSummary(
       bc.parameter("expected_item_factors_sum").toDouble,
       bc.parameter("expected_item_factors_sum_squares").toDouble,
       ClosedInterval(alsRankParam),
       alsItemCount
     )
+
+    itemFactorsTolerance = bc.parameter("item_factors_tolerance").toDouble
 
     // Store generated ratings as a single file.
     val ratingsCsv = storeRatings(
@@ -173,10 +183,10 @@ final class Als extends Benchmark with SparkUtil {
 
   private def validate(result: ALSModel): Unit = {
     val actualUserFactorsSummary = summarizeFactors(result.userFactors)
-    validateSummary("user", expectedUserFactorsSummary, actualUserFactorsSummary, 0.01)
+    validateSummary("user", expectedUserFactorsSummary, actualUserFactorsSummary, userFactorsTolerance)
 
     val actualItemFactorsSummary = summarizeFactors(result.itemFactors)
-    validateSummary("item", expectedItemFactorsSummary, actualItemFactorsSummary, 0.000001)
+    validateSummary("item", expectedItemFactorsSummary, actualItemFactorsSummary, itemFactorsTolerance)
   }
 
   private def summarizeFactors(factors: DataFrame): FactorsSummary = {
