@@ -52,7 +52,7 @@ cp_reflink() {
 
 get_jvm_workaround_args() {
     case "$RENAISSANCE_JVM_MAJOR_VERSION" in
-        16|17|18|19|20|21|22|23|24-ea|24)
+        1[6-9]|2[0-6]|26-ea)
             echo "--add-opens=java.base/java.lang=ALL-UNNAMED"
             echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
             echo "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
@@ -60,6 +60,7 @@ get_jvm_workaround_args() {
             echo "--add-opens=java.base/java.nio=ALL-UNNAMED"
             echo "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
             echo "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+            echo "--add-opens=java.base/sun.nio=ALL-UNNAMED"
             echo "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED"
             ;;
         *)

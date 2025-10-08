@@ -5,7 +5,7 @@ env:
 jobs:
   linux-ea:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk25-ea"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v17-openjdk26-ea"
     steps:
       - name: Git checkout
         uses: actions/checkout@v5

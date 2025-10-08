@@ -6,13 +6,13 @@ import sbt.io.RegularFileFilter
 import sbt.io.Using
 
 import java.io.OutputStream
-import java.nio.file.NoSuchFileException
 import java.nio.file.Paths
 import java.util.Properties
 import java.util.jar.Attributes.Name
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
+
 import scala.collection.Seq
 import scala.collection.immutable.ListSet
 
@@ -34,6 +34,7 @@ Global / onLoad := {
   previousOnLoad.andThen(state => "setupPrePush" :: state)
 }
 
+//
 // Support for distributions with different licenses.
 //
 val nonGplOnly = SettingKey[Boolean](
@@ -52,6 +53,12 @@ Global / cancelable := true
 // Determine project version using 'git describe'.
 //
 ThisBuild / git.useGitDescribe := true
+
+//
+// Intialize optional work-around related settings.
+//
+import Patcher.Keys._
+ThisBuild / patchedJavaRelease := None
 
 //
 // Compilation settings
@@ -135,6 +142,7 @@ val generateManifestAttributesTask = Def.task {
     "java.base/java.lang.reflect",
     "java.base/java.util",
     "java.base/java.nio",
+    "java.base/sun.nio",
     "java.base/sun.nio.ch",
     "java.management/sun.management",
     "java.management/sun.management.counter",
@@ -275,7 +283,48 @@ lazy val actorsReactorsBenchmarks = (project in file("benchmarks/actors-reactors
     ProjectRef(uri("benchmarks/actors-reactors/reactors"), "reactorsCoreJVM")
   )
 
+//
+
 val sparkVersion = "3.5.3"
+val hadoopVersion = "3.3.6"
+
+/**
+ * Provides modified 'UserGroupInformation' class to be patched into hadoop-client-api JAR.
+ *
+ * The modified class replaces call to 'Subject.getCurrentUser()', which was removed in
+ * Java 23 with a call to 'Subject.current()' introduced in Java 18.
+ *
+ * Allows using Spark with Java 23+ without having to specify '-Djava.security.manager=allow'
+ * on the command line, which in turn allows running with GraalVM Native Image.
+ */
+lazy val hadoopClientApiPatch = (project in file("benchmarks/apache-spark/hadoop-client-api"))
+  .settings(
+    commonSettingsNoScala,
+    patchedJarPrefix := "hadoop-client-api",
+    patchedJavaRelease := Some(18),
+    Compile / javacOptions := Seq("--release", "18"),
+    libraryDependencies += ("org.apache.hadoop" % "hadoop-client-runtime" % hadoopVersion),
+    publishMavenStyle := false
+  )
+
+/**
+ * Provides modified 'Platform' class to be patched into spark-unsafe JAR.
+ *
+ * The modified class completely avoids constructing a DirectByteBuffer to bypass
+ * limits on direct memory allocations imposed by '-XX:MaxDirectMemorySize' and
+ * enforced in 'java.nio.Bits'. Unless explicitly set by the user, the direct
+ * memory limit should be either ignored or correspond to max heap size, which
+ * should be enough for Renaissance.
+ *
+ * Allows using Spark with Java 26+ (for now).
+ */
+lazy val sparkUnsafePatch = (project in file("benchmarks/apache-spark/spark-unsafe"))
+  .settings(
+    commonSettingsScala213,
+    patchedJarPrefix := "spark-unsafe",
+    libraryDependencies += ("org.apache.spark" %% "spark-unsafe" % sparkVersion intransitive ()),
+    publishMavenStyle := false
+  )
 
 lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   .settings(
@@ -286,6 +335,12 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.apache.spark" %% "spark-sql" % sparkVersion,
       "org.apache.spark" %% "spark-mllib" % sparkVersion
     ),
+    // Patch selected dependency jars and remap class path to the patched version.
+    // We use task dependency to ensure that the patched jars are produced first.
+    Runtime / dependencyClasspathAsJars := Patcher.remapPatchedJarFilesTask
+      .dependsOn(Patcher.patchJarUsingProjectClassesTask(hadoopClientApiPatch))
+      .dependsOn(Patcher.patchJarUsingProjectClassesTask(sparkUnsafePatch))
+      .value,
     // Exclude legacy logging libraries.
     excludeDependencies ++= Seq(
       // Replaced by the jcl-over-slf4j logging bridge.
@@ -294,7 +349,7 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
     // Override versions pulled in by dependencies.
     dependencyOverrides ++= Seq(
       // Force newer version of Hadoop (compatibility with IBM Semeru JDK builds).
-      "org.apache.hadoop" % "hadoop-client-runtime" % "3.3.6",
+      "org.apache.hadoop" % "hadoop-client-runtime" % hadoopVersion,
       // Force common (newer) version of Netty packages.
       "io.netty" % "netty-all" % nettyVersion,
       // Force common (newer) version of Jackson packages.
@@ -328,6 +383,48 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+//
+
+val chronicleMapVersion = "3.26ea4"
+val chronicleCoreVersion = "2.26ea1"
+
+/**
+ * Provides modified 'CleanerUtils' class to be patched into chronicle-map JAR.
+ *
+ * The modified class avoids looking up the 'jdk.internal.ref.Cleaner' class, which
+ * was removed in Java 26-ea+6 and simply uses the 'java.lang.ref.Cleaner' class
+ * introduced in Java 17 (without the need for reflection).
+ *
+ * Allows using Chronicle with Java 26+.
+ */
+lazy val chronicleMapPatch = (project in file("benchmarks/database/chronicle-map"))
+  .settings(
+    commonSettingsNoScala,
+    patchedJarPrefix := "chronicle-map",
+    patchedJavaRelease := Some(17),
+    Compile / javacOptions := Seq("--release", "17"),
+    libraryDependencies += ("net.openhft" % "chronicle-map" % chronicleMapVersion intransitive ()),
+    publishMavenStyle := false
+  )
+
+/**
+ * Provides modified 'ReflectionBasedByteBufferCleanerService' class to be patched
+ * into chronicle-core JAR.
+ *
+ * The modified class avoids looking up 'jdk.internal.ref.Cleaner' class removed
+ * in Java 26-ea+6 and simply expects the cleaner class returned by the internal
+ * 'java.nio.DirectBuffer.cleaner()' interface to provide a 'clean()' method.
+ *
+ * Allows using Chronicle with Java 26+.
+ */
+lazy val chronicleCorePatch = (project in file("benchmarks/database/chronicle-core"))
+  .settings(
+    commonSettingsNoScala,
+    patchedJarPrefix := "chronicle-core",
+    libraryDependencies += ("net.openhft" % "chronicle-core" % chronicleCoreVersion intransitive ()),
+    publishMavenStyle := false
+  )
+
 lazy val databaseBenchmarks = (project in file("benchmarks/database"))
   .settings(
     name := "database",
@@ -341,12 +438,18 @@ lazy val databaseBenchmarks = (project in file("benchmarks/database"))
       "org.mapdb" % "mapdb" % "3.1.0",
       "com.h2database" % "h2-mvstore" % "2.3.232",
       // Chronicle Map 3.25+ supports Java 21.
-      "net.openhft" % "chronicle-map" % "3.26ea4",
+      "net.openhft" % "chronicle-map" % chronicleMapVersion,
       // Add simple binding to silence SLF4J warnings.
       "org.slf4j" % "slf4j-simple" % slf4jVersion,
       // Replacement for excluded "net.jpountz.lz4" % "lz4".
       "org.lz4" % "lz4-java" % "1.8.0"
     ),
+    // Patch selected dependency jars and remap class path to the patched version.
+    // We use task dependency to ensure that the patched jars are produced first.
+    Runtime / dependencyClasspathAsJars := Patcher.remapPatchedJarFilesTask
+      .dependsOn(Patcher.patchJarUsingProjectClassesTask(chronicleCorePatch))
+      .dependsOn(Patcher.patchJarUsingProjectClassesTask(chronicleMapPatch))
+      .value,
     dependencyOverrides ++= Seq(
       // Force newer version of Chronicle modules.
       "net.openhft" % "chronicle-wire" % "2.26ea10",
@@ -594,7 +697,7 @@ val renaissanceModules = aggregateProjects :+ renaissanceCore
 
 /**
  * Creates a task that collects the runtime dependency jars for the given
- * projects. For each project, we need to create a separate tasks to query
+ * projects. For each project, we need to create a separate task to query
  * the project settings, because these can be only evaluated in a task. The
  * obvious approach of subjecting the input sequence to a mapping function
  * cannot be used in SBT at this level.
@@ -758,36 +861,9 @@ def mapModuleJarsToAssemblyEntries(modulesDetails: Seq[(String, Seq[File], Strin
 
 def mapModuleDependencyJarsToAssemblyTask(modules: Seq[Project]) =
   Def.task[Seq[(File, String)]] {
-    val log = sLog.value
-    val targetDir = (Compile / target).value
-
     val modulesDetails = collectModulesDetailsTask(modules).value
-    mapModuleJarsToAssemblyEntries(modulesDetails).flatMap(_._2).distinct.map { entry =>
-      // Use patched "hadoop-client-api" to allow running on Java 23+.
-      if (entry._1.name.startsWith("hadoop-client-api")) {
-        remapHadoopClientApiJarEntry(entry, targetDir, log)
-      } else {
-        entry
-      }
-    }
+    mapModuleJarsToAssemblyEntries(modulesDetails).flatMap(_._2).distinct
   }
-
-def remapHadoopClientApiJarEntry(entry: (File, String), targetDir: File, log: Logger) = {
-  val originalJar = entry._1
-  val patchedJar = targetDir / "patched" / originalJar.name
-
-  if (patchedJar.exists()) {
-    log.info(s"Remapping Hadoop Client API to patched jar in $patchedJar")
-    (patchedJar, entry._2)
-  } else {
-    log.error(s"Could not find patched Hadoop Client API jar in $patchedJar")
-
-    // Throw an exception here to stop the build. This is necessary, because
-    // the SBT assembly task does not check if the source files exist when
-    // producing the final JAR file.
-    throw new NoSuchFileException(patchedJar.toString)
-  }
-}
 
 /**
  * Generates assembly mappings for all class files on the given classpath.
@@ -809,46 +885,6 @@ def mapClassesToAssemblyTask(classpath: Classpath) =
       }
     }
   }
-
-//
-// Tasks related to generating patched Hadoop Client API jar.
-//
-
-lazy val generatePatchedHadoopClientApiJar = taskKey[Seq[File]](
-  "Generates a patched Hadoop Client API jar which modifies the 'UserGroupInformation' class " +
-    "to avoid calling deprecated Java Security API. This allows using Spark with Java 23+ " +
-    "without having to specify the -Djava.security.manager=allow on the command line, which " +
-    "allows running with GraalVM Native Image."
-)
-
-def generatePatchedHadoopClientApiJarTask = {
-  Def.task {
-    val log = sLog.value
-    val targetDir = (Compile / target).value / "patched"
-
-    val dependencyJars = (apacheSparkBenchmarks / Runtime / dependencyClasspathAsJars).value
-    dependencyJars.map(_.data).filter(f => f.name.startsWith("hadoop-client-api")).map {
-      originalJar =>
-        val patchedJar = targetDir / originalJar.name
-        if (!patchedJar.exists()) {
-          log.info(s"Creating patched Hadoop Client API jar in $patchedJar")
-          IO.createDirectory(targetDir)
-
-          val temporaryJar = patchedJar.getParentFile / (patchedJar.name + ".tmp")
-          if (Hadoop.patchClientApiJar(originalJar, temporaryJar, log)) {
-            IO.move(temporaryJar, patchedJar)
-            patchedJar
-          } else {
-            log.error(s"Failed to create patched Hadoop Client API jar in $patchedJar")
-            null
-          }
-        } else {
-          log.info(s"Found patched Hadoop Client API jar in $patchedJar")
-          patchedJar
-        }
-    }
-  }
-}
 
 //
 // Tasks related to generating metadata-only jars for benchmarks.
@@ -964,7 +1000,6 @@ lazy val renaissance = (project in file("."))
     name := "renaissance",
     // Reflect the distribution license in the package name.
     moduleName := name.value + "-" + (if (nonGplOnly.value) "mit" else "gpl"),
-    generatePatchedHadoopClientApiJar := generatePatchedHadoopClientApiJarTask.value,
     inConfig(Compile)(
       Seq(
         // The main class for the JAR is the Launcher from the core package.
@@ -983,15 +1018,9 @@ lazy val renaissance = (project in file("."))
           mapClassesToAssemblyTask(classpath)
         }.value,
         // Include dependency JAR files in the output JAR.
-        //
-        // Also remaps the Hadoop Client API jar to a patched version. We use task dependency
-        // to ensure that the patched jar is produced before the mappings. Resource generators
-        // are useless, because they run concurrently with the mapping tasks. This would not
-        // be a problem if the mapping source files were actually checked for existence when
-        // creating the final JAR.
         packageBin / mappings ++= mapModuleDependencyJarsToAssemblyTask(
           renaissanceModules
-        ).dependsOn(generatePatchedHadoopClientApiJar).value
+        ).value
       )
     )
   )
@@ -1134,7 +1163,6 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
       "org.openjdk.jmh" % "jmh-generator-bytecode" % jmhVersion,
       "org.openjdk.jmh" % "jmh-generator-reflection" % jmhVersion
     ),
-    generatePatchedHadoopClientApiJar := generatePatchedHadoopClientApiJarTask.value,
     inConfig(Compile)(
       Seq(
         // Split result from the JMH generator task between sources and resources.
@@ -1161,7 +1189,7 @@ lazy val renaissanceJmh = (project in file("renaissance-jmh"))
         // Include benchmark dependency JAR files in the output JAR.
         packageBin / mappings ++= mapModuleDependencyJarsToAssemblyTask(
           renaissanceModules
-        ).dependsOn(generatePatchedHadoopClientApiJar).value
+        ).value
       )
     )
   )
