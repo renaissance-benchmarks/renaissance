@@ -80,6 +80,9 @@ final class DbShootout extends Benchmark {
     mapDbReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
     mapDbWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
 
+    // Disable online data collection in Chronicle Analytics.
+    System.setProperty("chronicle.analytics.disable", "true")
+
     //
     // Chronicle needs the 'java.class.path' property to contain certain jars because
     // it is using the Java compiler to compile generated source code and expects the
