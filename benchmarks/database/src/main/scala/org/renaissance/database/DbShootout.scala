@@ -120,8 +120,13 @@ final class DbShootout extends Benchmark {
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
+    mapDbWriter.teardown()
     mapDbReader.teardown()
+
+    chronicleWriter.teardown()
     chronicleReader.teardown()
+
+    mvStoreWriter.teardown()
     mvStoreReader.teardown()
   }
 
