@@ -13,6 +13,7 @@ import org.renaissance.License
 import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Files
+import java.nio.file.Files.createDirectories
 import java.nio.file.Path
 import java.nio.file.Paths
 import scala.collection.Seq
@@ -75,10 +76,12 @@ final class DbShootout extends Benchmark {
     val readWriteEntryCountParam = c.parameter("rw_entry_count").toPositiveInteger
 
     mapDb = new MapDb
+    val mapDbScratch = createDirectories(tempDirPath.resolve("mapdb")).toFile
+
     mapDbReader = new MapDb.Reader
+    mapDbReader.setup(mapDbScratch, readWriteEntryCountParam)
     mapDbWriter = new MapDb.Writer
-    mapDbReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
-    mapDbWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
+    mapDbWriter.setup(mapDbScratch, readWriteEntryCountParam)
 
     //
     // Chronicle Map 3.20.84 started connecting to Google Analytics in an
@@ -98,18 +101,22 @@ final class DbShootout extends Benchmark {
     System.setProperty("java.class.path", newClassPath)
 
     chronicle = new Chronicle
+    val chronicleScratch = createDirectories(tempDirPath.resolve("chronicle")).toFile
+
     chronicleReader = new Chronicle.Reader
+    chronicleReader.setup(chronicleScratch, readWriteEntryCountParam)
     chronicleWriter = new Chronicle.Writer
-    chronicleReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
-    chronicleWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
+    chronicleWriter.setup(chronicleScratch, readWriteEntryCountParam)
 
     System.setProperty("java.class.path", oldClassPath)
 
     mvStore = new MvStore
+    val mvStoreScratch = createDirectories(tempDirPath.resolve("mvstore")).toFile
+
     mvStoreReader = new MvStore.Reader
+    mvStoreReader.setup(mvStoreScratch, readWriteEntryCountParam)
     mvStoreWriter = new MvStore.Writer
-    mvStoreReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
-    mvStoreWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
+    mvStoreWriter.setup(mvStoreScratch, readWriteEntryCountParam)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
