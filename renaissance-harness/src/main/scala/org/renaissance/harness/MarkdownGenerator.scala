@@ -260,6 +260,50 @@ execution can be achieved by providing the harness with a plugin implementing a 
 policy (see [below](#plugins) for details).
 
 
+### Known issues
+
+This section lists selected issues that users may encounter when running Renaissance.
+Because these issues cannot be simply fixed or avoided by the Renaissance harness, we
+provide suggested workarounds.
+
+#### Possible `StackOverflowError` in Spark benchmarks
+
+- **Issue:** Spark benchmarks may fail with a `StackOverflowError` on certain JVM
+  configurations. This is a known issue with Spark applications that allocate large amounts
+  of memory on the stack.
+  See [#375](https://github.com/renaissance-benchmarks/renaissance/issues/375) for details.
+- **Workaround:** The workaround is to increase the JVM stack size via the `-Xss` command line
+  option to provide more stack headroom (for example, `-Xss4m` or more). Add this to the JVM
+  options when invoking the benchmark harness.
+
+#### Spark benchmarks may fail on Windows due to missing libraries
+
+- **Issue:** Spark uses Hadoop, which loads a native library, `hadoop.dll`, when running on
+  Windows. The library packaged with the Renaissance suite requires Visual C++ 2013 runtime to
+  be present on the system. Running Spark benchmarks on a Windows system without the required
+  runtime will fail.
+  See [#480](https://github.com/renaissance-benchmarks/renaissance/issues/480) for details.
+- **Workaround:** Install the appropriate runtime from the
+  [Visual C++ Redistributable Package for VS 2013](https://www.microsoft.com/en-us/download/details.aspx?id=40784)
+  or its updated version from the linked [KB 3138367](https://support.microsoft.com/help/3138367).
+
+#### The harness may fail to remove its temporary directories
+
+- **Issue:** The harness will create `launcher-*` and `harness-*` temporary directories in the
+  working directory. When the temporary directories are on an NFS mount or a file system that
+  does not allow deleting open files, the harness may fail to clean up and remove the temporary
+  directories.
+  See [#464](https://github.com/renaissance-benchmarks/renaissance/issues/464) for details.
+- **Workaround:** When executed manually (under user supervision), the `launcher-*` and
+  `harness-*` directories can be deleted manually after the run. Alternatively, avoid running
+  Renaissance from a working directory on NFS (or a known problematic file system), or explicitly
+  set the location of the scratch space via the `--scratch-base <dir>` command line option (for
+  example, `--scratch-base /tmp`). When executed automatically (without user supervision), it is
+  recommended to launch Renaissance using a wrapper script responsible for creating and removing
+  the top-level temporary directory, and for running Renaissance with the corresponding
+  `--scratch-base <dir>` option.
+
+
 ### Licensing
 
 The Renaissance Suite comes in two distributions,
