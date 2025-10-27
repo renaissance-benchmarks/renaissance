@@ -129,7 +129,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Fetch pre-built main JAR
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: main-jar
           path: target
@@ -219,13 +219,13 @@ jobs:
         run: tools/ci/pre-show-env.sh
 
       - name: Fetch pre-built main JAR
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: main-jar
           path: target
 
       - name: Fetch pre-built JMH JAR
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: jmh-jar
           path: renaissance-jmh/target
@@ -270,7 +270,7 @@ jobs:
           path: ${{ env.COURSIER_CACHE }}
 
       - name: Fetch pre-built main JAR
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: main-jar
           path: target
