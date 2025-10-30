@@ -10,7 +10,6 @@ import org.renaissance.BenchmarkContext
 
 import java.nio.file.Files
 import java.nio.file.Path
-import scala.reflect.ClassTag
 
 /**
  * A common trait for all Spark benchmarks. Provides shared Spark
@@ -92,6 +91,7 @@ trait SparkUtil {
 
   def tearDownSparkContext(): Unit = {
     sparkSession.close()
+    sparkSession = null
   }
 
   /**
