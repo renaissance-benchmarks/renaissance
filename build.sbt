@@ -198,7 +198,7 @@ lazy val renaissanceCore = (project in file("renaissance-core"))
     name := "renaissance-core",
     commonSettingsNoScala,
     Compile / mainClass := Some(launcherMainClass),
-    Compile / javacOptions := Seq("--release", "8")
+    Compile / javacOptions := Seq("--release", "9")
   )
 
 val renaissanceHarnessCommonSettings = Seq(
@@ -209,7 +209,7 @@ val renaissanceHarnessCommonSettings = Seq(
     "io.spray" %% "spray-json" % "1.3.6"
   ),
   Compile / mainClass := Some(harnessMainClass),
-  Compile / javacOptions := Seq("--release", "8"),
+  Compile / javacOptions := Seq("--release", "9"),
   Compile / packageBin / packageOptions += generateManifestAttributesTask.value
 )
 
@@ -218,7 +218,7 @@ lazy val renaissanceHarness3 = (project in file("renaissance-harness"))
     name := "renaissance-harness_3",
     commonSettingsScala3,
     renaissanceHarnessCommonSettings,
-    scalacOptions := Seq("-java-output-version", "8")
+    scalacOptions := Seq("-java-output-version", "9")
   )
   .dependsOn(renaissanceCore % "provided")
 
@@ -227,7 +227,7 @@ lazy val renaissanceHarness213 = (project in file("renaissance-harness"))
     name := "renaissance-harness_2.13",
     commonSettingsScala213,
     renaissanceHarnessCommonSettings,
-    scalacOptions := Seq("-release:8")
+    scalacOptions := Seq("-release:9")
   )
   .dependsOn(renaissanceCore % "provided")
 
@@ -236,7 +236,7 @@ lazy val renaissanceHarness212 = (project in file("renaissance-harness"))
     name := "renaissance-harness_2.12",
     commonSettingsScala212,
     renaissanceHarnessCommonSettings,
-    scalacOptions := Seq("-release:8"),
+    scalacOptions := Seq("-release:9"),
     libraryDependencies ++= Seq(
       // Needed to compile Scala 2.13 collections with Scala 2.12.
       "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
