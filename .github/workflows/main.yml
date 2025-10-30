@@ -98,14 +98,14 @@ jobs:
         run: tools/ci/check-jmh.sh
 
       - name: Upload the main JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: main-jar
           path: target/renaissance-*.jar
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
       - name: Upload JMH JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: jmh-jar
           path: renaissance-jmh/target/renaissance-*.jar
