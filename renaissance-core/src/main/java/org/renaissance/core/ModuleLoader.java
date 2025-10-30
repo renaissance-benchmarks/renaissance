@@ -41,8 +41,8 @@ public final class ModuleLoader {
    * Map of module names to sets of JAR files representing the class path of
    * each module. There may be multiple benchmark classes in one module, but
    * each will be instantiated using a separate class loader.
-   *
-   * The resource paths use a Unix-style component separator.
+   * <p>
+   * Note: resource paths always use '/' as a path component separator.
    */
   private final Map<String, Set<String>> jarResourcePathsByModule;
 
@@ -242,7 +242,7 @@ public final class ModuleLoader {
   //
   // Utility methods to convert things to an array of URLs.
   //
-  // Because creating an URL instance can throw a (checked!) exception which
+  // Because creating a URL instance can throw a (checked!) exception, which
   // Java streams are unable to handle, we suppress (but log) that exception
   // and return null instead, which we filter out.
   //
@@ -252,9 +252,9 @@ public final class ModuleLoader {
 
   static URL[] pathsToUrls(Collection<Path> paths) {
     //
-    // Because it is not possible to construct an URL from a relative file
+    // Because it is impossible to construct a URL from a relative file
     // path (which would be probably the most common scenario), we convert
-    // the file path to an URI first and convert that to an URL.
+    // the file path to a URI first and convert that to a URL.
     //
     return paths.stream()
       .map(p -> p.toUri().toString())

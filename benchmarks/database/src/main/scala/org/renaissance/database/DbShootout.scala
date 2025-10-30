@@ -80,7 +80,11 @@ final class DbShootout extends Benchmark {
     mapDbReader.setup(tempDirPath.toFile, readWriteEntryCountParam)
     mapDbWriter.setup(tempDirPath.toFile, readWriteEntryCountParam)
 
-    // Disable online data collection in Chronicle Analytics.
+    //
+    // Chronicle Map 3.20.84 started connecting to Google Analytics in an
+    // extra thread (see https://github.com/OpenHFT/Chronicle-Map/issues/247).
+    // This is not something we want, so we disable it.
+    //
     System.setProperty("chronicle.analytics.disable", "true")
 
     //

@@ -183,10 +183,20 @@ final class Als extends Benchmark with SparkUtil {
 
   private def validate(result: ALSModel): Unit = {
     val actualUserFactorsSummary = summarizeFactors(result.userFactors)
-    validateSummary("user", expectedUserFactorsSummary, actualUserFactorsSummary, userFactorsTolerance)
+    validateSummary(
+      "user",
+      expectedUserFactorsSummary,
+      actualUserFactorsSummary,
+      userFactorsTolerance
+    )
 
     val actualItemFactorsSummary = summarizeFactors(result.itemFactors)
-    validateSummary("item", expectedItemFactorsSummary, actualItemFactorsSummary, itemFactorsTolerance)
+    validateSummary(
+      "item",
+      expectedItemFactorsSummary,
+      actualItemFactorsSummary,
+      itemFactorsTolerance
+    )
   }
 
   private def summarizeFactors(factors: DataFrame): FactorsSummary = {
