@@ -13,9 +13,11 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Assert
 import org.renaissance.License
 import org.renaissance.core.DirUtils
+import org.renaissance.core.ResourceUtils
 
 import java.io.File
 import java.io.FileInputStream
+import java.net.URL
 import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Files.copy
@@ -103,9 +105,12 @@ final class Dotty extends Benchmark {
      * However, constructing the class path is a bit involved.
      * See the [[buildDottyClassPath]] method for details.
      */
-    val dottyClassPath = buildDottyClassPath(System.getProperty("java.class.path"))
-
     val scratchDir = bc.scratchDirectory()
+    val dottyClassPath = buildDottyClassPath(
+      System.getProperty("java.class.path"),
+      scratchDir.resolve("lib")
+    )
+
     val sourceDir = scratchDir.resolve("src")
     val sourceFiles = unzipResource(sourcesInputResource, sourceDir)
 
@@ -130,23 +135,18 @@ final class Dotty extends Benchmark {
     dottyArgs = (dottyBaseArgs ++ sourceFiles.map(_.toString)).toArray
   }
 
-  private def buildDottyClassPath(classPath: String): Seq[Path] = {
-    /*
-     * If we are running with module loading enabled, we know that our class
-     * loader will be an instance of URLClassLoader which loads the benchmark
-     * JARs from a temporary directory. In that case, we can just convert all
-     * the URLs to plain file paths.
-     *
-     * Note that using the URLs directly is not possible, because they
-     * contain the "file://" protocol prefix, which is not handled well
-     * on Windows (when on the classpath).
-     *
-     * If we are running in standalone mode, the class loader may or may not
-     * be an URLClassloader instance and even if it is, it will not contain
-     * anything useful. In that case, we read the manifest from the jar file
-     * referenced by 'java.class.path' and construct the class path using the
-     * value of the 'Class-Path' attribute.
-     */
+  private def buildDottyClassPath(classPath: String, libDir: Path): Seq[String] = {
+    //
+    // When running with module loading enabled, our class loader will be an
+    // instance of URLClassLoader, which loads the benchmark JARs as resources
+    // from the main bundle. In that case, we have to extract the JARs and
+    // build a class path pointing to those jars.
+    //
+    // If running in standalone mode, the JAR files will be already extracted.
+    // In that case, we read the manifest from the single JAR file referenced
+    // by 'java.class.path' and construct the class path using the value of
+    // the 'Class-Path' attribute.
+    //
     def loadJarManifest(jarPath: Path) = {
       val jarFile = new JarFile(jarPath.toFile)
       try {
@@ -160,20 +160,17 @@ final class Dotty extends Benchmark {
       jmf.getMainAttributes
         .getValue(Attributes.Name.CLASS_PATH)
         .split(" ")
-        .map(path => base.resolveSibling(path).normalize())
+        .map(path => base.resolveSibling(path).normalize().toString)
         .toSeq
     }
 
     //
     // If the current class path consists solely of 'dotty.jar', try
-    // to build the class path from the jar manifest, otherwise try to
-    // get URLs from the class loader. If even that fails (we may be
-    // running without module loading with all jars specified on the
-    // command line), fall back to the current class path.
+    // building the class path from the JAR's manifest.
     //
-    val classPathElements = classPath.split(File.pathSeparatorChar).map(Paths.get(_))
+    val classPathElements = classPath.split(File.pathSeparatorChar)
     if (classPathElements.length == 1) {
-      val singleJar = classPathElements.head
+      val singleJar = Paths.get(classPathElements.head)
       if (!Files.isDirectory(singleJar) && singleJar.endsWith("dotty.jar")) {
         // We are probably running in 'java -jar' mode.
         val mf = loadJarManifest(singleJar)
@@ -181,9 +178,23 @@ final class Dotty extends Benchmark {
       }
     }
 
-    Thread.currentThread.getContextClassLoader match {
+    //
+    // If this class was loaded by a URLClassLoader, get the JAR file
+    // resource URLs, extract them into a library directory and build
+    // the class path from the extracted files.
+    //
+    // Otherwise, fall back to the current class path (we may be running
+    // without module loading with all jars specified on the command line).
+    //
+    getClass.getClassLoader match {
       case ucl: URLClassLoader =>
-        ucl.getURLs.map(url => Paths.get(url.toURI)).toSeq
+        import scala.jdk.CollectionConverters._
+
+        val resourcePaths = ucl.getURLs.map(_.getPath).toIterable.asJava
+
+        Files.createDirectories(libDir)
+        val jarPaths = ResourceUtils.extractResources(resourcePaths, libDir)
+        jarPaths.asScala.map(_.toString)
       case _ =>
         // Fall back to current class path.
         classPathElements

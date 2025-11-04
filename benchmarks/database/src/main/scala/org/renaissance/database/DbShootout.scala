@@ -3,14 +3,17 @@ package org.renaissance.database
 import org.lmdbjava.bench.Chronicle
 import org.lmdbjava.bench.MapDb
 import org.lmdbjava.bench.MvStore
+
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark._
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import org.renaissance.core.ResourceUtils
 
 import java.io.File
+import java.net.URL
 import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Files.createDirectories
@@ -56,18 +59,33 @@ final class DbShootout extends Benchmark {
 
   var mvStoreWriter: MvStore.Writer = _
 
-  private def buildChronicleClassPath(classPath: String): Seq[Path] = {
-    val elements = classPath.split(File.pathSeparatorChar).map(Paths.get(_)).toSeq
-    Thread.currentThread.getContextClassLoader match {
+  private def buildChronicleClassPath(classPath: String, libDir: Path): Seq[String] = {
+    //
+    // If this class was loaded by a URLClassLoader, get the JAR file
+    // resource URLs, extract them into a library directory and build
+    // the class path from the extracted files.
+    //
+    // Otherwise, fall back to the current class path (we may be running
+    // without module loading with all jars specified on the command line).
+    //
+    getClass.getClassLoader match {
       case ucl: URLClassLoader =>
-        ucl.getURLs.map(url => Paths.get(url.toURI)).filter { path =>
-          val fn = path.getFileName.toString
-          fn.startsWith("chronicle-core") || fn.startsWith("chronicle-bytes")
-        }
+        import scala.jdk.CollectionConverters._
+
+        val resourcePaths = ucl.getURLs
+          .map(_.getPath)
+          .filter { path =>
+            path.contains("chronicle-core") || path.contains("chronicle-bytes")
+          }
+          .toIterable
+          .asJava
+
+        Files.createDirectories(libDir)
+        val jarPaths = ResourceUtils.extractResources(resourcePaths, libDir)
+        jarPaths.asScala.map(_.toString)
       case _ =>
         // Fall back to current class path.
-        // This should be the case in standalone mode.
-        elements
+        classPath.split(File.pathSeparatorChar)
     }
   }
 
@@ -96,9 +114,13 @@ final class DbShootout extends Benchmark {
     // compiler to find libraries through the normal class path. It is enough to set
     // the property during initialization.
     //
+    // Because we load jars from resources, we need to extract them first so that
+    // the Java compiler can find them.
+    //
     val oldClassPath = System.getProperty("java.class.path")
-    val newClassPath = buildChronicleClassPath(oldClassPath).mkString(File.pathSeparator)
-    System.setProperty("java.class.path", newClassPath)
+
+    val newClassPathElements = buildChronicleClassPath(oldClassPath, tempDirPath.resolve("lib"))
+    System.setProperty("java.class.path", newClassPathElements.mkString(File.pathSeparator))
 
     chronicle = new Chronicle
     val chronicleScratch = createDirectories(tempDirPath.resolve("chronicle")).toFile

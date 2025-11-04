@@ -7,22 +7,17 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
-import static org.renaissance.core.ResourceUtils.extractResources;
 import static org.renaissance.core.ResourceUtils.getMetadataUrl;
 import static org.renaissance.core.ResourceUtils.loadPropertiesAsMap;
 
@@ -31,11 +26,10 @@ public final class ModuleLoader {
   private static final Class<?> thisClass = ModuleLoader.class;
   private static final Logger logger = Logging.getPackageLogger(thisClass);
 
-
-  /**
-   * The root of the scratch directory for this module loader.
-   */
-  private final Path scratchRootDir;
+  static {
+    // Provide a handler that allows loading JAR files from resources.
+    URL.setURLStreamHandlerFactory(ResourceUrlConnection.FACTORY);
+  }
 
   /**
    * Map of module names to sets of JAR files representing the class path of
@@ -47,29 +41,22 @@ public final class ModuleLoader {
   private final Map<String, Set<String>> jarResourcePathsByModule;
 
 
-  ModuleLoader(Path scratchRootDir, Map<String, Set<String>> jarPathsByModule) {
-    this.scratchRootDir = scratchRootDir;
+  ModuleLoader(Map<String, Set<String>> jarPathsByModule) {
     this.jarResourcePathsByModule = jarPathsByModule;
   }
 
 
   /**
-   * Creates a module loader with a given scratch root directory. The module
-   * loader allows loading modules using independent class loaders. Modules
-   * are defined in a property file and each contains a list of JAR files
-   * representing a module-specific class path.
+   * Creates a module loader. The module loader allows loading modules using
+   * independent class loaders. Modules are defined in a property file and each
+   * contains a list of JAR files representing a module-specific class path.
    *
-   * @param scratchRootDir The root of the scratch directory into which
-   * module dependencies get extracted.
    * @param moduleMetadataUri A {@link URI} pointing to a properties file
    * containing the list of JAR files for each module.
    */
-  static ModuleLoader create(
-    Path scratchRootDir, URI moduleMetadataUri
-  ) throws IOException {
+  static ModuleLoader create(URI moduleMetadataUri) throws IOException {
     logger.fine(() -> String.format(
-      "Creating module loader, scratchRootDir='%s', moduleMetadata='%s'",
-      scratchRootDir, moduleMetadataUri
+      "Creating module loader, moduleMetadata='%s'", moduleMetadataUri
     ));
 
     URL metadataUrl = getMetadataUrl(moduleMetadataUri);
@@ -80,7 +67,7 @@ public final class ModuleLoader {
       logModuleJars(moduleJars);
     }
 
-    return new ModuleLoader(scratchRootDir, moduleJars);
+    return new ModuleLoader(moduleJars);
   }
 
   private static Map<String, Set<String>> collectModuleJars(Map<String, String> properties) {
@@ -111,91 +98,37 @@ public final class ModuleLoader {
   }
 
 
-  /**
-   * Extracts the given module to the given directory. Both the module and
-   * the destination directory are expected to exist.
-   */
-  List<Path> extractModule(String name, Path dest) throws IOException {
-    logger.fine(() -> String.format("Extracting module '%s' to %s", name, dest));
-
-    Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
-    if (jarResourcePaths != null) {
-      return extractResources(jarResourcePaths, dest);
-    } else {
-      // Not supposed to happen, the caller should use the right module.
-      throw new NoSuchElementException("there is no such module: "+ name);
-    }
-  }
-
   ClassLoader createClassLoaderForModule(String name) throws ModuleLoadingException {
     logger.fine(() -> String.format("Creating class loader for module '%s'", name));
 
     //
-    // Look up the module name and create a directory for the module JAR files.
-    // Extract the JAR files and build an URL classloader for the module. Reuse
-    // the JAR files in the module directory (but create a new classloader) to
-    // avoid repeatedly extracting the JAR files for the same module.
+    // Look up the module name and build an URLClassloader for the module,
+    // referring to the JAR files using the 'resource:' prefix.
     //
-    if (!jarResourcePathsByModule.containsKey(name)) {
+    Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
+    if (jarResourcePaths == null) {
       throw new ModuleLoadingException("module not found: %s", name);
     }
 
-    try {
-      Path moduleJarsDir = createModuleJarsDirectory(name);
-      Set<String> jarResourcePaths = jarResourcePathsByModule.get(name);
+    final URL[] jarResourceUrls = resourcePathsToUrls(jarResourcePaths);
 
-      try {
-        List<Path> filePaths = extractResources(jarResourcePaths, moduleJarsDir);
-        final URL[] urls = pathsToUrls(filePaths);
-
-        // Make sure all paths were converted to URL.
-        if (urls.length != filePaths.size()) {
-          throw new ModuleLoadingException("malformed URL(s) in module JAR paths");
-        }
-
-        logger.fine(() -> String.format(
-          "Module '%s' class path (%d entries): %s",
-          name, filePaths.size(), makeClassPath(filePaths)
-        ));
-
-        //
-        // Note: this URLClassLoader operates on files created by the harness in the
-        // scratch directory and will keep them open until JVM terminates. This will
-        // prevent removal of the scratch directories, because deleting an open file
-        // on NFS produces a NFS temporary file in the same directory, while deleting
-        // an open file in Windows may not be possible at all.
-        //
-        return new URLClassLoader(urls, thisClass.getClassLoader());
-
-      } catch (IOException e) {
-        // Just wrap the underlying IOException.
-        throw new ModuleLoadingException(e.getMessage(), e);
-      }
-
-    } catch (IOException e) {
-      throw new ModuleLoadingException(
-        "error creating module jar directory: %s", e.getMessage()
-      );
+    // Make sure all paths were converted to URL.
+    if (jarResourceUrls.length != jarResourcePaths.size()) {
+      throw new ModuleLoadingException("malformed URL(s) in module JAR paths");
     }
-  }
 
-
-  private Path createModuleJarsDirectory(String name) throws IOException {
-    // Put module jars into '<scratch-root>/<module-name>/lib' directory.
-    Path result = Files.createDirectories(
-      scratchRootDir.resolve(name).resolve("lib")
-    );
-
-    logger.config(String.format(
-      "Module '%s' library directory: '%s'", name, result
+    logger.fine(() -> String.format(
+      "Module '%s' class path (%d entries): %s",
+      name, jarResourceUrls.length, makeClassPath(jarResourcePaths)
     ));
 
-    return result;
+    // Load module JARs from the resources.
+    return new URLClassLoader(jarResourceUrls, thisClass.getClassLoader());
   }
 
 
-  private static String makeClassPath(Collection<Path> paths) {
-    return paths.stream().map(Path::toString).collect(joining(File.pathSeparator));
+  private static String makeClassPath(Collection<String> paths) {
+    return String.join(File.pathSeparator, paths);
   }
 
 
@@ -256,17 +189,31 @@ public final class ModuleLoader {
     // the file path to a URI first and convert that to a URL.
     //
     return paths.stream()
-      .map(p -> p.toUri().toString())
+      .map(Path::toUri)
       .map(ModuleLoader::makeUrl)
       .filter(Objects::nonNull)
       .toArray(URL[]::new);
   }
 
-  private static URL makeUrl(String spec) {
+  static URL[] resourcePathsToUrls(Collection<String> paths) {
+    //
+    // Add a protocol prefix to resource path to create a URI,
+    // which can be then converted to a URL.
+    //
+    String uriPrefix = ResourceUrlConnection.PROTOCOL + ":/";
+    return paths.stream()
+      .map(rp -> URI.create(uriPrefix + rp))
+      .map(ModuleLoader::makeUrl)
+      .filter(Objects::nonNull)
+      .toArray(URL[]::new);
+  }
+
+  private static URL makeUrl(URI uri) {
     try {
-      return new URL(spec);
+      // Avoid URL constructor deprecated since Java 20.
+      return uri.toURL();
     } catch (MalformedURLException e) {
-      logger.warning(String.format("Failed to convert '%s' to URL", spec));
+      logger.warning(String.format("Failed to convert '%s' to URL", uri));
       return null;
     }
   }

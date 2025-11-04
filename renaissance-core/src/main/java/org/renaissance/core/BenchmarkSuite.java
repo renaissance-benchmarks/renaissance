@@ -365,7 +365,7 @@ public final class BenchmarkSuite {
 
     // The module loader is only created if desired.
     Optional<ModuleLoader> loader = Optional.ofNullable(
-      useModules ? ModuleLoader.create(scratchRoot, moduleMetadataUri) : null
+      useModules ? ModuleLoader.create(moduleMetadataUri) : null
     );
 
     return new BenchmarkSuite(scratchRoot, configName, descriptors, loader);
