@@ -115,6 +115,7 @@ public class MapDb {
     @Override
     public void teardown() throws IOException {
       reportSpaceBeforeClose();
+      map.close();
       db.close();
       super.teardown();
     }

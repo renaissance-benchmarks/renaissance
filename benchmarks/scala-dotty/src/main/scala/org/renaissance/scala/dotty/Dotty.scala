@@ -192,9 +192,9 @@ final class Dotty extends Benchmark {
 
   override def setUpBeforeEach(bc: BenchmarkContext): Unit = {
     //
-    // Clean the Dotty output directory to make sure that it
-    // always produces all the files. Alternatively, we could
-    // create a new output directory for each repetition.
+    // Clean the Dotty output directory to make sure it always
+    // produces all the files. Alternatively, we could create a
+    // new output directory for each repetition.
     //
     DirUtils.cleanRecursively(dottyOutputDir)
   }
@@ -204,10 +204,10 @@ final class Dotty extends Benchmark {
     DottyMain.process(dottyArgs, result, result)
 
     () => {
-      def printDiagnostics(diags: mutable.Buffer[Diagnostic], prefix: String) = {
+      def printDiagnostics(diags: mutable.Buffer[Diagnostic], prefix: String): Unit = {
         diags.foreach(d => {
           val pos = d.position().map[String](p => s"${p.source()}:${p.line()}: ").orElse("")
-          println(s"${prefix}: ${pos}${d.message()}")
+          println(s"$prefix: $pos${d.message()}")
         })
       }
 
@@ -228,10 +228,10 @@ final class Dotty extends Benchmark {
       Assert.assertEquals(0, result.errors.length, "compilation errors")
 
       //
-      // We checksum the generated .tasty files, because the .class files are
-      // not byte-exact between Renaissance builds. Even for the .tasty files,
-      // we need to pass the '-sourceroot' option to the compiler so that it
-      // avoids storing some sort of source-path hash into the output.
+      // We checksum the generated *.tasty files, because the *.class files
+      // are not byte-exact between Renaissance builds. Even for the *.tasty
+      // files, we need to pass the '-sourceroot' option to the compiler so
+      // that it avoids storing some sort of source-path hash into the output.
       //
       Assert.assertEquals(expectedTastyHash, result.digest(), "digest of generated tasty files")
     }
@@ -240,7 +240,7 @@ final class Dotty extends Benchmark {
   // Enforce lexicographic ordering (LC_ALL=C style) on file names. Even though
   // File instances are (lexicographically) Comparable, they use a file-system
   // specific ordering which may ignore character case (e.g., on Windows).
-  object AsciiFileOrdering extends Ordering[File] {
+  private object AsciiFileOrdering extends Ordering[File] {
     def compare(a: File, b: File): Int = a.toString.compareTo(b.toString)
   }
 
@@ -256,7 +256,7 @@ final class Dotty extends Benchmark {
       }
     }
 
-    val generatedClasses = mutable.Buffer[AbstractFile]()
+    private val generatedClasses = mutable.Buffer[AbstractFile]()
 
     override def onClassGenerated(
       source: SourceFile,
@@ -291,7 +291,7 @@ final class Dotty extends Benchmark {
           val fileName = file.getName
           val dotIndex = fileName.lastIndexOf('.')
           val baseName = if (dotIndex > 0) fileName.substring(0, dotIndex) else fileName
-          val tastyName = s"${baseName}.tasty"
+          val tastyName = s"$baseName.tasty"
           new File(file.getParentFile(), tastyName)
         })
         .filterNot(f => excludedTastyFiles.contains(f.getName))

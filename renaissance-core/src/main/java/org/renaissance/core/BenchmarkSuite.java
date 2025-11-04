@@ -364,20 +364,13 @@ public final class BenchmarkSuite {
     Map<String, BenchmarkDescriptor> descriptors = createBenchmarkDescriptors(properties, parameterOverrides);
 
     // The module loader is only created if desired.
-    Optional<ModuleLoader> loader = optionallyCreateModuleLoader(scratchRoot, useModules);
+    Optional<ModuleLoader> loader = Optional.ofNullable(
+      useModules ? ModuleLoader.create(scratchRoot, moduleMetadataUri) : null
+    );
 
     return new BenchmarkSuite(scratchRoot, configName, descriptors, loader);
   }
 
-  private static Optional<ModuleLoader> optionallyCreateModuleLoader(
-    Path scratchRoot, boolean useModules
-  ) throws IOException {
-    if (useModules) {
-      return Optional.of(ModuleLoader.create(scratchRoot, moduleMetadataUri));
-    } else {
-      return Optional.empty();
-    }
-  }
 
   private static Map<String, BenchmarkDescriptor> createBenchmarkDescriptors(
     Map<String, String> benchmarkProperties, Map<String, String> parameterOverrides
