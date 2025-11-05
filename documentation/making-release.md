@@ -50,10 +50,6 @@ automatic version numbers will be relative to the latest version tag. Now
 is the time to build the artifacts that will be attached to the GitHub release
 and publish the releases on GitHub and on the Renaissance website.
 
-- [ ] Make sure you are using JDK11 to build the artifacts.
-  - Even though we currently support LTS releases up to and including JDK21,
-    using the lowest supported version ensures that nothing in the build chain
-    decides to target a newer JDK.
 - [ ] Make sure to clean the repository and recreate useful symlinks.
   - `git clean -dxf`
   - `ln -s tools/sbt/bin/sbt sbt`
@@ -62,6 +58,7 @@ and publish the releases on GitHub and on the Renaissance website.
   - If everything went well, you should end up with the following files:
     - `target/renaissance-gpl-<version>.jar`
     - `target/renaissance-mit-<version>.jar`
+    - `renaissance-jmh/target/renaissance-jmh-<version>.jar`
 - [ ] Build the plugins to make them a bit more accessible to people. Because
   SBT does not support `-C` alà `make`, you can use the following commands
   (assuming you have a `sbt` symlink in the project root).

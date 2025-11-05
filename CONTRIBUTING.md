@@ -21,7 +21,7 @@ Several tips on how to setup your IDE are in `documentation/ide.md`.
 ### Building the suite
 
 To build the suite and create the so-called fat JAR (or super JAR), you need to have
-a JDK (at least version 11) installed and run the `sbt` build tool as follows:
+a JDK (at least version 18) installed and run the `sbt` build tool as follows:
 
 ```
 tools/sbt/bin/sbt renaissancePackage
