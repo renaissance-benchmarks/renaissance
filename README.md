@@ -219,6 +219,10 @@ The following is the complete list of benchmarks, separated into groups.
   \
   Default repetitions: 12; APACHE2 license, MIT distribution; Supported JVM: 11 and later
 
+- `kotlin-ktor` - Simple Ktor chat application with multiple clients, performing various tasks.
+  \
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 11 and later
+
 
 
 The suite also contains a group of benchmarks intended solely for testing
