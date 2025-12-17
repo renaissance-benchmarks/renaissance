@@ -49,7 +49,7 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Coursier downloads cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: coursier_cache-${{ runner.os }}-${{ hashFiles('build.sbt') }}
           path: ${{ env.COURSIER_CACHE }}
@@ -84,7 +84,7 @@ jobs:
         run: tools/ci/pre-show-env.sh
 
       - name: Coursier downloads cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: coursier_cache-${{ runner.os }}-${{ hashFiles('build.sbt') }}
           path: ${{ env.COURSIER_CACHE }}
@@ -264,7 +264,7 @@ jobs:
         run: tools/ci/pre-show-env.sh
 
       - name: Coursier downloads cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           key: coursier_cache-${{ runner.os }}-${{ hashFiles('build.sbt') }}
           path: ${{ env.COURSIER_CACHE }}
