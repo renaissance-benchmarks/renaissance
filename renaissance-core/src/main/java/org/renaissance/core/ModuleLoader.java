@@ -151,8 +151,13 @@ public final class ModuleLoader {
         "cannot find default constructor in '%s'", extClass.getName()
       );
     } catch (ReflectiveOperationException e) {
+      // Note: exception in the constructor of the extension itself can raise
+      // ReflectiveOperationException without any meaningful message, hence
+      // the search for message in the causing exceptions too.
       throw new ModuleLoadingException(
-        "cannot instantiate '%s': %s", extClass.getName(), e.getMessage()
+        "cannot instantiate '%s': %s",
+        extClass.getName(),
+        getReasonableExceptionMessage(e)
       );
     }
   }
@@ -215,6 +220,24 @@ public final class ModuleLoader {
     } catch (MalformedURLException e) {
       logger.warning(String.format("Failed to convert '%s' to URL", uri));
       return null;
+    }
+  }
+
+  static String getReasonableExceptionMessage(Throwable e) {
+    String message = e.getMessage();
+
+    if ((message != null) && !message.isEmpty()) {
+      return message;
+    }
+
+    // Without a reasonable message, we try to get the
+    // message from nested exception
+
+    Throwable cause = e.getCause();
+    if (cause == null) {
+      return e.getClass().getName();
+    } else {
+      return getReasonableExceptionMessage(cause);
     }
   }
 
