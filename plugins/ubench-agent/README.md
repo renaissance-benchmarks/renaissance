@@ -24,6 +24,19 @@ Then continue building the plugin itself:
 
 The plugin shall be available as `target/plugin-ubenchagent-assembly-VER.jar`.
 
+## Available counters (events)
+
+The list of available events is printed during agent compilation. You can
+also use `ant list-events` command inside the build directory of the agent.
+
+Assuming you have PAPI installed, then the best source is obviously the library
+itself:
+
+```shell
+papi_avail && papi_native_avail
+```
+
+
 ## Using the plugin
 
 To use the plugin, you need to add the native agent to the JVM and register
