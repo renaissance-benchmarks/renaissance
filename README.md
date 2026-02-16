@@ -74,13 +74,16 @@ provide suggested workarounds.
 
 #### finagle-chirper throws `ConnectionFailedException` on machines with many CPUs
 
-- **Issue:** On machines with many CPUs the finagle-chirper benchchmark can start throwing `ConnectionFailedException`s
-  and becomes unstable (i.e. even after warmup, adjacent iterations can have a very high variance). The problem is caused
-  by houndred thousends of connections lingering in `TIME_WAIT` status (use `netstat -n | grep TIME_WAIT | wc` to verify)
-  before they finally get closed (see [#231](https://github.com/renaissance-benchmarks/renaissance/issues/231) for more details).
-- **Workaround:** Currently, the only known workaround is to decrease the numbers of CPUs for the benchmark with the
-  JVM command line option `-XX:ActiveProcessorCount=`. E.g. on a machine with 96 cores, the benchmark reproducibly throws
-  `ConnectionFailedException`s while running with `-XX:ActiveProcessorCount=48` works just fine.
+- **Issue:** On machines with many CPUs the finagle-chirper benchchmark can start throwing
+  `ConnectionFailedException`s and becomes unstable (i.e. even after warmup, adjacent iterations
+  can have a very high variance). The problem is caused by hundreds of thousands of connections
+  lingering in `TIME_WAIT` status (use `netstat -n | grep TIME_WAIT | wc` to verify) before they
+  finally get closed (see [#231](https://github.com/renaissance-benchmarks/renaissance/issues/231)
+  for more details).
+- **Workaround:** Currently, the only known workaround is to decrease the numbers of CPUs for
+  the benchmark with the JVM command line option `-XX:ActiveProcessorCount=`. E.g. on a machine
+  with 96 cores, the benchmark reproducibly throws `ConnectionFailedException`s while running
+  with `-XX:ActiveProcessorCount=48` works just fine.
 
 #### The harness may fail to remove its temporary directories
 
@@ -97,6 +100,7 @@ provide suggested workarounds.
   recommended to launch Renaissance using a wrapper script responsible for creating and removing
   the top-level temporary directory, and for running Renaissance with the corresponding
   `--scratch-base <dir>` option.
+
 
 ### Licensing
 
