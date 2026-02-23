@@ -72,6 +72,19 @@ provide suggested workarounds.
   [Visual C++ Redistributable Package for VS 2013](https://www.microsoft.com/en-us/download/details.aspx?id=40784)
   or its updated version from the linked [KB 3138367](https://support.microsoft.com/help/3138367).
 
+#### finagle-chirper throws `ConnectionFailedException` on machines with many CPUs
+
+- **Issue:** On machines with many CPUs the finagle-chirper benchchmark can start throwing
+  `ConnectionFailedException`s and becomes unstable (i.e. even after warmup, adjacent iterations
+  can have a very high variance). The problem is caused by hundreds of thousands of connections
+  lingering in `TIME_WAIT` status (use `netstat -n | grep TIME_WAIT | wc` to verify) before they
+  finally get closed (see [#231](https://github.com/renaissance-benchmarks/renaissance/issues/231)
+  for more details).
+- **Workaround:** Currently, the only known workaround is to decrease the numbers of CPUs for
+  the benchmark with the JVM command line option `-XX:ActiveProcessorCount=`. E.g. on a machine
+  with 96 cores, the benchmark reproducibly throws `ConnectionFailedException`s while running
+  with `-XX:ActiveProcessorCount=48` works just fine.
+
 #### The harness may fail to remove its temporary directories
 
 - **Issue:** The harness will create `launcher-*` and `harness-*` temporary directories in the
