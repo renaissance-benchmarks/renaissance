@@ -21,6 +21,44 @@ import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**
+ * Fallback when it is not possible to retrieve the OperatingSystemMXBean
+ * via java.lang.management.ManagementFactory.getOperatingSystemMXBean().
+ */
+object UnknownOperatingSystemMXBean extends management.OperatingSystemMXBean {
+
+  override def getArch(): String = {
+    // Return value as per documentation with our fallback
+    System.getProperty("os.arch", "unknown")
+  }
+
+  override def getAvailableProcessors(): Int = {
+    // Return value as per documentation
+    Runtime.getRuntime.availableProcessors()
+  }
+
+  override def getName(): String = {
+    // Return value as per documentation with our fallback
+    System.getProperty("os.name", "unknown")
+  }
+
+  override def getSystemLoadAverage(): Double = {
+    // Per documentation: If the load average is not available,
+    // a negative value is returned.
+    -1.0
+  }
+
+  override def getVersion(): String = {
+    // Return value as per documentation with our fallback
+    System.getProperty("os.version", "unknown")
+  }
+
+  override def getObjectName(): javax.management.ObjectName = {
+    // Not really needed
+    null
+  }
+}
+
+/**
  * Provides common functionality for JSON and CSV result writers.
  *
  * Registers a shutdown hook to avoid losing unsaved results in case
@@ -199,7 +237,8 @@ private final class JsonWriter(val jsonFile: Path, vmStartNanos: Long) extends R
   }
 
   private def getOsInfo = {
-    val os = management.ManagementFactory.getOperatingSystemMXBean
+    val os = Try(management.ManagementFactory.getOperatingSystemMXBean)
+      .getOrElse(UnknownOperatingSystemMXBean)
 
     val result = mutable.Buffer(
       "name" -> os.getName.toJson,
