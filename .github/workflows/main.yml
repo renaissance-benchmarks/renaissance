@@ -11,7 +11,7 @@ env:
   ARTIFACT_RETENTION_DAYS: ${{ ((github.event_name == 'push') && (github.ref == 'refs/heads/master')) && 30 || 4 }}
 
   BUILDENV_IMAGE_BASE: ghcr.io/renaissance-benchmarks/renaissance-buildenv
-  BUILDENV_IMAGE_VERSION: v18
+  BUILDENV_IMAGE_VERSION: v19
 
 jobs:
 
@@ -154,6 +154,8 @@ jobs:
             image: temurin-jdk21
           - os: linux
             image: temurin-jdk25
+          - os: linux
+            image: openjdk26
           - os: linux
             image: openj9-openjdk11
           - os: linux
