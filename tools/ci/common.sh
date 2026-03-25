@@ -52,7 +52,7 @@ cp_reflink() {
 
 get_jvm_workaround_args() {
     case "$RENAISSANCE_JVM_MAJOR_VERSION" in
-        1[6-9]|2[0-6]|26-ea)
+        1[6-9]|2[0-7]|*-ea)
             echo "--add-opens=java.base/java.lang=ALL-UNNAMED"
             echo "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"
             echo "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
