@@ -232,6 +232,10 @@ The following is the complete list of benchmarks, separated into groups.
   \
   Default repetitions: 12; APACHE2 license, MIT distribution; Supported JVM: 11 and later
 
+- `http4k` - Sends concurrent HTTP requests to an http4k server with an Undertow backend.
+  \
+  Default repetitions: 20; APACHE2 license, MIT distribution; Supported JVM: 11 and later
+
 
 
 The suite also contains a group of benchmarks intended solely for testing
