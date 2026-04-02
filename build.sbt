@@ -567,10 +567,12 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
     libraryDependencies ++= Seq(
       "io.ktor" % "ktor-server-core-jvm" % ktorVersion,
       "io.ktor" % "ktor-server-cio-jvm" % ktorVersion,
-      "io.ktor" % "ktor-server-tests-jvm" % ktorVersion,
-      "io.ktor" % "ktor-server-call-logging" % ktorVersion,
+      "io.ktor" % "ktor-server-websockets-jvm" % ktorVersion,
+      "io.ktor" % "ktor-server-call-logging-jvm" % ktorVersion,
+      "io.ktor" % "ktor-server-default-headers-jvm" % ktorVersion,
       "io.ktor" % "ktor-serialization-kotlinx-json-jvm" % ktorVersion,
-      "io.ktor" % "ktor-server-auth-jvm" % ktorVersion,
+      "io.ktor" % "ktor-client-core-jvm" % ktorVersion,
+      "io.ktor" % "ktor-client-cio-jvm" % ktorVersion,
       "org.jetbrains.kotlinx" % "kotlinx-serialization-json" % "1.6.2",
       "ch.qos.logback" % "logback-classic" % logbackVersion
     ),

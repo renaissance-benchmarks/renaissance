@@ -10,6 +10,7 @@ import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 import org.renaissance.kotlin.ktor.client.ClientManager
 import org.renaissance.kotlin.ktor.server.ChatApplication
+import java.net.Socket
 import kotlin.math.min
 
 @Group("web")
@@ -82,12 +83,22 @@ class KtorRenaissanceBenchmark() : Benchmark {
     val randomSeed = context.parameter("random_seed").toPositiveInteger()
 
     application = ChatApplication(numberOfChats)
-    server = embeddedServer(io.ktor.server.cio.CIO, host = "localhost", port = port) {
+    server = embeddedServer(io.ktor.server.cio.CIO, host = "127.0.0.1", port = port) {
       application.apply {
         main()
       }
     }
     server.start()
+
+    // Wait for the server to be ready to accept connections.
+    repeat(50) {
+      try {
+        Socket("127.0.0.1", port).close()
+        return@repeat
+      } catch (_: Exception) {
+        Thread.sleep(100)
+      }
+    }
 
     clientPool = newFixedThreadPoolContext(min(clientCount, Runtime.getRuntime().availableProcessors()), "clientPool")
     clientManager = ClientManager(
@@ -113,9 +124,11 @@ class KtorRenaissanceBenchmark() : Benchmark {
       clientManager.runClients()
     }
 
+    val expectedGroupClients = (clientCount * fractionOfClientsSendingGroupMessages).toInt()
+    val expectedPrivateClients = (clientCount * fractionOfClientsSendingPrivateMessages).toInt()
     return Validators.simple(
       "Number of successful client tasks",
-      (((clientCount * fractionOfClientsSendingGroupMessages) + (clientCount * fractionOfClientsSendingPrivateMessages)) * numberOfRepetitions).toLong(),
+      ((expectedGroupClients + expectedPrivateClients) * numberOfRepetitions).toLong(),
       numberOfSuccessfulTasks.toLong()
     )
   }
