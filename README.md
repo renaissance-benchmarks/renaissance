@@ -184,6 +184,10 @@ The following is the complete list of benchmarks, separated into groups.
   \
   Default repetitions: 50; APACHE2 license, MIT distribution; Supported JVM: 11 and later
 
+- `game-of-life` - Simulates Conway-style cellular automata on a 2D grid using polymorphic rule dispatch.
+  \
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 11 and later
+
 - `mnemonics` - Solves the phone mnemonics problem using JDK streams.
   \
   Default repetitions: 16; MIT license, MIT distribution; Supported JVM: 11 and later
