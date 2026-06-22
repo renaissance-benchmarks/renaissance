@@ -1,0 +1,228 @@
+{
+  "benchmarks": ["kotlin-ktor"],
+  "format_version": 6,
+  "data": {
+    "kotlin-ktor": {
+      "results": [{
+        "duration_ns": 452502416,
+        "uptime_ns": 466213959
+      }],
+      "termination": "normal"
+    }
+  },
+  "environment": {
+    "os": {
+      "virt_mem_committed": 427332534272,
+      "name": "Mac OS X",
+      "open_fd_count": 165,
+      "available_processors": 16,
+      "phys_mem_total": 68719476736,
+      "version": "15.3.2",
+      "arch": "aarch64",
+      "max_fd_count": 1048576,
+      "swap_space_free": 1104084992,
+      "phys_mem_free": 23102177280,
+      "swap_space_total": 5368709120
+    },
+    "vm": {
+      "termination": "normal",
+      "name": "OpenJDK 64-Bit Server VM",
+      "classloading": {
+        "class_count": 6613,
+        "classes_total": 6613
+      },
+      "start_ns": 659666819923291,
+      "mode": "mixed mode, sharing",
+      "args": ["-Xms2500M", "-Xmx2500M", "-Dfile.encoding=UTF-8", "-Dsun.stdout.encoding=UTF-8", "-Dsun.stderr.encoding=UTF-8"],
+      "vendor": "Eclipse Adoptium",
+      "spec_vendor": "Oracle Corporation",
+      "spec_name": "Java Virtual Machine Specification",
+      "compiler": {
+        "name": "HotSpot 64-Bit Tiered Compilers",
+        "compilation_time_ms": 4453
+      },
+      "start_iso": "2025-05-06T10:21:32.589Z",
+      "collectors": [{
+        "name": "G1 Young Generation",
+        "collection_count": 3,
+        "collection_time_ms": 5
+      }, {
+        "name": "G1 Concurrent GC",
+        "collection_count": 2,
+        "collection_time_ms": 0
+      }, {
+        "name": "G1 Old Generation",
+        "collection_count": 1,
+        "collection_time_ms": 4
+      }],
+      "start_unix_ms": 1746526892589,
+      "version": "21.0.6+7-LTS",
+      "pools": [{
+        "name": "CodeHeap 'non-nmethods'",
+        "type": "NON_HEAP",
+        "usage": {
+          "init": 2555904,
+          "used": 3289984,
+          "committed": 3473408,
+          "max": 7618560
+        },
+        "peak_usage": {
+          "init": 2555904,
+          "used": 3368832,
+          "committed": 3473408,
+          "max": 7618560
+        }
+      }, {
+        "name": "Metaspace",
+        "type": "NON_HEAP",
+        "usage": {
+          "init": 0,
+          "used": 33372736,
+          "committed": 33816576,
+          "max": -1
+        },
+        "peak_usage": {
+          "init": 0,
+          "used": 33372736,
+          "committed": 33816576,
+          "max": -1
+        }
+      }, {
+        "name": "CodeHeap 'profiled nmethods'",
+        "type": "NON_HEAP",
+        "usage": {
+          "init": 2555904,
+          "used": 11655936,
+          "committed": 11665408,
+          "max": 122011648
+        },
+        "peak_usage": {
+          "init": 2555904,
+          "used": 11655936,
+          "committed": 11665408,
+          "max": 122011648
+        }
+      }, {
+        "name": "Compressed Class Space",
+        "type": "NON_HEAP",
+        "usage": {
+          "init": 0,
+          "used": 3969664,
+          "committed": 4128768,
+          "max": 1073741824
+        },
+        "peak_usage": {
+          "init": 0,
+          "used": 3969664,
+          "committed": 4128768,
+          "max": 1073741824
+        }
+      }, {
+        "name": "G1 Eden Space",
+        "type": "HEAP",
+        "usage": {
+          "init": 130023424,
+          "used": 94371840,
+          "committed": 1587544064,
+          "max": -1
+        },
+        "peak_usage": {
+          "init": 130023424,
+          "used": 335544320,
+          "committed": 1587544064,
+          "max": -1
+        }
+      }, {
+        "name": "G1 Old Gen",
+        "type": "HEAP",
+        "usage": {
+          "init": 2495610880,
+          "used": 10067208,
+          "committed": 1031798784,
+          "max": 2625634304
+        },
+        "peak_usage": {
+          "init": 2495610880,
+          "used": 10067208,
+          "committed": 2495610880,
+          "max": 2625634304
+        }
+      }, {
+        "name": "G1 Survivor Space",
+        "type": "HEAP",
+        "usage": {
+          "init": 0,
+          "used": 5319936,
+          "committed": 6291456,
+          "max": -1
+        },
+        "peak_usage": {
+          "init": 0,
+          "used": 9043968,
+          "committed": 10485760,
+          "max": -1
+        }
+      }, {
+        "name": "CodeHeap 'non-profiled nmethods'",
+        "type": "NON_HEAP",
+        "usage": {
+          "init": 2555904,
+          "used": 3225984,
+          "committed": 3276800,
+          "max": 122028032
+        },
+        "peak_usage": {
+          "init": 2555904,
+          "used": 3226752,
+          "committed": 3276800,
+          "max": 122028032
+        }
+      }],
+      "uptime_ms": 1454,
+      "compressed_oops_mode": "Zero based",
+      "threads": {
+        "thread_count": 92,
+        "thread_count_max": 109,
+        "daemon_thread_count": 91,
+        "threads_total": 110
+      },
+      "spec_version": "21",
+      "memory": {
+        "heap_usage": {
+          "init": 2625634304,
+          "used": 109758984,
+          "committed": 2625634304,
+          "max": 2625634304
+        },
+        "nonheap_usage": {
+          "init": 7667712,
+          "used": 55500584,
+          "committed": 56360960,
+          "max": -1
+        },
+        "pending_finalization_count": 0
+      }
+    },
+    "jre": {
+      "java_version": "21.0.6",
+      "name": "OpenJDK Runtime Environment",
+      "class_path": ["/Users/simonvergauwen/renaissance/target/renaissance-gpl-0.15.0-26-g3c9605b-SNAPSHOT.jar"],
+      "spec_version": "21",
+      "spec_vendor": "Oracle Corporation",
+      "spec_name": "Java Platform API Specification",
+      "home": "/opt/homebrew/Cellar/sdkman-cli/5.18.2/libexec/candidates/java/21.0.6-tem",
+      "version": "21.0.6+7-LTS",
+      "java_vendor": "Eclipse Adoptium",
+      "library_path": ["/Users/simonvergauwen/Library/Java/Extensions", "/Library/Java/Extensions", "/Network/Library/Java/Extensions", "/System/Library/Java/Extensions", "/usr/lib/java", "."]
+    }
+  },
+  "suite": {
+    "git": {
+      "commit_hash": "3c9605bae525eb88f7581a56fe2e47dfb46bbfcc",
+      "commit_date": "2024-05-23T09:29:25+0200",
+      "dirty": "true"
+    },
+    "name": "Renaissance Benchmark Suite",
+    "version": "0.15.0-26-g3c9605b-SNAPSHOT"
+  }
+}
