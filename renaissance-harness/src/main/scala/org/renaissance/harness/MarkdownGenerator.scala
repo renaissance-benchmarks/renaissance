@@ -300,6 +300,16 @@ provide suggested workarounds.
   with 96 cores, the benchmark reproducibly throws `ConnectionFailedException`s while running
   with `-XX:ActiveProcessorCount=48` works just fine.
 
+#### finagle-chirper times-out (many threads waiting on object monitors) on machines with many CPUs
+
+- **Issue:** On machines with many CPUs the finagle-chirper benchchmark can time-out
+  and a thread dump will show many threads in `java.lang.Thread.State: WAITING (on object monitor)`
+  state, see [#509](https://github.com/renaissance-benchmarks/renaissance/issues/509)
+  for more details, report is from ppc64le with 128 cores).
+- **Workaround:** Increasing max heap size (`-Xmx`) and also increasing the limit of maximum
+  opened files (`ulimit -n`) resolves the issue (without the increased file size,
+  the benchmark also throws a lot of `ConnectionFailedException`).
+
 #### The harness may fail to remove its temporary directories
 
 - **Issue:** The harness will create `launcher-*` and `harness-*` temporary directories in the
