@@ -37,16 +37,15 @@ import scala.io.Source
 @Parameter(name = "input_file", defaultValue = "/ratings.csv")
 @Parameter(
   name = "als_configs",
-  defaultValue =
-    "rank,lambda,iterations;" +
-      " 8,5.00,20;" +
-      "10,2.00,20;" +
-      "12,1.00,20;" +
-      " 8,0.05,20;" +
-      "10,0.01,10;" +
-      " 8,0.02,10;" +
-      "12,0.10,10;" +
-      " 8,0.20,10",
+  defaultValue = "rank,lambda,iterations;" +
+    " 8,5.00,20;" +
+    "10,2.00,20;" +
+    "12,1.00,20;" +
+    " 8,0.05,20;" +
+    "10,0.01,10;" +
+    " 8,0.02,10;" +
+    "12,0.10,10;" +
+    " 8,0.20,10",
   summary = "A table of ALS configuration parameters to try."
 )
 @Parameter(
