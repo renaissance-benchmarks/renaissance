@@ -30,14 +30,16 @@ public class BenchThread implements Runnable {
 		public final int timestamp, result;
 		public final boolean failed;
 		public final int opNum;
+		public final long callCountBefore;  // random call count BEFORE getNextOperationNumber
 
 		public ReplayLogEntry(int timestamp, int result, boolean failed,
-				int opNum) {
+				int opNum, long callCountBefore) {
 			this.threadNum = myThreadNum;
 			this.timestamp = timestamp;
 			this.result = result;
 			this.failed = failed;
 			this.opNum = opNum;
+			this.callCountBefore = callCountBefore;
 		}
 
 		public int compareTo(ReplayLogEntry entry) {
@@ -78,6 +80,7 @@ public class BenchThread implements Runnable {
 		while (!stop && opIndex < countOfOperations) {
 			opIndex++;
 			//if (i++ > 55) continue;
+			long callCountBefore = Parameters.sequentialReplayEnabled ? ThreadRandom.getCallCount() : 0;
 			int operationNumber = getNextOperationNumber(opIndex);
 
 			// OperationType type = OperationId.values()[operationNumber].getType();
@@ -92,6 +95,12 @@ public class BenchThread implements Runnable {
 			OperationExecutor currentExecutor = operations[operationNumber];
 			int result = 0;
 			boolean failed = false;
+
+			// Save ThreadRandom state so that a failed operation can be rolled
+			// back, matching the save/restore behaviour of SequentialReplayThread.
+			if (Parameters.sequentialReplayEnabled) {
+				ThreadRandom.saveState();
+			}
 
 			try {
 				long startTime = System.currentTimeMillis();
@@ -116,12 +125,17 @@ public class BenchThread implements Runnable {
 			} catch (OperationFailedException e) {
 				failedOperations[operationNumber]++;
 				failed = true;
+				// Restore ThreadRandom so the next getNextOperationNumber uses the
+				// same state as if the failed operation never ran.
+				if (Parameters.sequentialReplayEnabled) {
+					ThreadRandom.restoreState();
+				}
 			}
 
 			if (Parameters.sequentialReplayEnabled) {
 				ReplayLogEntry newEntry = new ReplayLogEntry(
 						currentExecutor.getLastOperationTimestamp(), result, failed,
-						operationNumber);
+						operationNumber, callCountBefore);
 				replayLog.add(newEntry);
 				//System.out.println("ts: " + newEntry.timestamp);
 			}
@@ -159,9 +173,13 @@ public class BenchThread implements Runnable {
 		}
 	}
 
+	//TODO
+	/*
+	* random seed
+	* do not do modulo 20
+	* */
 	protected int getNextOperationNumber(int iteration) {
-		// double whichOperation = ThreadRandom.nextDouble();
-		double whichOperation = (iteration % 20) / 20.0;
+		double whichOperation = ThreadRandom.nextDouble();
 		int operationNumber = 0;
 		while (whichOperation >= operationCDF[operationNumber])
 			operationNumber++;

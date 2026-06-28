@@ -1,7 +1,5 @@
 package stmbench7;
 
-import java.util.Random;
-
 import stmbench7.annotations.Immutable;
 import stmbench7.core.RuntimeError;
 
@@ -22,36 +20,64 @@ public class ThreadRandom {
 		SEQUENTIAL_REPLAY
 	}
 	
-	private static class CloneableRandom extends Random implements Cloneable {
-		public static final long serialVersionUID = 1L;
-		
+	// Custom LCG matching java.util.Random's algorithm. Uses a primitive long
+	// for state so that Object.clone() performs a true value copy - unlike
+	// java.util.Random whose AtomicLong seed is shared across shallow clones,
+	// which would silently prevent restoreState() from working during STM retries.
+	private static class CloneableRandom implements Cloneable {
+		private static final long multiplier = 0x5DEECE66DL;
+		private static final long addend     = 0xBL;
+		private static final long mask       = (1L << 48) - 1;
+
+		private long seed;
+
 		public CloneableRandom(long seed) {
-			super(seed);
+			this.seed = (seed ^ multiplier) & mask;
 		}
-		
+
+		private int next(int bits) {
+			seed = (seed * multiplier + addend) & mask;
+			return (int)(seed >>> (48 - bits));
+		}
+
+		public int nextInt(int n) {
+			if ((n & -n) == n) return (int)((n * (long)next(31)) >> 31);
+			int bits, val;
+			do {
+				bits = next(31);
+				val  = bits % n;
+			} while (bits - val + (n - 1) < 0);
+			return val;
+		}
+
+		public double nextDouble() {
+			return (((long)(next(26)) << 27) + next(27)) / (double)(1L << 53);
+		}
+
 		@Override
 		public CloneableRandom clone() {
 			try {
-				return (CloneableRandom) super.clone();
+				return (CloneableRandom) super.clone(); // seed is a long primitive -> deep copy
 			}
 			catch(CloneNotSupportedException e) {
 				throw new RuntimeException(e);
 			}
-		}		
+		}
 	}
 	
 	private static class RandomState {
 		private CloneableRandom currentState, savedState;
-		
+		public long callCount = 0;
+
 		public RandomState() {
 			currentState = new CloneableRandom(3);
 			savedState = null;
 		}
-		
+
 		public void saveState() {
 			savedState = currentState.clone();
 		}
-		
+
 		public void restoreState() {
 			currentState = savedState;
 		}
@@ -73,17 +99,19 @@ public class ThreadRandom {
 	};
 	
 	public static int nextInt(int n) {
-		int k = getCurrentRandom().currentState.nextInt(n);
-		//if(phase != Phase.INIT) 
-		//	System.out.println("int " + n + " = " + k + " " + getCurrentRandom().currentState);
-		return k;
+		RandomState rs = getCurrentRandom();
+		rs.callCount++;
+		return rs.currentState.nextInt(n);
 	}
-	
+
 	public static double nextDouble() {
-		double k = getCurrentRandom().currentState.nextDouble();
-		//if(phase != Phase.INIT) 
-		//	System.out.println("double = " + k + " " + getCurrentRandom().currentState);
-		return k;
+		RandomState rs = getCurrentRandom();
+		rs.callCount++;
+		return rs.currentState.nextDouble();
+	}
+
+	public static long getCallCount() {
+		return getCurrentRandom().callCount;
 	}
 
 	public static void reset() {
