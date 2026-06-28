@@ -27,12 +27,13 @@ import java.net.InetSocketAddress
 import java.net.URLEncoder
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.Comparator
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection._
 import scala.collection.immutable.ArraySeq
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.collection.parallel.CollectionConverters._
 import scala.io.Source
 import scala.util.hashing.byteswap32
@@ -45,6 +46,8 @@ import scala.util.hashing.byteswap32
 @Repetitions(90)
 @Parameter(name = "request_count", defaultValue = "1250")
 @Parameter(name = "user_count", defaultValue = "5000")
+@Parameter(name = "active_users", defaultValue = "100")
+@Parameter(name = "threads", defaultValue = "auto")
 @Configuration(name = "test", settings = Array("request_count = 10", "user_count = 10"))
 @Configuration(name = "jmh")
 final class FinagleChirper extends Benchmark {
@@ -66,6 +69,69 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
+  // Helper: resolve the `threads` parameter.
+  //
+  // If the user passes "auto" (case‑insensitive) or leaves it at the
+  // default, we return Runtime.getRuntime.availableProcessors().
+  // Otherwise we try to parse an integer and make sure it is > 0.
+  private def resolveThreads(c: BenchmarkContext): Int = {
+    val param = c.parameter("threads")
+    scala.util.Try(param.toPositiveInteger).toOption match {
+      case Some(n) if n > 0 => n // valid integer
+      case None | Some(_) => // "auto" or zero
+        Runtime.getRuntime.availableProcessors()
+    }
+  }
+
+  private def calculateStartingMessagesForUser(username: String): FeedBuffer[String] = {
+
+    val hash = byteswap32(username.length + username.charAt(0))
+    val offset = math.abs(hash) % (messages.length - startingFeedSize)
+    val startingMessages = messages.slice(offset, offset + startingFeedSize)
+    FeedBuffer.from(startingMessages)
+  }
+
+  private def calculatePostMessagesForUser(username: String): Unit = {
+    // Initialize with starting messages
+    userPostsPredicted(username) = calculateStartingMessagesForUser(username)
+
+    // Only calculate additional posts for active users
+    if (activeUsers.contains(username)) {
+      val offset_posted = byteswap32(username.charAt(username.length - 1))
+
+      for (i <- 0 until requestCountParam) {
+        val uid = math.abs(byteswap32(offset_posted * i))
+        if (uid % postPeriodicity == 0) {
+          val message = messages(uid % messages.length)
+          userPostsPredicted(username) += message
+        }
+      }
+    }
+  }
+
+  private def getUserPostedMessages(username: String): FeedBuffer[String] = {
+
+    val postedMessages = masterInstance.getUserFeedDirect(username)
+    userPostsFetched(username) = postedMessages
+    postedMessages
+  }
+
+  private def getUsersMessages: concurrent.TrieMap[String, FeedBuffer[String]] = {
+    masterInstance.feeds
+  }
+
+  private def getHashedMessages(data: concurrent.TrieMap[String, FeedBuffer[String]]): Long = {
+    val allMessages = data.keys.toSeq.sorted.flatMap(username => data(username))
+    hashMessages(allMessages)
+  }
+
+  private def hashMessages(messages: Seq[String]): Long = {
+    val sortedMessages = messages.sorted // Sort for consistent hashing
+    val concatenated = sortedMessages.mkString("|") // Use separator to avoid ambiguity
+    val hash = md.digest(concatenated.getBytes(StandardCharsets.UTF_8))
+    ByteBuffer.wrap(hash.take(8)).getLong()
+  }
+
   object FeedBuffer {
     final val DefaultInitialSize = ArrayBuffer.DefaultInitialSize
 
@@ -80,6 +146,16 @@ final class FinagleChirper extends Benchmark {
     val feeds = new concurrent.TrieMap[String, FeedBuffer[String]]
     var requestCount = 0
     var postCount = 0
+
+    def getUserFeedDirect(username: String): FeedBuffer[String] = {
+      feeds.get(username) match {
+        case Some(feed) =>
+          val allMessages = feed
+          allMessages
+        case None =>
+          new FeedBuffer[String]
+      }
+    }
 
     def analyze[T](
       feed: IndexedSeqView[String],
@@ -160,102 +236,97 @@ final class FinagleChirper extends Benchmark {
     override def apply(req: Request): Future[Response] =
       lock.synchronized {
         requestCount += 1
-
         req.path match {
-          case "/api/feed" =>
-            val username = req.getParam("username")
-            feeds.get(username) match {
-              case Some(feed) =>
-                var length = 0
-                for (msg <- feed) length += msg.length + 1
-                length += 1
-                val bytes = new Array[Byte](length)
-                var i = 0
-                for (msg <- feed) {
-                  for (j <- 0 until msg.length) {
-                    bytes(i) = msg(j).toByte
-                    i += 1
-                  }
-                  bytes(i) = '\n'
-                  i += 1
-                }
-                val buf = Buf.ByteArray.Owned(bytes)
-                val response = Response(req.version, Status.Ok, BufReader(buf))
-                Future.value(response)
-              case None =>
-                feeds(username) = new FeedBuffer[String]
-                val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
-                Future.value(response)
-            }
-          case "/api/post" =>
-            postCount += 1
-            val username = req.getParam("username")
-            val ord = req.getIntParam("ord")
-            val buf = req.content
-            val content = Buf.Utf16.unapply(buf).get
-            feeds.putIfAbsent(username, new FeedBuffer[String])
-            val feed = feeds(username)
-            feed += content
-            val responseBuf = Buf.ByteArray.Owned(Array[Byte]('o', 'k'))
-            val response = Response(req.version, Status.Ok, BufReader(responseBuf))
-            Future.value(response)
-          case "/api/stats/longest" =>
-            val allFeeds =
-              for ((_, feed) <- feeds.readOnlySnapshot())
-                yield feed.snapshotView()
-            FuturePool.unboundedPool {
-              val message = longestMessageInAllFeeds(allFeeds.toSeq)
-              val bytes = message.getBytes("UTF-8")
-              val buf = Buf.ByteArray.Owned(bytes)
-              Response(req.version, Status.Ok, BufReader(buf))
-            }
-          case "/api/stats/hash-tag-count" =>
-            val allFeeds =
-              for ((_, feed) <- feeds.readOnlySnapshot())
-                yield feed.snapshotView()
-            FuturePool.unboundedPool {
-              val count = hashStartCountInAllFeeds(allFeeds.toSeq)
-              val buffer = ByteBuffer.allocate(8)
-              buffer.putLong(count)
-              val bytes = buffer.array()
-              val buf = Buf.ByteArray.Owned(bytes)
-              Response(req.version, Status.Ok, BufReader(buf))
-            }
-          case "/api/stats/longest-rechirp" =>
-            val allFeeds =
-              for ((_, feed) <- feeds.readOnlySnapshot())
-                yield feed.snapshotView()
-            FuturePool.unboundedPool {
-              val message = longestRechirpInAllFeeds(allFeeds.toSeq)
-              val bytes = message.getBytes("UTF-8")
-              val buf = Buf.ByteArray.Owned(bytes)
-              Response(req.version, Status.Ok, BufReader(buf))
-            }
-          case "/api/stats/most-rechirps" =>
-            val allFeeds =
-              for ((username, feed) <- feeds.readOnlySnapshot())
-                yield (username, feed.snapshotView())
-            FuturePool.unboundedPool {
-              val count = mostRechirpsInAllFeeds(allFeeds.toSeq)
-              val buffer = ByteBuffer.allocate(8)
-              buffer.putLong(count)
-              val bytes = buffer.array()
-              val buf = Buf.ByteArray.Owned(bytes)
-              Response(req.version, Status.Ok, BufReader(buf))
-            }
-          case "/api/reset" =>
-            feeds.clear()
-            for (username <- userNames) {
-              val hash = byteswap32(username.length + username.charAt(0))
-              val offset = math.abs(hash) % (messages.length - startingFeedSize)
-              val startingMessages = messages.slice(offset, offset + startingFeedSize)
-              feeds(username) = FeedBuffer.from(startingMessages)
-            }
-            println("Resetting master, feed map size: " + feeds.size)
-            val response = Response(req.version, Status.Ok, BufReader(Buf.Empty))
-            Future.value(response)
+          case "/api/feed" => handleFeedRequest(req)
+          case "/api/post" => handlePostRequest(req)
+          case "/api/stats/longest" => handleLongestStatsRequest(req)
+          case "/api/stats/hash-tag-count" => handleHashTagCountRequest(req)
+          case "/api/stats/longest-rechirp" => handleLongestRechirpRequest(req)
+          case "/api/stats/most-rechirps" => handleMostRechirpsRequest(req)
+          case "/api/reset" => handleResetRequest(req)
         }
       }
+
+    private def handleFeedRequest(req: Request): Future[Response] = {
+      val username = req.getParam("username")
+      feeds.get(username) match {
+        case Some(feed) =>
+          val content = if (feed.isEmpty) "" else feed.mkString("\n")
+          val bytes = content.getBytes(StandardCharsets.UTF_8)
+          val buf = Buf.ByteArray.Owned(bytes)
+          Future.value(Response(req.version, Status.Ok, BufReader(buf)))
+        case None =>
+          feeds(username) = new FeedBuffer[String]
+          Future.value(Response(req.version, Status.Ok, BufReader(Buf.Empty)))
+      }
+    }
+
+    private def handlePostRequest(req: Request): Future[Response] = {
+      postCount += 1
+      val username = req.getParam("username")
+      val ord = req.getIntParam("ord")
+      val content = Buf.Utf8.unapply(req.content).get
+      feeds.putIfAbsent(username, new FeedBuffer[String])
+      val feed = feeds(username)
+      feed += content
+      val responseBuf = Buf.ByteArray.Owned(Array[Byte]('o', 'k'))
+      Future.value(Response(req.version, Status.Ok, BufReader(responseBuf)))
+    }
+
+    private def handleLongestStatsRequest(req: Request): Future[Response] = {
+      val allFeeds = for ((_, feed) <- feeds.readOnlySnapshot()) yield feed.snapshotView()
+      FuturePool.unboundedPool {
+        val message = longestMessageInAllFeeds(allFeeds.toSeq)
+        val bytes = message.getBytes("UTF-8")
+        val buf = Buf.ByteArray.Owned(bytes)
+        Response(req.version, Status.Ok, BufReader(buf))
+      }
+    }
+
+    private def handleHashTagCountRequest(req: Request): Future[Response] = {
+      val allFeeds = for ((_, feed) <- feeds.readOnlySnapshot()) yield feed.snapshotView()
+      FuturePool.unboundedPool {
+        val count = hashStartCountInAllFeeds(allFeeds.toSeq)
+        val buffer = ByteBuffer.allocate(8)
+        buffer.putLong(count)
+        val bytes = buffer.array()
+        val buf = Buf.ByteArray.Owned(bytes)
+        Response(req.version, Status.Ok, BufReader(buf))
+      }
+    }
+
+    private def handleLongestRechirpRequest(req: Request): Future[Response] = {
+      val allFeeds = for ((_, feed) <- feeds.readOnlySnapshot()) yield feed.snapshotView()
+      FuturePool.unboundedPool {
+        val message = longestRechirpInAllFeeds(allFeeds.toSeq)
+        val bytes = message.getBytes("UTF-8")
+        val buf = Buf.ByteArray.Owned(bytes)
+        Response(req.version, Status.Ok, BufReader(buf))
+      }
+    }
+
+    private def handleMostRechirpsRequest(req: Request): Future[Response] = {
+      val allFeeds =
+        for ((username, feed) <- feeds.readOnlySnapshot()) yield (username, feed.snapshotView())
+      FuturePool.unboundedPool {
+        val count = mostRechirpsInAllFeeds(allFeeds.toSeq)
+        val buffer = ByteBuffer.allocate(8)
+        buffer.putLong(count)
+        val bytes = buffer.array()
+        val buf = Buf.ByteArray.Owned(bytes)
+        Response(req.version, Status.Ok, BufReader(buf))
+      }
+    }
+
+    private def handleResetRequest(req: Request): Future[Response] = {
+      feeds.clear()
+      for (username <- userNames) {
+        feeds(username) = calculateStartingMessagesForUser(username)
+      }
+
+      println("Resetting master, feed map size: " + feeds.size)
+      Future.value(Response(req.version, Status.Ok, BufReader(Buf.Empty)))
+    }
   }
 
   class Cache(val index: Int, val service: Service[Request, Response])
@@ -285,7 +356,7 @@ final class FinagleChirper extends Benchmark {
     }
   }
 
-  class Client(val username: String) extends Thread {
+  class Client(val assignedUsers: Seq[String]) extends Thread {
     var digest = 0
     var postCount = 0
 
@@ -334,39 +405,46 @@ final class FinagleChirper extends Benchmark {
       val feeds = for (cachePort <- cachePorts) yield {
         Http.newService(":" + cachePort)
       }
-      val feedQuery = "/api/feed?username=" + username
-      val offset = byteswap32(username.charAt(username.length - 1))
-      var i = 0
-      while (i < requestCountParam) {
-        val uid = math.abs(byteswap32(offset * i))
-        if (uid % postPeriodicity == 0) {
-          postCount += 1
-          //   Post a new message.
-          val message = messages(uid % messages.length)
-          val postQuery = "/api/post?username=" + username +
-            "&message=" + URLEncoder.encode(message, "UTF-8") +
-            "&ord=" + postCount
-          val request = Request(Method.Get, postQuery)
-          val response = Await.result(master.apply(request))
-          require(
-            response.status == Status.Ok,
-            s"The response status is ${response.status}, message: $message"
-          )
-        } else if (uid % statisticsPeriodicity == 0) {
-          // Get some feed statistics.
-          statMultiplicities(uid % statMultiplicities.length).apply(master)
-        } else {
-          // Fetch a few feeds.
-          val request = Request(Method.Get, feedQuery)
-          val responses = for (i <- 0 until batchSize) yield {
-            val feedService = feeds(uid % cacheCount)
-            val response: Future[Response] = feedService.apply(request)
-            response
+      for (username <- assignedUsers) {
+
+        val feedQuery = "/api/feed?username=" + username
+        val offset = byteswap32(username.charAt(username.length - 1))
+        var i = 0
+
+        for (i <- 0 until requestCountParam) {
+          val uid = math.abs(byteswap32(offset * i))
+          if (uid % postPeriodicity == 0) {
+            postCount += 1
+
+            //   Post a new message.
+            val message = messages(uid % messages.length)
+
+            val postQuery = s"/api/post?username=$username&ord=$postCount"
+            val request = Request(Method.Post, postQuery)
+
+            val messageBytes = message.getBytes(StandardCharsets.UTF_8)
+            request.content = Buf.ByteArray.Owned(messageBytes)
+
+            val response = Await.result(master.apply(request))
+            require(
+              response.status == Status.Ok,
+              s"The response status is ${response.status}, message: $message"
+            )
+          } else if (uid % statisticsPeriodicity == 0) {
+            // Get some feed statistics.
+            statMultiplicities(uid % statMultiplicities.length).apply(master)
+          } else {
+            // Fetch a few feeds.
+            val request = Request(Method.Get, feedQuery)
+            val responses = for (i <- 0 until batchSize) yield {
+              val feedService = feeds(uid % cacheCount)
+              val response: Future[Response] = feedService.apply(request)
+              response
+            }
+            val contents = Await.result(Future.collect(responses))
+            for (content <- contents) digest += content.toString.hashCode
           }
-          val contents = Await.result(Future.collect(responses))
-          for (content <- contents) digest += content.toString.hashCode
         }
-        i += 1
       }
       for (feed <- feeds) {
         Await.ready(feed.close())
@@ -400,13 +478,25 @@ final class FinagleChirper extends Benchmark {
   var master: ListeningServer = null
   var masterPort: Int = -1
   var masterService: Service[Request, Response] = null
-  val clientCount = Runtime.getRuntime.availableProcessors
-  val cacheCount = Runtime.getRuntime.availableProcessors
   val caches = new mutable.ArrayBuffer[ListeningServer]
   var cachePorts = new mutable.ArrayBuffer[Int]
   val startingFeedSize = 80
-
+  private var clientCount: Int = _
+  private var cacheCount: Int = _
+  private var userCountParam: Int = _
+  private var activeUsersParam: Int = _
   private var requestCountParam: Int = _
+  private var masterInstance: Master = _
+  private var md: MessageDigest = _
+  private var predictedResult: Long = _
+  private var activeUsers: Seq[String] = _
+  private var userGroups: Seq[Seq[String]] = _
+
+  var userPostsPredicted: concurrent.TrieMap[String, FeedBuffer[String]] =
+    new concurrent.TrieMap()
+
+  var userPostsFetched: concurrent.TrieMap[String, FeedBuffer[String]] =
+    new concurrent.TrieMap()
 
   val usernameBases = Seq(
     "johnny",
@@ -454,16 +544,45 @@ final class FinagleChirper extends Benchmark {
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     FinagleUtil.setUpLoggers()
 
+    clientCount = resolveThreads(c)
+    cacheCount = resolveThreads(c)
     requestCountParam = c.parameter("request_count").toPositiveInteger
-    val userCountParam = c.parameter("user_count").toPositiveInteger
+    userCountParam = c.parameter("user_count").toPositiveInteger
+    activeUsersParam = c.parameter("active_users").toPositiveInteger
+
+    // active users can't be greater than user count
+    assert(
+      activeUsersParam <= userCountParam,
+      s"Active users ($activeUsersParam) cannot be greater than total user count ($userCountParam)"
+    )
+
+    md = MessageDigest.getInstance("MD5")
 
     userNames =
       for (i <- 0 until userCountParam)
         yield usernameBases(i % usernameBases.length) + i
 
+    // shuffle, we want different users
+    activeUsers = scala.util.Random.shuffle(userNames).take(activeUsersParam)
+
+    val baseUsersPerThread = activeUsersParam / clientCount
+    val remainder = activeUsersParam % clientCount
+    val userGroupsBuffer = mutable.ArrayBuffer[Seq[String]]()
+    var currentIndex = 0
+
+    for (i <- 0 until clientCount) {
+      val usersForThisThread = if (i < remainder) baseUsersPerThread + 1 else baseUsersPerThread
+      val endIndex = currentIndex + usersForThisThread
+      userGroupsBuffer += activeUsers.slice(currentIndex, endIndex)
+      currentIndex = endIndex
+    }
+
+    userGroups = userGroupsBuffer.toSeq
+
     messages = resourceAsLines(inputFile)
 
-    master = Http.serve(":0", new Master)
+    masterInstance = new Master
+    master = Http.serve(":0", masterInstance)
     /* TODO
     Implement an unified mechanism of assigning ports to benchmarks.
     Related to https://github.com/D-iii-S/renaissance-benchmarks/issues/13
@@ -475,7 +594,16 @@ final class FinagleChirper extends Benchmark {
     }
     println("Master port: " + masterPort)
     println("Cache ports: " + cachePorts.mkString(", "))
+    println(s"Will use $clientCount threads to handle $activeUsersParam users")
+
     masterService = Http.newService(":" + masterPort)
+
+    // Predict posts
+    for (username <- userNames) {
+      calculatePostMessagesForUser(username)
+    }
+
+    predictedResult = getHashedMessages(userPostsPredicted)
   }
 
   override def tearDownAfterAll(c: BenchmarkContext): Unit = {
@@ -493,14 +621,16 @@ final class FinagleChirper extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val clients =
-      for (i <- 0 until clientCount)
-        yield new Client(userNames(i % userNames.length) + i)
+
+    val clients = userGroups.map(ug => new Client(ug))
     clients.foreach(_.start())
     clients.foreach(_.join())
 
-    // TODO: add proper validation
-    Validators.dummy()
+    Validators.simple(
+      "comparing hash of predicted and fetched messages ",
+      predictedResult,
+      getHashedMessages(getUsersMessages)
+    )
   }
 
   private def resourceAsLines(resourceName: String) = {
