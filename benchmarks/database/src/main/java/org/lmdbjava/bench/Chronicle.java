@@ -1,227 +1,191 @@
-/*-
- * #%L
- * LmdbJava Benchmarks
- * %%
- * Copyright (C) 2016 - 2018 The LmdbJava Open Source Project
- * %%
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #L%
- */
-
 package org.lmdbjava.bench;
 
 import java.io.File;
 import java.io.IOException;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+
 import net.openhft.chronicle.map.ChronicleMap;
-import static net.openhft.chronicle.map.ChronicleMap.of;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class Chronicle {
+public class Chronicle extends DatabaseManager<Chronicle.Writer, Chronicle.Reader> {
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-  final static int CPU = Runtime.getRuntime().availableProcessors();
+  private ChronicleMap<byte[], byte[]> map;
+  private final int valueSize;
+  private final int entryCount;
 
-  private static volatile Object out = null;
-
-  // Chronicle Map does not provide ordered keys, so no CRC/XXH64/rev/prev test
-  public void readKey(final Reader r) {
-    for (final int key : r.keys) {
-      if (r.intKey) {
-        r.wkb.putInt(0, key);
-      } else {
-        r.wkb.putStringWithoutLengthUtf8(0, r.padKey(key));
-      }
-      out = r.map.getUsing(r.wkb.byteArray(), r.wvb.byteArray());
-    }
+  public static Chronicle setup(File scratchDir, int threads, int valueSize, int entryCount, Boolean runInMemory) {
+    Chronicle instance = new Chronicle(scratchDir, threads, valueSize, entryCount, runInMemory);
+    instance.initializeSharedDatabase();
+    return instance;
   }
 
-  public void parReadKey(final Reader r) {
-    final int[] keys = r.keys;
-    Thread[] threads = new Thread[CPU];
-    for (int k = 0; k < CPU; k++) {
-      final int p = k;
-      final int BATCH = keys.length / CPU;
-      threads[p] = new Thread() {
-        public void run() {
-          MutableDirectBuffer localwkb = new UnsafeBuffer(new byte[r.keySize]);
-          MutableDirectBuffer localwvb = new UnsafeBuffer(new byte[r.valSize]);
-          final int rndByteMax = r.RND_MB.length - r.valSize;
-          int rndByteOffset = 0;
-          for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-            int key = keys[i];
-            if (r.intKey) {
-              localwkb.putInt(0, key);
-            } else {
-              localwkb.putStringWithoutLengthUtf8(0, r.padKey(key));
-            }
-            r.map.getUsing(localwkb.byteArray(), localwvb.byteArray());
-            if (localwvb.getInt(0) == 0) {
-              out = localwkb;
-            }
-          }
-        }
-      };
-      threads[p].start();
-    }
-    for (int p = 0; p < CPU; p++) {
+  private Chronicle(File scratchDir, int threads, int valueSize, int entryCount, Boolean runInMemory) {
+    super(scratchDir, threads, runInMemory);
+    this.valueSize = valueSize;
+    this.entryCount = entryCount;
+  }
+
+  @Override
+  protected void initializeSharedDatabase() {
+    if (runInMemory) {
+      System.out.println("[" + getDatabaseInfo() + "] Running IN MEMORY");
+      this.map = ChronicleMap.of(byte[].class, byte[].class)
+              .constantKeySizeBySample(new byte[Integer.BYTES])
+              .constantValueSizeBySample(new byte[valueSize])
+              .entries(entryCount)
+              .create();
+      this.dbFile = null;
+    } else {
+      this.dbFile = new File(scratchDir, "Chronicle.map");
+      if (dbFile.exists()) {
+        dbFile.delete();
+      }
+      System.out.println("[" + getDatabaseInfo() + "] Running ON DISK: " + dbFile.getAbsolutePath());
       try {
-        threads[p].join();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+        this.map = ChronicleMap.of(byte[].class, byte[].class)
+                .constantKeySizeBySample(new byte[Integer.BYTES])
+                .constantValueSizeBySample(new byte[valueSize])
+                .entries(entryCount)
+                .createPersistedTo(dbFile);
+      } catch (IOException ex) {
+        throw new IllegalStateException("Unable to create Chronicle map", ex);
       }
     }
   }
 
-  public void write(final Writer w) {
-    w.write();
-  }
-
-  public void parWrite(final Writer w) {
-    w.parWrite();
-  }
-
-  public static class CommonChronicleMap extends Common {
-
-    ChronicleMap<byte[], byte[]> map;
-
-    /**
-     * Writable key buffer. Backed by a plain byte[] for Chronicle API ease.
-     */
-    MutableDirectBuffer wkb;
-
-    /**
-     * Writable value buffer. Backed by a plain byte[] for Chronicle API ease.
-     */
-    MutableDirectBuffer wvb;
-
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-      wkb = new UnsafeBuffer(new byte[keySize]);
-      wvb = new UnsafeBuffer(new byte[valSize]);
-
-      try {
-        File chronicleMapFile = new File(tmp, "chronicle.map");
-        map = of(byte[].class, byte[].class)
-            .constantKeySizeBySample(new byte[keySize])
-            .constantValueSizeBySample(new byte[valSize])
-            .entries(num)
-            .createPersistedTo(chronicleMapFile);
-      } catch (final IOException ex) {
-        throw new IllegalStateException(ex);
-      }
-    }
-
-    @Override
-    public void teardown() throws IOException {
-      reportSpaceBeforeClose();
+  @Override
+  protected void closeDatabase() {
+    if (map != null) {
       map.close();
-      super.teardown();
+    }
+  }
+
+  @Override
+  protected String getDatabaseInfo() {
+    return "Chronicle";
+  }
+
+  @Override
+  public Writer createWriter() {
+    return new Writer(threads, createThreadPool(), map);
+  }
+
+  @Override
+  public Reader createReader() {
+    return new Reader(threads, createThreadPool(),  map);
+  }
+
+  // ==================== Writer ====================
+  public static class Writer extends DatabaseManager.Worker {
+    private final ChronicleMap<byte[], byte[]> map;
+
+    Writer(int threads, ExecutorService threadPool, ChronicleMap<byte[], byte[]> map) {
+      super(threads, threadPool);
+      this.map = map;
     }
 
-    void write() {
-      final int rndByteMax = RND_MB.length - valSize;
-      int rndByteOffset = 0;
-      for (final int key : keys) {
-        if (intKey) {
-          wkb.putInt(0, key, LITTLE_ENDIAN);
-        } else {
-          wkb.putStringWithoutLengthUtf8(0, padKey(key));
-        }
-        if (valRandom) {
-          wvb.putBytes(0, RND_MB, rndByteOffset, valSize);
-          rndByteOffset += valSize;
-          if (rndByteOffset >= rndByteMax) {
-            rndByteOffset = 0;
-          }
-        } else {
-          wvb.putInt(0, key);
-        }
-        map.put(wkb.byteArray(), wvb.byteArray());
-      }
-    }
+    /**
+     * Write key-value pairs with overwrites using MutableDirectBuffer
+     * @param keys array per thread: keys[threadIndex][keyIndex]
+     * @param values array per thread per key: values[threadIndex][keyIndex][valueSequenceIndex]
+     *               value -1 means delete
+     */
+    public void write(int[][] keys, int[][][] values) throws InterruptedException {
+      final CompletionService<Void> executor = new ExecutorCompletionService<>(threadPool);
 
-    void parWrite() {
-      Thread[] threads = new Thread[CPU];
-      for (int k = 0; k < CPU; k++) {
-        final int p = k;
-        final int BATCH = keys.length / CPU;
-        threads[p] = new Thread() {
-          public void run() {
-            MutableDirectBuffer localwkb = new UnsafeBuffer(new byte[keySize]);
-            MutableDirectBuffer localwvb = new UnsafeBuffer(new byte[valSize]);
-            final int rndByteMax = RND_MB.length - valSize;
-            int rndByteOffset = 0;
-            for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-              int key = keys[i];
-              if (intKey) {
-                localwkb.putInt(0, key, LITTLE_ENDIAN);
+      for (int t = 0; t < threads; t++) {
+        final int threadIndex = t;
+
+        executor.submit(() -> {
+          final byte[] keyBytes = new byte[Integer.BYTES];
+          final byte[] valueBytes = new byte[Integer.BYTES];
+          final MutableDirectBuffer keyBuffer = new UnsafeBuffer(keyBytes);
+          final MutableDirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
+
+          int[] threadKeys = keys[threadIndex];
+          int[][] threadValues = values[threadIndex];
+
+          for (int k = 0; k < threadKeys.length; k++) {
+            int key = threadKeys[k];
+            int[] valueSequence = threadValues[k];
+
+            keyBuffer.putInt(0, key, ByteOrder.LITTLE_ENDIAN);
+
+            for (int value : valueSequence) {
+              if (value == -1) {
+                map.remove(keyBytes.clone());
               } else {
-                localwkb.putStringWithoutLengthUtf8(0, padKey(key));
+                valueBuffer.putInt(0, value, ByteOrder.LITTLE_ENDIAN);
+                map.put(keyBytes.clone(), valueBytes.clone());
               }
-              if (valRandom) {
-                localwvb.putBytes(0, RND_MB, rndByteOffset, valSize);
-                rndByteOffset += valSize;
-                if (rndByteOffset >= rndByteMax) {
-                  rndByteOffset = 0;
-                }
-              } else {
-                localwvb.putInt(0, key);
-              }
-              map.put(localwkb.byteArray(), localwvb.byteArray());
             }
           }
-        };
-        threads[p].start();
+          return null;
+        });
       }
-      for (int p = 0; p < CPU; p++) {
-        try {
-          threads[p].join();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+
+      for (int i = 0; i < threads; i++) {
+        executor.take();
       }
     }
   }
 
-  public static class Reader extends CommonChronicleMap {
+  // ==================== Reader ====================
+  public static class Reader extends DatabaseManager.Worker {
+    private final ChronicleMap<byte[], byte[]> map;
 
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-      super.write();
+    Reader(int threads,ExecutorService threadPool, ChronicleMap<byte[], byte[]> map) {
+      super(threads, threadPool);
+      this.map = map;
     }
 
-    @Override
-    public void teardown() throws IOException {
-      super.teardown();
+    /**
+     * Read values for given keys using MutableDirectBuffer
+     * @param keys array per thread: keys[threadIndex][keyIndex]
+     * @return map of key -> value (only existing keys)
+     */
+    public Map<Integer, Integer> read(int[][] keys) throws InterruptedException, ExecutionException {
+      final CompletionService<Map<Integer, Integer>> executor = new ExecutorCompletionService<>(threadPool);
+
+      for (int t = 0; t < threads; t++) {
+        final int threadIndex = t;
+
+        executor.submit(() -> {
+          final byte[] keyBytes = new byte[Integer.BYTES];
+          final MutableDirectBuffer keyBuffer = new UnsafeBuffer(keyBytes);
+          final MutableDirectBuffer valueBuffer = new UnsafeBuffer(new byte[Integer.BYTES]);
+
+          int[] threadKeys = keys[threadIndex];
+          Map<Integer, Integer> localResult = new HashMap<>();
+
+          for (int key : threadKeys) {
+            keyBuffer.putInt(0, key, ByteOrder.LITTLE_ENDIAN);
+
+            byte[] valueBytes = map.get(keyBytes);
+            if (valueBytes != null) {
+              valueBuffer.wrap(valueBytes);
+              int value = valueBuffer.getInt(0, ByteOrder.LITTLE_ENDIAN);
+              localResult.put(key, value);
+            }
+          }
+          return localResult;
+        });
+      }
+
+      final Map<Integer, Integer> result = new HashMap<>();
+      for (int i = 0; i < threads; i++) {
+        Map<Integer, Integer> threadResult = executor.take().get();
+        result.putAll(threadResult);
+      }
+
+      return result;
     }
   }
-
-  public static class Writer extends CommonChronicleMap {
-
-    @Override
-    public final void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-    }
-
-    @Override
-    public final void teardown() throws IOException {
-      super.teardown();
-    }
-  }
-
 }
