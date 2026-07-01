@@ -48,7 +48,7 @@ import scala.util.hashing.byteswap32
 @Parameter(name = "user_count", defaultValue = "5000")
 @Parameter(name = "active_users", defaultValue = "100")
 @Parameter(name = "threads", defaultValue = "auto")
-@Configuration(name = "test", settings = Array("request_count = 10", "user_count = 10"))
+@Configuration(name = "test", settings = Array("request_count = 10", "user_count = 10", "active_users = 5"))
 @Configuration(name = "jmh")
 final class FinagleChirper extends Benchmark {
 
