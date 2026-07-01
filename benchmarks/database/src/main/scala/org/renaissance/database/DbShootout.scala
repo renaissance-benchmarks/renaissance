@@ -32,7 +32,7 @@ import scala.jdk.CollectionConverters._
 @Parameter(name = "thread_count", defaultValue = "$cpu.count", summary = "Number of worker threads")
 @Parameter(name = "run_in_memory", defaultValue = "false", summary = "Run databases in memory instead of on disk")
 @Parameter(name = "keys_per_thread", defaultValue = "100", summary = "Number of keys per thread")
-@Parameter(name = "values_per_key", defaultValue = "5000", summary = "Number of value updates per key")
+@Parameter(name = "values_per_key", defaultValue = "500", summary = "Number of value updates per key")
 @Parameter(name = "delete_probability", defaultValue = "0.2", summary = "Probability that an operation deletes the key")
 final class DbShootout extends Benchmark {
 
