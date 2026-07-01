@@ -45,10 +45,9 @@ import scala.util.Random
 )
 @Parameter(
   name = "gm_configs",
-  defaultValue =
-    "model_count,gaussians_per_cluster,iteration_count;" +
-      "4,2.0,25;" +
-      "4,1.5,30;"
+  defaultValue = "model_count,gaussians_per_cluster,iteration_count;" +
+    "4,2.0,25;" +
+    "4,1.5,30;"
 )
 @Parameter(
   name = "prediction_tolerance",

@@ -5,10 +5,10 @@ env:
 jobs:
   linux-ea:
     runs-on: ubuntu-latest
-    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v15-openjdk25-ea"
+    container: "ghcr.io/renaissance-benchmarks/renaissance-buildenv:v19-openjdk27-ea"
     steps:
       - name: Git checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -21,7 +21,7 @@ jobs:
         run: tools/ci/pre-show-env.sh
 
       - name: Coursier downloads cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           enableCrossOsArchive: true
           key: coursier_cache-${{ hashFiles('build.sbt') }}

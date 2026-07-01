@@ -34,6 +34,12 @@ msg "Copying agent files..."
 cp -f "$AGENT_NATIVE_FILE" .
 cp -f "$UBENCH_AGENT_DIR/out/lib/ubench-agent.jar" lib
 
+msg "Printing available events"
+pushd "$UBENCH_AGENT_DIR"
+ant list-events
+msg "Build succeeded."
+popd
+
 AGENT_NATIVE_FILE=$( realpath $( basename $AGENT_NATIVE_FILE ) )
 
 msg "Add the following to Java command line when starting the suite:"

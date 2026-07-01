@@ -28,7 +28,26 @@ public final class ResourceUtils {
 
   private static final String RESOURCE_PATH_SEPARATOR = "/";
 
-  static List<Path> extractResources(
+  /**
+   * Extracts a collection of classpath resources into a specified directory
+   * and returns the paths to the extracted files.
+   *
+   * <p>For each given resource path, this method strips the path down to its
+   * base file name (e.g., {@code /com/example/data.txt} becomes {@code data.txt})
+   * and resolves it against the output directory. If a file with the resulting
+   * name already exists in the target directory, the extraction for that specific
+   * resource is skipped.
+   *
+   * <p><b>Important:</b> The caller is responsible for creating the output directory.
+   *
+   * @param resourcePaths The resource paths to extract.
+   * @param outputDirPath The destination directory (must exist).
+   * @return A list of {@link Path} objects pointing to the final files in the output
+   *   directory, whether they were newly extracted or already present.
+   * @throws IOException If a resource cannot be found, if the output directory does not
+   *   exist, or if any other I/O error occurs during file writing.
+   */
+  public static List<Path> extractResources(
     Iterable<String> resourcePaths, Path outputDirPath
   ) throws IOException {
     List<Path> result = new ArrayList<>();

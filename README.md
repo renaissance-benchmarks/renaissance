@@ -25,7 +25,7 @@ To run a Renaissance benchmark, you need to have a JRE version 11 (or later)
 installed and execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-gpl-0.16.0.jar' <benchmarks>
+$ java -jar 'renaissance-gpl-0.16.1.jar' <benchmarks>
 ```
 
 In the above command, `<benchmarks>` is the list of benchmarks that you want to run.
@@ -43,6 +43,73 @@ times or executed for a long time. The number of repetitions and the execution t
 set for all benchmarks using the `-r` or `-t` options. More fine-grained control over benchmark
 execution can be achieved by providing the harness with a plugin implementing a custom execution
 policy (see [below](#plugins) for details).
+
+
+### Known issues
+
+This section lists selected issues that users may encounter when running Renaissance.
+Because these issues cannot be simply fixed or avoided by the Renaissance harness, we
+provide suggested workarounds.
+
+#### Possible `StackOverflowError` in Spark benchmarks
+
+- **Issue:** Spark benchmarks may fail with a `StackOverflowError` on certain JVM
+  configurations. This is a known issue with Spark applications that allocate large amounts
+  of memory on the stack.
+  See [#375](https://github.com/renaissance-benchmarks/renaissance/issues/375) for details.
+- **Workaround:** The workaround is to increase the JVM stack size via the `-Xss` command line
+  option to provide more stack headroom (for example, `-Xss4m` or more). Add this to the JVM
+  options when invoking the benchmark harness.
+
+#### Spark benchmarks may fail on Windows due to missing libraries
+
+- **Issue:** Spark uses Hadoop, which loads a native library, `hadoop.dll`, when running on
+  Windows. The library packaged with the Renaissance suite requires Visual C++ 2013 runtime to
+  be present on the system. Running Spark benchmarks on a Windows system without the required
+  runtime will fail.
+  See [#480](https://github.com/renaissance-benchmarks/renaissance/issues/480) for details.
+- **Workaround:** Install the appropriate runtime from the
+  [Visual C++ Redistributable Package for VS 2013](https://www.microsoft.com/en-us/download/details.aspx?id=40784)
+  or its updated version from the linked [KB 3138367](https://support.microsoft.com/help/3138367).
+
+#### finagle-chirper throws `ConnectionFailedException` on machines with many CPUs
+
+- **Issue:** On machines with many CPUs the finagle-chirper benchchmark can start throwing
+  `ConnectionFailedException`s and becomes unstable (i.e. even after warmup, adjacent iterations
+  can have a very high variance). The problem is caused by hundreds of thousands of connections
+  lingering in `TIME_WAIT` status (use `netstat -n | grep TIME_WAIT | wc` to verify) before they
+  finally get closed (see [#231](https://github.com/renaissance-benchmarks/renaissance/issues/231)
+  for more details).
+- **Workaround:** Currently, the only known workaround is to decrease the numbers of CPUs for
+  the benchmark with the JVM command line option `-XX:ActiveProcessorCount=`. E.g. on a machine
+  with 96 cores, the benchmark reproducibly throws `ConnectionFailedException`s while running
+  with `-XX:ActiveProcessorCount=48` works just fine.
+
+#### finagle-chirper times-out (many threads waiting on object monitors) on machines with many CPUs
+
+- **Issue:** On machines with many CPUs the finagle-chirper benchchmark can time-out
+  and a thread dump will show many threads in `java.lang.Thread.State: WAITING (on object monitor)`
+  state, see [#509](https://github.com/renaissance-benchmarks/renaissance/issues/509)
+  for more details, report is from ppc64le with 128 cores).
+- **Workaround:** Increasing max heap size (`-Xmx`) and also increasing the limit of maximum
+  opened files (`ulimit -n`) resolves the issue (without the increased file size,
+  the benchmark also throws a lot of `ConnectionFailedException`).
+
+#### The harness may fail to remove its temporary directories
+
+- **Issue:** The harness will create `launcher-*` and `harness-*` temporary directories in the
+  working directory. When the temporary directories are on an NFS mount or a file system that
+  does not allow deleting open files, the harness may fail to clean up and remove the temporary
+  directories.
+  See [#464](https://github.com/renaissance-benchmarks/renaissance/issues/464) for details.
+- **Workaround:** When executed manually (under user supervision), the `launcher-*` and
+  `harness-*` directories can be deleted manually after the run. Alternatively, avoid running
+  Renaissance from a working directory on NFS (or a known problematic file system), or explicitly
+  set the location of the scratch space via the `--scratch-base <dir>` command line option (for
+  example, `--scratch-base /tmp`). When executed automatically (without user supervision), it is
+  recommended to launch Renaissance using a wrapper script responsible for creating and removing
+  the top-level temporary directory, and for running Renaissance with the corresponding
+  `--scratch-base <dir>` option.
 
 
 ### Licensing
@@ -268,7 +335,7 @@ arguments to that plugin (or policy).
 The following is a complete list of command-line options.
 
 ```
-Renaissance Benchmark Suite, version 0.16.0
+Renaissance Benchmark Suite, version 0.16.1
 Usage: renaissance [options] [benchmark-specification]
 
   -h, --help               Prints this usage text.
@@ -315,7 +382,7 @@ $ tools/sbt/bin/sbt renaissanceJmhPackage
 To run the benchmarks using JMH, you can execute the following `java` command:
 
 ```
-$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.16.0.jar'
+$ java -jar 'renaissance-jmh/target/renaissance-jmh-0.16.1.jar'
 ```
 
 

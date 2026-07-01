@@ -44,11 +44,26 @@ final class Cleaner {
     }
 
     // Close closeables BEFORE deleting files/directories.
-    // In particular URLClassLoader instances which keep files open.
-    // Delete files/directories AFTER closing closeables.
-
     cleanupEach(closeables, "close", Closeable::close).clear();
-    cleanupEach(paths, "delete", DirUtils::deleteRecursively).clear();
+
+    // Delete files/directories AFTER closing closeables.
+    cleanupEach(paths, "delete", path -> {
+      if (!DirUtils.deleteRecursively(path)) {
+        // Print to standard error. In the shutdown hook, the loggers from
+        // java.util.logging, including the root logger, will have their
+        // level set to null and will not print anything.
+        System.err.format("NOTE: Could not clean and remove directory '%s', because%n", path);
+
+        DirUtils.listRecursively(path).stream()
+          .map(Path::getParent)
+          .sorted()
+          .distinct()
+          .forEach(dir -> System.err.format(
+            "NOTE: ... some files in subdirectory '%s' could not be deleted%n",
+            path.relativize(dir)
+          ));
+      }
+    }).clear();
   }
 
   @FunctionalInterface
@@ -56,7 +71,9 @@ final class Cleaner {
     void accept(T object) throws IOException;
   }
 
-  private static <T, C extends Iterable<T>> C cleanupEach(C items, String name, Action<T> action) {
+  private static <T, C extends Iterable<T>> C cleanupEach(
+    C items, String name, Action<T> action
+  ) {
     for (T item : items) {
       try {
         action.accept(item);

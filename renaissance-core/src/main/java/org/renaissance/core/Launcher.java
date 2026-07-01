@@ -69,12 +69,8 @@ public final class Launcher {
     Path scratchBaseDir = getScratchBase(args);
     logger.config(() -> "Scratch base: "+ printable(scratchBaseDir));
 
-    Path scratchRootDir = createScratchRoot(scratchBaseDir, getKeepScratch(args));
-    logger.config(() -> "Scratch root (launcher): " + printable(scratchRootDir));
-
-    // Create module loader with launcher-specific scratch root.
     try {
-      ModuleLoader loader = ModuleLoader.create(scratchRootDir, moduleMetadataUri);
+      ModuleLoader loader = ModuleLoader.create(moduleMetadataUri);
       loadAndInvokeHarnessClass(loader, className, args);
 
     } catch (IOException e) {

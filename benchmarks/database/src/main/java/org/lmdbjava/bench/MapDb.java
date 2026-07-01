@@ -54,6 +54,7 @@ public class MapDb extends DatabaseManager<MapDb.Writer, MapDb.Reader> {
   @Override
   protected void closeDatabase() {
     if (db != null) {
+      map.close();
       db.close();
     }
     if (dbFile != null && dbFile.exists()) {
