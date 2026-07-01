@@ -21,10 +21,10 @@ import org.renaissance.License
 )
 @Parameter(
   name = "operation_count",
-  defaultValue = "20",
+  defaultValue = "100",
   summary = "Number of operations to perform"
 )
-@Configuration(name = "test")
+@Configuration(name = "test", settings = Array("operation_count = 20"))
 @Configuration(name = "jmh")
 final class ScalaStmBench7 extends Benchmark {
 
