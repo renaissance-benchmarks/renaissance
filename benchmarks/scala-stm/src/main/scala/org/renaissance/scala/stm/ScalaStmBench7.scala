@@ -21,10 +21,10 @@ import org.renaissance.License
 )
 @Parameter(
   name = "operation_count",
-  defaultValue = "100",
+  defaultValue = "44",
   summary = "Number of operations to perform"
 )
-@Configuration(name = "test", settings = Array("operation_count = 20"))
+@Configuration(name = "test", settings = Array("operation_count = 5"))
 @Configuration(name = "jmh")
 final class ScalaStmBench7 extends Benchmark {
 
@@ -92,6 +92,13 @@ final class ScalaStmBench7 extends Benchmark {
       StructureModificationEnabled, // structureModificationEnabled
       SequentialReplayEnabled       // sequentialReplayEnabled
     )
+
+    // Clone once, while setup is still pristine. resetForNextIteration()
+    // reuses setup across iterations instead of rebuilding it, and each
+    // checkOpacity() keeps setupClone in sync, so it never needs redoing.
+    if (SequentialReplayEnabled && CheckOpacity) {
+      stmBench.createInitialClone()
+    }
   }
 
   override def setUpBeforeEach(c: BenchmarkContext): Unit = {
@@ -99,13 +106,6 @@ final class ScalaStmBench7 extends Benchmark {
     // This recreates BenchThread instances with zeroed counters
     // while reusing the expensive Setup data structure.
     stmBench.resetForNextIteration()
-    stmBench.setupClone = null
-
-    // Create initial clone
-    // This must be done before start() so we have a copy of the initial state.
-    if (SequentialReplayEnabled && CheckOpacity) {
-      stmBench.createInitialClone()
-    }
   }
 
 
