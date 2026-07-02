@@ -44,7 +44,7 @@ import scala.util.hashing.byteswap32
 @Summary("Simulates a microblogging service using Twitter Finagle.")
 @Licenses(Array(License.APACHE2))
 @Repetitions(90)
-@Parameter(name = "request_count", defaultValue = "1250")
+@Parameter(name = "request_count", defaultValue = "200")
 @Parameter(name = "user_count", defaultValue = "5000")
 @Parameter(name = "active_users", defaultValue = "100")
 @Parameter(name = "threads", defaultValue = "auto")
