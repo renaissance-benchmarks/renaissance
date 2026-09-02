@@ -1,3 +1,4 @@
+import kotlin.Keys.{kotlinVersion, kotlincJvmTarget}
 import org.renaissance.License
 import sbt.Def
 import sbt.Package
@@ -180,6 +181,7 @@ val commonsMath3Version = "3.6.1"
 val commonsTextVersion = "1.12.0"
 val eclipseCollectionsVersion = "11.1.0"
 val guavaVersion = "33.3.1-jre"
+val http4kVersion = "5.47.0.0"
 val jacksonVersion = "2.18.1"
 val jakartaXmlBindVersion = "2.3.3"
 val jerseyVersion = "2.45"
@@ -492,6 +494,23 @@ lazy val jdkStreamsBenchmarks = (project in file("benchmarks/jdk-streams"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+lazy val http4kBenchmarks = (project in file("benchmarks/http4k"))
+  .enablePlugins(KotlinPlugin)
+  .settings(
+    name := "http4k",
+    commonSettingsNoScala,
+    kotlinVersion := "2.1.20",
+    kotlincJvmTarget := javaRelease,
+    libraryDependencies ++= Seq(
+      "org.http4k" % "http4k-core" % http4kVersion,
+      "org.http4k" % "http4k-server-undertow" % http4kVersion,
+      "org.http4k" % "http4k-client-okhttp" % http4kVersion,
+      "org.http4k" % "http4k-format-moshi" % http4kVersion,
+      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.9.0"
+    )
+  )
+  .dependsOn(renaissanceCore % "provided")
+
 val grpcVersion = "1.68.1"
 
 lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
@@ -622,6 +641,7 @@ lazy val scalaStmBenchmarks = (project in file("benchmarks/scala-stm"))
 val finagleVersion = "24.2.0"
 
 lazy val twitterFinagleBenchmarks = (project in file("benchmarks/twitter-finagle"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "twitter-finagle",
     commonSettingsScala213,
@@ -669,6 +689,7 @@ val renaissanceBenchmarks: Seq[Project] = Seq(
   actorsReactorsBenchmarks,
   apacheSparkBenchmarks,
   databaseBenchmarks,
+  http4kBenchmarks,
   jdkConcurrentBenchmarks,
   jdkStreamsBenchmarks,
   neo4jBenchmarks,
@@ -1137,6 +1158,7 @@ def mapJarContentsToAssemblyTask(classpath: Classpath) =
  * compiled wrappers are used by the [[renaissanceJmh]] project below.
  */
 lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "renaissance-jmh-wrappers",
     commonSettingsNoScala,
@@ -1156,6 +1178,7 @@ lazy val renaissanceJmhWrappers = (project in file("renaissance-jmh/wrappers"))
  * its dependencies), along with the benchmark dependencies as JAR files.
  */
 lazy val renaissanceJmh = (project in file("renaissance-jmh"))
+  .disablePlugins(KotlinPlugin)
   .settings(
     name := "renaissance-jmh",
     commonSettingsNoScala,
