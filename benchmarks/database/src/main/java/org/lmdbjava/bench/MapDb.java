@@ -1,221 +1,192 @@
-/*-
- * #%L
- * LmdbJava Benchmarks
- * %%
- * Copyright (C) 2016 - 2018 The LmdbJava Open Source Project
- * %%
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #L%
- */
-
 package org.lmdbjava.bench;
 
 import java.io.File;
-import java.io.IOException;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
+import org.mapdb.DBMaker;
 import static org.mapdb.DBMaker.fileDB;
 import static org.mapdb.Serializer.BYTE_ARRAY;
 
-public class MapDb {
+public class MapDb extends DatabaseManager<MapDb.Writer, MapDb.Reader> {
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-  final static int CPU = Runtime.getRuntime().availableProcessors();
+  private DB db;
+  private BTreeMap<byte[], byte[]> map;
 
-  private static volatile Object out = null;
-
-  public void parReadKey(final Reader r) {
-    final int[] keys = r.keys;
-    Thread[] threads = new Thread[CPU];
-    for (int k = 0; k < CPU; k++) {
-      final int p = k;
-      final int BATCH = keys.length / CPU;
-      threads[p] = new Thread() {
-        public void run() {
-          MutableDirectBuffer localwkb = new UnsafeBuffer(new byte[r.keySize]);
-          MutableDirectBuffer localwvb = new UnsafeBuffer(new byte[r.valSize]);
-          final int rndByteMax = r.RND_MB.length - r.valSize;
-          int rndByteOffset = 0;
-          for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-            int key = keys[i];
-            if (r.intKey) {
-              localwkb.putInt(0, key);
-            } else {
-              localwkb.putStringWithoutLengthUtf8(0, r.padKey(key));
-            }
-            if (r.map.get(localwkb.byteArray()) == null) {
-              out = localwkb;
-            }
-          }
-        }
-      };
-      threads[p].start();
-    }
-    for (int p = 0; p < CPU; p++) {
-      try {
-        threads[p].join();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
+  public static MapDb setup(File scratchDir, int threads, Boolean runInMemory) {
+    MapDb instance = new MapDb(scratchDir, threads, runInMemory);
+    instance.initializeSharedDatabase();
+    return instance;
   }
 
-  public void write(final Writer w) {
-    w.write();
+  private MapDb(File scratchDir, int threads, Boolean runInMemory) {
+    super(scratchDir, threads, runInMemory);
   }
 
-  public void parWrite(final Writer w) {
-    w.parWrite();
-  }
-
-  public static class CommonMapDb extends Common {
-
-    DB db;
-    BTreeMap<byte[], byte[]> map;
-
-    /**
-     * Writable key buffer. Backed by a plain byte[] for MapDb API ease.
-     */
-    MutableDirectBuffer wkb;
-
-    /**
-     * Writable value buffer. Backed by a plain byte[] for MapDb API ease.
-     */
-    MutableDirectBuffer wvb;
-
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-      wkb = new UnsafeBuffer(new byte[keySize]);
-      wvb = new UnsafeBuffer(new byte[valSize]);
-      db = fileDB(new File(tmp, "map.db"))
-          .fileMmapEnable()
-          .allocateStartSize(num * valSize)
-          .make();
-      map = db.treeMap("ba2ba")
-          .keySerializer(BYTE_ARRAY)
-          .valueSerializer(BYTE_ARRAY)
-          .createOrOpen();
+  @Override
+  protected void initializeSharedDatabase() {
+    if (this.runInMemory) {
+      System.out.println("[" + getDatabaseInfo() + "] Running IN MEMORY");
+      this.db = DBMaker.memoryDB().make();
+    } else {
+      this.dbFile = new File(scratchDir, "MapDb.db");
+      System.out.println("[" + getDatabaseInfo() + "] Running ON DISK: " + dbFile.getAbsolutePath());
+      this.db = fileDB(dbFile)
+              .fileMmapEnable()
+              .make();
     }
 
-    @Override
-    public void teardown() throws IOException {
-      reportSpaceBeforeClose();
+    this.map = db.treeMap("ba2ba_v2")
+            .keySerializer(BYTE_ARRAY)
+            .valueSerializer(BYTE_ARRAY)
+            .createOrOpen();
+  }
+
+  @Override
+  protected void closeDatabase() {
+    if (db != null) {
       map.close();
       db.close();
-      super.teardown();
     }
-
-    void write() {
-      final int rndByteMax = RND_MB.length - valSize;
-      int rndByteOffset = 0;
-      for (final int key : keys) {
-        if (intKey) {
-          wkb.putInt(0, key, LITTLE_ENDIAN);
-        } else {
-          wkb.putStringWithoutLengthUtf8(0, padKey(key));
-        }
-        if (valRandom) {
-          wvb.putBytes(0, RND_MB, rndByteOffset, valSize);
-          rndByteOffset += valSize;
-          if (rndByteOffset >= rndByteMax) {
-            rndByteOffset = 0;
-          }
-        } else {
-          wvb.putInt(0, key);
-        }
-        map.put(wkb.byteArray(), wvb.byteArray());
+    if (dbFile != null && dbFile.exists()) {
+      boolean deleted = dbFile.delete();
+      if (!deleted) {
+        System.err.println("[" + getDatabaseInfo() + "] Warning: Could not delete database file");
       }
     }
+  }
 
-    void parWrite() {
-      Thread[] threads = new Thread[CPU];
-      for (int k = 0; k < CPU; k++) {
-        final int p = k;
-        final int BATCH = keys.length / CPU;
-        threads[p] = new Thread() {
-          public void run() {
-            MutableDirectBuffer localwkb = new UnsafeBuffer(new byte[keySize]);
-            MutableDirectBuffer localwvb = new UnsafeBuffer(new byte[valSize]);
-            final int rndByteMax = RND_MB.length - valSize;
-            int rndByteOffset = 0;
-            for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-              int key = keys[i];
-              if (intKey) {
-                localwkb.putInt(0, key, LITTLE_ENDIAN);
+  @Override
+  protected String getDatabaseInfo() {
+    return "MapDb";
+  }
+
+  @Override
+  public Writer createWriter() {
+    return new Writer(threads, createThreadPool(), map);
+  }
+
+  @Override
+  public Reader createReader() {
+    return new Reader(threads, createThreadPool(), map);
+  }
+
+  // ==================== Writer ====================
+  public static class Writer extends DatabaseManager.Worker {
+    private final BTreeMap<byte[], byte[]> map;
+
+    Writer(int threads, ExecutorService threadPool, BTreeMap<byte[], byte[]> map) {
+      super(threads, threadPool);
+      this.map = map;
+    }
+
+    /**
+     * Write key-value pairs with overwrites using MutableDirectBuffer
+     * @param keys array per thread: keys[threadIndex][keyIndex]
+     * @param values array per thread per key: values[threadIndex][keyIndex][valueSequenceIndex]
+     *               value -1 means delete
+     */
+    public void write(int[][] keys, int[][][] values) throws InterruptedException {
+      final CompletionService<Void> executor = new ExecutorCompletionService<>(threadPool);
+
+      for (int t = 0; t < threads; t++) {
+        final int threadIndex = t;
+
+        executor.submit(() -> {
+          // Each thread has its own buffers
+          final byte[] keyBytes = new byte[Integer.BYTES];
+          final byte[] valueBytes = new byte[Integer.BYTES];
+          final MutableDirectBuffer keyBuffer = new UnsafeBuffer(keyBytes);
+          final MutableDirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
+
+          int[] threadKeys = keys[threadIndex];
+          int[][] threadValues = values[threadIndex];
+
+          for (int k = 0; k < threadKeys.length; k++) {
+            int key = threadKeys[k];
+            int[] valueSequence = threadValues[k];
+
+            // Convert key to bytes
+            keyBuffer.putInt(0, key, ByteOrder.LITTLE_ENDIAN);
+
+            for (int value : valueSequence) {
+              if (value == -1) {
+                map.remove(keyBytes.clone());  // clone because MapDB may store reference
               } else {
-                localwkb.putStringWithoutLengthUtf8(0, padKey(key));
+                valueBuffer.putInt(0, value, ByteOrder.LITTLE_ENDIAN);
+                map.put(keyBytes.clone(), valueBytes.clone());
               }
-              if (valRandom) {
-                localwvb.putBytes(0, RND_MB, rndByteOffset, valSize);
-                rndByteOffset += valSize;
-                if (rndByteOffset >= rndByteMax) {
-                  rndByteOffset = 0;
-                }
-              } else {
-                localwvb.putInt(0, key);
-              }
-              map.put(localwkb.byteArray(), localwvb.byteArray());
             }
           }
-        };
-        threads[p].start();
+          return null;
+        });
       }
-      for (int p = 0; p < CPU; p++) {
-        try {
-          threads[p].join();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+
+      for (int i = 0; i < threads; i++) {
+        executor.take();
       }
     }
   }
 
-  public static class Reader extends CommonMapDb {
-    public void setNum(Integer x) {
-      num = x;
+  // ==================== Reader ====================
+  public static class Reader extends DatabaseManager.Worker {
+    private final BTreeMap<byte[], byte[]> map;
+
+    Reader(int threads, ExecutorService threadPool, BTreeMap<byte[], byte[]> map) {
+      super(threads, threadPool);
+      this.map = map;
     }
 
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-      super.write();
-    }
+    /**
+     * Read values for given keys using MutableDirectBuffer
+     * @param keys array per thread: keys[threadIndex][keyIndex]
+     * @return map of key -> value (only existing keys)
+     */
+    public Map<Integer, Integer> read(int[][] keys) throws InterruptedException, ExecutionException {
+      final CompletionService<Map<Integer, Integer>> executor = new ExecutorCompletionService<>(threadPool);
 
-    @Override
-    public void teardown() throws IOException {
-      super.teardown();
+      for (int t = 0; t < threads; t++) {
+        final int threadIndex = t;
+
+        executor.submit(() -> {
+          final byte[] keyBytes = new byte[Integer.BYTES];
+          final MutableDirectBuffer keyBuffer = new UnsafeBuffer(keyBytes);
+          final MutableDirectBuffer valueBuffer = new UnsafeBuffer(new byte[Integer.BYTES]);
+
+          int[] threadKeys = keys[threadIndex];
+          Map<Integer, Integer> localResult = new HashMap<>();
+
+          for (int key : threadKeys) {
+            keyBuffer.putInt(0, key, ByteOrder.LITTLE_ENDIAN);
+
+            byte[] valueBytes = map.get(keyBytes);
+            if (valueBytes != null) {
+              valueBuffer.wrap(valueBytes);
+              int value = valueBuffer.getInt(0, ByteOrder.LITTLE_ENDIAN);
+              localResult.put(key, value);
+            }
+          }
+          return localResult;
+        });
+      }
+
+      // Merge all results after threads finish
+      final Map<Integer, Integer> result = new HashMap<>();
+      for (int i = 0; i < threads; i++) {
+        Map<Integer, Integer> threadResult = executor.take().get();
+        result.putAll(threadResult);
+      }
+
+      return result;
     }
   }
-
-  public static class Writer extends CommonMapDb {
-    public void setNum(Integer x) {
-      num = x;
-    }
-
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-    }
-
-    @Override
-    public void teardown() throws IOException {
-      super.teardown();
-    }
-  }
-
 }

@@ -1,226 +1,198 @@
-/*-
- * #%L
- * LmdbJava Benchmarks
- * %%
- * Copyright (C) 2016 - 2018 The LmdbJava Open Source Project
- * %%
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * #L%
- */
-
 package org.lmdbjava.bench;
 
 import java.io.File;
-import java.io.IOException;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.util.Arrays.copyOf;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
 
-public class MvStore {
+public class MvStore extends DatabaseManager<MvStore.Writer, MvStore.Reader> {
 
-  // TODO: Consolidate benchmark parameters across the suite.
-  //  See: https://github.com/renaissance-benchmarks/renaissance/issues/27
-  final static int CPU = Runtime.getRuntime().availableProcessors();
+  private MVStore store;
+  private MVMap<byte[], byte[]> map;
 
-  private static volatile Object out = null;
-
-  public void readKey(final Reader r) {
-    for (final int key : r.keys) {
-      if (r.intKey) {
-        r.wkb.putInt(0, key);
-      } else {
-        r.wkb.putStringWithoutLengthUtf8(0, r.padKey(key));
-      }
-      out = r.map.get(copyOf(r.wkb.byteArray(), r.keySize));
-    }
+  public static MvStore setup(File scratchDir, int threads, Boolean runInMemory) {
+    MvStore instance = new MvStore(scratchDir, threads, runInMemory);
+    instance.initializeSharedDatabase();
+    return instance;
   }
 
-  public void parReadKey(final Reader r) {
-    final int[] keys = r.keys;
-    Thread[] threads = new Thread[CPU];
-    for (int k = 0; k < CPU; k++) {
-      final int p = k;
-      final int BATCH = keys.length / CPU;
-      threads[p] = new Thread() {
-        public void run() {
-          MutableDirectBuffer localwkb = new UnsafeBuffer(new byte[r.keySize]);
-          MutableDirectBuffer localwvb = new UnsafeBuffer(new byte[r.valSize]);
-          final int rndByteMax = r.RND_MB.length - r.valSize;
-          int rndByteOffset = 0;
-          for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-            int key = keys[i];
-            if (r.intKey) {
-              localwkb.putInt(0, key);
-            } else {
-              localwkb.putStringWithoutLengthUtf8(0, r.padKey(key));
-            }
-            if (r.map.get(copyOf(localwkb.byteArray(), r.keySize)) == null) {
-              out = localwkb;
-            }
-          }
-        }
-      };
-      threads[p].start();
+  private MvStore(File scratchDir, int threads, Boolean runInMemory) {
+    super(scratchDir, threads, runInMemory);
+  }
+
+  @Override
+  protected void initializeSharedDatabase() {
+    if (runInMemory) {
+      System.out.println("[" + getDatabaseInfo() + "] Running IN MEMORY");
+      this.store = new MVStore.Builder()
+              .fileName((String) null)
+              .autoCommitDisabled()
+              .open();
+      this.dbFile = null;
+    } else {
+      this.dbFile = new File(scratchDir, "MvStore.db");
+      if (dbFile.exists()) {
+        dbFile.delete();
+      }
+      System.out.println("[" + getDatabaseInfo() + "] Running ON DISK: " + dbFile.getAbsolutePath());
+      this.store = new MVStore.Builder()
+              .fileName(dbFile.getAbsolutePath())
+              .autoCommitDisabled()
+              .open();
     }
-    for (int p = 0; p < CPU; p++) {
-      try {
-        threads[p].join();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+    this.map = store.openMap("ba2ba_v2");
+  }
+
+  @Override
+  protected void closeDatabase() {
+    if (store != null) {
+      store.close();
+    }
+    // Delete the database file to prevent size accumulation
+    if (dbFile != null && dbFile.exists()) {
+      boolean deleted = dbFile.delete();
+      if (!deleted) {
+        System.err.println("[" + getDatabaseInfo() + "] Warning: Could not delete database file");
       }
     }
   }
 
-  public void parWrite(final Writer w) {
-    w.parWrite();
+  @Override
+  protected String getDatabaseInfo() {
+    return "MvStore";
   }
 
-  public void write(final Writer w) {
-    w.write();
+  @Override
+  public Writer createWriter() {
+    return new Writer(threads, createThreadPool(), map, store);
   }
 
-  public static class CommonMvStore extends Common {
+  @Override
+  public Reader createReader() {
+    return new Reader(threads, createThreadPool(), map);
+  }
 
-    MVMap<byte[], byte[]> map;
-    MVStore s;
+  // ==================== Writer ====================
+  public static class Writer extends DatabaseManager.Worker {
+    private final MVMap<byte[], byte[]> map;
+    private final MVStore store;
+
+    Writer(int threads, ExecutorService threadPool, MVMap<byte[], byte[]> map, MVStore store) {
+      super(threads,threadPool);
+      this.map = map;
+      this.store = store;
+    }
 
     /**
-     * Writable key buffer. Backed by a plain byte[] for MvStore API ease.
+     * Write key-value pairs with overwrites using MutableDirectBuffer
+     * @param keys array per thread: keys[threadIndex][keyIndex]
+     * @param values array per thread per key: values[threadIndex][keyIndex][valueSequenceIndex]
+     *               value -1 means delete
      */
-    MutableDirectBuffer wkb;
+    public void write(int[][] keys, int[][][] values) throws InterruptedException {
+      final CompletionService<Void> executor = new ExecutorCompletionService<>(threadPool);
+
+      for (int t = 0; t < threads; t++) {
+        final int threadIndex = t;
+
+        executor.submit(() -> {
+          final byte[] keyBytes = new byte[Integer.BYTES];
+          final byte[] valueBytes = new byte[Integer.BYTES];
+          final MutableDirectBuffer keyBuffer = new UnsafeBuffer(keyBytes);
+          final MutableDirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
+
+          int[] threadKeys = keys[threadIndex];
+          int[][] threadValues = values[threadIndex];
+
+          for (int k = 0; k < threadKeys.length; k++) {
+            int key = threadKeys[k];
+            int[] valueSequence = threadValues[k];
+
+            keyBuffer.putInt(0, key, ByteOrder.LITTLE_ENDIAN);
+
+            for (int value : valueSequence) {
+              if (value == -1) {
+                // MVStore requires copy for key
+                map.remove(Arrays.copyOf(keyBytes, Integer.BYTES));
+              } else {
+                valueBuffer.putInt(0, value, ByteOrder.LITTLE_ENDIAN);
+                // MVStore requires copies
+                map.put(Arrays.copyOf(keyBytes, Integer.BYTES),
+                        Arrays.copyOf(valueBytes, Integer.BYTES));
+              }
+            }
+          }
+          return null;
+        });
+      }
+
+      for (int i = 0; i < threads; i++) {
+        executor.take();
+      }
+      // Commit after all threads finish
+      store.commit();
+    }
+  }
+
+  // ==================== Reader ====================
+  public static class Reader extends DatabaseManager.Worker {
+    private final MVMap<byte[], byte[]> map;
+
+    Reader(int threads, ExecutorService threadPool, MVMap<byte[], byte[]> map) {
+      super(threads, threadPool);
+      this.map = map;
+    }
 
     /**
-     * Writable value buffer. Backed by a plain byte[] for MvStore API ease.
+     * Read values for given keys using MutableDirectBuffer
+     * @param keys array per thread: keys[threadIndex][keyIndex]
+     * @return map of key -> value (only existing keys)
      */
-    MutableDirectBuffer wvb;
+    public Map<Integer, Integer> read(int[][] keys) throws InterruptedException, ExecutionException {
+      final CompletionService<Map<Integer, Integer>> executor = new ExecutorCompletionService<>(threadPool);
 
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-      wkb = new UnsafeBuffer(new byte[keySize]);
-      wvb = new UnsafeBuffer(new byte[valSize]);
-      s = new MVStore.Builder()
-          .fileName(new File(tmp, "mvstore.db").getAbsolutePath())
-          .autoCommitDisabled()
-          .open();
-      map = s.openMap("ba2ba");
-    }
+      for (int t = 0; t < threads; t++) {
+        final int threadIndex = t;
 
-    @Override
-    public void teardown() throws IOException {
-      reportSpaceBeforeClose();
-      s.close();
-      super.teardown();
-    }
+        executor.submit(() -> {
+          final byte[] keyBytes = new byte[Integer.BYTES];
+          final MutableDirectBuffer keyBuffer = new UnsafeBuffer(keyBytes);
+          final MutableDirectBuffer valueBuffer = new UnsafeBuffer(new byte[Integer.BYTES]);
 
-    void write() {
-      final int rndByteMax = RND_MB.length - valSize;
-      int rndByteOffset = 0;
-      for (final int key : keys) {
-        if (intKey) {
-          wkb.putInt(0, key, LITTLE_ENDIAN);
-        } else {
-          wkb.putStringWithoutLengthUtf8(0, padKey(key));
-        }
-        if (valRandom) {
-          wvb.putBytes(0, RND_MB, rndByteOffset, valSize);
-          rndByteOffset += valSize;
-          if (rndByteOffset >= rndByteMax) {
-            rndByteOffset = 0;
-          }
-        } else {
-          wvb.putInt(0, key);
-        }
-        // MvStore requires this copy, otherwise it never stores > 1 entry
-        map.put(copyOf(wkb.byteArray(), keySize),
-                copyOf(wvb.byteArray(), valSize));
-      }
-      s.commit();
-    }
+          int[] threadKeys = keys[threadIndex];
+          Map<Integer, Integer> localResult = new HashMap<>();
 
-    void parWrite() {
-      Thread[] threads = new Thread[CPU];
-      for (int k = 0; k < CPU; k++) {
-        final int p = k;
-        final int BATCH = keys.length / CPU;
-        threads[p] = new Thread() {
-          public void run() {
-            MutableDirectBuffer localwkb = new UnsafeBuffer(new byte[keySize]);
-            MutableDirectBuffer localwvb = new UnsafeBuffer(new byte[valSize]);
-            final int rndByteMax = RND_MB.length - valSize;
-            int rndByteOffset = 0;
-            for (int i = p * BATCH; i < p * BATCH + BATCH; i++) {
-              int key = keys[i];
-              if (intKey) {
-                localwkb.putInt(0, key, LITTLE_ENDIAN);
-              } else {
-                localwkb.putStringWithoutLengthUtf8(0, padKey(key));
-              }
-              if (valRandom) {
-                localwvb.putBytes(0, RND_MB, rndByteOffset, valSize);
-                rndByteOffset += valSize;
-                if (rndByteOffset >= rndByteMax) {
-                  rndByteOffset = 0;
-                }
-              } else {
-                localwvb.putInt(0, key);
-              }
-              map.put(copyOf(localwkb.byteArray(), keySize),
-                copyOf(localwvb.byteArray(), valSize));
+          for (int key : threadKeys) {
+            keyBuffer.putInt(0, key, ByteOrder.LITTLE_ENDIAN);
+
+            byte[] valueBytes = map.get(keyBytes);
+            if (valueBytes != null) {
+              valueBuffer.wrap(valueBytes);
+              int value = valueBuffer.getInt(0, ByteOrder.LITTLE_ENDIAN);
+              localResult.put(key, value);
             }
-            s.commit();
           }
-        };
-        threads[p].start();
+          return localResult;
+        });
       }
-      for (int p = 0; p < CPU; p++) {
-        try {
-          threads[p].join();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+
+      final Map<Integer, Integer> result = new HashMap<>();
+      for (int i = 0; i < threads; i++) {
+        Map<Integer, Integer> threadResult = executor.take().get();
+        result.putAll(threadResult);
       }
+
+      return result;
     }
   }
-
-  public static class Reader extends CommonMvStore {
-
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-      super.write();
-    }
-
-    @Override
-    public void teardown() throws IOException {
-      super.teardown();
-    }
-  }
-
-  public static class Writer extends CommonMvStore {
-
-    @Override
-    public void setup(File tempDir, int numEntries) throws IOException {
-      super.setup(tempDir, numEntries);
-    }
-
-    @Override
-    public void teardown() throws IOException {
-      super.teardown();
-    }
-  }
-
 }
