@@ -184,6 +184,7 @@ val jacksonVersion = "2.18.1"
 val jakartaXmlBindVersion = "2.3.3"
 val jerseyVersion = "2.45"
 val jnaVersion = "5.15.0"
+val log4j2Version = "2.26.1"
 val nettyTomcatNativeVersion = "2.0.69.Final"
 val nettyVersion = "4.1.114.Final"
 val parquetVersion = "1.14.3"
@@ -378,7 +379,13 @@ lazy val apacheSparkBenchmarks = (project in file("benchmarks/apache-spark"))
       "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "jcl-over-slf4j" % slf4jVersion,
-      "org.slf4j" % "jul-to-slf4j" % slf4jVersion
+      "org.slf4j" % "jul-to-slf4j" % slf4jVersion,
+      // Force newer log4j2 version to avoid security vulnerabilities in the
+      // version transitively pulled in by Apache Spark (via spark-network-common).
+      "org.apache.logging.log4j" % "log4j-api" % log4j2Version,
+      "org.apache.logging.log4j" % "log4j-core" % log4j2Version,
+      "org.apache.logging.log4j" % "log4j-1.2-api" % log4j2Version,
+      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % log4j2Version
     )
   )
   .dependsOn(renaissanceCore % "provided")
@@ -545,7 +552,12 @@ lazy val neo4jBenchmarks = (project in file("benchmarks/neo4j"))
       "org.apache.commons" % "commons-lang3" % commonsLang3Version,
       "org.apache.commons" % "commons-compress" % commonsCompressVersion,
       "org.apache.commons" % "commons-text" % commonsTextVersion,
-      "org.slf4j" % "slf4j-nop" % slf4jVersion
+      "org.slf4j" % "slf4j-nop" % slf4jVersion,
+      // Force newer log4j2 version to avoid security vulnerabilities in the
+      // version transitively pulled in by Neo4j (via neo4j-logging).
+      "org.apache.logging.log4j" % "log4j-api" % log4j2Version,
+      "org.apache.logging.log4j" % "log4j-core" % log4j2Version,
+      "org.apache.logging.log4j" % "log4j-layout-template-json" % log4j2Version
     )
   )
   .dependsOn(renaissanceCore % "provided")
