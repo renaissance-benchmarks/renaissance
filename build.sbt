@@ -190,7 +190,7 @@ val parquetVersion = "1.14.3"
 val scalaCollectionCompatVersion = "2.12.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val scalaParserCombinatorsVersion = "2.4.0"
-val slf4jVersion = "2.0.16"
+val slf4jVersion = "2.0.19"
 val zstdJniVersion = "1.5.6-7"
 
 lazy val renaissanceCore = (project in file("renaissance-core"))
