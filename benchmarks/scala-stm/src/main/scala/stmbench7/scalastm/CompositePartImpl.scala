@@ -22,7 +22,7 @@ class CompositePartImpl(id: Int, typ: String, buildDate: Int, documentation0: Do
 
   documentation0.setPart(this)
 
-  override def addAssembly(assembly: BaseAssembly): Unit = { usedIn.transform(assembly :: _) }
+  override def addAssembly(assembly: BaseAssembly): Unit = { usedIn.transform(_ :+ assembly) }
 
   override def addPart(part: AtomicPart): Boolean = {
     val f = parts().add(part)

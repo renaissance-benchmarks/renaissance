@@ -7,6 +7,9 @@ import scala.annotation.unused
 import scala.concurrent.stm.atomic
 import scala.concurrent.stm.Ref
 
+import stmbench7.core.OperationFailedException
+import stmbench7.ThreadRandom
+
 import stmbench7.OperationExecutor
 import stmbench7.OperationExecutorFactory
 import stmbench7.Parameters
@@ -38,13 +41,37 @@ class ScalaSTMInitializer extends SynchMethodInitializer {
           private var lastTS = 0
 
           def execute(): Int = {
-            atomic { implicit t =>
-              val z = op.performOperation()
-              if (Parameters.sequentialReplayEnabled) {
-                timestamp += 1
-                lastTS = timestamp()
+            // Save state before the transaction so that restoreState() inside
+            // the atomic block has a valid savedState to restore from, both on
+            // the first attempt and on every STM retry.
+            if (Parameters.sequentialReplayEnabled) ThreadRandom.saveState()
+            try {
+              atomic { implicit t =>
+                if (Parameters.sequentialReplayEnabled) {
+                  // On each STM retry restore to the pre-transaction state and
+                  // immediately save it again, so the next retry also restores
+                  // to the same point.  After a successful commit the
+                  // ThreadRandom state reflects exactly one execution of
+                  // performOperation, matching sequential replay.
+                  ThreadRandom.restoreState()
+                  ThreadRandom.saveState()
+                }
+                val z = op.performOperation()
+                if (Parameters.sequentialReplayEnabled) {
+                  timestamp += 1
+                  lastTS = timestamp()
+                }
+                z
               }
-              z
+            } catch {
+              case e: OperationFailedException =>
+                if (Parameters.sequentialReplayEnabled) {
+                  atomic { implicit t =>
+                    timestamp += 1
+                    lastTS = timestamp()
+                  }
+                }
+                throw e
             }
           }
 

@@ -15,5 +15,6 @@ class LargeSetImpl[A <: Comparable[A]] extends LargeSet[A] {
   override def remove(e: A): Boolean = underlying.remove(e).isDefined
   override def contains(e: A): Boolean = underlying.contains(e)
   override def size: Int = underlying.size
-  override def iterator: java.util.Iterator[A] = underlying.keysIterator.asJava
+  override def iterator: java.util.Iterator[A] =
+    underlying.keysIterator.toSeq.sortWith(_.compareTo(_) < 0).iterator.asJava
 }

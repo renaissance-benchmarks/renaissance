@@ -22,7 +22,7 @@ class BaseAssemblyImpl(
     Ref(List.empty[CompositePart]).single // the original BagImpl was just an ArrayList
 
   override def addComponent(component: CompositePart): Unit = {
-    components.transform(component :: _)
+    components.transform(_ :+ component)
     component.addAssembly(this)
   }
 
@@ -35,6 +35,12 @@ class BaseAssemblyImpl(
   }
 
   override def getComponents = new ImmutableSeqImpl[CompositePart](components())
+
+  override def equals(obj: Any): Boolean = obj match {
+    case d: BaseAssembly => d.getId == id
+    case _ => false
+  }
+  override def hashCode(): Int = id
 
   override def clearPointers(): Unit = {
     super.clearPointers()
