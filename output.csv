@@ -1,0 +1,2 @@
+benchmark,duration_ns,uptime_ns,vm_start_unix_ms,vm_start_ns
+kotlin-ktor,452502416,466213959,1746526892589,659666819923291
