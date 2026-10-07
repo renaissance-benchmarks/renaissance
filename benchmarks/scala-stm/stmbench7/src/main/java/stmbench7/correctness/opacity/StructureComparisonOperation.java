@@ -208,7 +208,9 @@ public class StructureComparisonOperation implements Operation {
 		checkEqual(part1.getY(), part2.getY(), part1, id1, part2, id2, "y");
 		checkReferences(part1.getPartOf(), part2.getPartOf(),
 				part1, id1, part2, id2, "partOf");
-		
+		checkEqual(part1.getPartOf().getId(), part2.getPartOf().getId(),
+				part1, id1, part2, id2, "partOf.id");
+
 		ImmutableCollection<Connection> to1 = part1.getToConnections(),
 			to2 = part2.getToConnections();
 		checkEqual(to1.size(), to2.size(), part1, id1, part2, id2, "to.size()");

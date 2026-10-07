@@ -14,4 +14,10 @@ class DesignObjImpl(id: Int, typ: String, buildDate0: Int) extends DesignObj {
   override def getBuildDate: Int = bd()
   override def updateBuildDate(): Unit = { if (bd() % 2 == 0) bd -= 1 else bd += 1 }
   override def nullOperation(): Unit = {}
+
+  override def equals(obj: Any): Boolean = obj match {
+    case d: DesignObj => d.getId == id
+    case _ => false
+  }
+  override def hashCode(): Int = id
 }
