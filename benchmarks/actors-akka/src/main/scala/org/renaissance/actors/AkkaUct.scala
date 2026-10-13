@@ -98,12 +98,13 @@ import scala.concurrent.duration.FiniteDuration
 final class AkkaUct extends Benchmark {
 
   /**
-   * The topology together with the leaf nodes expected to be selected for urgent paths
-   * (in the order of selection), the shock temperature injected into the urgent leaves
-   * by the urgent update, and the expected root temperatures before and after the shock.
+   * The expansion plan of a topology together with the leaf nodes expected to be selected
+   * for urgent paths (in the order of selection), the shock temperature injected into the
+   * urgent leaves by the urgent update, and the expected root temperatures before and
+   * after the shock.
    */
   private final case class Scenario(
-    topology: Topology,
+    expansionPlan: ExpansionPlan,
     expectedUrgentLeafIds: List[NodeId],
     shockTemperature: Double,
     expectedNominalTemperature: Double,
@@ -147,7 +148,8 @@ final class AkkaUct extends Benchmark {
       config.urgentPathLengthFractionMin
     )
 
-    // Pre-compute one scenario per topology. The actors select the urgent paths themselves.
+    // Pre-compute one scenario per topology. The topology is used only here; actors
+    // receive only the expansion plan and select the urgent paths themselves.
     scenarios = Array.tabulate(config.topologyCount) { i =>
       val topology = topologyGenerator.build(new Random(config.topologySeed + i))
 
@@ -169,7 +171,7 @@ final class AkkaUct extends Benchmark {
       )
 
       Scenario(
-        topology,
+        ExpansionPlan.of(topology),
         urgentLeafIds,
         shockTemperature,
         expectedNominalTemperature,
@@ -336,7 +338,7 @@ final class AkkaUct extends Benchmark {
     config: UctConfig
   ): ScenarioResult = {
     val coordinator = system.actorOf(
-      Props(new UctCoordinatorActor(scenario.topology))
+      Props(new UctCoordinatorActor(scenario.expansionPlan))
     )
 
     val uctCreatedPromise = Promise[Unit]()

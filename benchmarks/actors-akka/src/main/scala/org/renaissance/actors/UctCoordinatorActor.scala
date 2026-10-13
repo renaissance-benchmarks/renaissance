@@ -33,7 +33,7 @@ import scala.concurrent.Promise
  * recorded before the urgent update, which could otherwise overtake a selection waiting
  * in a mailbox.
  */
-private[actors] final class UctCoordinatorActor(topology: Topology) extends Actor {
+private[actors] final class UctCoordinatorActor(plan: ExpansionPlan) extends Actor {
 
   private var rootNode: ActorRef = _
 
@@ -61,7 +61,7 @@ private[actors] final class UctCoordinatorActor(topology: Topology) extends Acto
 
     case LocalCreateUctMessage(completionPromise) =>
       uctCreatedPromise = completionPromise
-      rootNode = context.actorOf(UctNodeActor.props(NodeId.Root, topology))
+      rootNode = context.actorOf(UctNodeActor.props(NodeId.Root, plan))
       rootNode ! CreateSubtreeMessage
 
     case m: SubtreeCreatedMessage =>

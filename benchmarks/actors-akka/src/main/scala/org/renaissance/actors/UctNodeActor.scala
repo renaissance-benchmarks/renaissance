@@ -12,7 +12,7 @@ private[actors] object UctNodeActor {
    * Props of a node actor. They are built here rather than in the creating actor, so that
    * the closure that creates the node actor cannot capture the creating actor.
    */
-  def props(id: NodeId, topology: Topology): Props = Props(new UctNodeActor(id, topology))
+  def props(id: NodeId, plan: ExpansionPlan): Props = Props(new UctNodeActor(id, plan))
 
   /**
    * A measurement taken by an interior node: the sum of the temperatures reported by its
@@ -33,7 +33,7 @@ private[actors] object UctNodeActor {
  * exchange only actor-protocol messages and report completion of each phase upward
  * to their parent.
  */
-private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends Actor {
+private[actors] final class UctNodeActor(id: NodeId, plan: ExpansionPlan) extends Actor {
 
   // Tree structure, populated during the build phase, with the leaf farthest from each
   // child, as reported by the child.
@@ -104,20 +104,20 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
   // --- tree construction ----------------------------------------------------
 
   private def handleCreateSubtree(): Unit =
-    topology.interiorNodes.get(id) match {
-      case Some(node) => createSubtree(node)
+    plan.expansionOf(id) match {
+      case Some(expansion) => createSubtree(expansion)
       case None => signalSubtreeCreated(LeafDistance(id, distance = 0))
     }
 
-  private def createSubtree(node: InteriorNode): Unit = {
+  private def createSubtree(expansion: Expansion): Unit = {
     //
     // Create children in the context of this node, so that the actor hierarchy follows
     // the tree topology. Creating all node actors at the top level makes them children
     // of the same guardian actor. This causes massive contention when creating new
     // actors and makes construction of the tree an order of magnitude slower.
     //
-    children ++= node.childIds(topology.branchingFactor).map { childId =>
-      context.actorOf(UctNodeActor.props(childId, topology))
+    children ++= expansion.childIds(plan.childCount).map { childId =>
+      context.actorOf(UctNodeActor.props(childId, plan))
     }
 
     pendingResponseCount = children.length

@@ -15,9 +15,9 @@ private[actors] sealed trait UctMessage
 // -------------------------------------------------------------------------
 
 /**
- * Request to create a subtree. The recipient looks up its expansion in the topology: a
- * leaf reports right away, and an interior node creates its children and passes the
- * request on to them.
+ * Request to create a subtree. The recipient node looks up its expansion in the
+ * plan: a leaf responds right away, while an interior node creates its children
+ * and passes the request on to them.
  */
 private[actors] case object CreateSubtreeMessage extends UctMessage
 

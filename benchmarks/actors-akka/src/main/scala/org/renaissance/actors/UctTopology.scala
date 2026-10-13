@@ -9,12 +9,12 @@ package org.renaissance.actors
  * - The **height** of a tree is the length of its longest root-to-leaf path,
  *   and the tree has `height + 1` **levels**.
  *
- * @param interiorNodes nodeId -> InteriorNode for nodes that expand
+ * @param interiorNodes nodeId -> Expansion for nodes that expand
  * @param leafDepths nodeId -> depth (root = 0) for nodes that stay leaves
  * @param branchingFactor number of children of every interior node
  */
 private[actors] final case class Topology(
-  interiorNodes: Map[NodeId, InteriorNode],
+  interiorNodes: Map[NodeId, Expansion],
   leafDepths: Map[NodeId, Int],
   branchingFactor: Int
 ) {
@@ -33,8 +33,8 @@ private[actors] final case class Topology(
   def fold[A](leaf: NodeId => A)(combine: IndexedSeq[A] => A): A = {
     def go(id: NodeId): A = interiorNodes.get(id) match {
       case None => leaf(id)
-      case Some(node) =>
-        combine(node.childIds(branchingFactor).map(go))
+      case Some(expansion) =>
+        combine(expansion.childIds(branchingFactor).map(go))
     }
 
     go(NodeId.Root)

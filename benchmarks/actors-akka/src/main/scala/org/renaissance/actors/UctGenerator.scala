@@ -19,26 +19,26 @@ import scala.collection.mutable
 private[actors] final class UctGenerator(nodeCountMax: Int, branchingFactor: Int) {
 
   def build(rng: Random): Topology = {
-    val interiorNodes = mutable.Map[NodeId, InteriorNode]()
+    val interiorNodes = mutable.Map[NodeId, Expansion]()
 
     // The root node is always an interior node with children starting at ID 1.
-    val rootNode = addNewNode(NodeId.Root, firstChildId = NodeId.Root + 1, interiorNodes)
+    val rootExpansion = expandNode(NodeId.Root, firstChildId = NodeId.Root + 1, interiorNodes)
     val frontier = mutable.Queue.from(
-      rootNode.childIds(branchingFactor).map(childId => (childId, 1))
+      rootExpansion.childIds(branchingFactor).map(childId => (childId, 1))
     )
     val leafDepths = expandFrontier(frontier, interiorNodes, rng)
 
     Topology(interiorNodes.toMap, leafDepths, branchingFactor)
   }
 
-  private def addNewNode(
+  private def expandNode(
     nodeId: NodeId,
     firstChildId: NodeId,
-    nodes: mutable.Map[NodeId, InteriorNode]
-  ): InteriorNode = {
-    val node = InteriorNode(firstChildId)
-    nodes(nodeId) = node
-    node
+    interiorNodes: mutable.Map[NodeId, Expansion]
+  ): Expansion = {
+    val expansion = Expansion(firstChildId)
+    interiorNodes(nodeId) = expansion
+    expansion
   }
 
   /**
@@ -47,7 +47,7 @@ private[actors] final class UctGenerator(nodeCountMax: Int, branchingFactor: Int
    */
   private def expandFrontier(
     frontier: mutable.Queue[(NodeId, Int)],
-    interiorNodes: mutable.Map[NodeId, InteriorNode],
+    interiorNodes: mutable.Map[NodeId, Expansion],
     rng: Random
   ): Map[NodeId, Int] = {
     val leafDepths = mutable.Map[NodeId, Int]()
@@ -57,8 +57,10 @@ private[actors] final class UctGenerator(nodeCountMax: Int, branchingFactor: Int
     while (frontier.nonEmpty) {
       val (nodeId, depth) = frontier.dequeue()
       if (allocatedCount + branchingFactor <= nodeCountMax && rng.nextBoolean()) {
-        val node = addNewNode(nodeId, firstChildId = NodeId(allocatedCount), interiorNodes)
-        frontier.enqueueAll(node.childIds(branchingFactor).map(childId => (childId, depth + 1)))
+        val expansion = expandNode(nodeId, firstChildId = NodeId(allocatedCount), interiorNodes)
+        frontier.enqueueAll(
+          expansion.childIds(branchingFactor).map(childId => (childId, depth + 1))
+        )
         allocatedCount += branchingFactor
       } else {
         leafDepths(nodeId) = depth

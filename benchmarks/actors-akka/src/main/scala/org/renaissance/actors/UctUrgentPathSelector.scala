@@ -69,8 +69,8 @@ private[actors] final class UctUrgentPathSelector(
           if (depth >= pathLengthMin) {
             candidatePaths += path
           }
-        case Some(node) =>
-          node.childIds(topology.branchingFactor).foreach { childId =>
+        case Some(expansion) =>
+          expansion.childIds(topology.branchingFactor).foreach { childId =>
             visit(childId :: path, depth + 1)
           }
       }

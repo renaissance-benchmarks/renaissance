@@ -13,6 +13,7 @@ private[actors] object NodeId {
   /** The root node of every topology. */
   val Root: NodeId = 0
 
+  /** Turns an Int into a NodeId. */
   def apply(n: Int): NodeId = n
 
   extension (id: NodeId) {
@@ -24,12 +25,13 @@ private[actors] object NodeId {
 }
 
 /**
- * Describes an interior (non-leaf) node in the pre-computed tree.
+ * Expansion of an interior node in the pre-computed tree.
+ * Determines the IDs of its children.
  *
  * @param firstChildId node ID of the first child;
- *   children occupy firstChildId .. firstChildId+branchingFactor-1
+ *   children occupy firstChildId .. firstChildId+childCount-1
  */
-private[actors] final case class InteriorNode(firstChildId: NodeId) {
+private[actors] final case class Expansion(firstChildId: NodeId) {
 
   def childIds(childCount: Int): IndexedSeq[NodeId] =
     (0 until childCount).map(slot => firstChildId + slot)
