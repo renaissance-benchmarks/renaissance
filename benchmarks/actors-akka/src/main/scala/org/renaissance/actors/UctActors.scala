@@ -21,7 +21,7 @@ private[actors] final class UctRootActor(
 
   private val rootNode = topology.interiorNodes(NodeId.Root)
 
-  private val children = new Array[ActorRef](BranchingFactor)
+  private val children = new Array[ActorRef](topology.branchingFactor)
 
   // Build and teardown phases: count down SubtreeCreated/SubtreeDestroyed messages.
   private var pendingChildCount = 0
@@ -60,7 +60,7 @@ private[actors] final class UctRootActor(
     val urgentChildSlots = rootNode.urgentChildSlots
 
     var slot = 0
-    while (slot < BranchingFactor) {
+    while (slot < topology.branchingFactor) {
       children(slot) = UctNodeActor.create(
         context.system,
         self,
@@ -73,10 +73,10 @@ private[actors] final class UctRootActor(
       slot += 1
     }
 
-    pendingChildCount = BranchingFactor
+    pendingChildCount = topology.branchingFactor
 
     slot = 0
-    while (slot < BranchingFactor) {
+    while (slot < topology.branchingFactor) {
       children(slot) ! CheckExpansionMessage
       slot += 1
     }
@@ -100,7 +100,7 @@ private[actors] final class UctRootActor(
 
   private def startNextReduction(): Unit = {
     currentReduction += 1
-    pendingMeasurementCount = BranchingFactor
+    pendingMeasurementCount = topology.branchingFactor
     temperatureAccumulator = 0.0
 
     if (currentReduction == ReductionCount) {
@@ -110,7 +110,7 @@ private[actors] final class UctRootActor(
       // path.
       val urgentChildSlots = rootNode.urgentChildSlots
       var slot = 0
-      while (slot < BranchingFactor) {
+      while (slot < topology.branchingFactor) {
         children(slot) ! MeasureTemperatureMessage
 
         if (urgentChildSlots.contains(slot)) {
@@ -121,7 +121,7 @@ private[actors] final class UctRootActor(
       }
     } else {
       var slot = 0
-      while (slot < BranchingFactor) {
+      while (slot < topology.branchingFactor) {
         children(slot) ! MeasureTemperatureMessage
         slot += 1
       }
@@ -133,7 +133,7 @@ private[actors] final class UctRootActor(
     pendingMeasurementCount -= 1
 
     if (pendingMeasurementCount == 0) {
-      temperature = temperatureAccumulator / BranchingFactor
+      temperature = temperatureAccumulator / topology.branchingFactor
 
       if (currentReduction < ReductionCount) {
         startNextReduction()
@@ -146,9 +146,9 @@ private[actors] final class UctRootActor(
   // --- termination --------------------------------------------------------
 
   private def handleTerminate(): Unit = {
-    pendingChildCount = BranchingFactor
+    pendingChildCount = topology.branchingFactor
     var slot = 0
-    while (slot < BranchingFactor) {
+    while (slot < topology.branchingFactor) {
       children(slot) ! TerminateMessage
       slot += 1
     }
@@ -195,7 +195,7 @@ private[actors] final class UctNodeActor(
   // Tree structure (populated during build phase)
   private var urgentChildSlots: Set[Int] = Set.empty
   private var hasChildren: Boolean = false
-  private val children = new Array[ActorRef](BranchingFactor)
+  private val children = new Array[ActorRef](topology.branchingFactor)
   private var pendingChildCount: Int = 0
 
   // Temperature state
@@ -254,7 +254,7 @@ private[actors] final class UctNodeActor(
     urgentChildSlots = childUrgentSlots
 
     var slot = 0
-    while (slot < BranchingFactor) {
+    while (slot < topology.branchingFactor) {
       children(slot) = UctNodeActor.create(
         context.system,
         self,
@@ -267,10 +267,10 @@ private[actors] final class UctNodeActor(
     }
 
     hasChildren = true
-    pendingChildCount = BranchingFactor
+    pendingChildCount = topology.branchingFactor
 
     slot = 0
-    while (slot < BranchingFactor) {
+    while (slot < topology.branchingFactor) {
       children(slot) ! CheckExpansionMessage
       slot += 1
     }
@@ -300,11 +300,11 @@ private[actors] final class UctNodeActor(
 
     } else {
       // Interior node: scatter the reduction to all children; gather replies.
-      pendingMeasurementCount = BranchingFactor
+      pendingMeasurementCount = topology.branchingFactor
       temperatureAccumulator = 0.0
 
       var slot = 0
-      while (slot < BranchingFactor) {
+      while (slot < topology.branchingFactor) {
         children(slot) ! MeasureTemperatureMessage
         slot += 1
       }
@@ -316,7 +316,7 @@ private[actors] final class UctNodeActor(
     pendingMeasurementCount -= 1
 
     if (pendingMeasurementCount == 0) {
-      temperature = temperatureAccumulator / BranchingFactor
+      temperature = temperatureAccumulator / topology.branchingFactor
       signalCollectionResult(temperature)
     }
   }
@@ -354,9 +354,9 @@ private[actors] final class UctNodeActor(
 
   private def handleTerminate(): Unit = {
     if (hasChildren) {
-      pendingChildCount = BranchingFactor
+      pendingChildCount = topology.branchingFactor
       var slot = 0
-      while (slot < BranchingFactor) {
+      while (slot < topology.branchingFactor) {
         children(slot) ! TerminateMessage
         slot += 1
       }

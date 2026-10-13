@@ -45,11 +45,39 @@ import scala.concurrent.duration.Duration
 @Summary("Runs the Unbalanced Cobwebbed Tree actor workload in Akka.")
 @Licenses(Array(License.MIT))
 @Repetitions(24)
-@Parameter(name = "topology_count", defaultValue = "5")
+@Parameter(
+  name = "node_count_max",
+  defaultValue = "200000",
+  summary = "Maximum number of nodes in a generated topology."
+)
+@Parameter(
+  name = "branching_factor",
+  defaultValue = "10",
+  summary = "Number of children interior nodes expand to."
+)
+@Parameter(
+  name = "topology_seed",
+  defaultValue = "2",
+  summary = "Base seed for topology generation; topology i uses topology_seed + i."
+)
+@Parameter(
+  name = "urgent_path_length_fraction_min",
+  defaultValue = "0.75",
+  summary = "Minimum length of an urgent path as a fraction of the tree height."
+)
+@Parameter(
+  name = "topology_count",
+  defaultValue = "5",
+  summary = "Number of distinct topologies to generate and run."
+)
+@Parameter(
+  name = "temperature_tolerance",
+  defaultValue = "1e-5",
+  summary = "Acceptable floating-point deviation in temperature comparisons."
+)
 @Configuration(name = "test", settings = Array("topology_count = 1"))
 @Configuration(name = "jmh", settings = Array("topology_count = 1"))
 final class AkkaUct extends Benchmark {
-  import UctConfig.*
 
   // Priority mailbox (prioritizing urgent nodes)
   private val systemFactory = new AkkaSystemFactory(
@@ -57,7 +85,7 @@ final class AkkaUct extends Benchmark {
   )
 
   private var actorSystem: ActorSystem = _
-  private var topologyCount: Int = _
+  private var config: UctConfig = _
   private var topologies: Array[Topology] = _
   private var urgentLeaves: Array[List[NodeId]] = _
   private var shockTemperatures: Array[Double] = _
@@ -65,7 +93,8 @@ final class AkkaUct extends Benchmark {
   private var expectedNominalTemperatures: Array[Double] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
-    topologyCount = c.parameter("topology_count").toPositiveInteger
+    config = UctConfig.fromContext(c)
+    val topologyCount = config.topologyCount
 
     // Pre-compute one topology per iteration.
     // Urgent leaves are kept separately for validation — never passed to actors.
@@ -75,18 +104,18 @@ final class AkkaUct extends Benchmark {
     expectedShockedTemperatures = new Array[Double](topologyCount)
     expectedNominalTemperatures = new Array[Double](topologyCount)
 
-    val topologyGenerator = new UctGenerator(NodeCount, BranchingFactor)
+    val topologyGenerator = new UctGenerator(config.nodeCountMax, config.branchingFactor)
     val urgentPathSelector = new UctUrgentPathSelector(
-      UrgentPathCount,
-      UrgentLeafDepthFractionMin
+      config.urgentPathCount,
+      config.urgentPathLengthFractionMin
     )
 
     for (i <- 0 until topologyCount) {
-      val topology = topologyGenerator.build(new Random(TopologySeed + i))
+      val topology = topologyGenerator.build(new Random(config.topologySeed + i))
 
       val (annotatedInteriorNodes, urgentLeafIds) = urgentPathSelector.selectUrgentPaths(
         topology.interiorNodes,
-        BranchingFactor,
+        topology.branchingFactor,
         topology.height
       )
 
@@ -97,7 +126,7 @@ final class AkkaUct extends Benchmark {
         val shockTemperature = AkkaUct.computeShockTemperature(
           topology,
           urgentLeafIds,
-          RootShockMargin
+          config.rootShockMargin
         )
         shockTemperatures(i) = shockTemperature
 
@@ -118,17 +147,17 @@ final class AkkaUct extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val actualTemperatures = new Array[Double](topologyCount)
+    val actualTemperatures = new Array[Double](config.topologyCount)
 
-    for (i <- 0 until topologyCount) {
+    for (i <- 0 until config.topologyCount) {
       actualTemperatures(i) = computeTopologyTemperature(topologies(i), shockTemperatures(i))
     }
 
     () => {
-      for (i <- 0 until topologyCount) {
+      for (i <- 0 until config.topologyCount) {
         val actual = actualTemperatures(i)
-        val lowerBound = expectedNominalTemperatures(i) - TemperatureTolerance
-        val upperBound = expectedShockedTemperatures(i) + TemperatureTolerance
+        val lowerBound = expectedNominalTemperatures(i) - config.temperatureTolerance
+        val upperBound = expectedShockedTemperatures(i) + config.temperatureTolerance
 
         val temperatureWithinRange = lowerBound < actual && actual < upperBound
         if (!temperatureWithinRange) {
