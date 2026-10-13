@@ -12,7 +12,6 @@ import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.ValidationException
 import org.renaissance.License
 
-import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.concurrent.duration.Duration
@@ -76,45 +75,39 @@ final class AkkaUct extends Benchmark {
     expectedShockedTemperatures = new Array[Double](topologyCount)
     expectedNominalTemperatures = new Array[Double](topologyCount)
 
+    val topologyGenerator = new UctGenerator(NodeCount, BranchingFactor)
     val urgentPathSelector = new UctUrgentPathSelector(
       UrgentPathCount,
       UrgentLeafDepthFractionMin
     )
 
     for (i <- 0 until topologyCount) {
-      val topology = new UctGenerator(
-        nodeCountMax = NodeCount,
-        branchingFactor = BranchingFactor,
-        rng = new Random(TopologySeed + i)
-      ).build()
+      val topology = topologyGenerator.build(new Random(TopologySeed + i))
 
       val (annotatedInteriorNodes, urgentLeafIds) = urgentPathSelector.selectUrgentPaths(
         topology.interiorNodes,
         BranchingFactor,
-        topology.maxDepth
+        topology.height
       )
 
       topologies(i) = topology.copy(interiorNodes = annotatedInteriorNodes)
       urgentLeaves(i) = urgentLeafIds
 
       if (urgentLeafIds.nonEmpty) {
-        val urgentLeavesSet = urgentLeafIds.toSet
-
-        val shockTemperature = AkkaUct.computeShockTemperature(topologies(i), RootShockMargin)
+        val shockTemperature = AkkaUct.computeShockTemperature(
+          topology,
+          urgentLeafIds,
+          RootShockMargin
+        )
         shockTemperatures(i) = shockTemperature
 
-        val (shocked, nominal) = AkkaUct.analyticalRootTemperature(
-          topologies(i),
-          urgentLeavesSet,
-          shockTemperature
-        )
-
-        expectedShockedTemperatures(i) = shocked
-        expectedNominalTemperatures(i) = nominal
+        expectedNominalTemperatures(i) = AkkaUct.nominalRootTemperature(topology)
+        expectedShockedTemperatures(i) =
+          AkkaUct.shockedRootTemperature(topology, urgentLeafIds.toSet, shockTemperature)
 
         println(
-          s"[topology $i] nodes=${topologies(i).nodeCount} height=${topologies(i).maxDepth + 1}" +
-            s" urgentLeafIds=${urgentLeaves(i)}"
+          s"[topology $i] nodes=${topology.nodeCount} levels=${topology.height + 1}" +
+            s" urgentLeafIds=$urgentLeafIds"
         )
       }
     }
@@ -172,82 +165,50 @@ private[actors] object AkkaUct {
   /**
    * Computes the minimum shock temperature guaranteeing that the root temperature
    * shifts from its nominal value by at least [[rootMargin]] even if only one urgent
-   * leaf is updated.
+   * leaf is updated before it reports its temperature.
    *
-   * A leaf at depth d contributes (shockTemperature - leafInitialTemperature) / branchingFactor^d
-   * to the root delta (each tree level divides by the branching factor). The worst
+   * A leaf at depth `d` contributes
+   * `(shockTemperature - leafInitialTemperature) / branchingFactor^d` to the root delta
+   * (each averaging step towards the root divides by the branching factor). The worst
    * case is the deepest urgent leaf (smallest contribution) with the highest initial
    * temperature:
    *
    *   shockTemperature >= LeafNode.InitialTemperatureMax
-   *     + rootMargin * branchingFactor^maxUrgentDepth
+   *     + rootMargin * branchingFactor^urgentLeafDepthMax
    */
-  def computeShockTemperature(topology: Topology, rootMargin: Double): Double = {
-    val bf = UctConfig.BranchingFactor
-
-    val depthOf = mutable.Map[NodeId, Int](NodeId.Root -> 0)
-    val queue = mutable.Queue[NodeId](NodeId.Root)
-    while (queue.nonEmpty) {
-      val nodeId = queue.dequeue()
-      topology.interiorNodes.get(nodeId).foreach { node =>
-        for (slot <- 0 until bf) {
-          val childId = node.firstChildId + slot
-          depthOf(childId) = depthOf(nodeId) + 1
-          queue.enqueue(childId)
-        }
-      }
-    }
-
-    val maxUrgentLeafDepth = topology.interiorNodes.values.flatMap { node =>
-      node.urgentChildSlots
-        .map(slot => node.firstChildId + slot)
-        .filter(childId => !topology.interiorNodes.contains(childId))
-        .map(depthOf)
-    }.max
-
-    LeafNode.InitialTemperatureMax + rootMargin * math.pow(bf, maxUrgentLeafDepth)
+  def computeShockTemperature(
+    topology: Topology,
+    urgentLeafIds: List[NodeId],
+    rootMargin: Double
+  ): Double = {
+    val urgentLeafDepthMax = urgentLeafIds.map(topology.leafDepths).max
+    val deepestLeafDilution = math.pow(topology.branchingFactor, urgentLeafDepthMax)
+    LeafNode.InitialTemperatureMax + rootMargin * deepestLeafDilution
   }
+
+  /** Root temperature with all leaves at their initial temperature. */
+  def nominalRootTemperature(topology: Topology): Double =
+    rootTemperature(topology, LeafNode.initialTemperatureOf)
+
+  /** Root temperature with every urgent leaf at the shock temperature. */
+  def shockedRootTemperature(
+    topology: Topology,
+    urgentLeafIds: Set[NodeId],
+    shockTemperature: Double
+  ): Double =
+    rootTemperature(
+      topology,
+      leafId =>
+        if (urgentLeafIds.contains(leafId)) shockTemperature
+        else LeafNode.initialTemperatureOf(leafId)
+    )
 
   /**
-   * Compute the expected root temperatures bottom-up:
-   *   _1 = shocked: every urgent leaf at shockTemperature
-   *   _2 = nominal: all leaves at their normal deterministic initial temperature
+   * Computes the root temperature bottom-up, as the actors do: every interior node
+   * averages the temperatures of its children.
    */
-  def analyticalRootTemperature(
-    topology: Topology,
-    urgentLeaves: Set[NodeId],
-    shockTemperature: Double
-  ): (Double, Double) = {
-    val branchingFactor = UctConfig.BranchingFactor
-
-    def recurseShocked(id: NodeId): Double =
-      topology.interiorNodes.get(id) match {
-        case None =>
-          if (urgentLeaves.contains(id)) shockTemperature
-          else LeafNode.initialTemperatureOf(id)
-        case Some(node) =>
-          var sum = 0.0
-          var i = 0
-          while (i < branchingFactor) {
-            sum += recurseShocked(node.firstChildId + i)
-            i += 1
-          }
-          sum / branchingFactor
-      }
-
-    def recurseNominal(id: NodeId): Double =
-      topology.interiorNodes.get(id) match {
-        case None => LeafNode.initialTemperatureOf(id)
-        case Some(node) =>
-          var sum = 0.0
-          var i = 0
-          while (i < branchingFactor) {
-            sum += recurseNominal(node.firstChildId + i)
-            i += 1
-          }
-          sum / branchingFactor
-      }
-
-    (recurseShocked(NodeId.Root), recurseNominal(NodeId.Root))
-  }
+  private def rootTemperature(topology: Topology, leafTemperatureOf: NodeId => Double): Double =
+    topology.fold(leafTemperatureOf) { childTemperatures =>
+      childTemperatures.sum / childTemperatures.length
+    }
 }

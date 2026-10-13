@@ -4,69 +4,67 @@ import java.util.Random
 import scala.collection.mutable
 
 /**
- * Builds a random tree topology to be represented using actors.
+ * Generates a random UCT topology using the provided RNG. At each frontier node,
+ * we use the RNG as a coin flip to decide whether the node stays as a leaf or
+ * becomes an interior node with a fixed number of children. Frontier nodes are
+ * processed in FIFO order until the node budget is exhausted.
  *
- * Built single-threaded using the provided RNG — identical output for identical seeds.
- * The tree is purely random: each frontier node gets a coin flip (expand or
- * leaf), processed FIFO until the node budget is exhausted.
- *
- * Actors look up the resulting immutable maps instead of making random
- * decisions at runtime, removing the dependency on non-deterministic
- * message ordering.
+ * The topology is used to create an expansion plan that the node actors consult at
+ * runtime instead of making random decisions. This makes the generated topologies
+ * reproducible, because random numbers are consumed in predictable order. Letting
+ * the actors use the RNG (even one with a controlled seed) on their own is subject
+ * to non-deterministic scheduling and causes reproducible coin flips to end up in
+ * non-reproducible actors.
  */
-private[actors] final class UctGenerator(
-  nodeCountMax: Int,
-  branchingFactor: Int,
-  rng: Random
-) {
+private[actors] final class UctGenerator(nodeCountMax: Int, branchingFactor: Int) {
 
-  private val interiorNodes = mutable.Map[NodeId, InteriorNode]()
-  private val frontier = mutable.ArrayBuffer[(NodeId, Int)]()
+  def build(rng: Random): Topology = {
+    val interiorNodes = mutable.Map[NodeId, InteriorNode]()
 
-  private var size = 1 // root is node 0
-  private var maxDepth = 0
-
-  def build(): Topology = {
-    expandRoot()
-    expandFrontier()
-    Topology(interiorNodes = interiorNodes.toMap, nodeCount = size, maxDepth = maxDepth)
-  }
-
-  // Root always expands; urgentChildSlots will be filled by the strategy.
-  private def expandRoot(): Unit = {
-    interiorNodes(NodeId.Root) = InteriorNode(
-      firstChildId = NodeId(size),
-      urgentChildSlots = Set.empty
+    // The root node is always an interior node with children starting at ID 1.
+    val rootNode = addNewNode(NodeId.Root, firstChildId = NodeId.Root + 1, interiorNodes)
+    val frontier = mutable.Queue.from(
+      rootNode.childIds(branchingFactor).map(childId => (childId, 1))
     )
-    addChildren(startId = NodeId(size), startDepth = 1)
-    size += branchingFactor
-    maxDepth = 1
+    val leafDepths = expandFrontier(frontier, interiorNodes, rng)
+
+    Topology(interiorNodes.toMap, leafDepths, branchingFactor)
   }
 
-  // FIFO expansion: each frontier node gets a coin flip — expand or become a leaf.
-  private def expandFrontier(): Unit = {
+  private def addNewNode(
+    nodeId: NodeId,
+    firstChildId: NodeId,
+    nodes: mutable.Map[NodeId, InteriorNode]
+  ): InteriorNode = {
+    val node = InteriorNode(firstChildId)
+    nodes(nodeId) = node
+    node
+  }
+
+  /**
+   * Expands the frontier in BFS fashion. Populates the map of interior nodes
+   * and returns the depths of the leaf nodes.
+   */
+  private def expandFrontier(
+    frontier: mutable.Queue[(NodeId, Int)],
+    interiorNodes: mutable.Map[NodeId, InteriorNode],
+    rng: Random
+  ): Map[NodeId, Int] = {
+    val leafDepths = mutable.Map[NodeId, Int]()
+
+    // Allocated count serves as the next available node ID.
+    var allocatedCount = interiorNodes.size + frontier.size
     while (frontier.nonEmpty) {
-      val (nodeId, depth) = frontier.remove(0)
-      if (canExpand && rng.nextBoolean()) {
-        expandNode(nodeId, depth)
+      val (nodeId, depth) = frontier.dequeue()
+      if (allocatedCount + branchingFactor <= nodeCountMax && rng.nextBoolean()) {
+        val node = addNewNode(nodeId, firstChildId = NodeId(allocatedCount), interiorNodes)
+        frontier.enqueueAll(node.childIds(branchingFactor).map(childId => (childId, depth + 1)))
+        allocatedCount += branchingFactor
+      } else {
+        leafDepths(nodeId) = depth
       }
-      // else: node becomes a leaf — not inserted into interiorNodes.
     }
-  }
 
-  private def expandNode(nodeId: NodeId, depth: Int): Unit = {
-    interiorNodes(nodeId) = InteriorNode(NodeId(size), urgentChildSlots = Set.empty)
-    val childDepth = depth + 1
-    addChildren(startId = NodeId(size), startDepth = childDepth)
-    size += branchingFactor
-    if (childDepth > maxDepth) maxDepth = childDepth
+    leafDepths.toMap
   }
-
-  private def addChildren(startId: NodeId, startDepth: Int): Unit = {
-    for (i <- 0 until branchingFactor) {
-      frontier += ((startId + i, startDepth))
-    }
-  }
-
-  private def canExpand: Boolean = size + branchingFactor <= nodeCountMax
 }
