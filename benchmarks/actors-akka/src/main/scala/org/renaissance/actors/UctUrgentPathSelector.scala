@@ -3,23 +3,35 @@ package org.renaissance.actors
 import scala.collection.mutable
 
 /**
- * Greedy urgent-path selection strategy.
+ * Selects `pathCount` paths from the root to leaves such that the shared path
+ * prefix is generally short (with maximum pairwise divergence) and returns the
+ * leaf nodes representing the selected paths.
  *
- * Selects `pathCount` deep leaves that maximize pairwise path divergence —
- * i.e. their paths from the root share the shortest possible common prefix. The actors
- * make the same selection among themselves (see [[UctCoordinatorActor]]); the selection
- * made here provides the expected result.
+ * The selection prefers the longest paths, because they are used for priority
+ * messages and the longer the path, the higher the chance that a priority message
+ * overtakes regular messages traveling towards the leaf nodes. The short common
+ * prefixes ensure that the priority messages are spread wide.
  *
- * Only leaves at depth >= height * pathLengthFractionMin are considered (see
- * [[UctUrgentPathSelector.pathLengthMinOf]]).
+ * The candidate paths are those with `length >= height * pathLengthFractionMin`
+ * (see [[UctUrgentPathSelector.pathLengthMinOf]]).
  *
  * Selection algorithm:
- *   - Seed with the globally deepest leaf.
- *   - Each subsequent pick is the candidate that minimizes its maximum LCA depth
- *     with all already-selected paths (minimax divergence).
- *   - Ties are broken by depth (deeper first) and by nodeId.
+ * - Seed the set of selected paths with the longest path.
+ * - Repeatedly add the candidate path that branches off the selected paths closest
+ *   to the root, until `pathCount` paths are selected or no candidate path is left.
+ *   The overlap of a candidate path with the selected paths is the depth of the deepest
+ *   node it shares with any of them, and the added path is the candidate path with the
+ *   smallest overlap.
+ * - Among candidate paths with the same overlap, add the longest one, and among equally
+ *   long ones the one ending in the leaf with the smallest ID.
  *
- * @param pathCount  how many leaves to select
+ * The overlap of a candidate can only grow as more paths are selected. The candidates
+ * therefore wait in a priority queue under the overlap computed when they were queued.
+ * A candidate taken from the queue is selected if its overlap is still the same, and
+ * queued again under the new one otherwise, so the overlap is recomputed only for
+ * candidates that are about to be selected.
+ *
+ * @param pathCount how many paths to select
  * @param pathLengthFractionMin fraction of the tree height below which paths are excluded
  */
 private[actors] final class UctUrgentPathSelector(
@@ -29,184 +41,86 @@ private[actors] final class UctUrgentPathSelector(
 
   /** Returns the leaves that end the urgent paths, in the order of selection. */
   def selectUrgentLeaves(topology: Topology): List[NodeId] = {
-    val interiorNodes = topology.interiorNodes
-    val branchingFactor = topology.branchingFactor
-
-    // Map [nodeId, depth of node]
-    val depthOf = buildDepthMap(interiorNodes, branchingFactor)
-    // Map [childId, parentId]
-    val parentOf = buildParentMap(interiorNodes, branchingFactor)
-
-    // Memoized root-first path lookup: avoids recomputing shared prefixes.
-    // Map [leafId, path of leafIds from root to leaf]
-    val pathCache = mutable.Map[NodeId, Array[NodeId]]()
-    def rootPath(nodeId: NodeId): Array[NodeId] =
-      pathCache.getOrElseUpdate(nodeId, buildRootPath(nodeId, parentOf))
-
-    // candidates are only leaves
     val pathLengthMin = UctUrgentPathSelector.pathLengthMinOf(
       topology.height,
       pathLengthFractionMin
     )
-    val candidates = collectCandidates(depthOf, interiorNodes, pathLengthMin)
-    greedySelectLeaves(candidates, rootPath)
+
+    val candidatePaths = collectCandidatePaths(topology, pathLengthMin)
+    val selectedPaths = greedySelectPaths(candidatePaths)
+    selectedPaths.map(path => path.head)
   }
 
   /**
-   * Step 1: BFS from root to build a nodeId -> depth map.
-   *
-   * Seeds the root at depth 0, then for every interior node assigns
-   * depth(child) = depth(parent) + 1.
+   * Collects the paths to the leaves at depth `pathLengthMin` or more, ordered
+   * so that the longest paths with the lowest leaf ID go first. The paths are
+   * leaf-first lists, and the path of a child extends the path of its parent, so
+   * the paths share their common parts.
    */
-  private def buildDepthMap(
-    interiorNodes: Map[NodeId, InteriorNode],
-    branchingFactor: Int
-  ): mutable.Map[NodeId, Int] = {
-    val depthOf = mutable.Map[NodeId, Int](NodeId.Root -> 0)
-    val bfsQueue = mutable.Queue[NodeId](NodeId.Root)
-
-    while (bfsQueue.nonEmpty) {
-      val nodeId = bfsQueue.dequeue()
-      interiorNodes.get(nodeId).foreach { node =>
-        var childSlot = 0
-        while (childSlot < branchingFactor) {
-          val childId = node.firstChildId + childSlot
-          depthOf(childId) = depthOf(nodeId) + 1
-          bfsQueue.enqueue(childId)
-          childSlot += 1
-        }
-      }
-    }
-    depthOf
-  }
-
-  /**
-   * Step 2: Build a reverse lookup from each child node ID to its parent node ID.
-   *
-   * Children are stored as a contiguous block starting at firstChildId,
-   * so child at slot j has nodeId = firstChildId + j, parent = parentId.
-   */
-  private def buildParentMap(
-    interiorNodes: Map[NodeId, InteriorNode],
-    branchingFactor: Int
-  ): mutable.Map[NodeId, NodeId] = {
-    val parentOf = mutable.Map[NodeId, NodeId]()
-    for ((parentId, node) <- interiorNodes; childSlot <- 0 until branchingFactor) {
-      parentOf(node.firstChildId + childSlot) = parentId
-    }
-    parentOf
-  }
-
-  /**
-   * Step 3: Collect leaf candidates filtered by depth threshold, sorted deepest first.
-   *
-   * A leaf is any node present in depthOf but absent from interiorNodes (no children).
-   * Candidates below pathLengthMin are excluded to ensure urgent paths are non-trivial.
-   * Ties in depth are broken by nodeId for full determinism.
-   */
-  private def collectCandidates(
-    depthOf: mutable.Map[NodeId, Int],
-    interiorNodes: Map[NodeId, InteriorNode],
+  private def collectCandidatePaths(
+    topology: Topology,
     pathLengthMin: Int
-  ): Array[NodeId] = {
-    val allLeafIds = depthOf.keys.filter(nodeId => !interiorNodes.contains(nodeId)).toArray
-    val candidates = allLeafIds.filter(nodeId => depthOf(nodeId) >= pathLengthMin)
-    candidates.sortBy(nodeId => (-depthOf(nodeId), nodeId))
-  }
+  ): IndexedSeq[List[NodeId]] = {
+    val candidatePaths = mutable.ArrayBuffer[List[NodeId]]()
 
-  /**
-   * Step 4: Walk up from a node to the root via parentOf, building a root-first path.
-   *
-   * The loop prepends each node as it walks up, so the resulting list is
-   * already in root-to-leaf order. The root itself (no parent) is prepended last.
-   */
-  private def buildRootPath(
-    nodeId: NodeId,
-    parentOf: mutable.Map[NodeId, NodeId]
-  ): Array[NodeId] = {
-    var path = List[NodeId]()
-    var current = nodeId
-    while (parentOf.contains(current)) {
-      path = current :: path
-      current = parentOf(current)
-    }
-    // current is now the root — it has no entry in parentOf.
-    (current :: path).toArray
-  }
-
-  /**
-   * Step 5: Greedy leaf selection seeded with the globally deepest candidate.
-   *
-   * For each subsequent pick, scores every remaining candidate by its maximum
-   * LCA depth with all already-selected paths (worst-case overlap), then picks
-   * the candidate with the lowest such score (minimize the worst overlap).
-   *
-   * Returns the selected leaf IDs in the order of selection.
-   */
-  private def greedySelectLeaves(
-    sortedCandidates: Array[NodeId],
-    rootPath: NodeId => Array[NodeId]
-  ): List[NodeId] = {
-
-    val selectCount = math.min(pathCount, sortedCandidates.length)
-    val selected = mutable.ArrayBuffer[NodeId]()
-    val selectedPaths = mutable.ArrayBuffer[Array[NodeId]]()
-    val available = mutable.ArrayBuffer(sortedCandidates: _*)
-
-    // Seed: the globally deepest leaf (sortedCandidates is deepest-first).
-    selected += available.remove(0)
-    selectedPaths += rootPath(selected(0))
-
-    while (selected.length < selectCount && available.nonEmpty) {
-      var bestCandidateIndex = 0
-      var bestScore = Int.MaxValue
-
-      var availableIndex = 0
-      while (availableIndex < available.length) {
-        val candidatePath = rootPath(available(availableIndex))
-
-        // Score = maximum LCA depth with any already-selected path.
-        // Higher score means closer to the selected group — worse candidate.
-        var score = 0
-        for (selectedPath <- selectedPaths) {
-          val lcaDepth = computeLcaDepth(candidatePath, selectedPath)
-          if (lcaDepth > score) {
-            score = lcaDepth
+    def visit(path: List[NodeId], depth: Int): Unit =
+      topology.interiorNodes.get(path.head) match {
+        case None =>
+          if (depth >= pathLengthMin) {
+            candidatePaths += path
           }
-        }
-
-        if (score < bestScore) {
-          bestScore = score
-          bestCandidateIndex = availableIndex
-        }
-        availableIndex += 1
+        case Some(node) =>
+          node.childIds(topology.branchingFactor).foreach { childId =>
+            visit(childId :: path, depth + 1)
+          }
       }
 
-      val pickedLeaf = available.remove(bestCandidateIndex)
-      selected += pickedLeaf
-      selectedPaths += rootPath(pickedLeaf)
-    }
-
-    selected.toList
+    visit(List(NodeId.Root), 0)
+    candidatePaths.sortBy(path => (-path.length, path.head)).toIndexedSeq
   }
 
   /**
-   * Computes the 0-based depth index of the lowest common ancestor of two nodes,
-   * given their root-first paths.
+   * Greedy path selection seeded with the longest path (the first candidate taken
+   * from the queue ordered by longest path and lowest leaf ID).
    *
-   * Walks both paths in lockstep from the root; stops at the first divergence.
-   * The last matching index is the LCA depth.
+   * Returns the leaf-first paths of the selected leaves, in the order of selection.
    */
-  private def computeLcaDepth(pathA: Array[NodeId], pathB: Array[NodeId]): Int = {
-    val commonLength = math.min(pathA.length, pathB.length)
-    var index = 0
-    var lcaDepth = 0
-    while (index < commonLength && pathA(index) == pathB(index)) {
-      lcaDepth = index
-      index += 1
+  private def greedySelectPaths(
+    candidatePaths: IndexedSeq[List[NodeId]]
+  ): List[List[NodeId]] = {
+    val selectCount = math.min(pathCount, candidatePaths.length)
+    val coveredNodeIds = mutable.Set[NodeId]()
+    val selectedPaths = mutable.ListBuffer[List[NodeId]]()
+
+    // Entries are (overlap, candidate index), and the queue yields the smallest entry
+    // first. Before any path is selected, every candidate has an overlap of -1.
+    val candidateQueue = mutable.PriorityQueue.empty(using Ordering[(Int, Int)].reverse)
+    candidateQueue ++= candidatePaths.indices.map(index => (-1, index))
+
+    while (selectedPaths.length < selectCount) {
+      val (queuedOverlap, index) = candidateQueue.dequeue()
+      val path = candidatePaths(index)
+      val overlap = computeOverlap(path, coveredNodeIds)
+
+      if (overlap == queuedOverlap) {
+        coveredNodeIds ++= path
+        selectedPaths += path
+      } else {
+        candidateQueue.enqueue((overlap, index))
+      }
     }
-    lcaDepth
+
+    selectedPaths.toList
   }
+
+  /**
+   * Computes the overlap of a candidate path with the selected paths: the depth
+   * of the deepest node it shares with any of them, or -1 if no path is selected.
+   * The shared nodes run from the root down to that depth, so the overlap is the
+   * number of nodes of the candidate path that the selected paths cover, minus one.
+   */
+  private def computeOverlap(path: List[NodeId], coveredNodeIds: collection.Set[NodeId]): Int =
+    path.count(nodeId => coveredNodeIds.contains(nodeId)) - 1
 }
 
 private[actors] object UctUrgentPathSelector {
