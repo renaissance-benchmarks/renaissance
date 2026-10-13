@@ -27,10 +27,11 @@ import scala.concurrent.duration.Duration
  * UCT, the interior nodes average the readings of their children while the leaves report
  * fixed values derived from the node ID.
  *
- * During the final request, the root sends [[MeasureTemperatureMessage]] to every child
- * and [[UrgentUpdateTemperatureMessage]] (a [[akka.dispatch.ControlMessage]]) to each
- * urgent child. The priority mailbox delivers the update first at every hop, so urgent
- * leaves report their updated temperature within the same reduction.
+ * During the final request, the benchmark sends an [[UrgentUpdateTemperatureMessage]]
+ * (a [[akka.dispatch.ControlMessage]]) down the urgent paths right after the measurement
+ * request. The priority mailbox delivers the update before the request in every mailbox
+ * where both are waiting, so urgent leaves report their updated temperature within the
+ * same reduction.
  *
  * Multiple urgent paths are supported: the topology carries a set of urgent root-to-leaf
  * paths selected by [[UctUrgentPathSelector]], all of which are updated simultaneously
@@ -196,15 +197,37 @@ final class AkkaUct extends Benchmark {
       }
     }
 
-  /** Creates the UCT of the scenario, takes the reductions, and destroys the UCT. */
+  /**
+   * Creates the UCT of the scenario, takes the nominal measurements and the measurement
+   * with the urgent update, and destroys the UCT.
+   */
   private def runScenario(system: ActorSystem, scenario: Scenario): ScenarioResult = {
-    val resultPromise = Promise[Double]()
+    val coordinator = system.actorOf(
+      Props(new UctCoordinatorActor(scenario.topology))
+    )
 
-    system.actorOf(
-      Props(new UctRootActor(scenario.topology, scenario.shockTemperature, resultPromise))
-    ) ! GenerateTreeMessage
+    val uctCreatedPromise = Promise[Unit]()
+    coordinator ! LocalCreateUctMessage(uctCreatedPromise)
+    Await.result(uctCreatedPromise.future, Duration.Inf)
 
-    ScenarioResult(Await.result(resultPromise.future, Duration.Inf))
+    (1 until UctConfig.ReductionCount).foreach { _ =>
+      val nominalResultPromise = Promise[Double]()
+      coordinator ! LocalMeasureTemperatureMessage(nominalResultPromise)
+      Await.result(nominalResultPromise.future, Duration.Inf)
+    }
+
+    val shockResultPromise = Promise[Double]()
+    coordinator ! LocalMeasureTemperatureWithUrgentUpdateMessage(
+      scenario.shockTemperature,
+      shockResultPromise
+    )
+    val rootTemperature = Await.result(shockResultPromise.future, Duration.Inf)
+
+    val uctDestroyedPromise = Promise[Unit]()
+    coordinator ! LocalDestroyUctMessage(uctDestroyedPromise)
+    Await.result(uctDestroyedPromise.future, Duration.Inf)
+
+    ScenarioResult(rootTemperature)
   }
 
   override def tearDownAfterEach(c: BenchmarkContext): Unit = {
