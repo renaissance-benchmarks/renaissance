@@ -32,20 +32,43 @@ private[actors] case object SubtreeCreatedMessage extends UctMessage
 // -------------------------------------------------------------------------
 
 /**
- * Request for a temperature reading. A parent sends it to each of its children, and each
- * child replies with a [[TemperatureReadingMessage]].
+ * Identifies a temperature measurement. Allows keeping track of measurements
+ * in progress, assigned in the order in which the measurements are requested.
+ * As an opaque type, the identifier cannot be mixed up with other integers.
  */
-private[actors] case object MeasureTemperatureMessage extends UctMessage
+opaque private[actors] type MeasurementId = Int
 
-/** A temperature reading, sent by a child to its parent. */
-private[actors] final case class TemperatureReadingMessage(temperature: Double)
-  extends UctMessage
+private[actors] object MeasurementId {
+
+  /** The ID of the first measurement. */
+  val First: MeasurementId = 0
+
+  extension (id: MeasurementId) {
+
+    /** The ID of the measurement requested after this one. */
+    def next: MeasurementId = id + 1
+  }
+}
 
 /**
- * Update of the temperature of the urgent leaves, sent down the urgent paths right after
- * a measurement request. Extends [[ControlMessage]], so the priority mailbox delivers it
- * before a [[MeasureTemperatureMessage]] still waiting in the same mailbox, and the waiting
- * measurement observes the updated temperature.
+ * Request for a temperature reading for the given measurement. A parent sends it to each
+ * of its children, and each child replies with a [[TemperatureReadingMessage]] for the
+ * same measurement. Several measurements may be in progress at the same time.
+ */
+private[actors] final case class MeasureTemperatureMessage(measurementId: MeasurementId)
+  extends UctMessage
+
+/** A temperature reading for the given measurement, sent by a child to its parent. */
+private[actors] final case class TemperatureReadingMessage(
+  measurementId: MeasurementId,
+  temperature: Double
+) extends UctMessage
+
+/**
+ * Update of the temperature of the urgent leaves, sent down the urgent paths after
+ * the measurement requests. Extends [[ControlMessage]], so the priority mailbox
+ * delivers it before any [[MeasureTemperatureMessage]] still waiting in the same
+ * mailbox, causing the waiting measurements to observe the updated temperature.
  */
 private[actors] final case class UrgentUpdateTemperatureMessage(temperature: Double)
   extends UctMessage
@@ -80,10 +103,8 @@ private[actors] final case class LocalCreateUctMessage(done: Promise[Unit]) exte
 private[actors] final case class LocalMeasureTemperatureMessage(result: Promise[Double])
   extends UctMessage
 
-private[actors] final case class LocalMeasureTemperatureWithUrgentUpdateMessage(
-  temperature: Double,
-  result: Promise[Double]
-) extends UctMessage
+private[actors] final case class LocalUrgentUpdateTemperatureMessage(temperature: Double)
+  extends UctMessage
 
 private[actors] final case class LocalDestroyUctMessage(done: Promise[Unit]) extends UctMessage
 

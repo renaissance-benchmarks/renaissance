@@ -12,6 +12,7 @@ private[actors] final class UctConfig private (
   _topologySeed: Int,
   _urgentPathLengthFractionMin: Double,
   _topologyCount: Int,
+  _measurementCount: Int,
   _temperatureTolerance: Double
 ) {
 
@@ -33,8 +34,16 @@ private[actors] final class UctConfig private (
    */
   val topologySeed: Int = _topologySeed
 
-  /** Number of root-to-leaf paths tagged for urgent update. */
-  val urgentPathCount: Int = 10
+  /**
+   * Number of root-to-leaf paths tagged for urgent update.
+   *
+   * While overlapping multiple measurements in flight creates the mailbox backlog needed
+   * for the urgent update to overtake waiting measurement requests, having twice as many
+   * urgent paths as processors ensures that the actors on urgent paths outnumber the
+   * actors that can run at the same time, improving the odds that measurement requests
+   * are still waiting in their mailboxes when the urgent update arrives.
+   */
+  val urgentPathCount: Int = 2 * Runtime.getRuntime().availableProcessors()
 
   /**
    * Minimum eligible path length as a fraction of the tree height. Keeps urgent
@@ -45,6 +54,14 @@ private[actors] final class UctConfig private (
 
   /** Number of (distinct) topologies to run the benchmark on. */
   val topologyCount: Int = _topologyCount
+
+  /**
+   * Number of temperature measurements per topology racing the urgent update. All of them
+   * are requested at once, followed by an urgent update of the urgent leaves to the shock
+   * temperature, which overtakes the measurement requests still waiting in the mailboxes
+   * along the urgent paths. One more measurement follows the urgent update.
+   */
+  val measurementCount: Int = _measurementCount
 
   /**
    * Acceptable floating-point deviation in temperature comparisons during validation.
@@ -64,20 +81,13 @@ private[actors] object UctConfig {
    */
   val ShockMarginMultiplier: Double = 1000.0
 
-  /**
-   * Total number of temperature reductions per iteration.
-   * Reductions 1 .. ReductionCount-1 are normal scatter-gather reductions.
-   * Reduction reductionCount is the shock reduction: MeasureTemperature +
-   * UrgentUpdateTemperature sent simultaneously.
-   */
-  val ReductionCount: Int = 3
-
   /** Creates a [[UctConfig]] by reading all parameters from the given context. */
   def fromContext(c: BenchmarkContext): UctConfig =
     new UctConfig(
       _nodeCountMax = c.parameter("node_count_max").toPositiveInteger,
       _branchingFactor = c.parameter("branching_factor").toPositiveInteger,
       _topologyCount = c.parameter("topology_count").toPositiveInteger,
+      _measurementCount = c.parameter("measurement_count").toPositiveInteger,
       _urgentPathLengthFractionMin = c.parameter("urgent_path_length_fraction_min").toDouble,
       _topologySeed = c.parameter("topology_seed").toInteger,
       _temperatureTolerance = c.parameter("temperature_tolerance").toDouble

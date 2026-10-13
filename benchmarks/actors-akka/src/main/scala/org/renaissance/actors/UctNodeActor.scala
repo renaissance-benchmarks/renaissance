@@ -13,6 +13,18 @@ private[actors] object UctNodeActor {
    * the closure that creates the node actor cannot capture the creating actor.
    */
   def props(id: NodeId, topology: Topology): Props = Props(new UctNodeActor(id, topology))
+
+  /**
+   * A measurement taken by an interior node: the sum of the temperatures reported by its
+   * children so far and the number of children yet to report.
+   */
+  private final case class Measurement(temperatureSum: Double, pendingReadingCount: Int) {
+
+    def withReading(temperature: Double): Measurement =
+      Measurement(temperatureSum + temperature, pendingReadingCount - 1)
+
+    def isComplete: Boolean = pendingReadingCount == 0
+  }
 }
 
 /**
@@ -33,9 +45,8 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
   // Temperature state
   private var temperature: Option[Double] = None
 
-  // Readings gathered from the children for the measurement in progress.
-  private var temperatureSum: Double = 0.0
-  private var pendingReadingCount: Int = 0
+  // Measurements still waiting for readings from the children.
+  private val pendingMeasurements = mutable.Map[MeasurementId, UctNodeActor.Measurement]()
 
   override def receive: Receive = {
     // --- tree construction --------------------------------------------------
@@ -48,11 +59,11 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
 
     // --- measurement collection ---------------------------------------------
 
-    case MeasureTemperatureMessage =>
-      handleMeasureTemperature()
+    case m: MeasureTemperatureMessage =>
+      handleMeasureTemperature(m.measurementId)
 
     case m: TemperatureReadingMessage =>
-      handleTemperatureReading(m.temperature)
+      handleTemperatureReading(m.measurementId, m.temperature)
 
     case m: UrgentUpdateTemperatureMessage =>
       handleUpdateTemperature(m.temperature)
@@ -102,32 +113,41 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
 
   // --- measurement collection -----------------------------------------------
 
-  private def handleMeasureTemperature(): Unit = {
+  private def handleMeasureTemperature(measurementId: MeasurementId): Unit = {
     if (children.isEmpty) {
-      // Leaf: initialize temperature on first reduction, then report.
+      // Leaf: initialize temperature on first measurement, then report.
       if (temperature.isEmpty) {
         temperature = Some(LeafNode.initialTemperatureOf(id))
       }
 
-      signalCollectionResult(temperature.get)
+      signalTemperatureReading(measurementId, temperature.get)
     } else {
       // Interior: scatter to children and gather replies.
-      temperatureSum = 0.0
-      pendingReadingCount = children.length
-      children.foreach(child => child ! MeasureTemperatureMessage)
+      pendingMeasurements(measurementId) =
+        UctNodeActor.Measurement(temperatureSum = 0.0, children.length)
+
+      children.foreach(child => child ! MeasureTemperatureMessage(measurementId))
     }
   }
 
-  private def handleTemperatureReading(temperatureReading: Double): Unit = {
-    temperatureSum += temperatureReading
-    pendingReadingCount -= 1
-    if (pendingReadingCount == 0) {
-      signalCollectionResult(temperatureSum / children.length)
+  private def handleTemperatureReading(
+    measurementId: MeasurementId,
+    temperatureReading: Double
+  ): Unit = {
+    val measurement = pendingMeasurements(measurementId).withReading(temperatureReading)
+    if (measurement.isComplete) {
+      pendingMeasurements.remove(measurementId)
+      signalTemperatureReading(measurementId, measurement.temperatureSum / children.length)
+    } else {
+      pendingMeasurements(measurementId) = measurement
     }
   }
 
-  private def signalCollectionResult(temperature: Double): Unit =
-    context.parent ! TemperatureReadingMessage(temperature)
+  private def signalTemperatureReading(
+    measurementId: MeasurementId,
+    temperature: Double
+  ): Unit =
+    context.parent ! TemperatureReadingMessage(measurementId, temperature)
 
   /**
    * Propagates temperature update down the urgent paths; at a leaf, applies it directly.

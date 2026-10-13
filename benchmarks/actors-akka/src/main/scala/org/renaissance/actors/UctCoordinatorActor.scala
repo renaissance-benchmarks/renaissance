@@ -3,6 +3,7 @@ package org.renaissance.actors
 import akka.actor.Actor
 import akka.actor.ActorRef
 
+import scala.collection.mutable
 import scala.concurrent.Promise
 
 /**
@@ -17,9 +18,11 @@ private[actors] final class UctCoordinatorActor(topology: Topology) extends Acto
 
   private var rootNode: ActorRef = _
 
-  // Fulfilled when each phase completes.
+  // Fulfilled when each phase completes. Measurements are identified by IDs assigned
+  // in the order in which they are requested.
   private var uctCreatedPromise: Promise[Unit] = _
-  private var measurementPromise: Promise[Double] = _
+  private val measurementPromises = mutable.Map[MeasurementId, Promise[Double]]()
+  private var nextMeasurementId: MeasurementId = MeasurementId.First
   private var uctDestroyedPromise: Promise[Unit] = _
 
   override def receive: Receive = {
@@ -36,18 +39,16 @@ private[actors] final class UctCoordinatorActor(topology: Topology) extends Acto
     // --- measurement collection ---------------------------------------------
 
     case LocalMeasureTemperatureMessage(resultPromise) =>
-      measurementPromise = resultPromise
-      rootNode ! MeasureTemperatureMessage
+      val measurementId = registerMeasurement(resultPromise)
+      rootNode ! MeasureTemperatureMessage(measurementId)
 
-    case LocalMeasureTemperatureWithUrgentUpdateMessage(temperature, resultPromise) =>
-      measurementPromise = resultPromise
-      // The urgent update follows the measurement request and overtakes it in every
-      // mailbox where both are waiting (see UrgentUpdateTemperatureMessage).
-      rootNode ! MeasureTemperatureMessage
+    case LocalUrgentUpdateTemperatureMessage(temperature) =>
+      // The urgent update follows the measurement requests and overtakes those still
+      // waiting in a mailbox along an urgent path (see UrgentUpdateTemperatureMessage).
       rootNode ! UrgentUpdateTemperatureMessage(temperature)
 
     case m: TemperatureReadingMessage =>
-      measurementPromise.success(m.temperature)
+      measurementPromises(m.measurementId).success(m.temperature)
 
     // --- teardown -----------------------------------------------------------
 
@@ -60,5 +61,15 @@ private[actors] final class UctCoordinatorActor(topology: Topology) extends Acto
       // Completed after all node actors have stopped, so system.terminate() in
       // tearDownAfterEach cannot race with in-flight teardown messages.
       uctDestroyedPromise.success(())
+  }
+
+  // --- measurement collection -----------------------------------------------
+
+  /** Registers the Promise of a new measurement under the next measurement ID. */
+  private def registerMeasurement(resultPromise: Promise[Double]): MeasurementId = {
+    val measurementId = nextMeasurementId
+    nextMeasurementId = measurementId.next
+    measurementPromises(measurementId) = resultPromise
+    measurementId
   }
 }

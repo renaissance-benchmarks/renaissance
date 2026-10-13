@@ -32,20 +32,24 @@ import scala.concurrent.duration.FiniteDuration
  * UCT, the interior nodes average the readings of their children while the leaves report
  * fixed values derived from the node ID.
  *
- * During the final request, the benchmark sends an [[UrgentUpdateTemperatureMessage]]
- * (a [[akka.dispatch.ControlMessage]]) down the urgent paths right after the measurement
- * request. The priority mailbox delivers the update before the request in every mailbox
- * where both are waiting, so urgent leaves report their updated temperature within the
- * same reduction.
+ * For each topology, the benchmark requests several measurements at once and then sends
+ * an [[UrgentUpdateTemperatureMessage]] (a [[akka.dispatch.ControlMessage]]) down a set
+ * of urgent root-to-leaf paths selected by [[UctUrgentPathSelector]], setting the urgent
+ * leaves to a shock temperature. The priority mailbox delivers the update before any
+ * measurement request still waiting in the same mailbox, so the later measurements
+ * observe the updated temperatures. One more measurement, requested after the update,
+ * observes all urgent leaves at the shock temperature.
  *
- * Multiple urgent paths are supported: the topology carries a set of urgent root-to-leaf
- * paths selected by [[UctUrgentPathSelector]], all of which are updated simultaneously
- * during the final request.
- *
- * The expected root temperature is computed analytically as the bottom-up average over
- * all leaves with every urgent leaf fixed at the per-topology shock temperature
- * derived from urgent leaf depths (see [[AkkaUct.computeShockTemperature]]).
+ * The expected root temperatures are computed analytically as the bottom-up average over
+ * all leaves: nominal with every leaf at its initial temperature, shocked with every
+ * urgent leaf at the per-topology shock temperature derived from urgent leaf depths (see
+ * [[AkkaUct.computeShockTemperature]]). The root temperatures of the measurements
+ * requested before the update must lie between the two, must not decrease from one
+ * measurement to the next, and in at least one topology, they must show the urgent update.
+ * The root temperature of the measurement requested after the update must be the shocked
+ * one.
  */
+
 @Name("akka-uct")
 @Group("actors")
 @Group("concurrency")
@@ -69,13 +73,18 @@ import scala.concurrent.duration.FiniteDuration
 )
 @Parameter(
   name = "urgent_path_length_fraction_min",
-  defaultValue = "0.75",
+  defaultValue = "0.9",
   summary = "Minimum length of an urgent path as a fraction of the tree height."
 )
 @Parameter(
   name = "topology_count",
   defaultValue = "5",
   summary = "Number of distinct topologies to generate and run."
+)
+@Parameter(
+  name = "measurement_count",
+  defaultValue = "3",
+  summary = "Temperature measurements requested at once per topology, before the urgent update."
 )
 @Parameter(
   name = "temperature_tolerance",
@@ -98,12 +107,16 @@ final class AkkaUct extends Benchmark {
   )
 
   /**
-   * The result of a computation performed on one topology: the root temperature of the
-   * reduction during which the urgent leaves are updated.
+   * The result of a computation performed on one topology: the root temperatures of the
+   * measurements racing the urgent update (in the order of the requests), and the root
+   * temperature of the measurement requested after the update.
    */
-  private final case class ScenarioResult(rootTemperature: Double)
+  private final case class ScenarioResult(
+    racingRootTemperatures: IndexedSeq[Double],
+    rootTemperatureAfterUpdate: Double
+  )
 
-  // Priority mailbox (prioritizing urgent nodes)
+  // Priority mailbox (prioritizing control messages over regular messages)
   private val systemFactory = new AkkaSystemFactory(
     "akka.dispatch.UnboundedControlAwareMailbox"
   )
@@ -172,14 +185,17 @@ final class AkkaUct extends Benchmark {
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
     val results = scenarios.map { scenario =>
-      runScenario(actorSystem, scenario)
+      runScenario(actorSystem, scenario, config)
     }
 
     val unexpectedMessages = takeCollectedMessages(collector)
 
     Validators.compound(
       () => validateNoUnexpectedMessages(unexpectedMessages),
-      () => validateRootTemperatures(scenarios, results, config.temperatureTolerance)
+      () => validateRacingTemperatureRanges(scenarios, results, config.temperatureTolerance),
+      () => validateRacingTemperatureOrder(scenarios, results, config.temperatureTolerance),
+      () => validateUrgentUpdateShown(scenarios, results, config.temperatureTolerance),
+      () => validateTemperaturesAfterUpdate(scenarios, results, config.temperatureTolerance)
     )
   }
 
@@ -200,12 +216,12 @@ final class AkkaUct extends Benchmark {
     }
 
   /**
-   * Checks that the root temperature of the reduction with the urgent update lies between
-   * the nominal and the shocked temperature. The tolerance absorbs floating-point
+   * Checks that the root temperatures of the measurements racing the urgent update lie
+   * between the nominal and the shocked temperature. The tolerance absorbs floating-point
    * differences, which arise because nodes add up the readings of their children in the
    * order of arrival.
    */
-  private def validateRootTemperatures(
+  private def validateRacingTemperatureRanges(
     scenarios: Array[Scenario],
     results: Array[ScenarioResult],
     tolerance: Double
@@ -214,20 +230,89 @@ final class AkkaUct extends Benchmark {
       val lowerBound = scenario.expectedNominalTemperature - tolerance
       val upperBound = scenario.expectedShockedTemperature + tolerance
 
-      val temperature = result.rootTemperature
-      if (temperature <= lowerBound || temperature >= upperBound) {
+      result.racingRootTemperatures.zipWithIndex.foreach { (temperature, measurementIndex) =>
+        if (temperature < lowerBound || temperature > upperBound) {
+          throw new ValidationException(
+            s"temperature of measurement $measurementIndex for topology $topologyIndex" +
+              s" not in range [$lowerBound, $upperBound]: $temperature"
+          )
+        }
+      }
+    }
+
+  /**
+   * Checks that the root temperatures of the measurements racing the urgent update do not
+   * decrease from one measurement to the next.
+   */
+  private def validateRacingTemperatureOrder(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, _, result) =>
+      val temperatures = result.racingRootTemperatures
+      temperatures.zip(temperatures.tail).zipWithIndex.foreach {
+        case ((earlier, later), earlierIndex) =>
+          if (later < earlier - tolerance) {
+            throw new ValidationException(
+              s"temperature for topology $topologyIndex decreases from $earlier" +
+                s" (measurement $earlierIndex) to $later (measurement ${earlierIndex + 1})"
+            )
+          }
+      }
+    }
+
+  /**
+   * Checks that some measurement racing the urgent update shows the update. The urgent
+   * update overtakes the racing measurement requests only by chance, so in a single
+   * topology, no racing measurement may show the update. Without a working priority
+   * mailbox, however, no racing measurement can show it in any topology, so it is enough
+   * that the update shows in one of them.
+   */
+  private def validateUrgentUpdateShown(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit = {
+    val updateShown = scenarios.zip(results).exists { (scenario, result) =>
+      val lowerBound = scenario.expectedNominalTemperature + tolerance
+      result.racingRootTemperatures.exists(temperature => temperature > lowerBound)
+    }
+
+    if (!updateShown) {
+      throw new ValidationException(
+        "no measurement racing the urgent update shows the update in any topology"
+      )
+    }
+  }
+
+  /** Checks that the measurement after the urgent update shows the shocked temperature. */
+  private def validateTemperaturesAfterUpdate(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      val expectedTemperature = scenario.expectedShockedTemperature
+      val temperatureAfterUpdate = result.rootTemperatureAfterUpdate
+
+      if (math.abs(temperatureAfterUpdate - expectedTemperature) > tolerance) {
         throw new ValidationException(
-          s"temperature for topology $topologyIndex not in range" +
-            s" ($lowerBound, $upperBound): $temperature"
+          s"temperature after the urgent update for topology $topologyIndex is" +
+            s" $temperatureAfterUpdate instead of $expectedTemperature"
         )
       }
     }
 
   /**
-   * Creates the UCT of the scenario, takes the nominal measurements and the measurement
-   * with the urgent update, and destroys the UCT.
+   * Creates the UCT of the scenario, requests all racing measurements at once followed
+   * by the urgent update and one more measurement, and destroys the UCT.
    */
-  private def runScenario(system: ActorSystem, scenario: Scenario): ScenarioResult = {
+  private def runScenario(
+    system: ActorSystem,
+    scenario: Scenario,
+    config: UctConfig
+  ): ScenarioResult = {
     val coordinator = system.actorOf(
       Props(new UctCoordinatorActor(scenario.topology))
     )
@@ -236,24 +321,29 @@ final class AkkaUct extends Benchmark {
     coordinator ! LocalCreateUctMessage(uctCreatedPromise)
     Await.result(uctCreatedPromise.future, AkkaUct.PhaseTimeout)
 
-    (1 until UctConfig.ReductionCount).foreach { _ =>
-      val nominalResultPromise = Promise[Double]()
-      coordinator ! LocalMeasureTemperatureMessage(nominalResultPromise)
-      Await.result(nominalResultPromise.future, AkkaUct.PhaseTimeout)
+    val racingPromises = IndexedSeq.fill(config.measurementCount)(Promise[Double]())
+    racingPromises.foreach { promise =>
+      coordinator ! LocalMeasureTemperatureMessage(promise)
     }
+    coordinator ! LocalUrgentUpdateTemperatureMessage(scenario.shockTemperature)
 
-    val shockResultPromise = Promise[Double]()
-    coordinator ! LocalMeasureTemperatureWithUrgentUpdateMessage(
-      scenario.shockTemperature,
-      shockResultPromise
-    )
-    val rootTemperature = Await.result(shockResultPromise.future, AkkaUct.PhaseTimeout)
+    // Messages between two actors arrive in the order in which they were sent, and the
+    // priority mailbox only moves the urgent update further ahead. The update therefore
+    // reaches every urgent leaf before this request, so the measurement observes all urgent
+    // leaves at the shock temperature.
+    val afterUpdatePromise = Promise[Double]()
+    coordinator ! LocalMeasureTemperatureMessage(afterUpdatePromise)
+
+    val racingTemperatures = racingPromises.map { promise =>
+      Await.result(promise.future, AkkaUct.PhaseTimeout)
+    }
+    val afterUpdateTemperature = Await.result(afterUpdatePromise.future, AkkaUct.PhaseTimeout)
 
     val uctDestroyedPromise = Promise[Unit]()
     coordinator ! LocalDestroyUctMessage(uctDestroyedPromise)
     Await.result(uctDestroyedPromise.future, AkkaUct.PhaseTimeout)
 
-    ScenarioResult(rootTemperature)
+    ScenarioResult(racingTemperatures, afterUpdateTemperature)
   }
 
   /**
