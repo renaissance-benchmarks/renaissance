@@ -1,7 +1,10 @@
 package org.renaissance.actors
 
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.DeadLetter
 import akka.actor.Props
+import akka.actor.UnhandledMessage
 
 import java.util.Random
 
@@ -105,6 +108,12 @@ final class AkkaUct extends Benchmark {
 
   private var actorSystem: ActorSystem = _
 
+  /**
+   * Collects the benchmark messages that end up as dead letters or are not handled by
+   * their recipient in the current [[actorSystem]].
+   */
+  private var collector: ActorRef = _
+
   private var config: UctConfig = _
   private var scenarios: Array[Scenario] = _
 
@@ -153,6 +162,10 @@ final class AkkaUct extends Benchmark {
 
   override def setUpBeforeEach(c: BenchmarkContext): Unit = {
     actorSystem = systemFactory.newActorSystem("UCT")
+
+    collector = actorSystem.actorOf(Props(new UctCollectorActor))
+    actorSystem.eventStream.subscribe(collector, classOf[DeadLetter])
+    actorSystem.eventStream.subscribe(collector, classOf[UnhandledMessage])
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
@@ -160,10 +173,21 @@ final class AkkaUct extends Benchmark {
       runScenario(actorSystem, scenario)
     }
 
-    Validators.compound(() =>
-      validateRootTemperatures(scenarios, results, config.temperatureTolerance)
+    val unexpectedMessages = takeCollectedMessages(collector)
+
+    Validators.compound(
+      () => validateNoUnexpectedMessages(unexpectedMessages),
+      () => validateRootTemperatures(scenarios, results, config.temperatureTolerance)
     )
   }
+
+  /** Checks that no benchmark message ended up as a dead letter or went unhandled. */
+  private def validateNoUnexpectedMessages(messages: Seq[UctMessage]): Unit =
+    if (messages.nonEmpty) {
+      throw new ValidationException(
+        s"${messages.size} unexpected messages, the first being ${messages.head}"
+      )
+    }
 
   /** Applies the check to the scenario and the result of each topology. */
   private def forEachTopology(scenarios: Array[Scenario], results: Array[ScenarioResult])(
@@ -228,6 +252,16 @@ final class AkkaUct extends Benchmark {
     Await.result(uctDestroyedPromise.future, Duration.Inf)
 
     ScenarioResult(rootTemperature)
+  }
+
+  /**
+   * Takes the messages collected so far by the collector. Messages that reach the
+   * collector later, such as during the shutdown of the actor system, are not checked.
+   */
+  private def takeCollectedMessages(collector: ActorRef): Seq[UctMessage] = {
+    val resultPromise = Promise[Seq[UctMessage]]()
+    collector ! LocalTakeCollectedMessagesMessage(resultPromise)
+    Await.result(resultPromise.future, Duration.Inf)
   }
 
   override def tearDownAfterEach(c: BenchmarkContext): Unit = {

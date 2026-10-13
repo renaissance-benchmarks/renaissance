@@ -86,3 +86,13 @@ private[actors] final case class LocalMeasureTemperatureWithUrgentUpdateMessage(
 ) extends UctMessage
 
 private[actors] final case class LocalDestroyUctMessage(done: Promise[Unit]) extends UctMessage
+
+// -------------------------------------------------------------------------
+// Collection protocol
+// -------------------------------------------------------------------------
+
+// Local-only messages sent by the benchmark thread to the UctCollectorActor.
+
+private[actors] final case class LocalTakeCollectedMessagesMessage(
+  result: Promise[Seq[UctMessage]]
+) extends UctMessage
