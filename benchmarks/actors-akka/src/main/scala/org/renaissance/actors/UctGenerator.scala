@@ -14,7 +14,7 @@ import scala.collection.mutable
  * decisions at runtime, removing the dependency on non-deterministic
  * message ordering.
  */
-final class UctGenerator(
+private[actors] final class UctGenerator(
   nodeCountMax: Int,
   branchingFactor: Int,
   rng: Random

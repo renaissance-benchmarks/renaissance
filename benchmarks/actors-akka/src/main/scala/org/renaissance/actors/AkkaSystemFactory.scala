@@ -10,7 +10,7 @@ import scala.util.Properties.propOrNone
  * The configuration is built eagerly at construction time so that any
  * misconfiguration is detected before the first iteration runs.
  */
-final class AkkaSystemFactory(mailboxType: String) {
+private[actors] final class AkkaSystemFactory(mailboxType: String) {
 
   private val config: Config = {
     val corePoolSize = workerCount("actors.corePoolSize", 4)

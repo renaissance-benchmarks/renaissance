@@ -1,7 +1,7 @@
 package org.renaissance.actors
 
 /** Node identifier: a contiguous integer assigned during tree generation (root = 0). */
-type NodeId = Int
+private[actors] type NodeId = Int
 
 /**
  * Describes an interior (non-leaf) node in the pre-computed tree.
@@ -11,7 +11,7 @@ type NodeId = Int
  * @param urgentChildSlots set of 0-based child slot indices on urgent paths through this node;
  *   empty means this node is not on any urgent path
  */
-case class InteriorNode(
+private[actors] final case class InteriorNode(
   firstChildId: NodeId,
   urgentChildSlots: Set[Int] = Set.empty
 )
@@ -28,7 +28,7 @@ case class InteriorNode(
  * @param nodeCount total number of nodes in the tree
  * @param maxDepth depth of the deepest leaf (root = 0)
  */
-case class Topology(
+private[actors] final case class Topology(
   interiorNodes: Map[NodeId, InteriorNode],
   nodeCount: Int,
   maxDepth: Int

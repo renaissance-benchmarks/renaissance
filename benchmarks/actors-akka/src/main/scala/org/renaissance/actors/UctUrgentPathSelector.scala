@@ -19,7 +19,7 @@ import scala.collection.mutable
  * @param urgentPathCount  how many urgent leaves to select
  * @param urgentLeafDepthFractionMin   fraction of maxDepth below which leaves are excluded
  */
-final class UctUrgentPathSelector(
+private[actors] final class UctUrgentPathSelector(
   urgentPathCount: Int,
   urgentLeafDepthFractionMin: Double
 ) {

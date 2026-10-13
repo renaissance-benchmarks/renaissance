@@ -1,6 +1,6 @@
 package org.renaissance.actors
 
-object UctConfig {
+private[actors] object UctConfig {
 
   /** Upper bound on the number of nodes in the pre-computed tree. */
   val NodeCount: Int = 200_000

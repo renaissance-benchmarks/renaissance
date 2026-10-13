@@ -168,7 +168,7 @@ final class AkkaUct extends Benchmark {
 
 }
 
-object AkkaUct {
+private[actors] object AkkaUct {
 
   /**
    * Computes the minimum shock temperature guaranteeing that the root temperature

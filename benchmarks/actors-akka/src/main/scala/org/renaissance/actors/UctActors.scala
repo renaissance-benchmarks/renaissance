@@ -13,7 +13,7 @@ import UctConfig.*
 //  UctRootActor
 // -------------------------------------------------------------------------
 
-private[actors] class UctRootActor(
+private[actors] final class UctRootActor(
   topology: Topology,
   shockTemperature: Double,
   resultPromise: Promise[Double]
@@ -184,7 +184,7 @@ private[actors] object UctNodeActor {
     )
 }
 
-private[actors] class UctNodeActor(
+private[actors] final class UctNodeActor(
   parent: ActorRef,
   id: NodeId,
   childSlot: Int,
