@@ -37,7 +37,4 @@ private[actors] object UctConfig {
 
   /** Seed for the tree topology. */
   val TopologySeed: Long = 2L
-
-  /** Seed used to assign deterministic initial temperatures to leaf nodes. */
-  val LeafTemperatureSeed: Long = 42L
 }

@@ -24,8 +24,8 @@ import scala.concurrent.duration.Duration
  * AGERE! 2014); reworked for Renaissance to add a validatable computation.
  *
  * Every node holds a temperature. When a temperature reading is requested across the
- * UCT, the interior nodes average their children's readings while the leaves report
- * fixed values seeded by node ID.
+ * UCT, the interior nodes average the readings of their children while the leaves report
+ * fixed values derived from the node ID.
  *
  * During the final request, the root sends [[MeasureTemperatureMessage]] to every child
  * and [[UrgentUpdateTemperatureMessage]] (a [[akka.dispatch.ControlMessage]]) to each
@@ -106,8 +106,7 @@ final class AkkaUct extends Benchmark {
         val (shocked, nominal) = AkkaUct.analyticalRootTemperature(
           topologies(i),
           urgentLeavesSet,
-          shockTemperature,
-          LeafTemperatureSeed
+          shockTemperature
         )
 
         expectedShockedTemperatures(i) = shocked
@@ -177,10 +176,11 @@ private[actors] object AkkaUct {
    *
    * A leaf at depth d contributes (shockTemperature - leafInitialTemperature) / branchingFactor^d
    * to the root delta (each tree level divides by the branching factor). The worst
-   * case is the deepest urgent leaf (smallest contribution). Using 0.9 as the upper
-   * bound of the initial temperature range [0.1, 0.9):
+   * case is the deepest urgent leaf (smallest contribution) with the highest initial
+   * temperature:
    *
-   *   shockTemperature >= 0.9 + rootMargin * branchingFactor^maxUrgentDepth
+   *   shockTemperature >= LeafNode.InitialTemperatureMax
+   *     + rootMargin * branchingFactor^maxUrgentDepth
    */
   def computeShockTemperature(topology: Topology, rootMargin: Double): Double = {
     val bf = UctConfig.BranchingFactor
@@ -205,7 +205,7 @@ private[actors] object AkkaUct {
         .map(depthOf)
     }.max
 
-    0.9 + rootMargin * math.pow(bf, maxUrgentLeafDepth)
+    LeafNode.InitialTemperatureMax + rootMargin * math.pow(bf, maxUrgentLeafDepth)
   }
 
   /**
@@ -216,8 +216,7 @@ private[actors] object AkkaUct {
   def analyticalRootTemperature(
     topology: Topology,
     urgentLeaves: Set[NodeId],
-    shockTemperature: Double,
-    leafSeed: Long
+    shockTemperature: Double
   ): (Double, Double) = {
     val branchingFactor = UctConfig.BranchingFactor
 
@@ -225,7 +224,7 @@ private[actors] object AkkaUct {
       topology.interiorNodes.get(id) match {
         case None =>
           if (urgentLeaves.contains(id)) shockTemperature
-          else leafInitialTemperature(id, leafSeed)
+          else LeafNode.initialTemperatureOf(id)
         case Some(node) =>
           var sum = 0.0
           var i = 0
@@ -238,7 +237,7 @@ private[actors] object AkkaUct {
 
     def recurseNominal(id: NodeId): Double =
       topology.interiorNodes.get(id) match {
-        case None => leafInitialTemperature(id, leafSeed)
+        case None => LeafNode.initialTemperatureOf(id)
         case Some(node) =>
           var sum = 0.0
           var i = 0
@@ -250,16 +249,5 @@ private[actors] object AkkaUct {
       }
 
     (recurseShocked(NodeId.Root), recurseNominal(NodeId.Root))
-  }
-
-  /**
-   * Deterministic leaf temperature in [0.1, 0.9].
-   * Uses a seeded per-node Random so that every leaf gets a distinct value that
-   * is reproducible across actor runs and analytical computations.
-   */
-  def leafInitialTemperature(nodeId: NodeId, leafSeed: Long): Double = {
-    val mixed = leafSeed ^ (nodeId.toLong * 0x9e3779b97f4a7c15L)
-    val rng = new java.util.Random(mixed)
-    rng.nextDouble() * 0.8 + 0.1
   }
 }

@@ -292,7 +292,7 @@ private[actors] final class UctNodeActor(
     if (!hasChildren) {
       // Leaf: initialize temperature on first reduction, then report.
       if (!temperatureInitialized) {
-        temperature = AkkaUct.leafInitialTemperature(id, LeafTemperatureSeed)
+        temperature = LeafNode.initialTemperatureOf(id)
         temperatureInitialized = true
       }
 
