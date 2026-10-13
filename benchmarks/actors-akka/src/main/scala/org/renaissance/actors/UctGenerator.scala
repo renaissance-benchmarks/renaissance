@@ -34,11 +34,11 @@ private[actors] final class UctGenerator(
 
   // Root always expands; urgentChildSlots will be filled by the strategy.
   private def expandRoot(): Unit = {
-    interiorNodes(0) = InteriorNode(
-      firstChildId = size,
+    interiorNodes(NodeId.Root) = InteriorNode(
+      firstChildId = NodeId(size),
       urgentChildSlots = Set.empty
     )
-    addChildren(startId = size, startDepth = 1)
+    addChildren(startId = NodeId(size), startDepth = 1)
     size += branchingFactor
     maxDepth = 1
   }
@@ -55,9 +55,9 @@ private[actors] final class UctGenerator(
   }
 
   private def expandNode(nodeId: NodeId, depth: Int): Unit = {
-    interiorNodes(nodeId) = InteriorNode(size, urgentChildSlots = Set.empty)
+    interiorNodes(nodeId) = InteriorNode(NodeId(size), urgentChildSlots = Set.empty)
     val childDepth = depth + 1
-    addChildren(startId = size, startDepth = childDepth)
+    addChildren(startId = NodeId(size), startDepth = childDepth)
     size += branchingFactor
     if (childDepth > maxDepth) maxDepth = childDepth
   }

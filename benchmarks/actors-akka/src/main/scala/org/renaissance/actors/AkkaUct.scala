@@ -185,8 +185,8 @@ private[actors] object AkkaUct {
   def computeShockTemperature(topology: Topology, rootMargin: Double): Double = {
     val bf = UctConfig.BranchingFactor
 
-    val depthOf = mutable.Map[NodeId, Int](0 -> 0)
-    val queue = mutable.Queue[NodeId](0)
+    val depthOf = mutable.Map[NodeId, Int](NodeId.Root -> 0)
+    val queue = mutable.Queue[NodeId](NodeId.Root)
     while (queue.nonEmpty) {
       val nodeId = queue.dequeue()
       topology.interiorNodes.get(nodeId).foreach { node =>
@@ -249,7 +249,7 @@ private[actors] object AkkaUct {
           sum / branchingFactor
       }
 
-    (recurseShocked(0), recurseNominal(0))
+    (recurseShocked(NodeId.Root), recurseNominal(NodeId.Root))
   }
 
   /**

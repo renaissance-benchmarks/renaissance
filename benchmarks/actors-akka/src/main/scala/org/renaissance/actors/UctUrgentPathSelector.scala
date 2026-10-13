@@ -45,7 +45,8 @@ private[actors] final class UctUrgentPathSelector(
     val candidates = collectCandidates(depthOf, interiorNodes, maxDepth)
     val (selectedLeaves, selectedPaths) = greedySelectLeaves(candidates, rootPath)
 
-    val annotatedInteriorNodes = annotateUrgentChildSlots(interiorNodes, selectedPaths)
+    val annotatedInteriorNodes =
+      annotateUrgentChildSlots(interiorNodes, selectedPaths, branchingFactor)
     (annotatedInteriorNodes, selectedLeaves)
   }
 
@@ -59,8 +60,8 @@ private[actors] final class UctUrgentPathSelector(
     interiorNodes: Map[NodeId, InteriorNode],
     branchingFactor: Int
   ): mutable.Map[NodeId, Int] = {
-    val depthOf = mutable.Map[NodeId, Int](0 -> 0)
-    val bfsQueue = mutable.Queue[NodeId](0)
+    val depthOf = mutable.Map[NodeId, Int](NodeId.Root -> 0)
+    val bfsQueue = mutable.Queue[NodeId](NodeId.Root)
 
     while (bfsQueue.nonEmpty) {
       val nodeId = bfsQueue.dequeue()
@@ -130,7 +131,7 @@ private[actors] final class UctUrgentPathSelector(
       path = current :: path
       current = parentOf(current)
     }
-    // current is now the root (0) — it has no entry in parentOf.
+    // current is now the root — it has no entry in parentOf.
     (current :: path).toArray
   }
 
@@ -213,12 +214,13 @@ private[actors] final class UctUrgentPathSelector(
    * the child direction at each node as urgent; returns a new map with the
    * annotations applied.
    *
-   * childSlot = childId - firstChildId converts a global node ID back to the
-   * 0-based slot index that actors use to identify which child is urgent.
+   * The position of a child among the children of its parent is the 0-based slot index
+   * that actors use to identify which child is urgent.
    */
   private def annotateUrgentChildSlots(
     interiorNodes: Map[NodeId, InteriorNode],
-    selectedPaths: List[Array[NodeId]]
+    selectedPaths: List[Array[NodeId]],
+    branchingFactor: Int
   ): Map[NodeId, InteriorNode] = {
     var nodes = interiorNodes
     for (path <- selectedPaths) {
@@ -227,7 +229,7 @@ private[actors] final class UctUrgentPathSelector(
         val nodeId = path(pathIndex)
         val childId = path(pathIndex + 1)
         val node = nodes(nodeId)
-        val childSlot = childId - node.firstChildId
+        val childSlot = node.childIds(branchingFactor).indexOf(childId)
         nodes = nodes.updated(
           nodeId,
           node.copy(urgentChildSlots = node.urgentChildSlots + childSlot)

@@ -19,7 +19,7 @@ private[actors] final class UctRootActor(
   resultPromise: Promise[Double]
 ) extends Actor {
 
-  private val rootNode = topology.interiorNodes(0)
+  private val rootNode = topology.interiorNodes(NodeId.Root)
 
   private val children = new Array[ActorRef](BranchingFactor)
 

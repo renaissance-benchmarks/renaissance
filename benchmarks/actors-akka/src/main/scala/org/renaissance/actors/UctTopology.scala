@@ -1,21 +1,5 @@
 package org.renaissance.actors
 
-/** Node identifier: a contiguous integer assigned during tree generation (root = 0). */
-private[actors] type NodeId = Int
-
-/**
- * Describes an interior (non-leaf) node in the pre-computed tree.
- *
- * @param firstChildId node ID of the first child;
- *   children occupy firstChildId .. firstChildId+branchingFactor-1
- * @param urgentChildSlots set of 0-based child slot indices on urgent paths through this node;
- *   empty means this node is not on any urgent path
- */
-private[actors] final case class InteriorNode(
-  firstChildId: NodeId,
-  urgentChildSlots: Set[Int] = Set.empty
-)
-
 /**
  * The tree structure passed to actors at runtime.
  *
