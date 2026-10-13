@@ -82,12 +82,12 @@ import scala.concurrent.duration.FiniteDuration
 )
 @Parameter(
   name = "topology_count",
-  defaultValue = "5",
+  defaultValue = "20",
   summary = "Number of distinct topologies to generate and run."
 )
 @Parameter(
   name = "measurement_count",
-  defaultValue = "3",
+  defaultValue = "60",
   summary = "Temperature measurements requested at once per topology, before the urgent update."
 )
 @Parameter(
@@ -95,8 +95,11 @@ import scala.concurrent.duration.FiniteDuration
   defaultValue = "1e-5",
   summary = "Acceptable floating-point deviation in temperature comparisons."
 )
-@Configuration(name = "test", settings = Array("topology_count = 1"))
-@Configuration(name = "jmh", settings = Array("topology_count = 1"))
+@Configuration(
+  name = "test",
+  settings = Array("node_count_max = 10000", "topology_count = 5", "measurement_count = 10")
+)
+@Configuration(name = "jmh", settings = Array("node_count_max = 40000"))
 final class AkkaUct extends Benchmark {
 
   /**
