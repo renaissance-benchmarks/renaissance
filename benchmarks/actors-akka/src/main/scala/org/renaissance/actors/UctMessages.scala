@@ -48,12 +48,34 @@ private[actors] object LeafDistance {
 }
 
 /**
- * Report that a subtree is fully built, with the leaf farthest from its root. A leaf
- * sends it to its parent upon [[CreateSubtreeMessage]], and an interior node once all of
- * its children have reported.
+ * A tree checksum built of the number of nodes in the tree and the sum of their IDs.
+ * Allows detecting a missing, extra, or misnumbered node in the UCT built by the actors.
+ * Does not tie children to their parents, because each node creates the children given
+ * by its own expansion in the plan, and the structure of the tree thus follows from the
+ * node IDs. Compared to the topology checksum (see [[AkkaUct.treeChecksum]]).
  */
-private[actors] final case class SubtreeCreatedMessage(farthestLeaf: LeafDistance)
-  extends UctMessage
+private[actors] final case class TreeChecksum(nodeCount: Int, nodeIdSum: Long) {
+
+  /** The checksum combined with the checksum of a tree (that shares no node with it). */
+  def combinedWith(other: TreeChecksum): TreeChecksum =
+    TreeChecksum(nodeCount + other.nodeCount, nodeIdSum + other.nodeIdSum)
+}
+
+private[actors] object TreeChecksum {
+
+  /** The checksum of a single-node tree. */
+  def of(nodeId: NodeId): TreeChecksum = TreeChecksum(nodeCount = 1, nodeId.toLong)
+}
+
+/**
+ * Report that a subtree is fully built, with the checksum of the subtree and the leaf
+ * farthest from its root. A leaf sends it to its parent upon [[CreateSubtreeMessage]],
+ * while an interior node sends it when all of its children have reported.
+ */
+private[actors] final case class SubtreeCreatedMessage(
+  checksum: TreeChecksum,
+  farthestLeaf: LeafDistance
+) extends UctMessage
 
 // -------------------------------------------------------------------------
 // Urgent path selection protocol
@@ -169,7 +191,8 @@ private[actors] case object SubtreeDestroyedMessage extends UctMessage
 // Messages sent by the benchmark thread to the UctCoordinatorActor.
 // Local use only, because most messages contain a Promise.
 
-private[actors] final case class LocalCreateUctMessage(done: Promise[Unit]) extends UctMessage
+private[actors] final case class LocalCreateUctMessage(result: Promise[TreeChecksum])
+  extends UctMessage
 
 private[actors] final case class LocalSelectUrgentPathsMessage(
   pathCount: Int,

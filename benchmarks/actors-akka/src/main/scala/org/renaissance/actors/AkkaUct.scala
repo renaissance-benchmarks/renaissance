@@ -25,16 +25,18 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * Akka implementation of the Unbalanced Cobwebbed Tree (UCT) actor workload.
  *
- * Based on the UCT benchmark from the Savina actor benchmark suite (Imam and Sarkar,
- * AGERE! 2014); reworked for Renaissance to add a validatable computation.
+ * Originally based on the UCT benchmark from the Savina actor benchmark suite (Imam
+ * and Sarkar, AGERE! 2014), significantly reworked to add a validatable computation.
  *
  * Every node holds a temperature. When a temperature reading is requested across the
  * UCT, the interior nodes average the readings of their children while the leaves report
  * fixed values derived from the node ID.
  *
- * When the UCT is built, the actors select a set of urgent root-to-leaf paths in rounds
- * (see [[UctCoordinatorActor]]). The leaves ending these paths must be those selected by
- * [[UctUrgentPathSelector]] on the topology, in the same order.
+ * When the UCT is built, the root reports a checksum of the tree (the number of nodes and
+ * the sum of their IDs), which must match the topology. The actors then select a set of
+ * urgent root-to-leaf paths in rounds (see [[UctCoordinatorActor]]). The leaves ending
+ * these paths must be those selected by [[UctUrgentPathSelector]] on the topology, in the
+ * same order.
  *
  * For each topology, the benchmark requests several measurements at once and then sends
  * an [[UrgentUpdateTemperatureMessage]] (a [[akka.dispatch.ControlMessage]]) down the
@@ -98,13 +100,14 @@ import scala.concurrent.duration.FiniteDuration
 final class AkkaUct extends Benchmark {
 
   /**
-   * The expansion plan of a topology together with the leaf nodes expected to be selected
-   * for urgent paths (in the order of selection), the shock temperature injected into the
-   * urgent leaves by the urgent update, and the expected root temperatures before and
-   * after the shock.
+   * The expansion plan of a topology together with the expected tree checksum, the
+   * leaf nodes expected to be selected for urgent paths (in the order of selection),
+   * the shock temperature injected into the urgent leaves by the urgent update,
+   * and the expected root temperatures before and after the shock.
    */
   private final case class Scenario(
     expansionPlan: ExpansionPlan,
+    expectedTreeChecksum: TreeChecksum,
     expectedUrgentLeafIds: List[NodeId],
     shockTemperature: Double,
     expectedNominalTemperature: Double,
@@ -112,12 +115,14 @@ final class AkkaUct extends Benchmark {
   )
 
   /**
-   * The result of a computation performed on one topology: the leaf nodes in which the
-   * selected urgent paths end (in the order of selection), the root temperatures of the
-   * measurements racing the urgent update (in the order of the requests), and the root
-   * temperature of the measurement requested after the update.
+   * The result of a computation performed on one topology: the tree checksum reported
+   * after construction, the leaf nodes in which the selected urgent paths end (in the
+   * order of selection), the root temperatures of the measurements racing the urgent
+   * update (in the order of the requests), and the root temperature of the measurement
+   * requested after the update.
    */
   private final case class ScenarioResult(
+    treeChecksum: TreeChecksum,
     urgentLeafIds: Seq[NodeId],
     racingRootTemperatures: IndexedSeq[Double],
     rootTemperatureAfterUpdate: Double
@@ -172,6 +177,7 @@ final class AkkaUct extends Benchmark {
 
       Scenario(
         ExpansionPlan.of(topology),
+        AkkaUct.treeChecksum(topology),
         urgentLeafIds,
         shockTemperature,
         expectedNominalTemperature,
@@ -197,6 +203,7 @@ final class AkkaUct extends Benchmark {
 
     Validators.compound(
       () => validateNoUnexpectedMessages(unexpectedMessages),
+      () => validateTreeChecksums(scenarios, results),
       () => validateUrgentLeaves(scenarios, results),
       () => validateRacingTemperatureRanges(scenarios, results, config.temperatureTolerance),
       () => validateRacingTemperatureOrder(scenarios, results, config.temperatureTolerance),
@@ -219,6 +226,20 @@ final class AkkaUct extends Benchmark {
   ): Unit =
     scenarios.zip(results).zipWithIndex.foreach {
       case ((scenario, result), topologyIndex) => check(topologyIndex, scenario, result)
+    }
+
+  /** Checks that the actors built a tree with the checksum of the topology. */
+  private def validateTreeChecksums(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult]
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      if (result.treeChecksum != scenario.expectedTreeChecksum) {
+        throw new ValidationException(
+          s"tree for topology $topologyIndex has ${result.treeChecksum}" +
+            s" instead of ${scenario.expectedTreeChecksum}"
+        )
+      }
     }
 
   /**
@@ -341,9 +362,9 @@ final class AkkaUct extends Benchmark {
       Props(new UctCoordinatorActor(scenario.expansionPlan))
     )
 
-    val uctCreatedPromise = Promise[Unit]()
+    val uctCreatedPromise = Promise[TreeChecksum]()
     coordinator ! LocalCreateUctMessage(uctCreatedPromise)
-    Await.result(uctCreatedPromise.future, AkkaUct.PhaseTimeout)
+    val treeChecksum = Await.result(uctCreatedPromise.future, AkkaUct.PhaseTimeout)
 
     val urgentPathsSelectedPromise = Promise[Seq[NodeId]]()
     coordinator ! LocalSelectUrgentPathsMessage(
@@ -375,7 +396,7 @@ final class AkkaUct extends Benchmark {
     coordinator ! LocalDestroyUctMessage(uctDestroyedPromise)
     Await.result(uctDestroyedPromise.future, AkkaUct.PhaseTimeout)
 
-    ScenarioResult(urgentLeafIds, racingTemperatures, afterUpdateTemperature)
+    ScenarioResult(treeChecksum, urgentLeafIds, racingTemperatures, afterUpdateTemperature)
   }
 
   /**
@@ -404,6 +425,12 @@ private[actors] object AkkaUct {
    * reasonable time.
    */
   private val PhaseTimeout: FiniteDuration = Duration.create(1, TimeUnit.MINUTES)
+
+  /** The checksum of the whole tree of the topology: its node count and the sum of its IDs. */
+  def treeChecksum(topology: Topology): TreeChecksum = {
+    val nodeIds = topology.interiorNodes.keys ++ topology.leafDepths.keys
+    TreeChecksum(topology.nodeCount, nodeIds.map(nodeId => nodeId.toLong).sum)
+  }
 
   /**
    * Computes the minimum shock temperature guaranteeing that the root temperature

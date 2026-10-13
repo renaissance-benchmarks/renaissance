@@ -35,9 +35,10 @@ private[actors] object UctNodeActor {
  */
 private[actors] final class UctNodeActor(id: NodeId, plan: ExpansionPlan) extends Actor {
 
-  // Tree structure, populated during the build phase, with the leaf farthest from each
-  // child, as reported by the child.
+  // Tree structure, populated during the build phase, with the checksum of the subtree
+  // and the leaf farthest from each child, as reported by the child.
   private val children: mutable.Buffer[ActorRef] = mutable.Buffer.empty
+  private var subtreeChecksum: TreeChecksum = TreeChecksum.of(id)
   private val childFarthestLeaves = mutable.Map[ActorRef, LeafDistance]()
 
   // Children on urgent paths, populated during the urgent path selection.
@@ -65,7 +66,7 @@ private[actors] final class UctNodeActor(id: NodeId, plan: ExpansionPlan) extend
       handleCreateSubtree()
 
     case m: SubtreeCreatedMessage =>
-      handleSubtreeCreated(sender(), m.farthestLeaf)
+      handleSubtreeCreated(sender(), m.checksum, m.farthestLeaf)
 
     // --- urgent path selection ----------------------------------------------
 
@@ -124,7 +125,12 @@ private[actors] final class UctNodeActor(id: NodeId, plan: ExpansionPlan) extend
     children.foreach(child => child ! CreateSubtreeMessage)
   }
 
-  private def handleSubtreeCreated(child: ActorRef, farthestLeaf: LeafDistance): Unit = {
+  private def handleSubtreeCreated(
+    child: ActorRef,
+    childChecksum: TreeChecksum,
+    farthestLeaf: LeafDistance
+  ): Unit = {
+    subtreeChecksum = subtreeChecksum.combinedWith(childChecksum)
     childFarthestLeaves(child) = farthestLeaf
 
     pendingResponseCount -= 1
@@ -137,7 +143,7 @@ private[actors] final class UctNodeActor(id: NodeId, plan: ExpansionPlan) extend
   }
 
   private def signalSubtreeCreated(farthestLeaf: LeafDistance): Unit =
-    context.parent ! SubtreeCreatedMessage(farthestLeaf)
+    context.parent ! SubtreeCreatedMessage(subtreeChecksum, farthestLeaf)
 
   // --- urgent path selection ------------------------------------------------
 

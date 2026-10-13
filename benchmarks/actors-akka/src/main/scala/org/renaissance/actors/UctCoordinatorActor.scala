@@ -50,7 +50,7 @@ private[actors] final class UctCoordinatorActor(plan: ExpansionPlan) extends Act
 
   // Fulfilled when each phase completes. Measurements are identified by IDs assigned
   // in the order in which they are requested.
-  private var uctCreatedPromise: Promise[Unit] = _
+  private var uctCreatedPromise: Promise[TreeChecksum] = _
   private var urgentPathsSelectedPromise: Promise[Seq[NodeId]] = _
   private val measurementPromises = mutable.Map[MeasurementId, Promise[Double]]()
   private var nextMeasurementId: MeasurementId = MeasurementId.First
@@ -66,7 +66,7 @@ private[actors] final class UctCoordinatorActor(plan: ExpansionPlan) extends Act
 
     case m: SubtreeCreatedMessage =>
       treeFarthestLeaf = m.farthestLeaf
-      uctCreatedPromise.success(())
+      uctCreatedPromise.success(m.checksum)
 
     // --- urgent path selection ----------------------------------------------
 
