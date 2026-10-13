@@ -7,6 +7,7 @@ import akka.actor.Props
 import akka.actor.UnhandledMessage
 
 import java.util.Random
+import java.util.concurrent.TimeUnit
 
 import org.renaissance.Benchmark
 import org.renaissance.Benchmark.*
@@ -19,6 +20,7 @@ import org.renaissance.License
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Akka implementation of the Unbalanced Cobwebbed Tree (UCT) actor workload.
@@ -232,12 +234,12 @@ final class AkkaUct extends Benchmark {
 
     val uctCreatedPromise = Promise[Unit]()
     coordinator ! LocalCreateUctMessage(uctCreatedPromise)
-    Await.result(uctCreatedPromise.future, Duration.Inf)
+    Await.result(uctCreatedPromise.future, AkkaUct.PhaseTimeout)
 
     (1 until UctConfig.ReductionCount).foreach { _ =>
       val nominalResultPromise = Promise[Double]()
       coordinator ! LocalMeasureTemperatureMessage(nominalResultPromise)
-      Await.result(nominalResultPromise.future, Duration.Inf)
+      Await.result(nominalResultPromise.future, AkkaUct.PhaseTimeout)
     }
 
     val shockResultPromise = Promise[Double]()
@@ -245,11 +247,11 @@ final class AkkaUct extends Benchmark {
       scenario.shockTemperature,
       shockResultPromise
     )
-    val rootTemperature = Await.result(shockResultPromise.future, Duration.Inf)
+    val rootTemperature = Await.result(shockResultPromise.future, AkkaUct.PhaseTimeout)
 
     val uctDestroyedPromise = Promise[Unit]()
     coordinator ! LocalDestroyUctMessage(uctDestroyedPromise)
-    Await.result(uctDestroyedPromise.future, Duration.Inf)
+    Await.result(uctDestroyedPromise.future, AkkaUct.PhaseTimeout)
 
     ScenarioResult(rootTemperature)
   }
@@ -261,16 +263,24 @@ final class AkkaUct extends Benchmark {
   private def takeCollectedMessages(collector: ActorRef): Seq[UctMessage] = {
     val resultPromise = Promise[Seq[UctMessage]]()
     collector ! LocalTakeCollectedMessagesMessage(resultPromise)
-    Await.result(resultPromise.future, Duration.Inf)
+    Await.result(resultPromise.future, AkkaUct.PhaseTimeout)
   }
 
   override def tearDownAfterEach(c: BenchmarkContext): Unit = {
-    Await.result(actorSystem.terminate(), Duration.Inf)
+    Await.result(actorSystem.terminate(), AkkaUct.PhaseTimeout)
     actorSystem = null
   }
 }
 
 private[actors] object AkkaUct {
+
+  /**
+   * Maximum time to wait for a phase (tree creation, a measurement, tree destruction)
+   * or for the actor system to terminate. A lost message makes the benchmark fail
+   * instead of waiting forever. One minute is far longer than any phase takes in a
+   * configuration that completes an iteration in reasonable time.
+   */
+  private val PhaseTimeout: FiniteDuration = Duration.create(1, TimeUnit.MINUTES)
 
   /**
    * Computes the minimum shock temperature guaranteeing that the root temperature
