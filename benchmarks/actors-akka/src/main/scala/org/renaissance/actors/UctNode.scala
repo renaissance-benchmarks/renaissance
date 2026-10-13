@@ -28,13 +28,8 @@ private[actors] object NodeId {
  *
  * @param firstChildId node ID of the first child;
  *   children occupy firstChildId .. firstChildId+branchingFactor-1
- * @param urgentChildSlots set of 0-based child slot indices on urgent paths through this node;
- *   empty means this node is not on any urgent path
  */
-private[actors] final case class InteriorNode(
-  firstChildId: NodeId,
-  urgentChildSlots: Set[Int] = Set.empty
-) {
+private[actors] final case class InteriorNode(firstChildId: NodeId) {
 
   def childIds(childCount: Int): IndexedSeq[NodeId] =
     (0 until childCount).map(slot => firstChildId + slot)

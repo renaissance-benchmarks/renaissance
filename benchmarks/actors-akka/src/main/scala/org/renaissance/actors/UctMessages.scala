@@ -22,10 +22,81 @@ private[actors] sealed trait UctMessage
 private[actors] case object CreateSubtreeMessage extends UctMessage
 
 /**
- * Report that a subtree is fully built. A leaf sends it to its parent upon
- * [[CreateSubtreeMessage]], and an interior node once all of its children have reported.
+ * A leaf and its distance (number of edges) from some (implicit) reference node.
+ * The reference node is known in the context in which the record is used, so the
+ * instances may represent the distance from root or other interior nodes.
+ *
+ * @param leafId leaf node ID
+ * @param distance distance of the leaf from the reference node
  */
-private[actors] case object SubtreeCreatedMessage extends UctMessage
+private[actors] final case class LeafDistance(leafId: NodeId, distance: Int) {
+
+  /** The same leaf, the given number of edges farther away. */
+  def fartherBy(edgeCount: Int): LeafDistance = LeafDistance(leafId, distance + edgeCount)
+}
+
+private[actors] object LeafDistance {
+
+  /** Orders leaves by highest distance (farthest) and lowest ID first. */
+  given farthestFirst: Ordering[LeafDistance] = Ordering.by { leaf =>
+    (-leaf.distance, leaf.leafId)
+  }
+
+  /** The entry with the farthest distance as ordered by [[farthestFirst]]. */
+  def farthestOf[K](leafDistances: collection.Map[K, LeafDistance]): (K, LeafDistance) =
+    leafDistances.minBy((_, leafDistance) => leafDistance)
+}
+
+/**
+ * Report that a subtree is fully built, with the leaf farthest from its root. A leaf
+ * sends it to its parent upon [[CreateSubtreeMessage]], and an interior node once all of
+ * its children have reported.
+ */
+private[actors] final case class SubtreeCreatedMessage(farthestLeaf: LeafDistance)
+  extends UctMessage
+
+// -------------------------------------------------------------------------
+// Urgent path selection protocol
+// -------------------------------------------------------------------------
+
+/**
+ * Request for offers of the next urgent paths, which branch off the selected ones at the
+ * nodes `branchDistance` levels below the recipient. The request travels down the urgent
+ * paths selected so far. When `branchDistance` is zero, the recipient offers, for each
+ * child that is not on an urgent path, the leaf farthest from that child, if the distance
+ * of the leaf from the recipient is `leafDistanceMin` or more. The recipient replies with
+ * an [[UrgentPathOffersMessage]].
+ */
+private[actors] final case class CollectUrgentPathOffersMessage(
+  branchDistance: Int,
+  leafDistanceMin: Int,
+  offerCountMax: Int
+) extends UctMessage
+
+/**
+ * Offers of the leaves that would end the next urgent paths, collected in a subtree and
+ * sent to the parent of its root: at most `offerCountMax` of them, in the order of
+ * preference. The distance of each offered leaf is counted from the node that offered it.
+ * All offers of a round come from nodes at the same depth, so their distances compare in
+ * the same way as the depths of the offered leaves.
+ */
+private[actors] final case class UrgentPathOffersMessage(offers: Seq[LeafDistance])
+  extends UctMessage
+
+/**
+ * Selection of the urgent paths ending in the given leaves. It travels down the tree, and
+ * each node records the children through which the paths continue as urgent and passes
+ * the leaves on to them.
+ */
+private[actors] final case class SelectUrgentPathsMessage(leafIds: Seq[NodeId])
+  extends UctMessage
+
+/**
+ * Report that the urgent paths of a [[SelectUrgentPathsMessage]] are recorded in a subtree.
+ * A leaf sends it to its parent right away, and an interior node once all children it
+ * passed leaves to have reported.
+ */
+private[actors] case object UrgentPathsSelectedMessage extends UctMessage
 
 // -------------------------------------------------------------------------
 // Measurement collection protocol
@@ -99,6 +170,12 @@ private[actors] case object SubtreeDestroyedMessage extends UctMessage
 // Local use only, because most messages contain a Promise.
 
 private[actors] final case class LocalCreateUctMessage(done: Promise[Unit]) extends UctMessage
+
+private[actors] final case class LocalSelectUrgentPathsMessage(
+  pathCount: Int,
+  pathLengthFractionMin: Double,
+  result: Promise[Seq[NodeId]]
+) extends UctMessage
 
 private[actors] final case class LocalMeasureTemperatureMessage(result: Promise[Double])
   extends UctMessage

@@ -32,13 +32,16 @@ import scala.concurrent.duration.FiniteDuration
  * UCT, the interior nodes average the readings of their children while the leaves report
  * fixed values derived from the node ID.
  *
+ * When the UCT is built, the actors select a set of urgent root-to-leaf paths in rounds
+ * (see [[UctCoordinatorActor]]). The leaves ending these paths must be those selected by
+ * [[UctUrgentPathSelector]] on the topology, in the same order.
+ *
  * For each topology, the benchmark requests several measurements at once and then sends
- * an [[UrgentUpdateTemperatureMessage]] (a [[akka.dispatch.ControlMessage]]) down a set
- * of urgent root-to-leaf paths selected by [[UctUrgentPathSelector]], setting the urgent
- * leaves to a shock temperature. The priority mailbox delivers the update before any
- * measurement request still waiting in the same mailbox, so the later measurements
- * observe the updated temperatures. One more measurement, requested after the update,
- * observes all urgent leaves at the shock temperature.
+ * an [[UrgentUpdateTemperatureMessage]] (a [[akka.dispatch.ControlMessage]]) down the
+ * urgent paths, setting the urgent leaves to a shock temperature. The priority mailbox
+ * delivers the update before any measurement request still waiting in the same mailbox,
+ * so the later measurements observe the updated temperatures. One more measurement,
+ * requested after the update, observes all urgent leaves at the shock temperature.
  *
  * The expected root temperatures are computed analytically as the bottom-up average over
  * all leaves: nominal with every leaf at its initial temperature, shocked with every
@@ -49,7 +52,6 @@ import scala.concurrent.duration.FiniteDuration
  * The root temperature of the measurement requested after the update must be the shocked
  * one.
  */
-
 @Name("akka-uct")
 @Group("actors")
 @Group("concurrency")
@@ -96,22 +98,26 @@ import scala.concurrent.duration.FiniteDuration
 final class AkkaUct extends Benchmark {
 
   /**
-   * The topology together with the shock temperature injected into the urgent leaves
+   * The topology together with the leaf nodes expected to be selected for urgent paths
+   * (in the order of selection), the shock temperature injected into the urgent leaves
    * by the urgent update, and the expected root temperatures before and after the shock.
    */
   private final case class Scenario(
     topology: Topology,
+    expectedUrgentLeafIds: List[NodeId],
     shockTemperature: Double,
     expectedNominalTemperature: Double,
     expectedShockedTemperature: Double
   )
 
   /**
-   * The result of a computation performed on one topology: the root temperatures of the
+   * The result of a computation performed on one topology: the leaf nodes in which the
+   * selected urgent paths end (in the order of selection), the root temperatures of the
    * measurements racing the urgent update (in the order of the requests), and the root
    * temperature of the measurement requested after the update.
    */
   private final case class ScenarioResult(
+    urgentLeafIds: Seq[NodeId],
     racingRootTemperatures: IndexedSeq[Double],
     rootTemperatureAfterUpdate: Double
   )
@@ -141,15 +147,11 @@ final class AkkaUct extends Benchmark {
       config.urgentPathLengthFractionMin
     )
 
-    // Pre-compute one scenario per topology. The urgent leaves are used only here.
+    // Pre-compute one scenario per topology. The actors select the urgent paths themselves.
     scenarios = Array.tabulate(config.topologyCount) { i =>
       val topology = topologyGenerator.build(new Random(config.topologySeed + i))
 
-      val (annotatedInteriorNodes, urgentLeafIds) = urgentPathSelector.selectUrgentPaths(
-        topology.interiorNodes,
-        topology.branchingFactor,
-        topology.height
-      )
+      val urgentLeafIds = urgentPathSelector.selectUrgentLeaves(topology)
 
       val shockTemperature = AkkaUct.computeShockTemperature(
         topology,
@@ -167,7 +169,8 @@ final class AkkaUct extends Benchmark {
       )
 
       Scenario(
-        topology.copy(interiorNodes = annotatedInteriorNodes),
+        topology,
+        urgentLeafIds,
         shockTemperature,
         expectedNominalTemperature,
         expectedShockedTemperature
@@ -192,6 +195,7 @@ final class AkkaUct extends Benchmark {
 
     Validators.compound(
       () => validateNoUnexpectedMessages(unexpectedMessages),
+      () => validateUrgentLeaves(scenarios, results),
       () => validateRacingTemperatureRanges(scenarios, results, config.temperatureTolerance),
       () => validateRacingTemperatureOrder(scenarios, results, config.temperatureTolerance),
       () => validateUrgentUpdateShown(scenarios, results, config.temperatureTolerance),
@@ -213,6 +217,23 @@ final class AkkaUct extends Benchmark {
   ): Unit =
     scenarios.zip(results).zipWithIndex.foreach {
       case ((scenario, result), topologyIndex) => check(topologyIndex, scenario, result)
+    }
+
+  /**
+   * Checks that the actors selected urgent paths ending in the leaves selected on the
+   * topology, in the same order.
+   */
+  private def validateUrgentLeaves(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult]
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      if (result.urgentLeafIds != scenario.expectedUrgentLeafIds) {
+        throw new ValidationException(
+          s"urgent leaves for topology $topologyIndex are ${result.urgentLeafIds}" +
+            s" instead of ${scenario.expectedUrgentLeafIds}"
+        )
+      }
     }
 
   /**
@@ -305,8 +326,9 @@ final class AkkaUct extends Benchmark {
     }
 
   /**
-   * Creates the UCT of the scenario, requests all racing measurements at once followed
-   * by the urgent update and one more measurement, and destroys the UCT.
+   * Creates the UCT of the scenario, lets the actors select the urgent paths, requests all
+   * racing measurements at once followed by the urgent update and one more measurement,
+   * and destroys the UCT.
    */
   private def runScenario(
     system: ActorSystem,
@@ -320,6 +342,14 @@ final class AkkaUct extends Benchmark {
     val uctCreatedPromise = Promise[Unit]()
     coordinator ! LocalCreateUctMessage(uctCreatedPromise)
     Await.result(uctCreatedPromise.future, AkkaUct.PhaseTimeout)
+
+    val urgentPathsSelectedPromise = Promise[Seq[NodeId]]()
+    coordinator ! LocalSelectUrgentPathsMessage(
+      config.urgentPathCount,
+      config.urgentPathLengthFractionMin,
+      urgentPathsSelectedPromise
+    )
+    val urgentLeafIds = Await.result(urgentPathsSelectedPromise.future, AkkaUct.PhaseTimeout)
 
     val racingPromises = IndexedSeq.fill(config.measurementCount)(Promise[Double]())
     racingPromises.foreach { promise =>
@@ -343,7 +373,7 @@ final class AkkaUct extends Benchmark {
     coordinator ! LocalDestroyUctMessage(uctDestroyedPromise)
     Await.result(uctDestroyedPromise.future, AkkaUct.PhaseTimeout)
 
-    ScenarioResult(racingTemperatures, afterUpdateTemperature)
+    ScenarioResult(urgentLeafIds, racingTemperatures, afterUpdateTemperature)
   }
 
   /**
@@ -365,10 +395,11 @@ final class AkkaUct extends Benchmark {
 private[actors] object AkkaUct {
 
   /**
-   * Maximum time to wait for a phase (tree creation, a measurement, tree destruction)
-   * or for the actor system to terminate. A lost message makes the benchmark fail
-   * instead of waiting forever. One minute is far longer than any phase takes in a
-   * configuration that completes an iteration in reasonable time.
+   * Maximum time to wait for a phase (tree creation, urgent path selection, a
+   * measurement, tree destruction) or for the actor system to terminate. A lost
+   * message makes the benchmark fail instead of waiting forever. One minute is far
+   * longer than any phase takes in a configuration that completes an iteration in
+   * reasonable time.
    */
   private val PhaseTimeout: FiniteDuration = Duration.create(1, TimeUnit.MINUTES)
 

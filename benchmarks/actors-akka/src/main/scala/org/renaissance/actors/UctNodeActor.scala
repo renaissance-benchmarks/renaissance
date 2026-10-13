@@ -35,11 +35,21 @@ private[actors] object UctNodeActor {
  */
 private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends Actor {
 
-  // Tree structure, populated during the build phase, with the children on urgent paths.
+  // Tree structure, populated during the build phase, with the leaf farthest from each
+  // child, as reported by the child.
   private val children: mutable.Buffer[ActorRef] = mutable.Buffer.empty
+  private val childFarthestLeaves = mutable.Map[ActorRef, LeafDistance]()
+
+  // Children on urgent paths, populated during the urgent path selection.
   private val urgentChildren = mutable.Set[ActorRef]()
 
-  // Pending-response counter, reused across the build and teardown phases.
+  // Offers collected in the current round of the urgent path selection, with the child
+  // through which each offered leaf is reached.
+  private val urgentPathOffers = mutable.Buffer[LeafDistance]()
+  private val urgentPathOfferChildren = mutable.Map[NodeId, ActorRef]()
+  private var urgentPathOfferCountMax: Int = 0
+
+  // Pending-response counter, reused across the build, selection, and teardown phases.
   private var pendingResponseCount: Int = 0
 
   // Temperature state
@@ -54,8 +64,22 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
     case CreateSubtreeMessage =>
       handleCreateSubtree()
 
-    case SubtreeCreatedMessage =>
-      handleSubtreeCreated()
+    case m: SubtreeCreatedMessage =>
+      handleSubtreeCreated(sender(), m.farthestLeaf)
+
+    // --- urgent path selection ----------------------------------------------
+
+    case m: CollectUrgentPathOffersMessage =>
+      handleCollectUrgentPathOffers(m.branchDistance, m.leafDistanceMin, m.offerCountMax)
+
+    case m: UrgentPathOffersMessage =>
+      handleUrgentPathOffers(sender(), m.offers)
+
+    case m: SelectUrgentPathsMessage =>
+      handleSelectUrgentPaths(m.leafIds)
+
+    case UrgentPathsSelectedMessage =>
+      handleUrgentPathsSelected()
 
     // --- measurement collection ---------------------------------------------
 
@@ -82,7 +106,7 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
   private def handleCreateSubtree(): Unit =
     topology.interiorNodes.get(id) match {
       case Some(node) => createSubtree(node)
-      case None => signalSubtreeCreated()
+      case None => signalSubtreeCreated(LeafDistance(id, distance = 0))
     }
 
   private def createSubtree(node: InteriorNode): Unit = {
@@ -95,21 +119,119 @@ private[actors] final class UctNodeActor(id: NodeId, topology: Topology) extends
     children ++= node.childIds(topology.branchingFactor).map { childId =>
       context.actorOf(UctNodeActor.props(childId, topology))
     }
-    urgentChildren ++= node.urgentChildSlots.map(children)
 
     pendingResponseCount = children.length
     children.foreach(child => child ! CreateSubtreeMessage)
   }
 
-  private def handleSubtreeCreated(): Unit = {
+  private def handleSubtreeCreated(child: ActorRef, farthestLeaf: LeafDistance): Unit = {
+    childFarthestLeaves(child) = farthestLeaf
+
     pendingResponseCount -= 1
     if (pendingResponseCount == 0) {
-      signalSubtreeCreated()
+      // A child measures the leaf distances from itself, so the leaf is
+      // one edge farther when measured from this node.
+      val (_, farthestLeafFromChild) = LeafDistance.farthestOf(childFarthestLeaves)
+      signalSubtreeCreated(farthestLeafFromChild.fartherBy(1))
     }
   }
 
-  private def signalSubtreeCreated(): Unit =
-    context.parent ! SubtreeCreatedMessage
+  private def signalSubtreeCreated(farthestLeaf: LeafDistance): Unit =
+    context.parent ! SubtreeCreatedMessage(farthestLeaf)
+
+  // --- urgent path selection ------------------------------------------------
+
+  private def handleCollectUrgentPathOffers(
+    branchDistance: Int,
+    leafDistanceMin: Int,
+    offerCountMax: Int
+  ): Unit = {
+    urgentPathOffers.clear()
+    urgentPathOfferChildren.clear()
+    urgentPathOfferCountMax = offerCountMax
+
+    if (branchDistance == 0) {
+      offerChildFarthestLeaves(leafDistanceMin)
+      signalUrgentPathOffers()
+    } else if (urgentChildren.isEmpty) {
+      // A leaf ending an urgent path above the branching nodes has nothing to offer.
+      signalUrgentPathOffers()
+    } else {
+      pendingResponseCount = urgentChildren.size
+      urgentChildren.foreach { urgentChild =>
+        urgentChild ! CollectUrgentPathOffersMessage(
+          branchDistance - 1,
+          leafDistanceMin - 1,
+          offerCountMax
+        )
+      }
+    }
+  }
+
+  private def offerChildFarthestLeaves(leafDistanceMin: Int): Unit =
+    childFarthestLeaves.foreach { (child, farthestLeaf) =>
+      // The offer is measured from this node, one edge above the child.
+      val offer = farthestLeaf.fartherBy(1)
+      if (!urgentChildren.contains(child) && offer.distance >= leafDistanceMin) {
+        addUrgentPathOffer(child, offer)
+      }
+    }
+
+  private def handleUrgentPathOffers(child: ActorRef, offers: Seq[LeafDistance]): Unit = {
+    offers.foreach(offer => addUrgentPathOffer(child, offer))
+
+    pendingResponseCount -= 1
+    if (pendingResponseCount == 0) {
+      signalUrgentPathOffers()
+    }
+  }
+
+  private def addUrgentPathOffer(child: ActorRef, offer: LeafDistance): Unit = {
+    urgentPathOffers += offer
+    urgentPathOfferChildren(offer.leafId) = child
+  }
+
+  private def signalUrgentPathOffers(): Unit =
+    context.parent ! UrgentPathOffersMessage(
+      urgentPathOffers.sorted.take(urgentPathOfferCountMax).toSeq
+    )
+
+  /**
+   * Forwards each selected leaf to the child on its path. At the branching node that
+   * offered the leaf in the current round, that child is recorded in
+   * [[urgentPathOfferChildren]]; at nodes below the branching node, the offered leaf
+   * is always reached through the child with the farthest leaf.
+   */
+  private def handleSelectUrgentPaths(leafIds: Seq[NodeId]): Unit = {
+    if (children.isEmpty) {
+      signalUrgentPathsSelected()
+    } else {
+      val leafIdsByChild = leafIds.groupBy { leafId =>
+        urgentPathOfferChildren.getOrElse(leafId, farthestLeafChild)
+      }
+
+      pendingResponseCount = leafIdsByChild.size
+      leafIdsByChild.foreach { (child, childLeafIds) =>
+        urgentChildren += child
+        child ! SelectUrgentPathsMessage(childLeafIds)
+      }
+    }
+  }
+
+  private def farthestLeafChild: ActorRef = {
+    val (child, _) = LeafDistance.farthestOf(childFarthestLeaves)
+    child
+  }
+
+  private def handleUrgentPathsSelected(): Unit = {
+    pendingResponseCount -= 1
+    if (pendingResponseCount == 0) {
+      signalUrgentPathsSelected()
+    }
+  }
+
+  private def signalUrgentPathsSelected(): Unit =
+    context.parent ! UrgentPathsSelectedMessage
 
   // --- measurement collection -----------------------------------------------
 

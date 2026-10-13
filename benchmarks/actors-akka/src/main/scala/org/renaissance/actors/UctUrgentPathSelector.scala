@@ -5,30 +5,32 @@ import scala.collection.mutable
 /**
  * Greedy urgent-path selection strategy.
  *
- * Selects `urgentPathCount` deep leaves that maximize pairwise path divergence —
- * i.e. their paths from the root share the shortest possible common prefix.
+ * Selects `pathCount` deep leaves that maximize pairwise path divergence —
+ * i.e. their paths from the root share the shortest possible common prefix. The actors
+ * make the same selection among themselves (see [[UctCoordinatorActor]]); the selection
+ * made here provides the expected result.
  *
- * Only leaves at depth >= maxHeight * depthThreshold are considered; if none
- * qualify, the threshold is ignored and all leaves are eligible.
+ * Only leaves at depth >= height * pathLengthFractionMin are considered (see
+ * [[UctUrgentPathSelector.pathLengthMinOf]]).
  *
  * Selection algorithm:
  *   - Seed with the globally deepest leaf.
  *   - Each subsequent pick is the candidate that minimizes its maximum LCA depth
  *     with all already-selected paths (minimax divergence).
+ *   - Ties are broken by depth (deeper first) and by nodeId.
  *
- * @param urgentPathCount  how many urgent leaves to select
- * @param urgentLeafDepthFractionMin   fraction of maxDepth below which leaves are excluded
+ * @param pathCount  how many leaves to select
+ * @param pathLengthFractionMin fraction of the tree height below which paths are excluded
  */
 private[actors] final class UctUrgentPathSelector(
-  urgentPathCount: Int,
-  urgentLeafDepthFractionMin: Double
+  pathCount: Int,
+  pathLengthFractionMin: Double
 ) {
 
-  def selectUrgentPaths(
-    interiorNodes: Map[NodeId, InteriorNode],
-    branchingFactor: Int,
-    maxDepth: Int
-  ): (Map[NodeId, InteriorNode], List[NodeId]) = {
+  /** Returns the leaves that end the urgent paths, in the order of selection. */
+  def selectUrgentLeaves(topology: Topology): List[NodeId] = {
+    val interiorNodes = topology.interiorNodes
+    val branchingFactor = topology.branchingFactor
 
     // Map [nodeId, depth of node]
     val depthOf = buildDepthMap(interiorNodes, branchingFactor)
@@ -42,12 +44,12 @@ private[actors] final class UctUrgentPathSelector(
       pathCache.getOrElseUpdate(nodeId, buildRootPath(nodeId, parentOf))
 
     // candidates are only leaves
-    val candidates = collectCandidates(depthOf, interiorNodes, maxDepth)
-    val (selectedLeaves, selectedPaths) = greedySelectLeaves(candidates, rootPath)
-
-    val annotatedInteriorNodes =
-      annotateUrgentChildSlots(interiorNodes, selectedPaths, branchingFactor)
-    (annotatedInteriorNodes, selectedLeaves)
+    val pathLengthMin = UctUrgentPathSelector.pathLengthMinOf(
+      topology.height,
+      pathLengthFractionMin
+    )
+    val candidates = collectCandidates(depthOf, interiorNodes, pathLengthMin)
+    greedySelectLeaves(candidates, rootPath)
   }
 
   /**
@@ -99,19 +101,16 @@ private[actors] final class UctUrgentPathSelector(
    * Step 3: Collect leaf candidates filtered by depth threshold, sorted deepest first.
    *
    * A leaf is any node present in depthOf but absent from interiorNodes (no children).
-   * Candidates below minDepth are excluded to ensure urgent paths are non-trivial;
-   * if no candidates survive the filter, the threshold is relaxed and all leaves qualify.
+   * Candidates below pathLengthMin are excluded to ensure urgent paths are non-trivial.
    * Ties in depth are broken by nodeId for full determinism.
    */
   private def collectCandidates(
     depthOf: mutable.Map[NodeId, Int],
     interiorNodes: Map[NodeId, InteriorNode],
-    maxDepth: Int
+    pathLengthMin: Int
   ): Array[NodeId] = {
     val allLeafIds = depthOf.keys.filter(nodeId => !interiorNodes.contains(nodeId)).toArray
-    val minDepth = math.max(1, math.ceil(maxDepth * urgentLeafDepthFractionMin).toInt)
-    val filtered = allLeafIds.filter(nodeId => depthOf(nodeId) >= minDepth)
-    val candidates = if (filtered.nonEmpty) filtered else allLeafIds
+    val candidates = allLeafIds.filter(nodeId => depthOf(nodeId) >= pathLengthMin)
     candidates.sortBy(nodeId => (-depthOf(nodeId), nodeId))
   }
 
@@ -142,14 +141,14 @@ private[actors] final class UctUrgentPathSelector(
    * LCA depth with all already-selected paths (worst-case overlap), then picks
    * the candidate with the lowest such score (minimize the worst overlap).
    *
-   * Returns parallel buffers of selected leaf IDs and their root-first paths.
+   * Returns the selected leaf IDs in the order of selection.
    */
   private def greedySelectLeaves(
     sortedCandidates: Array[NodeId],
     rootPath: NodeId => Array[NodeId]
-  ): (List[NodeId], List[Array[NodeId]]) = {
+  ): List[NodeId] = {
 
-    val selectCount = math.min(urgentPathCount, sortedCandidates.length)
+    val selectCount = math.min(pathCount, sortedCandidates.length)
     val selected = mutable.ArrayBuffer[NodeId]()
     val selectedPaths = mutable.ArrayBuffer[Array[NodeId]]()
     val available = mutable.ArrayBuffer(sortedCandidates: _*)
@@ -188,7 +187,7 @@ private[actors] final class UctUrgentPathSelector(
       selectedPaths += rootPath(pickedLeaf)
     }
 
-    (selected.toList, selectedPaths.toList)
+    selected.toList
   }
 
   /**
@@ -208,35 +207,15 @@ private[actors] final class UctUrgentPathSelector(
     }
     lcaDepth
   }
+}
+
+private[actors] object UctUrgentPathSelector {
 
   /**
-   * Step 6: For every selected urgent leaf, walk its root-first path and mark
-   * the child direction at each node as urgent; returns a new map with the
-   * annotations applied.
-   *
-   * The position of a child among the children of its parent is the 0-based slot index
-   * that actors use to identify which child is urgent.
+   * Minimum length of an urgent path in a tree of the given height: the given fraction of
+   * the height, rounded up, but at least 1 and at most the height, so that the longest
+   * paths always qualify.
    */
-  private def annotateUrgentChildSlots(
-    interiorNodes: Map[NodeId, InteriorNode],
-    selectedPaths: List[Array[NodeId]],
-    branchingFactor: Int
-  ): Map[NodeId, InteriorNode] = {
-    var nodes = interiorNodes
-    for (path <- selectedPaths) {
-      var pathIndex = 0
-      while (pathIndex < path.length - 1) {
-        val nodeId = path(pathIndex)
-        val childId = path(pathIndex + 1)
-        val node = nodes(nodeId)
-        val childSlot = node.childIds(branchingFactor).indexOf(childId)
-        nodes = nodes.updated(
-          nodeId,
-          node.copy(urgentChildSlots = node.urgentChildSlots + childSlot)
-        )
-        pathIndex += 1
-      }
-    }
-    nodes
-  }
+  def pathLengthMinOf(height: Int, pathLengthFractionMin: Double): Int =
+    math.ceil(height * pathLengthFractionMin).toInt.max(1).min(height)
 }
