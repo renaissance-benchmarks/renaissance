@@ -10,6 +10,7 @@ import org.renaissance.Benchmark.*
 import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.ValidationException
+import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
 
 import scala.concurrent.Await
@@ -79,30 +80,35 @@ import scala.concurrent.duration.Duration
 @Configuration(name = "jmh", settings = Array("topology_count = 1"))
 final class AkkaUct extends Benchmark {
 
+  /**
+   * The topology together with the shock temperature injected into the urgent leaves
+   * by the urgent update, and the expected root temperatures before and after the shock.
+   */
+  private final case class Scenario(
+    topology: Topology,
+    shockTemperature: Double,
+    expectedNominalTemperature: Double,
+    expectedShockedTemperature: Double
+  )
+
+  /**
+   * The result of a computation performed on one topology: the root temperature of the
+   * reduction during which the urgent leaves are updated.
+   */
+  private final case class ScenarioResult(rootTemperature: Double)
+
   // Priority mailbox (prioritizing urgent nodes)
   private val systemFactory = new AkkaSystemFactory(
     "akka.dispatch.UnboundedControlAwareMailbox"
   )
 
   private var actorSystem: ActorSystem = _
+
   private var config: UctConfig = _
-  private var topologies: Array[Topology] = _
-  private var urgentLeaves: Array[List[NodeId]] = _
-  private var shockTemperatures: Array[Double] = _
-  private var expectedShockedTemperatures: Array[Double] = _
-  private var expectedNominalTemperatures: Array[Double] = _
+  private var scenarios: Array[Scenario] = _
 
   override def setUpBeforeAll(c: BenchmarkContext): Unit = {
     config = UctConfig.fromContext(c)
-    val topologyCount = config.topologyCount
-
-    // Pre-compute one topology per iteration.
-    // Urgent leaves are kept separately for validation — never passed to actors.
-    topologies = new Array[Topology](topologyCount)
-    urgentLeaves = new Array[List[NodeId]](topologyCount)
-    shockTemperatures = new Array[Double](topologyCount)
-    expectedShockedTemperatures = new Array[Double](topologyCount)
-    expectedNominalTemperatures = new Array[Double](topologyCount)
 
     val topologyGenerator = new UctGenerator(config.nodeCountMax, config.branchingFactor)
     val urgentPathSelector = new UctUrgentPathSelector(
@@ -110,7 +116,8 @@ final class AkkaUct extends Benchmark {
       config.urgentPathLengthFractionMin
     )
 
-    for (i <- 0 until topologyCount) {
+    // Pre-compute one scenario per topology. The urgent leaves are used only here.
+    scenarios = Array.tabulate(config.topologyCount) { i =>
       val topology = topologyGenerator.build(new Random(config.topologySeed + i))
 
       val (annotatedInteriorNodes, urgentLeafIds) = urgentPathSelector.selectUrgentPaths(
@@ -119,26 +126,27 @@ final class AkkaUct extends Benchmark {
         topology.height
       )
 
-      topologies(i) = topology.copy(interiorNodes = annotatedInteriorNodes)
-      urgentLeaves(i) = urgentLeafIds
+      val shockTemperature = AkkaUct.computeShockTemperature(
+        topology,
+        urgentLeafIds,
+        config.rootShockMargin
+      )
 
-      if (urgentLeafIds.nonEmpty) {
-        val shockTemperature = AkkaUct.computeShockTemperature(
-          topology,
-          urgentLeafIds,
-          config.rootShockMargin
-        )
-        shockTemperatures(i) = shockTemperature
+      val expectedNominalTemperature = AkkaUct.nominalRootTemperature(topology)
+      val expectedShockedTemperature =
+        AkkaUct.shockedRootTemperature(topology, urgentLeafIds.toSet, shockTemperature)
 
-        expectedNominalTemperatures(i) = AkkaUct.nominalRootTemperature(topology)
-        expectedShockedTemperatures(i) =
-          AkkaUct.shockedRootTemperature(topology, urgentLeafIds.toSet, shockTemperature)
+      println(
+        s"[topology $i] nodes=${topology.nodeCount} levels=${topology.height + 1}" +
+          s" urgentLeafIds=$urgentLeafIds"
+      )
 
-        println(
-          s"[topology $i] nodes=${topology.nodeCount} levels=${topology.height + 1}" +
-            s" urgentLeafIds=$urgentLeafIds"
-        )
-      }
+      Scenario(
+        topology.copy(interiorNodes = annotatedInteriorNodes),
+        shockTemperature,
+        expectedNominalTemperature,
+        expectedShockedTemperature
+      )
     }
   }
 
@@ -147,46 +155,62 @@ final class AkkaUct extends Benchmark {
   }
 
   override def run(c: BenchmarkContext): BenchmarkResult = {
-    val actualTemperatures = new Array[Double](config.topologyCount)
-
-    for (i <- 0 until config.topologyCount) {
-      actualTemperatures(i) = computeTopologyTemperature(topologies(i), shockTemperatures(i))
+    val results = scenarios.map { scenario =>
+      runScenario(actorSystem, scenario)
     }
 
-    () => {
-      for (i <- 0 until config.topologyCount) {
-        val actual = actualTemperatures(i)
-        val lowerBound = expectedNominalTemperatures(i) - config.temperatureTolerance
-        val upperBound = expectedShockedTemperatures(i) + config.temperatureTolerance
-
-        val temperatureWithinRange = lowerBound < actual && actual < upperBound
-        if (!temperatureWithinRange) {
-          throw new ValidationException(
-            s"temperature for topology $i not in range ($lowerBound, $upperBound): $actual"
-          )
-        }
-      }
-    }
+    Validators.compound(() =>
+      validateRootTemperatures(scenarios, results, config.temperatureTolerance)
+    )
   }
 
-  private def computeTopologyTemperature(
-    topology: Topology,
-    shockTemperature: Double
-  ): Double = {
+  /** Applies the check to the scenario and the result of each topology. */
+  private def forEachTopology(scenarios: Array[Scenario], results: Array[ScenarioResult])(
+    check: (Int, Scenario, ScenarioResult) => Unit
+  ): Unit =
+    scenarios.zip(results).zipWithIndex.foreach {
+      case ((scenario, result), topologyIndex) => check(topologyIndex, scenario, result)
+    }
+
+  /**
+   * Checks that the root temperature of the reduction with the urgent update lies between
+   * the nominal and the shocked temperature. The tolerance absorbs floating-point
+   * differences, which arise because nodes add up the readings of their children in the
+   * order of arrival.
+   */
+  private def validateRootTemperatures(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      val lowerBound = scenario.expectedNominalTemperature - tolerance
+      val upperBound = scenario.expectedShockedTemperature + tolerance
+
+      val temperature = result.rootTemperature
+      if (temperature <= lowerBound || temperature >= upperBound) {
+        throw new ValidationException(
+          s"temperature for topology $topologyIndex not in range" +
+            s" ($lowerBound, $upperBound): $temperature"
+        )
+      }
+    }
+
+  /** Creates the UCT of the scenario, takes the reductions, and destroys the UCT. */
+  private def runScenario(system: ActorSystem, scenario: Scenario): ScenarioResult = {
     val resultPromise = Promise[Double]()
 
-    actorSystem.actorOf(
-      Props(new UctRootActor(topology, shockTemperature, resultPromise))
+    system.actorOf(
+      Props(new UctRootActor(scenario.topology, scenario.shockTemperature, resultPromise))
     ) ! GenerateTreeMessage
 
-    Await.result(resultPromise.future, Duration.Inf)
+    ScenarioResult(Await.result(resultPromise.future, Duration.Inf))
   }
 
   override def tearDownAfterEach(c: BenchmarkContext): Unit = {
     Await.result(actorSystem.terminate(), Duration.Inf)
     actorSystem = null
   }
-
 }
 
 private[actors] object AkkaUct {
