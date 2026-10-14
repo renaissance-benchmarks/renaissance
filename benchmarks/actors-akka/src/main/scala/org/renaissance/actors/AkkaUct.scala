@@ -156,6 +156,11 @@ final class AkkaUct extends Benchmark {
       config.urgentPathLengthFractionMin
     )
 
+    println(
+      s"Generating ${config.topologyCount} topologies of up to ${config.nodeCountMax} nodes," +
+        s" each with up to ${config.urgentPathCount} urgent paths..."
+    )
+
     // Pre-compute one scenario per topology. The topology is used only here; actors
     // receive only the expansion plan and select the urgent paths themselves.
     scenarios = Array.tabulate(config.topologyCount) { i =>
@@ -173,7 +178,7 @@ final class AkkaUct extends Benchmark {
       val expectedShockedTemperature =
         AkkaUct.shockedRootTemperature(topology, urgentLeafIds.toSet, shockTemperature)
 
-      println(
+      AkkaUct.diagnostic(
         s"[topology $i] nodes=${topology.nodeCount} levels=${topology.height + 1}" +
           s" urgentLeafIds=$urgentLeafIds"
       )
@@ -365,10 +370,12 @@ final class AkkaUct extends Benchmark {
       Props(new UctCoordinatorActor(scenario.expansionPlan))
     )
 
+    val treeConstructionStart = AkkaUct.diagnosticTime()
     val uctCreatedPromise = Promise[TreeChecksum]()
     coordinator ! LocalCreateUctMessage(uctCreatedPromise)
     val treeChecksum = Await.result(uctCreatedPromise.future, AkkaUct.PhaseTimeout)
 
+    val urgentPathSelectionStart = AkkaUct.diagnosticTime()
     val urgentPathsSelectedPromise = Promise[Seq[NodeId]]()
     coordinator ! LocalSelectUrgentPathsMessage(
       config.urgentPathCount,
@@ -377,6 +384,7 @@ final class AkkaUct extends Benchmark {
     )
     val urgentLeafIds = Await.result(urgentPathsSelectedPromise.future, AkkaUct.PhaseTimeout)
 
+    val measurementsStart = AkkaUct.diagnosticTime()
     val racingPromises = IndexedSeq.fill(config.measurementCount)(Promise[Double]())
     racingPromises.foreach { promise =>
       coordinator ! LocalMeasureTemperatureMessage(promise)
@@ -395,9 +403,18 @@ final class AkkaUct extends Benchmark {
     }
     val afterUpdateTemperature = Await.result(afterUpdatePromise.future, AkkaUct.PhaseTimeout)
 
+    val teardownStart = AkkaUct.diagnosticTime()
     val uctDestroyedPromise = Promise[Unit]()
     coordinator ! LocalDestroyUctMessage(uctDestroyedPromise)
     Await.result(uctDestroyedPromise.future, AkkaUct.PhaseTimeout)
+    val teardownEnd = AkkaUct.diagnosticTime()
+
+    AkkaUct.diagnostic(
+      f"phases: tree construction ${(urgentPathSelectionStart - treeConstructionStart) / 1e6}%.1f ms," +
+        f" urgent path selection ${(measurementsStart - urgentPathSelectionStart) / 1e6}%.1f ms," +
+        f" measurements ${(teardownStart - measurementsStart) / 1e6}%.1f ms," +
+        f" teardown ${(teardownEnd - teardownStart) / 1e6}%.1f ms"
+    )
 
     ScenarioResult(treeChecksum, urgentLeafIds, racingTemperatures, afterUpdateTemperature)
   }
@@ -416,6 +433,7 @@ final class AkkaUct extends Benchmark {
     Await.result(actorSystem.terminate(), AkkaUct.PhaseTimeout)
     actorSystem = null
   }
+
 }
 
 private[actors] object AkkaUct {
@@ -428,6 +446,21 @@ private[actors] object AkkaUct {
    * reasonable time.
    */
   private val PhaseTimeout: FiniteDuration = Duration.create(1, TimeUnit.MINUTES)
+
+  /**
+   * Enables diagnostic output: the generated topologies, and the duration of each phase for
+   * every topology. As an inline constant, it makes the compiler leave out the diagnostic
+   * code entirely when diagnostics are disabled.
+   */
+  inline private val DiagnosticsEnabled = false
+
+  /** Prints the message if diagnostics are enabled; otherwise, the message is not built. */
+  inline private def diagnostic(inline message: String): Unit =
+    inline if (DiagnosticsEnabled) println(message)
+
+  /** The current time in nanoseconds if diagnostics are enabled, and zero otherwise. */
+  inline private def diagnosticTime(): Long =
+    inline if (DiagnosticsEnabled) System.nanoTime() else 0L
 
   /** The checksum of the whole tree of the topology: its node count and the sum of its IDs. */
   def treeChecksum(topology: Topology): TreeChecksum = {
