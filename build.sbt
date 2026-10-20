@@ -180,8 +180,8 @@ val jnaVersion = "5.15.0"
 val nettyTomcatNativeVersion = "2.0.69.Final"
 val nettyVersion = "4.1.114.Final"
 val parquetVersion = "1.14.3"
-val ktorVersion = "2.3.8"
-val logbackVersion = "1.4.11"
+val ktorVersion = "2.3.13"
+val logbackVersion = "1.6.5"
 val scalaCollectionCompatVersion = "2.12.0"
 val scalaParallelCollectionsVersion = "1.0.4"
 val scalaParserCombinatorsVersion = "2.4.0"
@@ -562,7 +562,7 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
     commonSettingsNoScala,
     kotlinLib("stdlib"),
     kotlinPlugin("serialization-compiler-plugin-embeddable"),
-    kotlinVersion := "2.1.20",
+    kotlinVersion := "2.4.21",
     kotlincJvmTarget := "11",
     libraryDependencies ++= Seq(
       "io.ktor" % "ktor-server-core-jvm" % ktorVersion,
