@@ -104,10 +104,7 @@ final class AkkaUct extends Benchmark {
 
   import AkkaUct.{Scenario, ScenarioResult}
 
-  // Priority mailbox (prioritizing control messages over regular messages)
-  private val systemFactory = new AkkaSystemFactory(
-    "akka.dispatch.UnboundedControlAwareMailbox"
-  )
+  private val systemFactory = new AkkaSystemFactory(AkkaUct.MailboxType)
 
   private var actorSystem: ActorSystem = _
 
@@ -278,6 +275,13 @@ final class AkkaUct extends Benchmark {
 }
 
 private[actors] object AkkaUct {
+
+  /**
+   * Mailbox type of all actors: a priority mailbox, which delivers control messages,
+   * such as [[UrgentUpdateTemperatureMessage]], before regular messages. With an ordinary
+   * mailbox, the urgent update could not overtake the measurement requests.
+   */
+  val MailboxType: String = "akka.dispatch.UnboundedControlAwareMailbox"
 
   /**
    * The expansion plan of a topology together with the expected tree checksum, the
