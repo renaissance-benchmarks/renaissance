@@ -1,16 +1,11 @@
 package org.renaissance.kotlin.ktor.server
 
 import io.ktor.websocket.*
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import org.renaissance.kotlin.ktor.common.Chat
 import org.renaissance.kotlin.ktor.common.DirectMessageChat
 import org.renaissance.kotlin.ktor.common.Message
 import org.renaissance.kotlin.ktor.common.User
 import org.renaissance.kotlin.ktor.common.getRandomDigits
-import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
@@ -190,30 +185,6 @@ class ChatServer(initialChatCount: Int, initialSeed: Long) {
   private suspend fun Chat.broadcast(message: String) {
     users.asSequence().mapNotNull { user -> userSockets[user.id] }.forEach { sockets ->
       sockets.sendToEach(Frame.Text(message))
-    }
-  }
-
-  /**
-   * Sends a [frame] to every socket in [this] list. Skips over sockets that are
-   * already closed ([ClosedSendChannelException]) or broken ([IOException]), but
-   * does not close them (it did not open them). Anything else (a bug, or our own
-   * cancellation) is left to propagate. Cancellations need to be handled with care,
-   * because we may get a [CancellationException] when a different coroutine cancels
-   * the [WebSocketSession] (dropping buffered outgoing messages). That is also
-   * skipped, but only if it did not come from our own coroutine being cancelled.
-   */
-  private suspend fun List<WebSocketSession>.sendToEach(frame: Frame) {
-    forEach { session ->
-      try {
-        session.send(frame.copy())
-      } catch (_: ClosedSendChannelException) {
-        // already gone; nothing to do here
-      } catch (_: IOException) {
-        // transport broken; nothing to do here
-      } catch (t: CancellationException) {
-        if (!currentCoroutineContext().isActive) throw t
-        // not our cancellation; nothing to do here
-      }
     }
   }
 
