@@ -102,34 +102,7 @@ import scala.concurrent.duration.FiniteDuration
 @Configuration(name = "jmh", settings = Array("node_count_max = 40000"))
 final class AkkaUct extends Benchmark {
 
-  /**
-   * The expansion plan of a topology together with the expected tree checksum, the
-   * leaf nodes expected to be selected for urgent paths (in the order of selection),
-   * the shock temperature injected into the urgent leaves by the urgent update,
-   * and the expected root temperatures before and after the shock.
-   */
-  private final case class Scenario(
-    expansionPlan: ExpansionPlan,
-    expectedTreeChecksum: TreeChecksum,
-    expectedUrgentLeafIds: List[NodeId],
-    shockTemperature: Double,
-    expectedNominalTemperature: Double,
-    expectedShockedTemperature: Double
-  )
-
-  /**
-   * The result of a computation performed on one topology: the tree checksum reported
-   * after construction, the leaf nodes in which the selected urgent paths end (in the
-   * order of selection), the root temperatures of the measurements racing the urgent
-   * update (in the order of the requests), and the root temperature of the measurement
-   * requested after the update.
-   */
-  private final case class ScenarioResult(
-    treeChecksum: TreeChecksum,
-    urgentLeafIds: Seq[NodeId],
-    racingRootTemperatures: IndexedSeq[Double],
-    rootTemperatureAfterUpdate: Double
-  )
+  import AkkaUct.{Scenario, ScenarioResult}
 
   // Priority mailbox (prioritizing control messages over regular messages)
   private val systemFactory = new AkkaSystemFactory(
@@ -210,151 +183,19 @@ final class AkkaUct extends Benchmark {
     val unexpectedMessages = takeCollectedMessages(collector)
 
     Validators.compound(
-      () => validateNoUnexpectedMessages(unexpectedMessages),
-      () => validateTreeChecksums(scenarios, results),
-      () => validateUrgentLeaves(scenarios, results),
-      () => validateRacingTemperatureRanges(scenarios, results, config.temperatureTolerance),
-      () => validateRacingTemperatureOrder(scenarios, results, config.temperatureTolerance),
-      () => validateUrgentUpdateShown(scenarios, results, config.temperatureTolerance),
-      () => validateTemperaturesAfterUpdate(scenarios, results, config.temperatureTolerance)
+      () => AkkaUct.validateNoUnexpectedMessages(unexpectedMessages),
+      () => AkkaUct.validateTreeChecksums(scenarios, results),
+      () => AkkaUct.validateUrgentLeaves(scenarios, results),
+      () =>
+        AkkaUct
+          .validateRacingTemperatureRanges(scenarios, results, config.temperatureTolerance),
+      () =>
+        AkkaUct.validateRacingTemperatureOrder(scenarios, results, config.temperatureTolerance),
+      () => AkkaUct.validateUrgentUpdateShown(scenarios, results, config.temperatureTolerance),
+      () =>
+        AkkaUct.validateTemperaturesAfterUpdate(scenarios, results, config.temperatureTolerance)
     )
   }
-
-  /** Checks that no benchmark message ended up as a dead letter or went unhandled. */
-  private def validateNoUnexpectedMessages(messages: Seq[UctMessage]): Unit =
-    if (messages.nonEmpty) {
-      throw new ValidationException(
-        s"${messages.size} unexpected messages, the first being ${messages.head}"
-      )
-    }
-
-  /** Applies the check to the scenario and the result of each topology. */
-  private def forEachTopology(scenarios: Array[Scenario], results: Array[ScenarioResult])(
-    check: (Int, Scenario, ScenarioResult) => Unit
-  ): Unit =
-    scenarios.zip(results).zipWithIndex.foreach {
-      case ((scenario, result), topologyIndex) => check(topologyIndex, scenario, result)
-    }
-
-  /** Checks that the actors built a tree with the checksum of the topology. */
-  private def validateTreeChecksums(
-    scenarios: Array[Scenario],
-    results: Array[ScenarioResult]
-  ): Unit =
-    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
-      if (result.treeChecksum != scenario.expectedTreeChecksum) {
-        throw new ValidationException(
-          s"tree for topology $topologyIndex has ${result.treeChecksum}" +
-            s" instead of ${scenario.expectedTreeChecksum}"
-        )
-      }
-    }
-
-  /**
-   * Checks that the actors selected urgent paths ending in the leaves selected on the
-   * topology, in the same order.
-   */
-  private def validateUrgentLeaves(
-    scenarios: Array[Scenario],
-    results: Array[ScenarioResult]
-  ): Unit =
-    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
-      if (result.urgentLeafIds != scenario.expectedUrgentLeafIds) {
-        throw new ValidationException(
-          s"urgent leaves for topology $topologyIndex are ${result.urgentLeafIds}" +
-            s" instead of ${scenario.expectedUrgentLeafIds}"
-        )
-      }
-    }
-
-  /**
-   * Checks that the root temperatures of the measurements racing the urgent update lie
-   * between the nominal and the shocked temperature. The tolerance absorbs floating-point
-   * differences, which arise because nodes add up the readings of their children in the
-   * order of arrival.
-   */
-  private def validateRacingTemperatureRanges(
-    scenarios: Array[Scenario],
-    results: Array[ScenarioResult],
-    tolerance: Double
-  ): Unit =
-    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
-      val lowerBound = scenario.expectedNominalTemperature - tolerance
-      val upperBound = scenario.expectedShockedTemperature + tolerance
-
-      result.racingRootTemperatures.zipWithIndex.foreach { (temperature, measurementIndex) =>
-        if (temperature < lowerBound || temperature > upperBound) {
-          throw new ValidationException(
-            s"temperature of measurement $measurementIndex for topology $topologyIndex" +
-              s" not in range [$lowerBound, $upperBound]: $temperature"
-          )
-        }
-      }
-    }
-
-  /**
-   * Checks that the root temperatures of the measurements racing the urgent update do not
-   * decrease from one measurement to the next.
-   */
-  private def validateRacingTemperatureOrder(
-    scenarios: Array[Scenario],
-    results: Array[ScenarioResult],
-    tolerance: Double
-  ): Unit =
-    forEachTopology(scenarios, results) { (topologyIndex, _, result) =>
-      val temperatures = result.racingRootTemperatures
-      temperatures.zip(temperatures.tail).zipWithIndex.foreach {
-        case ((earlier, later), earlierIndex) =>
-          if (later < earlier - tolerance) {
-            throw new ValidationException(
-              s"temperature for topology $topologyIndex decreases from $earlier" +
-                s" (measurement $earlierIndex) to $later (measurement ${earlierIndex + 1})"
-            )
-          }
-      }
-    }
-
-  /**
-   * Checks that some measurement racing the urgent update shows the update. The urgent
-   * update overtakes the racing measurement requests only by chance, so in a single
-   * topology, no racing measurement may show the update. Without a working priority
-   * mailbox, however, no racing measurement can show it in any topology, so it is enough
-   * that the update shows in one of them.
-   */
-  private def validateUrgentUpdateShown(
-    scenarios: Array[Scenario],
-    results: Array[ScenarioResult],
-    tolerance: Double
-  ): Unit = {
-    val updateShown = scenarios.zip(results).exists { (scenario, result) =>
-      val lowerBound = scenario.expectedNominalTemperature + tolerance
-      result.racingRootTemperatures.exists(temperature => temperature > lowerBound)
-    }
-
-    if (!updateShown) {
-      throw new ValidationException(
-        "no measurement racing the urgent update shows the update in any topology"
-      )
-    }
-  }
-
-  /** Checks that the measurement after the urgent update shows the shocked temperature. */
-  private def validateTemperaturesAfterUpdate(
-    scenarios: Array[Scenario],
-    results: Array[ScenarioResult],
-    tolerance: Double
-  ): Unit =
-    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
-      val expectedTemperature = scenario.expectedShockedTemperature
-      val temperatureAfterUpdate = result.rootTemperatureAfterUpdate
-
-      if (math.abs(temperatureAfterUpdate - expectedTemperature) > tolerance) {
-        throw new ValidationException(
-          s"temperature after the urgent update for topology $topologyIndex is" +
-            s" $temperatureAfterUpdate instead of $expectedTemperature"
-        )
-      }
-    }
 
   /**
    * Creates the UCT of the scenario, lets the actors select the urgent paths, requests all
@@ -439,6 +280,35 @@ final class AkkaUct extends Benchmark {
 private[actors] object AkkaUct {
 
   /**
+   * The expansion plan of a topology together with the expected tree checksum, the
+   * leaf nodes expected to be selected for urgent paths (in the order of selection),
+   * the shock temperature injected into the urgent leaves by the urgent update,
+   * and the expected root temperatures before and after the shock.
+   */
+  final case class Scenario(
+    expansionPlan: ExpansionPlan,
+    expectedTreeChecksum: TreeChecksum,
+    expectedUrgentLeafIds: List[NodeId],
+    shockTemperature: Double,
+    expectedNominalTemperature: Double,
+    expectedShockedTemperature: Double
+  )
+
+  /**
+   * The result of a computation performed on one topology: the tree checksum reported
+   * after construction, the leaf nodes in which the selected urgent paths end (in the
+   * order of selection), the root temperatures of the measurements racing the urgent
+   * update (in the order of the requests), and the root temperature of the measurement
+   * requested after the update.
+   */
+  final case class ScenarioResult(
+    treeChecksum: TreeChecksum,
+    urgentLeafIds: Seq[NodeId],
+    racingRootTemperatures: IndexedSeq[Double],
+    rootTemperatureAfterUpdate: Double
+  )
+
+  /**
    * Maximum time to wait for a phase (tree creation, urgent path selection, a
    * measurement, tree destruction) or for the actor system to terminate. A lost
    * message makes the benchmark fail instead of waiting forever. One minute is far
@@ -517,4 +387,141 @@ private[actors] object AkkaUct {
     topology.fold(leafTemperatureOf) { childTemperatures =>
       childTemperatures.sum / childTemperatures.length
     }
+
+  /** Checks that no benchmark message ended up as a dead letter or went unhandled. */
+  def validateNoUnexpectedMessages(messages: Seq[UctMessage]): Unit =
+    if (messages.nonEmpty) {
+      throw new ValidationException(
+        s"${messages.size} unexpected messages, the first being ${messages.head}"
+      )
+    }
+
+  /** Applies the check to the scenario and the result of each topology. */
+  private def forEachTopology(scenarios: Array[Scenario], results: Array[ScenarioResult])(
+    check: (Int, Scenario, ScenarioResult) => Unit
+  ): Unit =
+    scenarios.zip(results).zipWithIndex.foreach {
+      case ((scenario, result), topologyIndex) => check(topologyIndex, scenario, result)
+    }
+
+  /** Checks that the actors built a tree with the checksum of the topology. */
+  def validateTreeChecksums(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult]
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      if (result.treeChecksum != scenario.expectedTreeChecksum) {
+        throw new ValidationException(
+          s"tree for topology $topologyIndex has ${result.treeChecksum}" +
+            s" instead of ${scenario.expectedTreeChecksum}"
+        )
+      }
+    }
+
+  /**
+   * Checks that the actors selected urgent paths ending in the leaves selected on the
+   * topology, in the same order.
+   */
+  def validateUrgentLeaves(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult]
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      if (result.urgentLeafIds != scenario.expectedUrgentLeafIds) {
+        throw new ValidationException(
+          s"urgent leaves for topology $topologyIndex are ${result.urgentLeafIds}" +
+            s" instead of ${scenario.expectedUrgentLeafIds}"
+        )
+      }
+    }
+
+  /**
+   * Checks that the root temperatures of the measurements racing the urgent update lie
+   * between the nominal and the shocked temperature. The tolerance absorbs floating-point
+   * differences, which arise because nodes add up the readings of their children in the
+   * order of arrival.
+   */
+  def validateRacingTemperatureRanges(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      val lowerBound = scenario.expectedNominalTemperature - tolerance
+      val upperBound = scenario.expectedShockedTemperature + tolerance
+
+      result.racingRootTemperatures.zipWithIndex.foreach { (temperature, measurementIndex) =>
+        if (temperature < lowerBound || temperature > upperBound) {
+          throw new ValidationException(
+            s"temperature of measurement $measurementIndex for topology $topologyIndex" +
+              s" not in range [$lowerBound, $upperBound]: $temperature"
+          )
+        }
+      }
+    }
+
+  /**
+   * Checks that the root temperatures of the measurements racing the urgent update do not
+   * decrease from one measurement to the next.
+   */
+  def validateRacingTemperatureOrder(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, _, result) =>
+      val temperatures = result.racingRootTemperatures
+      temperatures.zip(temperatures.tail).zipWithIndex.foreach {
+        case ((earlier, later), earlierIndex) =>
+          if (later < earlier - tolerance) {
+            throw new ValidationException(
+              s"temperature for topology $topologyIndex decreases from $earlier" +
+                s" (measurement $earlierIndex) to $later (measurement ${earlierIndex + 1})"
+            )
+          }
+      }
+    }
+
+  /**
+   * Checks that some measurement racing the urgent update shows the update. The urgent
+   * update overtakes the racing measurement requests only by chance, so in a single
+   * topology, no racing measurement may show the update. Without a working priority
+   * mailbox, however, no racing measurement can show it in any topology, so it is enough
+   * that the update shows in one of them.
+   */
+  def validateUrgentUpdateShown(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit = {
+    val updateShown = scenarios.zip(results).exists { (scenario, result) =>
+      val lowerBound = scenario.expectedNominalTemperature + tolerance
+      result.racingRootTemperatures.exists(temperature => temperature > lowerBound)
+    }
+
+    if (!updateShown) {
+      throw new ValidationException(
+        "no measurement racing the urgent update shows the update in any topology"
+      )
+    }
+  }
+
+  /** Checks that the measurement after the urgent update shows the shocked temperature. */
+  def validateTemperaturesAfterUpdate(
+    scenarios: Array[Scenario],
+    results: Array[ScenarioResult],
+    tolerance: Double
+  ): Unit =
+    forEachTopology(scenarios, results) { (topologyIndex, scenario, result) =>
+      val expectedTemperature = scenario.expectedShockedTemperature
+      val temperatureAfterUpdate = result.rootTemperatureAfterUpdate
+
+      if (math.abs(temperatureAfterUpdate - expectedTemperature) > tolerance) {
+        throw new ValidationException(
+          s"temperature after the urgent update for topology $topologyIndex is" +
+            s" $temperatureAfterUpdate instead of $expectedTemperature"
+        )
+      }
+    }
+
 }
