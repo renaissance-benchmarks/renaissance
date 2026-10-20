@@ -4,7 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import org.renaissance.kotlin.ktor.KtorRenaissanceBenchmark.Parameters
+import org.renaissance.kotlin.ktor.ChitChat.Parameters
 import org.renaissance.kotlin.ktor.common.SplittableRandom
 import org.renaissance.kotlin.ktor.common.getRandomDigits
 import kotlin.random.Random

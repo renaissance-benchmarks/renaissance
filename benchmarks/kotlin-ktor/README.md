@@ -1,4 +1,4 @@
-# Kotlin-Ktor benchmark
+# Chit-Chat benchmark
 
 The benchmark is designed to simulate a chat application where multiple clients send requests simultaneously.
 It uses the [Ktor](https://ktor.io/) framework.
@@ -27,7 +27,7 @@ Hence, counting the number of successfully completed tasks is enough to validate
 To run benchmark, execute the following command:
 
 ```bash
-java -jar <renaissance.jar> kotlin-ktor
+java -jar <renaissance.jar> chit-chat
 ```
 
 Here are the parameters that can be passed to the benchmark:
@@ -55,7 +55,7 @@ The high-level idea of coroutines is that multiple blocking operations may run o
 For more details, please see [the official coroutines guide](https://kotlinlang.org/docs/coroutines-overview.html).
 This is exactly what Ktor uses.
 
-`client_count` controls client-side concurrency directly: `KtorRenaissanceBenchmark` builds one thread
+`client_count` controls client-side concurrency directly: `ChitChat` builds one thread
 pool sized to `min(client_count, availableProcessors)` and runs every client's tasks on the coroutine
 scope backed by it.
 
@@ -81,7 +81,7 @@ Increasing the number of clients will increase contention in all synchronization
 
 ## Core classes overview
 
-- `KtorRenaissanceBenchmark` is the root class which initialises, runs and tears down the server and the clients.
+- `ChitChat` is the root class which initialises, runs and tears down the server and the clients.
   See [Running the benchmark](#running-the-benchmark) for more details on the available parameters for client and server
   setup.
 - `ChatApplication` is the class which sets up the Ktor application for the `ChatServer`.
@@ -94,7 +94,7 @@ Increasing the number of clients will increase contention in all synchronization
   that's how they'll know that the 'transaction' was successful. Chat ids and the initial set of chats are generated
   from the benchmark's own seeded random generator, and `ChatServer` resets its state back to that same initial set at
   the start of every repetition, so repetitions run against comparable starting conditions.
-- `ClientManager` sets up clients according to the parameters received from the `KtorRenaissanceBenchmark`, runs them,
+- `ClientManager` sets up clients according to the parameters received from the `ChitChat`, runs them,
   and tears them down.
 - `Client` represents one simulated user: a shared `User` identity plus a collection of tasks. A one-time prologue task
   runs first (setting the display name), then the regular tasks are run sequentially for the required number of times.

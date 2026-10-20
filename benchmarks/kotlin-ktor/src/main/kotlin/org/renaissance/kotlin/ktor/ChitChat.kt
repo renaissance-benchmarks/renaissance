@@ -14,7 +14,10 @@ import kotlin.math.min
 import kotlin.random.Random
 
 @Group("web")
-@Name("kotlin-ktor")
+@Group("kotlin-ktor")
+@Group("kotlin")
+@Group("concurrency")
+@Name("chit-chat")
 @Summary("Simple Ktor chat application with multiple clients, performing various tasks.")
 @Licenses(License.MIT)
 @Parameter(
@@ -60,7 +63,7 @@ import kotlin.random.Random
   ]
 )
 @Configuration(name = "jmh")
-class KtorRenaissanceBenchmark() : Benchmark {
+class ChitChat() : Benchmark {
   private lateinit var clientPool: ExecutorCoroutineDispatcher
   private lateinit var server: EmbeddedServer<*, *>
   private lateinit var application: ChatApplication
