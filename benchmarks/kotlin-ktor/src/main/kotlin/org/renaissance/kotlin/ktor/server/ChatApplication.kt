@@ -3,7 +3,6 @@ package org.renaissance.kotlin.ktor.server
 import io.ktor.serialization.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
@@ -14,7 +13,6 @@ import org.renaissance.kotlin.ktor.common.Message
 import org.renaissance.kotlin.ktor.common.command.*
 import org.renaissance.kotlin.ktor.common.sendSerializedCommandReplyNative
 import org.renaissance.kotlin.ktor.common.serializationFormat
-import kotlin.random.Random
 
 /**
  * This object and the server it configures are created once for the whole
@@ -33,8 +31,8 @@ class ChatApplication(initialChatCount: Int, initialSeed: Long) {
   fun teardown() = server.teardown()
 
   /**
-   * Configures Ktor's [Application]: installs default headers, call logging,
-   * and the WebSocket plugin (sharing [serializationFormat] with the client).
+   * Configures Ktor's [Application]: installs default headers and the
+   * WebSocket plugin (sharing [serializationFormat] with the client).
    * The application exposes a single `/ws/{userId}` path which provides an
    * entry point for users. Users can open multiple connections, so they are
    * registered along with the session. Commands sent by the client are
@@ -42,7 +40,6 @@ class ChatApplication(initialChatCount: Int, initialSeed: Long) {
    */
   fun Application.main() {
     install(DefaultHeaders)
-    install(CallLogging)
     install(WebSockets) {
       contentConverter = KotlinxWebsocketSerializationConverter(serializationFormat)
     }

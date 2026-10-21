@@ -570,7 +570,6 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
       "io.ktor" % "ktor-server-core-jvm" % ktorVersion,
       "io.ktor" % "ktor-server-cio-jvm" % ktorVersion,
       "io.ktor" % "ktor-server-websockets-jvm" % ktorVersion,
-      "io.ktor" % "ktor-server-call-logging-jvm" % ktorVersion,
       "io.ktor" % "ktor-server-default-headers-jvm" % ktorVersion,
       "io.ktor" % "ktor-serialization-kotlinx-json-jvm" % ktorVersion,
       "io.ktor" % "ktor-client-core-jvm" % ktorVersion,
