@@ -574,11 +574,12 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
       "io.ktor" % "ktor-client-core-jvm" % ktorVersion,
       "io.ktor" % "ktor-client-cio-jvm" % ktorVersion,
       "org.jetbrains.kotlinx" % "kotlinx-serialization-json" % "1.6.2",
-      "ch.qos.logback" % "logback-classic" % logbackVersion
+      "ch.qos.logback" % "logback-classic" % logbackVersion,
+      "org.jetbrains.kotlin" % "kotlin-test-junit" % "2.4.21" % Test,
+      "org.jetbrains.kotlinx" % "kotlinx-coroutines-test" % "1.11.0" % Test,
+      "com.github.sbt" % "junit-interface" % "0.13.3" % Test
     ),
-    dependencyOverrides ++= Seq(
-      "org.jetbrains.kotlinx" % "kotlinx-coroutines-core" % "1.8.0-RC"
-    )
+    testFrameworks += new TestFramework("com.novocode.junit.JUnitFramework")
   )
   .dependsOn(renaissanceCore % "provided")
 
