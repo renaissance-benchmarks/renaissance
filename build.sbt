@@ -561,6 +561,8 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
     name := "kotlin-ktor",
     commonSettingsNoScala,
     kotlinLib("stdlib"),
+    // Attach plugin that generates serializers for @Serializable classes.
+    // Without it, @Serializable compiles but produces no usable serializer.
     kotlinPlugin("serialization-compiler-plugin-embeddable"),
     kotlinVersion := "2.4.21",
     kotlincJvmTarget := "11",
@@ -573,7 +575,7 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
       "io.ktor" % "ktor-serialization-kotlinx-json-jvm" % ktorVersion,
       "io.ktor" % "ktor-client-core-jvm" % ktorVersion,
       "io.ktor" % "ktor-client-cio-jvm" % ktorVersion,
-      "org.jetbrains.kotlinx" % "kotlinx-serialization-json" % "1.6.2",
+      "org.jetbrains.kotlinx" % "kotlinx-serialization-json" % "1.12.0",
       "ch.qos.logback" % "logback-classic" % logbackVersion,
       "org.jetbrains.kotlin" % "kotlin-test-junit" % "2.4.21" % Test,
       "org.jetbrains.kotlinx" % "kotlinx-coroutines-test" % "1.11.0" % Test,
