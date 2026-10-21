@@ -61,7 +61,7 @@ scope backed by it.
 
 Server-side concurrency is not controllable this way. This benchmark uses Ktor's CIO application engine,
 since the point of the benchmark is to exercise Kotlin-coroutine-native code (Netty, a Java NIO framework,
-is already exercised by the `twitter-finagle` benchmark in this suite). As of Ktor 2.3.8, `CIOApplicationEngine`
+is already exercised by the `twitter-finagle` benchmark in this suite). The `CIOApplicationEngine`
 hardcodes its own dispatcher and ignores the `connectionGroupSize`/`workerGroupSize`/`callGroupSize` settings
 it otherwise inherits. Netty uses these settings to size its event loop groups; CIO does not. No parameter
 changes the number of threads used on the server side.

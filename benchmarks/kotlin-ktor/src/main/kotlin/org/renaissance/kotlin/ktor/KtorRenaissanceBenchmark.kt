@@ -62,7 +62,7 @@ import kotlin.random.Random
 @Configuration(name = "jmh")
 class KtorRenaissanceBenchmark() : Benchmark {
   private lateinit var clientPool: ExecutorCoroutineDispatcher
-  private lateinit var server: ApplicationEngine
+  private lateinit var server: EmbeddedServer<*, *>
   private lateinit var application: ChatApplication
   private lateinit var clientManager: ClientManager
 
@@ -88,10 +88,10 @@ class KtorRenaissanceBenchmark() : Benchmark {
     }
   }
 
-  private fun startServer(application: ChatApplication, port: Int): ApplicationEngine {
+  private fun startServer(application: ChatApplication, port: Int): EmbeddedServer<*, *> {
     // Unlike the client side, we do not control the server side concurrency.
-    // The CIOApplicationEngine hardcodes Dispatchers.IO and (as of Ktor 2.3.8)
-    // ignores the inherited Configuration settings such as connectionGroupSize,
+    // The CIOApplicationEngine hardcodes Dispatchers.IO and ignores the
+    // inherited Configuration settings such as connectionGroupSize,
     // workerGroupSize, and callGroupSize. Using other application engines, such
     // as Netty, would defeat the purpose of using a Kotlin-native engine.
     val server = embeddedServer(io.ktor.server.cio.CIO, host = "127.0.0.1", port = port) {
