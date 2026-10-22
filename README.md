@@ -234,6 +234,10 @@ The following is the complete list of benchmarks, separated into groups.
 
 #### web
 
+- `chit-chat` - Simple Ktor chat application with multiple clients, performing various tasks.
+  \
+  Default repetitions: 20; MIT license, MIT distribution; Supported JVM: 11 and later
+
 - `finagle-chirper` - Simulates a microblogging service using Twitter Finagle.
   \
   Default repetitions: 90; APACHE2 license, MIT distribution; Supported JVM: 11 and later
