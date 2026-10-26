@@ -267,7 +267,8 @@ lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
     libraryDependencies ++= Seq(
       // akka-actor 2.6.17+ supports Scala 2.12, 2.13, and 3 under Apache 2.0 license
       // akka-actor 2.7.0+ supports Scala 2.12, 2.13, and 3 under Business Source 1.1 license
-      "com.typesafe.akka" %% "akka-actor" % "2.6.21"
+      "com.typesafe.akka" %% "akka-actor" % "2.6.21",
+      "org.scalatest" %% "scalatest" % "3.2.19" % Test
     ),
     excludeDependencies ++= Seq(
       // Drop dependencies that are not needed for running on Java 11+.
