@@ -7,8 +7,6 @@ import org.renaissance.core.BenchmarkDescriptor.Configuration;
 import org.renaissance.core.ModuleLoader.ModuleLoadingException;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URL;
@@ -114,10 +112,21 @@ public final class BenchmarkSuite {
 
   // Other convenience methods
 
-  /** Returns the specification version of this JVM. */
+  /**
+   * Returns the Java platform (class library) specification version of this
+   * JVM, e.g. {@code "1.8"} or {@code "17"}.
+   * <p>
+   * Note that we deliberately read the {@code java.specification.version}
+   * system property instead of
+   * {@link java.lang.management.RuntimeMXBean#getSpecVersion()}. The
+   * latter returns the <em>Java Virtual Machine</em> specification version,
+   * which can differ from the class library version on hybrid VMs (for
+   * example a JDK 17 VM running a JDK 8 class library). Benchmark
+   * compatibility is determined by the class library API version, so the two
+   * must not be conflated.
+   */
   public static Version jvmSpecVersion() {
-    final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
-    return Version.parse(runtimeMXBean.getSpecVersion());
+    return Version.parse(System.getProperty("java.specification.version"));
   }
 
   // Extra services for benchmark descriptors
