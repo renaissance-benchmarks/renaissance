@@ -260,6 +260,13 @@ lazy val dummyBenchmarks = (project in file("benchmarks/dummy"))
   )
   .dependsOn(renaissanceCore % "provided")
 
+lazy val gameOfLifeBenchmarks = (project in file("benchmarks/game-of-life"))
+  .settings(
+    name := "game-of-life",
+    commonSettingsNoScala
+  )
+  .dependsOn(renaissanceCore % "provided")
+
 lazy val actorsAkkaBenchmarks = (project in file("benchmarks/actors-akka"))
   .settings(
     name := "actors-akka",
@@ -711,6 +718,7 @@ lazy val kotlinKtorBenchmarks = (project in file("benchmarks/kotlin-ktor"))
  */
 val renaissanceBenchmarks: Seq[Project] = Seq(
   dummyBenchmarks,
+  gameOfLifeBenchmarks,
   actorsAkkaBenchmarks,
   actorsReactorsBenchmarks,
   apacheSparkBenchmarks,
