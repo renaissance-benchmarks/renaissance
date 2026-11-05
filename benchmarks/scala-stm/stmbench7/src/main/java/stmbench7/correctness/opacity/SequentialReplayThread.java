@@ -22,7 +22,7 @@ public class SequentialReplayThread extends BenchThread {
 
 	public SequentialReplayThread(Setup setup, double[] operationCDF,
 			ArrayList<ReplayLogEntry> replayLog) {
-		super(setup, operationCDF);
+		super(setup, operationCDF, (short) 0, 0);
 		this.replayLog = replayLog;
 	}
 	
@@ -35,15 +35,32 @@ public class SequentialReplayThread extends BenchThread {
 			System.err.print("Operation " + opIndex + " out of " + opCount + "\r");
 			short threadNum = entry.threadNum;
 			ThreadRandom.setVirtualThreadNumber(threadNum);
-			
+
+			long virtualCallCount = ThreadRandom.getCallCount();
+//			if (virtualCallCount != entry.callCountBefore) {
+//				System.err.println("\nCallCount mismatch BEFORE getNextOp at opIndex=" + opIndex +
+//					" thread=" + threadNum +
+//					" virtual=" + virtualCallCount +
+//					" expected=" + entry.callCountBefore +
+//					" diff=" + (virtualCallCount - entry.callCountBefore));
+//			}
+
 			//System.out.println(++i);
 			int operationNumber = getNextOperationNumber(opIndex);
 			opIndex++;
 
 			//System.out.println(entry.threadNum + " -- " + OperationId.values()[entry.opNum] +
 			//	" / " + OperationId.values()[operationNumber]);
-			if(operationNumber != entry.opNum)
+			if(operationNumber != entry.opNum) {
+				System.err.println("\nThreadRandom skew at opIndex=" + (opIndex-1) +
+					" thread=" + threadNum +
+					" expected=" + OperationId.values()[entry.opNum] + "(" + entry.opNum + ")" +
+					" got=" + OperationId.values()[operationNumber] + "(" + operationNumber + ")" +
+					" timestamp=" + entry.timestamp + " failed=" + entry.failed +
+					" callBefore(expected)=" + entry.callCountBefore +
+					" callBefore(actual)=" + virtualCallCount);
 				throw new RuntimeError("ThreadRandom skew");
+			}
 			
 			int result = 0;
 			boolean failed = false;
@@ -56,12 +73,19 @@ public class SequentialReplayThread extends BenchThread {
 				failed = true;
 				ThreadRandom.restoreState();
 			}
-			
+
+			//debug print
+
+//			System.err.println("\nOp " + (opIndex-1) + ": thread=" + threadNum +
+//				" op=" + OperationId.values()[operationNumber] +
+//				" concurrent(result=" + entry.result + ",failed=" + entry.failed + ")" +
+//				" sequential(result=" + result + ",failed=" + failed + ")" +
+//				" callBefore=" + entry.callCountBefore + " ts=" + entry.timestamp);
 			if(result != entry.result || failed != entry.failed) {
 				String opName = OperationId.values()[operationNumber].toString();
 				throw new RuntimeError("Different operation result in the sequential execution (" +
 						"operation " + opName + "): " +
-						"Sequential: result = " + result + ", failed = " + failed + ". " + 
+						"Sequential: result = " + result + ", failed = " + failed + ". " +
 						"Concurrent: result = " + entry.result + ", failed = " + entry.failed + ".");
 			}
 		}

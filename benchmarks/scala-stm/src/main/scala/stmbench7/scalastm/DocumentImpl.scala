@@ -37,4 +37,10 @@ class DocumentImpl(id: Int, title: String, text0: String) extends Document {
   }
 
   override def textBeginsWith(prefix: String): Boolean = text().startsWith(prefix)
+
+  override def equals(obj: Any): Boolean = obj match {
+    case d: Document => d.getDocumentId == id
+    case _ => false
+  }
+  override def hashCode(): Int = id
 }
