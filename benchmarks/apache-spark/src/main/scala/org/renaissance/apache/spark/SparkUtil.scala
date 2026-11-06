@@ -23,6 +23,12 @@ trait SparkUtil {
 
   private val portAllocationMaxRetries: Int = 16
 
+  // Spark's UnifiedMemoryManager reserves 300 MiB (RESERVED_SYSTEM_MEMORY_BYTES)
+  // and requires the system memory to be at least 300 MiB * 1.5 = 450 MiB. In
+  // local[N] mode the driver runs inside the benchmark JVM, so "system memory"
+  // is Runtime.maxMemory(), i.e. the JVM heap (-Xmx), not spark.driver.memory.
+  private val minSparkSystemMemoryBytes: Long = 450L * 1024L * 1024L
+
   /*
    * Hadoop binaries for Windows.
    *
@@ -51,6 +57,18 @@ trait SparkUtil {
   protected def sparkContext: SparkContext = sparkSession.sparkContext
 
   def setUpSparkContext(bc: BenchmarkContext, useCheckpointDir: Boolean = false): Unit = {
+    val maxMemory = Runtime.getRuntime.maxMemory()
+    if (maxMemory < minSparkSystemMemoryBytes) {
+      throw new IllegalArgumentException(
+        s"Spark benchmarks require a JVM heap of at least 450 MiB " +
+          s"(Spark's UnifiedMemoryManager minimum), but the current max heap is only " +
+          s"${maxMemory / (1024 * 1024)} MiB. " +
+          "Please run Renaissance with a larger heap (e.g. -Xmx512m or more). " +
+          "Note: in Spark's local mode the driver runs inside the benchmark JVM, so " +
+          "'spark.driver.memory' has no effect here -- the JVM heap size (-Xmx) is what matters."
+      )
+    }
+
     val scratchDir = bc.scratchDirectory()
     setUpHadoop(scratchDir.resolve("hadoop"))
 
