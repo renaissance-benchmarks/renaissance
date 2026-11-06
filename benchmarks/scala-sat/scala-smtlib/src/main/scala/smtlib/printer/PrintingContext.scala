@@ -24,7 +24,6 @@ class PrintingContext(writer: Writer) {
     case SList(es) => printNary(es, "(", " ", ")")
     case kw @ SKeyword(_) => printKeyword(kw)
     case s @ SSymbol(_) => printSymbol(s)
-    case flag: InfoFlag => printInfoFlag(flag)
     case option: SMTOption => printOption(option)
 
     case attribute: Attribute =>
