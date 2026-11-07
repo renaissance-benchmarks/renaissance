@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Comparator
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.nowarn
 import scala.collection._
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
@@ -492,6 +493,7 @@ final class FinagleChirper extends Benchmark {
     require(Await.result(masterService.apply(request)).status == Status.Ok)
   }
 
+  @nowarn("cat=deprecation")
   override def run(c: BenchmarkContext): BenchmarkResult = {
     val clients =
       for (i <- 0 until clientCount)

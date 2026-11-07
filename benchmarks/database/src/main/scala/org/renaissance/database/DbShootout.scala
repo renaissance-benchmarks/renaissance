@@ -19,6 +19,7 @@ import java.nio.file.Files
 import java.nio.file.Files.createDirectories
 import java.nio.file.Path
 import java.nio.file.Paths
+import scala.annotation.nowarn
 import scala.collection.Seq
 
 @Name("db-shootout")
@@ -77,7 +78,7 @@ final class DbShootout extends Benchmark {
           .filter { path =>
             path.contains("chronicle-core") || path.contains("chronicle-bytes")
           }
-          .toIterable
+          .toSeq
           .asJava
 
         Files.createDirectories(libDir)
@@ -152,6 +153,7 @@ final class DbShootout extends Benchmark {
     mvStoreReader.teardown()
   }
 
+  @nowarn("cat=deprecation")
   override def run(c: BenchmarkContext): BenchmarkResult = {
     mapDb.parReadKey(mapDbReader)
     mapDb.parWrite(mapDbWriter)
