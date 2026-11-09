@@ -177,7 +177,7 @@ object RealityShowPhilosophers {
       )
     }
 
-    val camera = new CameraThread(forks, philosophers, controller)
+    val camera = new CameraThread(forks.toIndexedSeq, philosophers.toIndexedSeq, controller)
     camera.start()
 
     philosophers.foreach(_.start())

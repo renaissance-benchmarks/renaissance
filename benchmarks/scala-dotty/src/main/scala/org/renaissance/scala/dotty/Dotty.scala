@@ -190,7 +190,7 @@ final class Dotty extends Benchmark {
       case ucl: URLClassLoader =>
         import scala.jdk.CollectionConverters._
 
-        val resourcePaths = ucl.getURLs.map(_.getPath).toIterable.asJava
+        val resourcePaths = ucl.getURLs.map(_.getPath).toSeq.asJava
 
         Files.createDirectories(libDir)
         val jarPaths = ResourceUtils.extractResources(resourcePaths, libDir)

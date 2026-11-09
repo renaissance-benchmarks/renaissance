@@ -6,6 +6,7 @@ import org.renaissance.BenchmarkContext
 import org.renaissance.BenchmarkResult
 import org.renaissance.BenchmarkResult.Validators
 import org.renaissance.License
+import scala.annotation.nowarn
 
 @Name("scala-stm-bench7")
 @Group("scala-stm")
@@ -46,6 +47,7 @@ final class ScalaStmBench7 extends Benchmark {
     )
   }
 
+  @nowarn("cat=deprecation")
   override def run(c: BenchmarkContext): BenchmarkResult = {
     // TODO: Make the benchmark return something useful
     stmbench7.Benchmark.main(stmBenchArgs)
